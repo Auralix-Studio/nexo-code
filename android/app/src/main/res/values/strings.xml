@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_next_desc">Nexo · Próxima clase</string>
+    <string name="widget_today_desc">Nexo · Horario de hoy</string>
+    <string name="widget_payment_desc">Nexo · Próximo pago</string>
+    <string name="widget_academic_desc">Nexo · Resumen académico</string>
+</resources>

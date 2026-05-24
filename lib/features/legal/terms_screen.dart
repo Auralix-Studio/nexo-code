@@ -1,0 +1,370 @@
+import 'package:flutter/material.dart';
+
+import 'package:nexo/core/design/breakpoints.dart';
+import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/shared/widgets/app_logo.dart';
+
+class _Item {
+  final IconData icon;
+  final String title;
+  final String body;
+  final Color color;
+  const _Item(this.icon, this.title, this.body, this.color);
+}
+
+const _items = <_Item>[
+  _Item(
+    Icons.info_outline,
+    'Qué es Nexo',
+    'Aplicación independiente y no oficial, creada por y para estudiantes, '
+        'que reorganiza tu información de SIGMA/Intranet UPLA de forma más '
+        'clara. No está afiliada ni respaldada por la UPLA.',
+    NexoTheme.primary,
+  ),
+  _Item(
+    Icons.lock_outline,
+    'Tus datos y privacidad',
+    'Tus credenciales y datos se guardan únicamente en tu dispositivo. Nexo '
+        'no envía nada a servidores propios ni a terceros: las peticiones van '
+        'directamente a los servicios de la UPLA, igual que el portal oficial.',
+    NexoTheme.accent,
+  ),
+  _Item(
+    Icons.shield_outlined,
+    'Seguridad',
+    'El almacenamiento local no está cifrado a nivel de sistema. Úsala solo '
+        'en dispositivos de tu confianza. Puedes cerrar sesión para borrar '
+        'credenciales y caché en cualquier momento.',
+    NexoTheme.info,
+  ),
+  _Item(
+    Icons.gavel_outlined,
+    'Uso responsable',
+    'Accede solo a tu propia información con tus propias credenciales. Es un '
+        'proyecto educativo / de hackathon de ingeniería inversa para uso '
+        'personal. Úsala conforme a los reglamentos de tu universidad.',
+    NexoTheme.success,
+  ),
+  _Item(
+    Icons.warning_amber_outlined,
+    'Sin garantías',
+    'El servicio se ofrece "tal cual", sin garantías. Para trámites oficiales '
+        'consulta siempre el portal institucional.',
+    NexoTheme.warning,
+  ),
+];
+
+class TermsScreen extends StatelessWidget {
+  const TermsScreen({super.key, this.onAccept});
+
+  final VoidCallback? onAccept;
+  bool get _isGate => onAccept != null;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = context.isDesktop;
+
+    final content = _Content(isGate: _isGate, onAccept: onAccept);
+
+    if (isDesktop && _isGate) {
+      // Escritorio (gate): dos paneles.
+      return Scaffold(
+        body: Row(
+          children: [
+            const Expanded(flex: 5, child: _BrandPane()),
+            Expanded(
+              flex: 6,
+              child: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    child: content,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: _isGate
+          ? null
+          : AppBar(title: const Text('Términos y privacidad')),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: content,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Content extends StatelessWidget {
+  final bool isGate;
+  final VoidCallback? onAccept;
+  const _Content({required this.isGate, required this.onAccept});
+
+  @override
+  Widget build(BuildContext context) {
+    final showHeader = isGate && !context.isDesktop;
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxl,
+              AppSpacing.xxl,
+              AppSpacing.xxl,
+              AppSpacing.lg,
+            ),
+            children: [
+              if (showHeader) ...[
+                const Gap(AppSpacing.sm),
+                const Center(child: AppLogo(size: 60)),
+                const Gap(AppSpacing.lg),
+                const Center(
+                  child: Text(
+                    'Antes de empezar',
+                    style: TextStyle(
+                      fontSize: AppFont.h1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                ),
+                const Gap(AppSpacing.xs),
+                Center(
+                  child: Text(
+                    'Términos de uso y privacidad',
+                    style: TextStyle(
+                      fontSize: AppFont.body,
+                      color: NexoTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                const Gap(AppSpacing.xxl),
+              ] else if (context.isDesktop && isGate) ...[
+                Text(
+                  'Términos de uso y privacidad',
+                  style: TextStyle(
+                    fontSize: AppFont.h1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.8,
+                    color: NexoTheme.textPrimary,
+                  ),
+                ),
+                const Gap(AppSpacing.sm),
+                Text(
+                  'Lee y acepta para continuar.',
+                  style: TextStyle(
+                    fontSize: AppFont.body,
+                    color: NexoTheme.textSecondary,
+                  ),
+                ),
+                const Gap(AppSpacing.xxl),
+              ],
+              for (final it in _items) ...[
+                _SectionCard(item: it),
+                const Gap(AppSpacing.md),
+              ],
+            ],
+          ),
+        ),
+        if (isGate)
+          Container(
+            padding: EdgeInsets.all(context.responsive(mobile: AppSpacing.lg, desktop: AppSpacing.xxl)),
+            decoration: BoxDecoration(
+              color: NexoTheme.surface,
+              border: Border(top: BorderSide(color: NexoTheme.border)),
+            ),
+            child: context.isWide
+                ? Row(
+                    children: [
+                      Icon(Icons.verified_user_outlined,
+                          size: AppIcon.lg, color: NexoTheme.textSecondary),
+                      const Gap.h(AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'Al continuar aceptas estos términos.',
+                          style: TextStyle(
+                            fontSize: AppFont.small,
+                            color: NexoTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const Gap.h(AppSpacing.lg),
+                      ElevatedButton(
+                        onPressed: onAccept,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 50),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                        ),
+                        child: const Text('Aceptar y continuar'),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.verified_user_outlined,
+                              size: AppIcon.md, color: NexoTheme.textSecondary),
+                          const Gap.h(AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              'Al continuar aceptas estos términos.',
+                              style: TextStyle(
+                                fontSize: AppFont.small,
+                                color: NexoTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(AppSpacing.md),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: onAccept,
+                          child: const Text('Aceptar y continuar'),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final _Item item;
+  const _SectionCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: NexoTheme.surface,
+        borderRadius: AppRadii.rXl,
+        border: Border.all(color: NexoTheme.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: item.color.withValues(alpha: 0.12),
+              borderRadius: AppRadii.rMd,
+            ),
+            child: Icon(item.icon, size: AppIcon.lg, color: item.color),
+          ),
+          const Gap.h(AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: TextStyle(
+                    fontSize: AppFont.title,
+                    fontWeight: FontWeight.w800,
+                    color: NexoTheme.textPrimary,
+                  ),
+                ),
+                const Gap(AppSpacing.sm),
+                Text(
+                  item.body,
+                  style: TextStyle(
+                    fontSize: AppFont.body,
+                    height: 1.5,
+                    color: NexoTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandPane extends StatelessWidget {
+  const _BrandPane();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [NexoTheme.primary, NexoTheme.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -90,
+            left: -70,
+            child: _c(260, NexoTheme.accent.withValues(alpha: 0.18)),
+          ),
+          Positioned(
+            bottom: -110,
+            right: -60,
+            child: _c(280, Colors.white.withValues(alpha: 0.07)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.huge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const AppLogo(size: 80),
+                const Gap(AppSpacing.xxxl),
+                const Text(
+                  'Bienvenido a Nexo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppFont.display,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -2,
+                    height: 1.05,
+                  ),
+                ),
+                const Gap(AppSpacing.lg),
+                Text(
+                  'Privacidad primero. Tus datos viven solo en tu '
+                  'dispositivo.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: AppFont.h3,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _c(double s, Color c) => Container(
+        width: s,
+        height: s,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: c),
+      );
+}

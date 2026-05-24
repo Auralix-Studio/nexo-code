@@ -1,0 +1,55 @@
+name: nexo
+description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # Cliente HTTP base oficial del equipo Dart (no SDK de terceros).
+  # Lo usamos como transporte; la autenticación, sesión y manejo
+  # de respuestas son 100% propios (ver lib/data/api_client.dart).
+  http: ^1.2.2
+  # Persistencia local del token y datos cacheados.
+  shared_preferences: ^2.3.2
+  # Puente Flutter ↔ widgets de pantalla de inicio (Android/iOS).
+  home_widget: ^0.7.0
+  quick_actions: ^1.1.0
+  # Notificaciones locales programadas (recordatorios de clases/pagos).
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "transparent"
+    theme_color: "transparent"
+  windows:
+    generate: true
+    image_path: "assets/icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon.png
