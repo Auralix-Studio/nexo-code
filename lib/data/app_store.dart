@@ -1,11 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:nexo/core/error_handler.dart';
+import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/storage.dart';
+import 'package:nexo/data/cache_manager.dart';
+import 'package:nexo/data/docente_repository.dart';
 import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/teams_repository.dart';
 import 'package:nexo/domain/models.dart';
 
 /// Estado tipado de una porción de datos cargados desde el API.
@@ -37,9 +43,24 @@ class AsyncValue<T> {
 /// Store reactivo central — cachea datos cargados y los expone vía
 /// [ChangeNotifier], evitando recargas innecesarias entre pantallas.
 class AppStore extends ChangeNotifier {
-  AppStore(this._repo, {IntranetRepository? intranet}) : _intranet = intranet;
+  AppStore(
+    this._repo, {
+    required CacheManager cache,
+    required ErrorHandler errorHandler,
+    IntranetRepository? intranet,
+    TeamsRepository? teams,
+    DocenteRepository? docente,
+  })  : _cache = cache,
+        _errorHandler = errorHandler,
+        _intranet = intranet,
+        _teams = teams,
+        _docente = docente;
   final SigmaRepository _repo;
+  final CacheManager _cache;
+  final ErrorHandler _errorHandler;
   final IntranetRepository? _intranet;
+  final TeamsRepository? _teams;
+  final DocenteRepository? _docente;
 
   /// Llamado cuando se detecta una nota nueva o cambiada (curso, nota).
   void Function(String curso, String nota)? onGradeChange;
@@ -82,6 +103,29 @@ class AppStore extends ChangeNotifier {
   AsyncValue<List<Cuota>> cuotasIntranet = const AsyncValue.idle();
   AsyncValue<List<Tasa>> tasas = const AsyncValue.idle();
   AsyncValue<List<PagoHistorico>> historico = const AsyncValue.idle();
+
+  /// Microsoft Teams (Graph Education) — independiente de SIGMA/Intranet.
+  AsyncValue<List<TeamsClass>> teamsClasses = const AsyncValue.idle();
+  AsyncValue<List<TeamsAssignment>> teamsAssignments = const AsyncValue.idle();
+
+  /// Documentos descargables (Intranet) — generados como PDF en cliente.
+  AsyncValue<ConstanciaMatricula> constancia = const AsyncValue.idle();
+  AsyncValue<CronogramaPagos> cronograma = const AsyncValue.idle();
+
+  /// Recursos institucionales (SIGMA).
+  AsyncValue<List<Publicacion>> publicaciones = const AsyncValue.idle();
+  AsyncValue<WifiCredencial> wifi = const AsyncValue.idle();
+  AsyncValue<ConteoNotas> conteoNotas = const AsyncValue.idle();
+
+  /// Lado docente — solo se carga si el usuario es docente.
+  AsyncValue<DocenteInfo> docenteInfo = const AsyncValue.idle();
+  AsyncValue<List<DocenteAsignatura>> docenteAsignaturas =
+      const AsyncValue.idle();
+  AsyncValue<List<ClaseHorario>> docenteHorario = const AsyncValue.idle();
+  final Map<String, AsyncValue<List<DocenteAlumno>>> _docenteAlumnos = {};
+
+  AsyncValue<List<DocenteAlumno>> alumnosDe(String cleAuto) =>
+      _docenteAlumnos[cleAuto] ?? const AsyncValue.idle();
 
   /// Notas por periodo: clave = "anio-periodoNum".
   final Map<String, AsyncValue<List<NotaAsignatura>>> _notasByPeriodo = {};
@@ -160,15 +204,21 @@ class AppStore extends ChangeNotifier {
   }
 
   Future<T?> _wrap<T>(
-    Future<T> Function() loader,
+    Future<T> Function() remote,
     AsyncValue<T> Function() get,
     void Function(AsyncValue<T>) set, {
+    Future<T?> Function()? cached,
     void Function(T value)? persist,
+    required String operationName,
   }) async {
     set(AsyncValue.loading(get().value));
     _notify();
     try {
-      final v = await loader();
+      final v = await _errorHandler.withFallback<T>(
+        remote: remote,
+        cached: cached ?? () => Future.value(null),
+        operationName: operationName,
+      );
       set(AsyncValue.data(v));
       _notify();
       persist?.call(v);
@@ -188,7 +238,7 @@ class AppStore extends ChangeNotifier {
   static const _ckPromedios = 'promedios';
   static const _ckCuotasPend = 'cuotasPend';
 
-  void _cache(String key, Object data) =>
+  void _setStorageCache(String key, Object data) =>
       AppStorage.instance.setCache(key, data);
 
   /// Rellena el estado con datos cacheados para mostrar algo al instante
@@ -254,29 +304,50 @@ class AppStore extends ChangeNotifier {
     if (p != null && p.pesId.isNotEmpty && p.nivel.isNotEmpty) {
       await loadResumen(p.pesId, p.nivel);
     }
+    // Refresca la boleta del periodo activo en segundo plano para detectar
+    // notas nuevas y disparar la notificación correspondiente. Sin esto,
+    // las notas solo se chequean al entrar manualmente a la pestaña Notas.
+    unawaited(checkActiveBoleta());
+  }
+
+  /// Refresca la boleta del periodo activo si hay credenciales de Intranet.
+  /// Es seguro llamarla desde el ciclo de vida (resumed); el [_wrap] interno
+  /// de los loaders absorbe errores sin romper el flujo de UI.
+  Future<void> checkActiveBoleta() async {
+    final activo = periodoActivo;
+    if (activo == null) return;
+    if (esModeloNuevo(activo.anio, activo.periodo)) {
+      await loadBoleta(activo.anio, activo.periodo);
+    } else {
+      await loadBoletaLegacy(activo.anio, activo.periodo);
+    }
   }
 
   Future<StudentProfile?> loadProfile() => _wrap(
         _repo.infoEstudiante,
         () => profile,
         (v) => profile = v,
-        persist: (v) => _cache(_ckProfile, v.toJson()),
+        cached: () => _cache.getProfile(),
+        persist: (v) => _cache.saveProfile(v),
+        operationName: 'loadProfile',
       );
 
   Future<List<Periodo>?> loadPeriodos() => _wrap(
         _repo.periodosEstudiante,
         () => periodos,
         (v) => periodos = v,
-        persist: (v) =>
-            _cache(_ckPeriodos, v.map((e) => e.toJson()).toList()),
+        cached: () => _cache.getPeriodos(),
+        persist: (v) => _cache.savePeriodos(v),
+        operationName: 'loadPeriodos',
       );
 
   Future<List<ClaseHorario>?> loadHorarioActual() => _wrap(
         () => _repo.horario(),
         () => horario,
         (v) => horario = v,
-        persist: (v) =>
-            _cache(_ckHorario, v.map((e) => e.toJson()).toList()),
+        cached: () => _cache.getHorario(),
+        persist: (v) => _cache.saveHorario(v),
+        operationName: 'loadHorarioActual',
       );
 
   Future<NotasResumen?> loadResumen(String pesId, String nivel) => _wrap(
@@ -290,29 +361,36 @@ class AppStore extends ChangeNotifier {
             )),
         () => resumen,
         (v) => resumen = v,
-        persist: (v) => _cache(_ckResumen, v.toJson()),
+        cached: () async {
+          final raw = AppStorage.instance.getCache(_ckResumen);
+          if (raw is Map) return NotasResumen.fromJson(raw.cast<String, dynamic>());
+          return null;
+        },
+        persist: (v) => _setStorageCache(_ckResumen, v.toJson()),
+        operationName: 'loadResumen',
       );
 
   Future<List<PromedioPeriodo>?> loadPromedios() => _wrap(
         _repo.promediosResumen,
         () => promedios,
         (v) => promedios = v,
-        persist: (v) =>
-            _cache(_ckPromedios, v.map((e) => e.toJson()).toList()),
+        cached: () => _cache.getPromedios(),
+        persist: (v) => _cache.savePromedios(v),
+        operationName: 'loadPromedios',
       );
 
   /// Garantiza una sesión Intranet con las credenciales guardadas.
   Future<IntranetRepository> _intranetReady() async {
     final intranet = _intranet;
-    if (intranet == null) throw Exception('Intranet no disponible.');
+    if (intranet == null) throw const NetworkException('Intranet no disponible.');
     final s = AppStorage.instance;
     final user = s.credUser;
     final pass = s.credPass;
     if (user == null || pass == null) {
-      throw Exception('Inicia sesión para ver tus notas.');
+      throw const UnauthorizedException('Inicia sesión para ver tus notas.');
     }
     final ok = await intranet.ensureSession(user, pass);
-    if (!ok) throw Exception('No se pudo conectar con Intranet.');
+    if (!ok) throw const NetworkException('No se pudo conectar con Intranet.');
     return intranet;
   }
 
@@ -333,10 +411,17 @@ class AppStore extends ChangeNotifier {
     _boletaLegacy[key] = AsyncValue.loading(_boletaLegacy[key]?.value);
     _notify();
     try {
-      final intranet = await _intranetReady();
-      final data = await intranet.boletaLegacy(anio, periodo);
+      final data = await _errorHandler.withFallback<List<NotaAsignatura>>(
+        remote: () async {
+          final intranet = await _intranetReady();
+          return intranet.boletaLegacy(anio, periodo);
+        },
+        cached: () => _cache.getBoletaLegacy(anio.toString(), periodo.toString()),
+        operationName: 'loadBoletaLegacy($anio, $periodo)',
+      );
       _boletaLegacy[key] = AsyncValue.data(data);
       _checkGrades(data.map((n) => (n.asignatura, n.notaActualText)));
+      await _cache.saveBoletaLegacy(anio.toString(), periodo.toString(), data);
     } catch (e) {
       _boletaLegacy[key] = AsyncValue.failure(e, _boletaLegacy[key]?.value);
     }
@@ -351,10 +436,17 @@ class AppStore extends ChangeNotifier {
     _boleta[key] = AsyncValue.loading(_boleta[key]?.value);
     _notify();
     try {
-      final intranet = await _intranetReady();
-      final data = await intranet.boleta(anio, periodo);
+      final data = await _errorHandler.withFallback<List<BoletaCurso>>(
+        remote: () async {
+          final intranet = await _intranetReady();
+          return intranet.boleta(anio, periodo);
+        },
+        cached: () => _cache.getBoleta(anio.toString(), periodo.toString()),
+        operationName: 'loadBoleta($anio, $periodo)',
+      );
       _boleta[key] = AsyncValue.data(data);
       _checkGrades(data.map((c) => (c.nombre, c.promedioText)));
+      await _cache.saveBoleta(anio.toString(), periodo.toString(), data);
     } catch (e) {
       _boleta[key] = AsyncValue.failure(e, _boleta[key]?.value);
     }
@@ -380,7 +472,6 @@ class AppStore extends ChangeNotifier {
     _notify();
   }
 
-  /// Record histórico (plan de estudios) — opcional.
   Future<List<RecordCurso>?> loadRecord() {
     return _wrap<List<RecordCurso>>(
       () async {
@@ -392,6 +483,7 @@ class AppStore extends ChangeNotifier {
       },
       () => record,
       (v) => record = v,
+      operationName: 'loadRecord',
     );
   }
 
@@ -399,27 +491,276 @@ class AppStore extends ChangeNotifier {
         _repo.cuotasPendientes,
         () => cuotasPendientes,
         (v) => cuotasPendientes = v,
-        persist: (v) =>
-            _cache(_ckCuotasPend, v.map((e) => e.toJson()).toList()),
+        cached: () => _cache.getPagos(),
+        persist: (v) => _cache.savePagos(v),
+        operationName: 'loadCuotasPendientes',
       );
 
   Future<List<Cuota>?> loadCuotasIntranet() => _wrap(
         _repo.cuotasIntranet,
         () => cuotasIntranet,
         (v) => cuotasIntranet = v,
+        operationName: 'loadCuotasIntranet',
       );
 
   Future<List<Tasa>?> loadTasas() => _wrap(
         _repo.tasas,
         () => tasas,
         (v) => tasas = v,
+        operationName: 'loadTasas',
       );
 
   Future<List<PagoHistorico>?> loadHistorico() => _wrap(
         _repo.historicoPagos,
         () => historico,
         (v) => historico = v,
+        operationName: 'loadHistorico',
       );
+
+  // ===== Microsoft Teams (Graph Education) =====
+
+  TeamsRepository _teamsReady() {
+    final teams = _teams;
+    if (teams == null) {
+      throw Exception('La integración con Teams no está disponible.');
+    }
+    return teams;
+  }
+
+  /// Carga clases y tareas del alumno en paralelo (POC de validación).
+  Future<void> loadTeams() async {
+    await Future.wait([loadTeamsClasses(), loadTeamsAssignments()]);
+  }
+
+  Future<List<TeamsClass>?> loadTeamsClasses() => _wrap(
+        () => _teamsReady().classes(),
+        () => teamsClasses,
+        (v) => teamsClasses = v,
+        operationName: 'loadTeamsClasses',
+      );
+
+  Future<List<TeamsAssignment>?> loadTeamsAssignments() => _wrap(
+        () => _teamsReady().assignments(),
+        () => teamsAssignments,
+        (v) => teamsAssignments = v,
+        operationName: 'loadTeamsAssignments',
+      );
+
+  /// Limpia solo el estado de Teams (al cerrar la sesión Microsoft).
+  void clearTeams() {
+    teamsClasses = const AsyncValue.idle();
+    teamsAssignments = const AsyncValue.idle();
+    _notify();
+  }
+
+  // ===== Documentos descargables (Intranet) =====
+
+  /// Carga la constancia de matrícula del periodo activo (o el indicado).
+  Future<ConstanciaMatricula?> loadConstancia({int? anio, int? periodo}) {
+    final p = periodoActivo;
+    final a = anio ?? p?.anio ?? 0;
+    final per = periodo ?? p?.periodo ?? 0;
+    return _wrap(
+      () async {
+        final intranet = await _intranetReady();
+        return intranet.constanciaMatricula(a, per);
+      },
+      () => constancia,
+      (v) => constancia = v,
+      operationName: 'loadConstancia',
+    );
+  }
+
+  /// Carga el cronograma de cuotas del semestre activo.
+  Future<CronogramaPagos?> loadCronograma() => _wrap(
+        () async {
+          final intranet = await _intranetReady();
+          return intranet.cronogramaPagos();
+        },
+        () => cronograma,
+        (v) => cronograma = v,
+        operationName: 'loadCronograma',
+      );
+
+  // ===== Recursos institucionales =====
+
+  Future<List<Publicacion>?> loadPublicaciones() => _wrap(
+        _repo.publicaciones,
+        () => publicaciones,
+        (v) => publicaciones = v,
+        operationName: 'loadPublicaciones',
+      );
+
+  Future<WifiCredencial?> loadWifi() => _wrap<WifiCredencial>(
+        () async {
+          final w = await _repo.wifiCredencial();
+          return w ?? const WifiCredencial(usuario: '', contrasena: '');
+        },
+        () => wifi,
+        (v) => wifi = v,
+        operationName: 'loadWifi',
+      );
+
+  Future<ConteoNotas?> loadConteoNotas() async {
+    final p = periodoActivo;
+    if (p == null) return null;
+    return _wrap<ConteoNotas>(
+      () async {
+        final c = await _repo.conteoNotas(p.anio, p.periodo);
+        return c ??
+            const ConteoNotas(
+                aprobados: 0, desaprobados: 0, pendientes: 0, total: 0);
+      },
+      () => conteoNotas,
+      (v) => conteoNotas = v,
+      operationName: 'loadConteoNotas',
+    );
+  }
+
+  // ===== Docente =====
+
+  DocenteRepository _docenteReady() {
+    final d = _docente;
+    if (d == null) {
+      throw Exception('Módulo docente no disponible.');
+    }
+    return d;
+  }
+
+  Future<DocenteInfo?> loadDocenteInfo() => _wrap<DocenteInfo>(
+        () async {
+          final v = await _docenteReady().infoDocente();
+          return v ?? const DocenteInfo(codigo: '', nombres: '', apellidos: '');
+        },
+        () => docenteInfo,
+        (v) => docenteInfo = v,
+        cached: () => _cache.getDocenteInfo(),
+        persist: (v) => _cache.saveDocenteInfo(v),
+        operationName: 'loadDocenteInfo',
+      );
+
+  Future<List<DocenteAsignatura>?> loadDocenteAsignaturas() => _wrap(
+        () => _docenteReady().asignaturas(),
+        () => docenteAsignaturas,
+        (v) => docenteAsignaturas = v,
+        cached: () => _cache.getDocenteCursos(),
+        persist: (v) => _cache.saveDocenteCursos(v),
+        operationName: 'loadDocenteAsignaturas',
+      );
+
+  Future<List<ClaseHorario>?> loadDocenteHorario() => _wrap(
+        () => _docenteReady().getHorario(),
+        () => docenteHorario,
+        (v) => docenteHorario = v,
+        cached: () => _cache.getDocenteHorario(),
+        persist: (v) => _cache.saveDocenteHorario(v),
+        operationName: 'loadDocenteHorario',
+      );
+
+  Future<void> loadDocenteAlumnos(String cleAuto) async {
+    _docenteAlumnos[cleAuto] =
+        AsyncValue.loading(_docenteAlumnos[cleAuto]?.value);
+    _notify();
+    try {
+      final v = await _errorHandler.withFallback<List<DocenteAlumno>>(
+        remote: () => _docenteReady().estudiantesSeccion(cleAuto),
+        cached: () => _cache.getDocenteAlumnos(cleAuto),
+        operationName: 'loadDocenteAlumnos($cleAuto)',
+      );
+      _docenteAlumnos[cleAuto] = AsyncValue.data(v);
+      await _cache.saveDocenteAlumnos(cleAuto, v);
+    } catch (e) {
+      _docenteAlumnos[cleAuto] =
+          AsyncValue.failure(e, _docenteAlumnos[cleAuto]?.value);
+    }
+    _notify();
+  }
+
+  /// Edita la nota promedio de un alumno y refresca.
+  /// Retorna `null` si todo bien, o el error como string.
+  Future<String?> updateDocenteNota({
+    required String cleAuto,
+    required String codigoAlumno,
+    required String nota,
+  }) async {
+    try {
+      await _docenteReady().updateNota(
+        cleAuto: cleAuto,
+        codigoAlumno: codigoAlumno,
+        nota: nota,
+      );
+      await loadDocenteAlumnos(cleAuto);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Trae notas detalladas por evaluación de un alumno.
+  Future<List<NotaEvaluacion>> docenteNotasDetalle({
+    required String cleAuto,
+    required String codigoAlumno,
+  }) =>
+      _docenteReady()
+          .notasDetalle(cleAuto: cleAuto, codigoAlumno: codigoAlumno);
+
+  /// Actualiza una evaluación específica del alumno y refresca.
+  Future<String?> updateDocenteEvaluacion({
+    required String cleAuto,
+    required String codigoAlumno,
+    required String codigoEvaluacion,
+    required String nota,
+  }) async {
+    try {
+      await _docenteReady().updateEvaluacion(
+        cleAuto: cleAuto,
+        codigoAlumno: codigoAlumno,
+        codigoEvaluacion: codigoEvaluacion,
+        nota: nota,
+      );
+      await loadDocenteAlumnos(cleAuto);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<List<AsistenciaDia>> docenteAsistenciaAlumno({
+    required String cleAuto,
+    required String codigoAlumno,
+  }) =>
+      _docenteReady()
+          .asistenciaAlumno(cleAuto: cleAuto, codigoAlumno: codigoAlumno);
+
+  Future<Map<String, String>> docenteAsistenciaDia({
+    required String cleAuto,
+    required DateTime fecha,
+  }) =>
+      _docenteReady().asistenciaDelDia(cleAuto: cleAuto, fecha: fecha);
+
+  Future<String?> guardarAsistenciaDia({
+    required String cleAuto,
+    required DateTime fecha,
+    required Map<String, String> estados,
+  }) async {
+    try {
+      await _docenteReady().guardarAsistenciaDelDia(
+        cleAuto: cleAuto,
+        fecha: fecha,
+        estados: estados,
+      );
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Conveniente: ¿este AppStore puede operar el módulo docente?
+  bool get tieneDocente => _docente != null;
+
+  /// Cambia la contraseña del usuario autenticado vía SIGMA.
+  Future<void> changePassword(String actual, String nueva) =>
+      _repo.changePassword(actual, nueva);
 
   Future<List<NotaAsignatura>?> loadNotas(int anio, int periodo) async {
     final key = '$anio-$periodo';
@@ -427,9 +768,14 @@ class AppStore extends ChangeNotifier {
     _notasByPeriodo[key] = AsyncValue.loading(prev);
     _notify();
     try {
-      final v = await _repo.notasPeriodo(anio, periodo);
+      final v = await _errorHandler.withFallback<List<NotaAsignatura>>(
+        remote: () => _repo.notasPeriodo(anio, periodo),
+        cached: () => _cache.getBoletaLegacy(anio.toString(), periodo.toString()),
+        operationName: 'loadNotas($anio, $periodo)',
+      );
       _notasByPeriodo[key] = AsyncValue.data(v);
       _notify();
+      await _cache.saveBoletaLegacy(anio.toString(), periodo.toString(), v);
       return v;
     } catch (e) {
       _notasByPeriodo[key] = AsyncValue.failure(e, prev);
@@ -439,6 +785,7 @@ class AppStore extends ChangeNotifier {
   }
 
   void clear() {
+    unawaited(_cache.clearAll());
     profile = const AsyncValue.idle();
     periodos = const AsyncValue.idle();
     horario = const AsyncValue.idle();
@@ -453,6 +800,17 @@ class AppStore extends ChangeNotifier {
     _boletaLegacy.clear();
     _detalle.clear();
     record = const AsyncValue.idle();
+    teamsClasses = const AsyncValue.idle();
+    teamsAssignments = const AsyncValue.idle();
+    constancia = const AsyncValue.idle();
+    cronograma = const AsyncValue.idle();
+    publicaciones = const AsyncValue.idle();
+    wifi = const AsyncValue.idle();
+    conteoNotas = const AsyncValue.idle();
+    docenteInfo = const AsyncValue.idle();
+    docenteAsignaturas = const AsyncValue.idle();
+    docenteHorario = const AsyncValue.idle();
+    _docenteAlumnos.clear();
     _intranet?.invalidate();
     _notify();
   }

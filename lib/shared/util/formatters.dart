@@ -28,6 +28,21 @@ abstract final class Fmt {
   static String shortDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} ${_meses[d.month]} ${d.year}';
 
+  /// Formatea un string `HH:mm` (proveniente del API) en 24h o 12h.
+  /// Si `h24` es true devuelve tal cual ("13:45"); si es false devuelve
+  /// "1:45 p.m." / "9:00 a.m.".
+  static String time(String rawHm, {required bool h24}) {
+    if (h24) return rawHm;
+    final parts = rawHm.split(':');
+    if (parts.length < 2) return rawHm;
+    final h = int.tryParse(parts[0]);
+    final m = parts[1];
+    if (h == null) return rawHm;
+    final period = h >= 12 ? 'p.m.' : 'a.m.';
+    final hh = h % 12 == 0 ? 12 : h % 12;
+    return '$hh:$m $period';
+  }
+
   static String fullDate(DateTime d) {
     const dias = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     return '${dias[d.weekday]}, ${d.day} ${_meses[d.month]}';
@@ -54,5 +69,35 @@ abstract final class Fmt {
     if (p.isEmpty) return '?';
     if (p.length == 1) return p.first.substring(0, 1).toUpperCase();
     return (p.first.substring(0, 1) + p.last.substring(0, 1)).toUpperCase();
+  }
+
+  static Map<String, String?> parseAula(String rawAula) {
+    final clean = rawAula.trim();
+    if (clean.contains(' ')) {
+      final idx = clean.indexOf(' ');
+      final pab = clean.substring(0, idx).trim();
+      final aul = clean.substring(idx + 1).trim();
+
+      // Se considera pabellón si es una letra individual (e.g., A, B) o un número romano (e.g., I, II, III).
+      final isSingleLetter = RegExp(r'^[a-zA-Z]$').hasMatch(pab);
+      final isRoman = RegExp(r'^[iIvVxX]+$').hasMatch(pab);
+
+      if (isSingleLetter || isRoman) {
+        if (pab.isNotEmpty && aul.isNotEmpty) {
+          return {'pabellon': pab, 'aula': aul};
+        }
+      }
+    }
+    return {'pabellon': null, 'aula': clean.isEmpty ? null : clean};
+  }
+
+  static String formatAula(String rawAula) {
+    final parsed = parseAula(rawAula);
+    final pab = parsed['pabellon'];
+    final aul = parsed['aula'];
+    if (pab != null && aul != null) {
+      return 'Pab. $pab - Aula $aul';
+    }
+    return aul ?? '—';
   }
 }

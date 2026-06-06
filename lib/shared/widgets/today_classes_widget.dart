@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/core/storage.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
@@ -42,7 +44,7 @@ class TodayClassesWidget extends StatelessWidget {
         ),
         child: Text(
           '${grupos.length} ${grupos.length == 1 ? 'curso' : 'cursos'}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppFont.small,
             fontWeight: FontWeight.w600,
             color: NexoTheme.primary,
@@ -109,33 +111,38 @@ class _CourseTile extends StatelessWidget {
             ? NexoTheme.textSecondary
             : NexoTheme.primary;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg - 2),
-      decoration: BoxDecoration(
-        color: anyOngoing
-            ? NexoTheme.success.withValues(alpha: 0.06)
-            : NexoTheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => ScheduleDetailScreen.open(context, grupo),
         borderRadius: AppRadii.rLg,
-        border: Border.all(
-          color: anyOngoing
-              ? NexoTheme.success.withValues(alpha: 0.3)
-              : NexoTheme.border,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg - 2),
+          decoration: BoxDecoration(
+            color: anyOngoing
+                ? NexoTheme.success.withValues(alpha: 0.06)
+                : NexoTheme.surface,
+            borderRadius: AppRadii.rLg,
+            border: Border.all(
+              color: anyOngoing
+                  ? NexoTheme.success.withValues(alpha: 0.3)
+                  : NexoTheme.border,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 3,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Gap.h(AppSpacing.md),
+              Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const Gap.h(AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +179,7 @@ class _CourseTile extends StatelessWidget {
                               color: NexoTheme.textSecondary),
                           const Gap.h(AppSpacing.xs),
                           Text(
-                            grupo.aula,
+                            Fmt.formatAula(grupo.aula),
                             style: TextStyle(
                               fontSize: AppFont.small,
                               color: NexoTheme.textSecondary,
@@ -194,6 +201,8 @@ class _CourseTile extends StatelessWidget {
                 past: _isPast(s.horaFin),
               )),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -254,15 +263,19 @@ class _SessionRow extends StatelessWidget {
             ),
           ),
           const Gap.h(AppSpacing.sm),
-          Text(
-            '${sesion.horaInicio} – ${sesion.horaFin}',
-            style: TextStyle(
-              fontSize: AppFont.small,
-              color: c,
-              decoration:
-                  past ? TextDecoration.lineThrough : TextDecoration.none,
-            ),
-          ),
+          Builder(builder: (_) {
+            final h24 = AppStorage.instance.use24h;
+            return Text(
+              '${Fmt.time(sesion.horaInicio, h24: h24)} – '
+              '${Fmt.time(sesion.horaFin, h24: h24)}',
+              style: TextStyle(
+                fontSize: AppFont.small,
+                color: c,
+                decoration:
+                    past ? TextDecoration.lineThrough : TextDecoration.none,
+              ),
+            );
+          }),
         ],
       ),
     );

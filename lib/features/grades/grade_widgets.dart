@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/shared/util/clipboard_helper.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
 /// Color de una nota según rango.
 Color gradeColor(num? n) {
@@ -68,64 +70,72 @@ class GradeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final c = gradeColor(
         notaToDouble(notaFinalText == '—' ? null : notaFinalText));
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [c.withValues(alpha: 0.14), c.withValues(alpha: 0.04)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppRadii.rXxl,
-        border: Border.all(color: c.withValues(alpha: 0.25)),
+    return GestureDetector(
+      onTap: () => ClipboardHelper.copyAndShow(
+        context,
+        '$titulo: $notaFinalText',
+        label: titulo,
       ),
-      child: Row(
-        children: [
-          GradeBadge(text: notaFinalText, size: 70, fontSize: 26),
-          const Gap.h(AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  titulo,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: AppFont.h3,
-                    fontWeight: FontWeight.w800,
-                    color: NexoTheme.textPrimary,
-                    height: 1.2,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [c.withValues(alpha: 0.14), c.withValues(alpha: 0.04)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: AppRadii.rXxl,
+          border: Border.all(color: c.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            GradeBadge(text: notaFinalText, size: 70, fontSize: 26),
+            const Gap.h(AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    titulo,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppFont.h3,
+                      fontWeight: FontWeight.w800,
+                      color: NexoTheme.textPrimary,
+                      height: 1.2,
+                    ),
                   ),
-                ),
-                const Gap(AppSpacing.xs),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        subtitulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: AppFont.small,
-                          color: NexoTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
+                  const Gap(AppSpacing.xs),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          subtitulo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: AppFont.small,
+                            color: NexoTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    if (enProceso) ...[
-                      const Gap.h(AppSpacing.sm),
-                      _miniChip('EN PROCESO', NexoTheme.warning),
+                      if (enProceso) ...[
+                        const Gap.h(AppSpacing.sm),
+                        _miniChip(l.statusInProcess, NexoTheme.warning),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -169,55 +179,62 @@ class GradeRow extends StatelessWidget {
     final n = notaToDouble(valueRaw);
     final c = gradeColor(n);
     final txt = notaFmt(valueRaw);
-    return Container(
-      decoration: BoxDecoration(
-        border: last
-            ? null
-            : Border(
-                bottom: BorderSide(color: NexoTheme.divider),
-              ),
+    return GestureDetector(
+      onTap: () => ClipboardHelper.copyAndShow(
+        context,
+        '$label: $txt',
+        label: label,
       ),
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: AppFont.body,
-                color: strong ? NexoTheme.textPrimary : NexoTheme.textSecondary,
-                fontWeight: strong ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ),
-          if (n != null) ...[
-            SizedBox(
-              width: 64,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: (n / 20).clamp(0, 1).toDouble(),
-                  minHeight: 5,
-                  backgroundColor: NexoTheme.divider,
-                  valueColor: AlwaysStoppedAnimation(c),
+      child: Container(
+        decoration: BoxDecoration(
+          border: last
+              ? null
+              : Border(
+                  bottom: BorderSide(color: NexoTheme.divider),
+                ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: AppFont.body,
+                  color: strong ? NexoTheme.textPrimary : NexoTheme.textSecondary,
+                  fontWeight: strong ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
-            const Gap.h(AppSpacing.md),
-          ],
-          SizedBox(
-            width: 44,
-            child: Text(
-              txt,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: AppFont.subtitle,
-                fontWeight: FontWeight.w800,
-                color: c,
+            if (n != null) ...[
+              SizedBox(
+                width: 64,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: (n / 20).clamp(0, 1).toDouble(),
+                    minHeight: 5,
+                    backgroundColor: NexoTheme.divider,
+                    valueColor: AlwaysStoppedAnimation(c),
+                  ),
+                ),
+              ),
+              const Gap.h(AppSpacing.md),
+            ],
+            SizedBox(
+              width: 44,
+              child: Text(
+                txt,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: AppFont.subtitle,
+                  fontWeight: FontWeight.w800,
+                  color: c,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -240,11 +257,12 @@ class GradeSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final promColor = gradeColor(notaToDouble(promedioRaw));
     return Container(
       decoration: BoxDecoration(
         color: NexoTheme.surface,
-        borderRadius: AppRadii.rXl,
+        borderRadius: AppRadii.rXxl,
         border: Border.all(color: NexoTheme.border),
       ),
       child: Column(
@@ -304,7 +322,7 @@ class GradeSectionCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Promedio ',
+                        '${l.gradesPromedioLabel} ',
                         style: TextStyle(
                           fontSize: AppFont.small,
                           color: NexoTheme.textSecondary,

@@ -1,0 +1,338 @@
+import 'package:flutter/material.dart';
+import 'package:nexo/l10n/app_localizations.dart';
+
+import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/domain/models.dart';
+import 'package:nexo/shared/widgets/section_card.dart';
+
+enum PaymentType { cuota, tasa, historico }
+
+class PaymentDetailScreen extends StatelessWidget {
+  final Object payment;
+  final PaymentType type;
+
+  const PaymentDetailScreen.cuota({super.key, required Cuota cuota})
+      : payment = cuota,
+        type = PaymentType.cuota;
+
+  const PaymentDetailScreen.tasa({super.key, required Tasa tasa})
+      : payment = tasa,
+        type = PaymentType.tasa;
+
+  const PaymentDetailScreen.historico({super.key, required PagoHistorico pago})
+      : payment = pago,
+        type = PaymentType.historico;
+
+  static Future<void> openCuota(BuildContext context, Cuota cuota) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaymentDetailScreen.cuota(cuota: cuota),
+        ),
+      );
+
+  static Future<void> openTasa(BuildContext context, Tasa tasa) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaymentDetailScreen.tasa(tasa: tasa),
+        ),
+      );
+
+  static Future<void> openHistorico(BuildContext context, PagoHistorico pago) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaymentDetailScreen.historico(pago: pago),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final String title = switch (type) {
+      PaymentType.cuota => l.paymentDetailCuota,
+      PaymentType.tasa => l.paymentDetailTasa,
+      PaymentType.historico => l.paymentDetailPago,
+    };
+
+    return Scaffold(
+      backgroundColor: NexoTheme.bg,
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              children: [
+                _Hero(payment: payment, type: type),
+                const Gap(AppSpacing.lg),
+                _DetailsCard(payment: payment, type: type),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Hero extends StatelessWidget {
+  final Object payment;
+  final PaymentType type;
+
+  const _Hero({required this.payment, required this.type});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    String title = '';
+    String subtitle = '';
+    String amountText = '';
+    Color statusColor = NexoTheme.primary;
+    String statusLabel = '';
+
+    if (type == PaymentType.cuota) {
+      final cuota = payment as Cuota;
+      title = cuota.descripcion;
+      amountText = '${cuota.tipoMoneda} ${cuota.subtotal.toStringAsFixed(2)}';
+      final days = cuota.daysUntilDue();
+      final isOverdue = days != null && days < 0;
+      final isSoon = days != null && days >= 0 && days <= 3;
+      statusColor = isOverdue
+          ? NexoTheme.danger
+          : isSoon
+              ? NexoTheme.warning
+              : NexoTheme.success;
+      statusLabel = isOverdue
+          ? l.paymentsTabOverdue.toUpperCase()
+          : days == 0
+              ? l.paymentVenceHoy
+              : days == 1
+                  ? l.paymentVenceMananaCaps
+                  : l.paymentsTabPending.toUpperCase();
+      subtitle = l.paymentVenceEl(cuota.fechaVencimiento);
+    } else if (type == PaymentType.tasa) {
+      final tasa = payment as Tasa;
+      title = tasa.descripcion;
+      amountText = '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}';
+      statusColor = NexoTheme.info;
+      statusLabel = l.paymentsTabFees.toUpperCase();
+      subtitle = l.paymentDetailTasaAdministrativa;
+    } else if (type == PaymentType.historico) {
+      final hist = payment as PagoHistorico;
+      title = hist.concepto;
+      amountText = '${hist.tipoMoneda} ${hist.importe.toStringAsFixed(2)}';
+      statusColor = NexoTheme.success;
+      statusLabel = l.paymentStatusPaid;
+      subtitle = l.paymentDateOfPayment(hist.fecha);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [NexoTheme.primary, NexoTheme.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadii.rXxl,
+        boxShadow: [
+          BoxShadow(
+            color: NexoTheme.primary.withValues(alpha: 0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm + 2, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: AppRadii.rPill,
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: AppFont.small,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.lg),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: AppFont.h2,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.6,
+              height: 1.15,
+            ),
+          ),
+          const Gap(AppSpacing.xs),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: AppFont.body,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Gap(AppSpacing.lg),
+          Text(
+            amountText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailsCard extends StatelessWidget {
+  final Object payment;
+  final PaymentType type;
+
+  const _DetailsCard({
+    required this.payment,
+    required this.type,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final fields = <_DetailField>[];
+
+    if (type == PaymentType.cuota) {
+      final cuota = payment as Cuota;
+      fields.add(_DetailField(l.paymentDetailImporteBase, '${cuota.tipoMoneda} ${cuota.importe.toStringAsFixed(2)}', Icons.payments_outlined));
+      if (cuota.mora > 0) {
+        fields.add(_DetailField(l.paymentMoraLabel, '${cuota.tipoMoneda} ${cuota.mora.toStringAsFixed(2)}', Icons.warning_amber_rounded, isWarning: true));
+      }
+      fields.add(_DetailField(l.paymentDetailFechaVencimiento, cuota.fechaVencimiento, Icons.event_outlined));
+      if (cuota.observacion.trim().isNotEmpty && cuota.observacion.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, cuota.observacion, Icons.info_outline));
+      }
+    } else if (type == PaymentType.tasa) {
+      final tasa = payment as Tasa;
+      fields.add(_DetailField(l.paymentDetailConcepto, tasa.descripcion, Icons.receipt_long_rounded));
+      fields.add(_DetailField(l.paymentDetailImporte, '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}', Icons.payments_outlined));
+      if (tasa.observacion.trim().isNotEmpty && tasa.observacion.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, tasa.observacion, Icons.info_outline));
+      }
+    } else if (type == PaymentType.historico) {
+      final hist = payment as PagoHistorico;
+      fields.add(_DetailField(l.paymentDetailConcepto, hist.concepto, Icons.receipt_long_rounded));
+      fields.add(_DetailField(l.paymentDetailImportePagado, '${hist.tipoMoneda} ${hist.importe.toStringAsFixed(2)}', Icons.payments_outlined));
+      fields.add(_DetailField(l.paymentDetailFechaPago, hist.fecha, Icons.event_outlined));
+      if (hist.hora.trim().isNotEmpty && hist.hora.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailHoraPago, hist.hora, Icons.schedule_rounded));
+      }
+      if (hist.periodo.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailPeriodoAcademico, hist.periodo, Icons.school_outlined));
+      }
+      if (hist.comprobante.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailComprobante, hist.comprobante, Icons.assignment_outlined));
+      }
+      if (hist.lugar.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailLugarPago, hist.lugar, Icons.storefront_outlined));
+      }
+      if (hist.serieOper.trim().isNotEmpty || hist.numOper.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailOperacion, '${hist.serieOper} - ${hist.numOper}', Icons.vpn_key_outlined));
+      }
+      if (hist.desOper.trim().isNotEmpty && hist.desOper.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailDescripcionOperacion, hist.desOper, Icons.description_outlined));
+      }
+      if (hist.observacion.trim().isNotEmpty && hist.observacion.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, hist.observacion, Icons.info_outline));
+      }
+    }
+
+    return SectionCard(
+      title: l.paymentDetailInformacionDetallada,
+      icon: Icons.info_outline,
+      iconColor: NexoTheme.primary,
+      child: Column(
+        children: [
+          for (var i = 0; i < fields.length; i++) ...[
+            _FieldRow(field: fields[i]),
+            if (i < fields.length - 1)
+              Divider(color: NexoTheme.border, height: 24),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailField {
+  final String label;
+  final String value;
+  final IconData icon;
+  final bool isWarning;
+
+  _DetailField(this.label, this.value, this.icon, {this.isWarning = false});
+}
+
+class _FieldRow extends StatelessWidget {
+  final _DetailField field;
+
+  const _FieldRow({required this.field});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          field.icon,
+          size: 20,
+          color: field.isWarning ? NexoTheme.danger : NexoTheme.textSecondary,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                field.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: NexoTheme.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                field.value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: field.isWarning ? NexoTheme.danger : NexoTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

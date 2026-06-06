@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
 class _Item {
@@ -13,47 +14,38 @@ class _Item {
   const _Item(this.icon, this.title, this.body, this.color);
 }
 
-const _items = <_Item>[
-  _Item(
-    Icons.info_outline,
-    'Qué es Nexo',
-    'Aplicación independiente y no oficial, creada por y para estudiantes, '
-        'que reorganiza tu información de SIGMA/Intranet UPLA de forma más '
-        'clara. No está afiliada ni respaldada por la UPLA.',
-    NexoTheme.primary,
-  ),
-  _Item(
-    Icons.lock_outline,
-    'Tus datos y privacidad',
-    'Tus credenciales y datos se guardan únicamente en tu dispositivo. Nexo '
-        'no envía nada a servidores propios ni a terceros: las peticiones van '
-        'directamente a los servicios de la UPLA, igual que el portal oficial.',
-    NexoTheme.accent,
-  ),
-  _Item(
-    Icons.shield_outlined,
-    'Seguridad',
-    'El almacenamiento local no está cifrado a nivel de sistema. Úsala solo '
-        'en dispositivos de tu confianza. Puedes cerrar sesión para borrar '
-        'credenciales y caché en cualquier momento.',
-    NexoTheme.info,
-  ),
-  _Item(
-    Icons.gavel_outlined,
-    'Uso responsable',
-    'Accede solo a tu propia información con tus propias credenciales. Es un '
-        'proyecto educativo / de hackathon de ingeniería inversa para uso '
-        'personal. Úsala conforme a los reglamentos de tu universidad.',
-    NexoTheme.success,
-  ),
-  _Item(
-    Icons.warning_amber_outlined,
-    'Sin garantías',
-    'El servicio se ofrece "tal cual", sin garantías. Para trámites oficiales '
-        'consulta siempre el portal institucional.',
-    NexoTheme.warning,
-  ),
-];
+List<_Item> _items(AppLocalizations l) => <_Item>[
+      _Item(
+        Icons.info_outline,
+        l.termsItemWhatTitle,
+        l.termsItemWhatBody,
+        NexoTheme.primary,
+      ),
+      _Item(
+        Icons.lock_outline,
+        l.termsItemPrivacyTitle,
+        l.termsItemPrivacyBody,
+        NexoTheme.accent,
+      ),
+      _Item(
+        Icons.shield_outlined,
+        l.termsItemSecurityTitle,
+        l.termsItemSecurityBody,
+        NexoTheme.info,
+      ),
+      _Item(
+        Icons.gavel_outlined,
+        l.termsItemResponsibleTitle,
+        l.termsItemResponsibleBody,
+        NexoTheme.success,
+      ),
+      _Item(
+        Icons.warning_amber_outlined,
+        l.termsItemDisclaimerTitle,
+        l.termsItemDisclaimerBody,
+        NexoTheme.warning,
+      ),
+    ];
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key, this.onAccept});
@@ -64,6 +56,7 @@ class TermsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
+    final l = AppLocalizations.of(context);
 
     final content = _Content(isGate: _isGate, onAccept: onAccept);
 
@@ -92,7 +85,7 @@ class TermsScreen extends StatelessWidget {
     return Scaffold(
       appBar: _isGate
           ? null
-          : AppBar(title: const Text('Términos y privacidad')),
+          : AppBar(title: Text(l.titleTerms)),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -112,6 +105,7 @@ class _Content extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final showHeader = isGate && !context.isDesktop;
     return Column(
       children: [
@@ -128,10 +122,10 @@ class _Content extends StatelessWidget {
                 const Gap(AppSpacing.sm),
                 const Center(child: AppLogo(size: 60)),
                 const Gap(AppSpacing.lg),
-                const Center(
+                Center(
                   child: Text(
-                    'Antes de empezar',
-                    style: TextStyle(
+                    l.termsHeaderPre,
+                    style: const TextStyle(
                       fontSize: AppFont.h1,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.8,
@@ -141,7 +135,7 @@ class _Content extends StatelessWidget {
                 const Gap(AppSpacing.xs),
                 Center(
                   child: Text(
-                    'Términos de uso y privacidad',
+                    l.termsHeaderTitle,
                     style: TextStyle(
                       fontSize: AppFont.body,
                       color: NexoTheme.textSecondary,
@@ -151,7 +145,7 @@ class _Content extends StatelessWidget {
                 const Gap(AppSpacing.xxl),
               ] else if (context.isDesktop && isGate) ...[
                 Text(
-                  'Términos de uso y privacidad',
+                  l.termsHeaderTitle,
                   style: TextStyle(
                     fontSize: AppFont.h1,
                     fontWeight: FontWeight.w900,
@@ -161,7 +155,7 @@ class _Content extends StatelessWidget {
                 ),
                 const Gap(AppSpacing.sm),
                 Text(
-                  'Lee y acepta para continuar.',
+                  l.termsHeaderSubtitle,
                   style: TextStyle(
                     fontSize: AppFont.body,
                     color: NexoTheme.textSecondary,
@@ -169,7 +163,7 @@ class _Content extends StatelessWidget {
                 ),
                 const Gap(AppSpacing.xxl),
               ],
-              for (final it in _items) ...[
+              for (final it in _items(l)) ...[
                 _SectionCard(item: it),
                 const Gap(AppSpacing.md),
               ],
@@ -191,7 +185,7 @@ class _Content extends StatelessWidget {
                       const Gap.h(AppSpacing.md),
                       Expanded(
                         child: Text(
-                          'Al continuar aceptas estos términos.',
+                          l.termsAcceptNote,
                           style: TextStyle(
                             fontSize: AppFont.small,
                             color: NexoTheme.textSecondary,
@@ -205,7 +199,7 @@ class _Content extends StatelessWidget {
                           minimumSize: const Size(0, 50),
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                         ),
-                        child: const Text('Aceptar y continuar'),
+                        child: Text(l.termsAcceptButton),
                       ),
                     ],
                   )
@@ -219,7 +213,7 @@ class _Content extends StatelessWidget {
                           const Gap.h(AppSpacing.sm),
                           Expanded(
                             child: Text(
-                              'Al continuar aceptas estos términos.',
+                              l.termsAcceptNote,
                               style: TextStyle(
                                 fontSize: AppFont.small,
                                 color: NexoTheme.textSecondary,
@@ -234,7 +228,7 @@ class _Content extends StatelessWidget {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: onAccept,
-                          child: const Text('Aceptar y continuar'),
+                          child: Text(l.termsAcceptButton),
                         ),
                       ),
                     ],
@@ -306,8 +300,9 @@ class _BrandPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
           begin: Alignment.topLeft,
@@ -334,9 +329,9 @@ class _BrandPane extends StatelessWidget {
               children: [
                 const AppLogo(size: 80),
                 const Gap(AppSpacing.xxxl),
-                const Text(
-                  'Bienvenido a Nexo',
-                  style: TextStyle(
+                Text(
+                  l.termsBrandTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: AppFont.display,
                     fontWeight: FontWeight.w900,
@@ -346,8 +341,7 @@ class _BrandPane extends StatelessWidget {
                 ),
                 const Gap(AppSpacing.lg),
                 Text(
-                  'Privacidad primero. Tus datos viven solo en tu '
-                  'dispositivo.',
+                  l.termsBrandBody,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.88),
                     fontSize: AppFont.h3,

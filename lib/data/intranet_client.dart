@@ -119,7 +119,7 @@ class IntranetClient {
     if (t.isEmpty) return null;
     if (t.startsWith('<')) {
       // Página anti-bot / sesión perdida.
-      throw const UnauthorizedException('Sesión de Intranet expirada.');
+      throw const SessionExpiredException('Sesión de Intranet expirada.');
     }
     try {
       return jsonDecode(t);

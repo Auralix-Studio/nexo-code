@@ -1,0 +1,607 @@
+{
+  "@@locale": "en",
+  "tabHome": "Home",
+  "tabSchedule": "Schedule",
+  "tabGrades": "Grades",
+  "tabPayments": "Payments",
+  "tabTeacher": "Teacher",
+  "tabCourses": "Courses",
+  "tabProfile": "Profile",
+  "titleHome": "Home",
+  "titleSchedule": "Schedule",
+  "titleGrades": "Grades",
+  "titlePayments": "Payments",
+  "titleProfile": "Profile",
+  "titleTeacher": "Teacher",
+  "titleCourses": "My courses",
+  "subtitleCourses": "Subjects you teach",
+  "titleAbout": "About Nexo",
+  "titleTerms": "Terms & Privacy",
+  "titleDeveloper": "Developer",
+  "titleChangePassword": "Change password",
+  "titleNotifications": "Notifications",
+  "subtitlePayments": "Fees, charges and history",
+  "subtitleTeacher": "Your courses and students",
+  "language": "Language",
+  "timeFormat": "Time format",
+  "hours24": "24-hour",
+  "hours12": "12-hour",
+  "actionLogout": "Sign out",
+  "actionAccept": "Accept",
+  "actionCancel": "Cancel",
+  "actionRetry": "Retry",
+  "actionClose": "Close",
+  "actionCopy": "Copy",
+  "scheduleDetailTitle": "Class details",
+  "detailSchedule": "Schedule",
+  "detailLocation": "Location",
+  "detailRoom": "Room",
+  "detailBuilding": "Building",
+  "detailCampus": "Campus",
+  "detailTeacher": "Teacher",
+  "detailSessions": "Sessions",
+  "detailNotes": "Notes",
+  "detailNrc": "NRC",
+  "detailSection": "Sec.",
+  "detailLevel": "Level",
+  "detailToday": "TODAY",
+  "detailDuration": "Total duration: {minutes} minutes",
+  "@detailDuration": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "tabTeams": "Teams",
+  "settingsTitle": "Settings",
+  "settingsAppearance": "Appearance",
+  "settingsPalette": "Palette",
+  "settingsSystem": "System",
+  "settingsSystemDesc": "Follow your device light/dark mode",
+  "settingsActive": "Active",
+  "settingsNotificationsSubtitle": "Reminders and alerts",
+  "notificationsIntro": "Get alerts for your classes, payments, and grades. Customize what arrives and how early.",
+  "notificationsClassesTitle": "Classes",
+  "notificationsClassesSubtitle": "Alert before each class",
+  "notificationsPaymentsTitle": "Payments",
+  "notificationsPaymentsSubtitle": "Alert before each due date",
+  "notificationsNotifyMe": "Notify me",
+  "notificationsPaymentHour": "Alert time: {hour}:00",
+  "@notificationsPaymentHour": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsGradesTitle": "Grades",
+  "notificationsGradesSubtitle": "Alert when a new grade is posted",
+  "notificationsEnableTitle": "Enable notifications",
+  "notificationsEnabledLabel": "Enabled",
+  "notificationsDisabledLabel": "Disabled",
+  "notificationsInfoNote": "Classes and payments are scheduled on your device. Grades are detected when you open the app and sync.",
+  "homeTodayTitle": "Today",
+  "homeScheduleLoadError": "Couldn't load the schedule",
+  "homeSeeFullWeek": "See full week",
+  "homePendingPaymentsTitle": "Pending payments",
+  "homePaymentsLoadError": "Couldn't load payments",
+  "homeSeeAllPayments": "See all payments",
+  "schedulePeriodActive": "Active term",
+  "schedulePeriodActiveCount": "{count, plural, =0{Active term} =1{Active term · {count} class} other{Active term · {count} classes}}",
+  "@schedulePeriodActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleErrorTitle": "Error",
+  "scheduleLoadError": "Couldn't load the schedule",
+  "scheduleNoClassesTitle": "No classes",
+  "scheduleNoClassesSubtitle": "No classes recorded",
+  "scheduleToggleWeek": "Week",
+  "scheduleToggleList": "List",
+  "scheduleNoClassesScheduled": "No classes scheduled",
+  "gradesTitle": "Grades",
+  "gradesSubtitleNoPeriod": "Grade report",
+  "gradesSubtitleUnits": "By units · {period}",
+  "@gradesSubtitleUnits": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesSubtitlePartials": "By partials · {period}",
+  "@gradesSubtitlePartials": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesSelectPeriod": "Select a term",
+  "gradesSubjects": "Subjects",
+  "gradesLoadError": "Couldn't load the report card",
+  "gradesNoNotesTitle": "No grades for this term",
+  "gradesNoNotesSubtitleNewModel": "Unit report applies from 2026-1.",
+  "gradesSubjectsWithPeriod": "Subjects · {period}",
+  "@gradesSubjectsWithPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesCoursesCount": "{count, plural, =1{{count} course} other{{count} courses}}",
+  "@gradesCoursesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamsSubtitle": "Your classes and assignments from Microsoft 365",
+  "teamsDisconnect": "Disconnect",
+  "teamsMySubjects": "My subjects",
+  "teamsAssignments": "Assignments",
+  "teamsLoadError": "Couldn't load",
+  "teamsConnectTitle": "Connect your Microsoft account",
+  "teamsConnectSubtitle": "To see your Teams classes and assignments",
+  "teamsConnectBody": "Sign in with your institutional Microsoft 365 account. We'll give you a code to confirm in the browser.",
+  "teamsConnectButton": "Connect with Microsoft",
+  "teamsDeviceCodeGenerating": "Generating code…",
+  "teamsDeviceCodeConfirmTitle": "Confirm in the browser",
+  "teamsDeviceCodeConfirmSubtitle": "Waiting for you to authorize the app…",
+  "teamsDeviceCodeStep1Prefix": "Open ",
+  "teamsCopyLink": "Copy link",
+  "teamsLinkCopied": "Link copied",
+  "teamsDeviceCodeStep2Label": "Enter this code:",
+  "teamsDeviceCodeAutoRefresh": "This will update automatically when you're done.",
+  "teamsCodeCopied": "Code copied",
+  "actionShow": "Show",
+  "actionHide": "Hide",
+  "actionSkip": "Skip",
+  "actionNext": "Next",
+  "validationRequired": "Required",
+  "changePasswordSuccess": "Password updated successfully.",
+  "changePasswordHeader": "Set your new password",
+  "changePasswordSubheader": "It will apply to all institutional services that use your UPLA account.",
+  "changePasswordCurrentLabel": "Current password",
+  "changePasswordNewLabel": "New password",
+  "changePasswordRepeatLabel": "Repeat new password",
+  "changePasswordMinChars": "Minimum {min} characters",
+  "@changePasswordMinChars": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "changePasswordMustBeDifferent": "Must be different from the current one",
+  "changePasswordNoMatch": "Does not match",
+  "changePasswordUpdateButton": "Update password",
+  "loginWelcomeBack": "Welcome back",
+  "loginIntro": "Sign in with your institutional account. We'll keep your session so you don't have to log in again.",
+  "loginUserLabel": "Code or DNI",
+  "loginUserRequired": "Enter your user",
+  "loginPasswordLabel": "Password",
+  "loginPasswordRequired": "Enter your password",
+  "loginCapsLockOn": "Caps Lock is on",
+  "loginSubmit": "Sign in",
+  "loginDeviceOnly": "Your credentials are stored only on this device",
+  "loginBrandTagline": "Your UPLA academic life,\nin one place.",
+  "loginFeatureSchedule": "Schedule and next class at a glance",
+  "loginFeaturePayments": "Payments, due dates, and alerts",
+  "loginFeatureGrades": "Grades and academic progress",
+  "loginFeatureWidgets": "Widgets on your home screen",
+  "onboardingTitleWelcome": "Welcome to Nexo",
+  "onboardingBodyWelcome": "Your UPLA academic life reimagined: clear, fast, and always with you.",
+  "onboardingTitleSchedule": "Smart schedule",
+  "onboardingBodySchedule": "Today's classes and the next class with a countdown. Theory and practice in one view.",
+  "onboardingTitlePayments": "Payments without surprises",
+  "onboardingBodyPayments": "Pending and overdue fees, charges, and history. You'll know how much and when to pay.",
+  "onboardingTitleWidgets": "Widgets on your screen",
+  "onboardingBodyWidgets": "Add Android home screen widgets: next class, payments, and your average at a glance.",
+  "onboardingStart": "Get started",
+  "wifiTitle": "Institutional Wi-Fi",
+  "wifiSubtitle": "Same institutional UPLA account",
+  "wifiUserLabel": "USER",
+  "wifiPasswordLabel": "PASSWORD",
+  "wifiUserCopied": "User copied",
+  "wifiPasswordCopied": "Password copied",
+  "actionSave": "Save",
+  "actionCodeCopied": "Code copied",
+  "profileSettingsSubtitle": "Appearance, language, time and notifications",
+  "profileChangePasswordSubtitle": "For your institutional UPLA account",
+  "profileAboutSubtitle": "Version {version}",
+  "@profileAboutSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutConfirmTitle": "Sign out",
+  "logoutConfirmBody": "Do you want to sign out of your account?",
+  "docenteChangeDate": "Change",
+  "docenteSaveAttendance": "Save attendance",
+  "docenteAttendanceSaved": "Attendance saved",
+  "docenteAttendanceError": "Error: {error}",
+  "@docenteAttendanceError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteGradeLabel": "Grade (0 - 20)",
+  "docenteGradeEnter": "Enter a grade",
+  "docenteGradeInvalidNumber": "Invalid number",
+  "docenteGradeRange": "Between 0 and 20",
+  "termsHeaderPre": "Before you start",
+  "termsHeaderTitle": "Terms of use and privacy",
+  "termsHeaderSubtitle": "Read and accept to continue.",
+  "termsAcceptNote": "By continuing you accept these terms.",
+  "termsAcceptButton": "Accept and continue",
+  "termsBrandTitle": "Welcome to Nexo",
+  "termsBrandBody": "Privacy first. Your data stays only on your device.",
+  "termsItemWhatTitle": "What is Nexo",
+  "termsItemWhatBody": "An independent, unofficial app created by and for students that reorganizes your UPLA academic information more clearly. It is not affiliated with or endorsed by UPLA.",
+  "termsItemPrivacyTitle": "Your data and privacy",
+  "termsItemPrivacyBody": "Your credentials and data are stored only on your device. Nexo does not send anything to its own servers or third parties: requests go directly to UPLA services, just like the official portal.",
+  "termsItemSecurityTitle": "Security",
+  "termsItemSecurityBody": "Local storage is not encrypted at the system level. Use it only on devices you trust. You can sign out to clear credentials and cache at any time.",
+  "termsItemResponsibleTitle": "Responsible use",
+  "termsItemResponsibleBody": "Access only your own information with your own credentials. This is an educational / reverse-engineering hackathon project for personal use. Use it according to your university's regulations.",
+  "termsItemDisclaimerTitle": "No guarantees",
+  "termsItemDisclaimerBody": "The service is provided \"as is\", without warranties. For official procedures, always consult the institutional portal.",
+  "aboutFeatureAllInOneTitle": "Your university in one place",
+  "aboutFeatureAllInOneBody": "Profile, schedule, grades, payments, and upcoming tasks without jumping between SIGMA, Intranet, and other portals.",
+  "aboutFeatureMultiplatformTitle": "Multiplatform",
+  "aboutFeatureMultiplatformBody": "Same experience on Android, iOS, Web, and desktop, with a single Flutter codebase.",
+  "aboutFeaturePrivacyTitle": "Privacy first",
+  "aboutFeaturePrivacyBody": "Your credentials are stored only on your device. Requests go directly to UPLA services, without intermediate servers.",
+  "aboutFeatureNoSdkTitle": "No third-party SDKs",
+  "aboutFeatureNoSdkBody": "Authentication and networking built by hand on standard HTTP, to control errors and keep it lightweight.",
+  "aboutFooterDisclaimer": "Nexo is an independent, unofficial project, created by and for students. It is not affiliated with or endorsed by UPLA.",
+  "aboutHeroSubtitle": "UPLA client · v{version}",
+  "@aboutHeroSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutDetailsTitle": "Details",
+  "aboutDetailsVersionLabel": "Version",
+  "aboutDetailsBuildLabel": "Build",
+  "aboutDetailsPlatformsLabel": "Platforms",
+  "aboutDetailsPlatformsValue": "Android · iOS · Web · Desktop",
+  "aboutDetailsTechLabel": "Technology",
+  "aboutDetailsTechValue": "Flutter",
+  "developerGithubCopied": "GitHub link copied",
+  "developerSubtitle": "Who created Nexo",
+  "developerRole": "Independent developer · UPLA student",
+  "supportTitle": "Technical Support",
+  "supportHeroBadge": "SUPPORT 24/7",
+  "supportHeroTitle": "Having any issues?",
+  "supportHeroBody": "We're here to help. If you experience app crashes, connection issues or data errors, contact us directly via WhatsApp or email.",
+  "supportChannelsTitle": "Support Channels",
+  "supportChannelWhatsApp": "WhatsApp",
+  "supportChannelEmail": "Email",
+  "supportInfoNote": "Pressing the support channel will open the corresponding application. Otherwise, the contact details will be copied to your clipboard.",
+  "supportWhatsAppMessage": "Hi, I have an issue with the Nexo application",
+  "supportWhatsAppCopied": "Support WhatsApp number copied",
+  "supportEmailSubject": "Support Nexo App",
+  "supportEmailBody": "Hi, I have an issue with the Nexo application:",
+  "supportEmailCopied": "Support email copied",
+  "supportContactButton": "Contact Technical Support",
+  "docenteLabel": "TEACHER",
+  "docenteCodeLabel": "Teacher code",
+  "docenteMetricCursos": "Courses",
+  "docenteMetricAlumnos": "Students",
+  "docenteMetricPeriodo": "Term",
+  "docenteNoClassesToday": "No classes to teach today",
+  "docenteToday": "Today",
+  "docenteClassCount": "{count, plural, =1{{count} class} other{{count} classes}}",
+  "@docenteClassCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteTypeTeoria": "THEO",
+  "docenteTypePractica": "PRAC",
+  "docenteLoadingClasses": "Loading classes...",
+  "docenteSessionsWeeklyCount": "My classes · {count, plural, =1{1 session this week} other{{count} sessions this week}}",
+  "@docenteSessionsWeeklyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteNoClassesRegistered": "You have no registered classes",
+  "docenteCourseCount": "{count, plural, =1{{count} course} other{{count} courses}}",
+  "@docenteCourseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteCoursesCountPlural": "{count, plural, =1{{count} subject} other{{count} subjects}}",
+  "@docenteCoursesCountPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteMetricAlumnosCount": "{count, plural, =1{{count} student} other{{count} students}}",
+  "@docenteMetricAlumnosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteLoadCoursesError": "Could not load courses",
+  "docenteNoCoursesPeriod": "No assigned courses in this term",
+  "docenteTabAlumnos": "Students",
+  "docenteTabAsistencia": "Attendance",
+  "docenteTabNotas": "Grades",
+  "docenteNoCode": "No code",
+  "docenteSectionPeriod": "Section {seccion} · {periodo}",
+  "@docenteSectionPeriod": {
+    "placeholders": {
+      "seccion": {
+        "type": "String"
+      },
+      "periodo": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteNoAlumnosRegistered": "No registered students",
+  "docenteAsisPercent": "{percent}% attend.",
+  "@docenteAsisPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteAttendancePresentShort": "Pres.",
+  "docenteAttendanceTardanzaShort": "Late",
+  "docenteAttendanceFaltaShort": "Abs.",
+  "docenteNoAlumnosInCourse": "No students in this course",
+  "docenteAprobadosCount": "{aprobados} of {total} passed",
+  "@docenteAprobadosCount": {
+    "placeholders": {
+      "aprobados": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteTapToEdit": "Tap to edit →",
+  "docentePromedioParcial": "PARTIAL AVERAGE",
+  "docenteCoursePercentGraded": "{percent}% of the course\nalready graded",
+  "@docenteCoursePercentGraded": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteEvalPending": "PENDING",
+  "docenteNoAttendanceRecords": "No attendance records.",
+  "docenteAttendanceLabel": "ATTENDANCE",
+  "docenteSessionsRegisteredCount": "{presentes} of {total}\nsessions recorded",
+  "@docenteSessionsRegisteredCount": {
+    "placeholders": {
+      "presentes": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteAttendancePresent": "Present",
+  "docenteAttendanceTardanza": "Late",
+  "docenteAttendanceFalta": "Absent",
+  "docenteAttendanceJustificada": "Excused",
+  "docenteInfoTitle": "Teacher information",
+  "docenteInfoFieldNombres": "First Names",
+  "docenteInfoFieldApellidos": "Last Names",
+  "docenteInfoFieldFacultad": "Faculty",
+  "docenteInfoFieldEspecialidad": "Specialty",
+  "docenteSupportSubtitle": "Contact via WhatsApp or Email",
+  "connectivityStatusTitle": "Connection Status",
+  "connectivityDiagnosticsSubtitle": "Real-time diagnostics",
+  "connectivityInternet": "Internet Connection",
+  "connectivitySigma": "SIGMA Server",
+  "connectivityIntranet": "INTRANET Server",
+  "connectivityBackupNote": "Local backup data will be used automatically when there is no connection to the servers.",
+  "connectivityOnline": "Online",
+  "connectivityOffline": "Offline",
+  "connectivityDegraded": "Degraded",
+  "connectivityConnected": "Connected",
+  "connectivityDisconnected": "Disconnected",
+  "homeVerifyConnectivity": "Verify Connection Status",
+  "homeMetricPromedio": "GPA",
+  "homeMetricCreditos": "Credits",
+  "homeMetricClasesHoy": "Classes today",
+  "homeMetricPorPagar": "To pay",
+  "gradesDetailLoadError": "Couldn't load detail",
+  "gradesSustitutorio": "Substitute exam",
+  "gradesNoUnitsYetTitle": "No units graded yet",
+  "gradesNoUnitsYetSubtitle": "Grades will appear when published.",
+  "gradesEvidenciaConocimiento": "Evidence of knowledge",
+  "gradesEvidenciaDesempeno": "Evidence of performance",
+  "gradesEvidenciaProducto": "Evidence of product",
+  "gradesPromedioAcumulado": "Cumulative GPA",
+  "gradesNoCreditsData": "No credit data",
+  "gradesNoHistoryYet": "No history yet",
+  "gradesEvolutionByPeriod": "Evolution by term",
+  "statusInProcess": "IN PROGRESS",
+  "gradesPromedioLabel": "Average",
+  "gradesParcial1": "Partial 1",
+  "gradesParcial2": "Partial 2",
+  "gradesPromedioParcial1": "Partial 1 Average",
+  "gradesPromedioParcial2": "Partial 2 Average",
+  "gradesPromedioFinal": "Final Average",
+  "gradesPrimerParcial": "First partial",
+  "gradesSegundoParcial": "Second partial",
+  "gradesPromedioPracticas": "Practical average",
+  "gradesTrabajoInvestigacion": "Research paper",
+  "gradesExamenParcial": "Partial exam",
+  "gradesExamenComplementario": "Complementary exam",
+  "paymentsDownloadSchedulePdf": "Download schedule (PDF)",
+  "paymentsTabPending": "Pending",
+  "paymentsTabOverdue": "Overdue",
+  "paymentsTabFees": "Fees",
+  "paymentsUpToDateTitle": "You are up to date!",
+  "paymentsUpToDateSubtitle": "You have no upcoming fees.",
+  "paymentsNoOverdueTitle": "No overdue fees",
+  "paymentsNoOverdueSubtitle": "Great, you have no past due fees.",
+  "paymentVenceHoy": "DUE TODAY",
+  "paymentVenceManana": "Due tomorrow",
+  "paymentVenceMananaCaps": "DUE TOMORROW",
+  "paymentsNoFeesRegistered": "No fees registered",
+  "paymentsNoHistoryRegistered": "No payments registered",
+  "paymentDetailCuota": "Fee Detail",
+  "paymentDetailTasa": "Charge Detail",
+  "paymentDetailPago": "Payment Detail",
+  "paymentDetailTasaAdministrativa": "Administrative Fee",
+  "paymentDetailImporteBase": "Base Amount",
+  "paymentDetailFechaVencimiento": "Due Date",
+  "paymentDetailImportePagado": "Amount Paid",
+  "paymentDetailFechaPago": "Payment Date",
+  "paymentDetailHoraPago": "Payment Time",
+  "paymentDetailPeriodoAcademico": "Academic Period",
+  "paymentDetailLugarPago": "Payment Location",
+  "paymentDetailDescripcionOperacion": "Operation Description",
+  "paymentDetailInformacionDetallada": "Detailed Information",
+  "profileDownloadEnrollmentPdf": "Enrollment Certificate (PDF)",
+  "profileStudentCode": "Student code",
+  "profileCareer": "Career",
+  "profileFaculty": "Faculty",
+  "profileCampus": "Campus",
+  "profileMode": "Mode",
+  "profileStudyPlan": "Study plan",
+  "profileLevel": "Level",
+  "profileLastEnrollment": "Last enrollment",
+  "profileStatus": "Status",
+  "profileStatusNotEnrolled": "Not enrolled",
+  "profileStatusEnrolled": "Enrolled",
+  "profileAcademicInfo": "Academic info",
+  "teamsCopyCode": "Copy code",
+  "teamsUnderConstruction": "Under construction",
+  "teamsSoonAvailable": "Soon available",
+  "teamsWorkingOnSection": "We are working on this section",
+  "teamsComeBackLater": "Come back later.",
+  "pdfExportLoadConstanciaError": "Could not load certificate.",
+  "pdfExportLoadCronogramaError": "Could not load payment schedule.",
+  "gradesCreditsSummary": "{aprobados} of {total} credits",
+  "@gradesCreditsSummary": {
+    "placeholders": {
+      "aprobados": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "gradesCreditsApprovedCount": "{count, plural, =1{1 credit approved} other{{count} credits approved}}",
+  "@gradesCreditsApprovedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "gradesRank": " · Rank {rank}",
+  "@gradesRank": {
+    "placeholders": {
+      "rank": { "type": "String" }
+    }
+  },
+  "gradesSummary": "Summary",
+  "gradesPractice": "Practice {index}",
+  "@gradesPractice": {
+    "placeholders": {
+      "index": { "type": "String" }
+    }
+  },
+  "gradesProyecto": "Project",
+  "gradesPromedioTiPy": "Average RP + PJ",
+  "paymentsTabHistory": "History",
+  "paymentsLoadError": "Couldn't load",
+  "paymentDaysOverdue": "OVERDUE {days} d. ago",
+  "@paymentDaysOverdue": {
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "paymentDaysLeft": "In {days} days",
+  "@paymentDaysLeft": {
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "paymentMora": "Late fee {currency} {amount}",
+  "@paymentMora": {
+    "placeholders": {
+      "currency": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "paymentVenceEl": "Due on {date}",
+  "@paymentVenceEl": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "paymentStatusPaid": "PAID",
+  "paymentDateOfPayment": "Payment Date: {date}",
+  "@paymentDateOfPayment": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "paymentMoraLabel": "Late fee",
+  "paymentDetailObservacion": "Note",
+  "paymentDetailConcepto": "Concept",
+  "paymentDetailImporte": "Amount",
+  "paymentDetailComprobante": "Receipt",
+  "paymentDetailOperacion": "Transaction",
+  "setupTitle": "Welcome to Nexo UPLA!",
+  "setupSubtitle": "We have detected that you are running the application outside the official installation directory.",
+  "setupBtnInstall": "Install on my Computer",
+  "setupBtnPortable": "Run in Portable Mode",
+  "setupPortableDesc": "Portable mode will not create shortcuts or register the app in Windows.",
+  "setupProgressCopied": "Copying program files...",
+  "setupProgressShortcuts": "Creating shortcuts...",
+  "setupProgressRegister": "Registering in Windows...",
+  "setupProgressDone": "Installation completed successfully!",
+  "setupSuccessTitle": "Installation Successful!",
+  "setupSuccessDesc": "Nexo UPLA has been successfully installed and registered.",
+  "setupBtnStart": "Start Application",
+  "setupErrorTitle": "Installation Error",
+  "setupBtnRetry": "Retry",
+  "setupBtnExit": "Exit",
+  "setupCustomization": "Customization",
+  "setupTermsAccept": "I have read and accept the terms of use and privacy policy",
+  "setupTermsRequired": "You must accept the terms to continue",
+  "setupOptionDesktop": "Create desktop shortcut",
+  "setupOptionStartMenu": "Create Start Menu entry",
+  "setupOptionAutoStart": "Start Nexo with Windows",
+  "setupOptionAutoStartDesc": "It will open automatically when you sign in",
+  "setupProgressAutoStart": "Setting up auto-start...",
+  "setupBtnBack": "Back",
+  "setupBtnNext": "Next",
+  "setupBtnInstallNow": "Install"
+}

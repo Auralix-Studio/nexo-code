@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/reports/pdf_export.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
+import 'package:nexo/features/payments/payment_detail_screen.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
 
@@ -65,11 +70,21 @@ class _PagosScreenState extends State<PaymentsScreen>
             headerSliverBuilder: (_, _) => [
               SliverToBoxAdapter(
                 child: PageHeader(
-                  title: 'Pagos',
-                  subtitle: 'Cuotas, tasas e historial',
+                  title: AppLocalizations.of(context).titlePayments,
+                  subtitle: AppLocalizations.of(context).subtitlePayments,
+                  actions: [
+                    IconButton(
+                      tooltip: AppLocalizations.of(context).paymentsDownloadSchedulePdf,
+                      icon: const Icon(Icons.download_rounded),
+                      onPressed: () =>
+                          PdfExport.cronograma(context, widget.store),
+                    ),
+                  ],
                 ),
               ),
-              SliverToBoxAdapter(child: _SummaryCards(store: widget.store)),
+              SliverToBoxAdapter(
+                child: Reveal(index: 0, child: _SummaryCards(store: widget.store)),
+              ),
               SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverToBoxAdapter(
                 child: PageBody(
@@ -101,6 +116,7 @@ class _SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final pendientes = store.cuotasPendientes.value ?? const <Cuota>[];
     final vencidas =
         (store.cuotasIntranet.value ?? const <Cuota>[]).where((c) {
@@ -119,7 +135,7 @@ class _SummaryCards extends StatelessWidget {
         children: [
           Expanded(
             child: _SummaryCard(
-              title: 'Pendientes',
+              title: l.paymentsTabPending,
               total: totalPend,
               count: pendientes.length,
               icon: Icons.schedule_rounded,
@@ -129,7 +145,7 @@ class _SummaryCards extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _SummaryCard(
-              title: 'Vencidas',
+              title: l.paymentsTabOverdue,
               total: totalVenc,
               count: vencidas.length,
               icon: Icons.warning_amber_rounded,
@@ -139,7 +155,7 @@ class _SummaryCards extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _SummaryCard(
-              title: 'Tasas',
+              title: l.paymentsTabFees,
               total: totalTasas,
               count: tasas.length,
               icon: Icons.receipt_long_rounded,
@@ -231,6 +247,7 @@ class _TabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -254,11 +271,11 @@ class _TabBar extends StatelessWidget {
             const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         splashFactory: NoSplash.splashFactory,
         dividerHeight: 0,
-        tabs: const [
-          Tab(text: 'Pendientes'),
-          Tab(text: 'Vencidas'),
-          Tab(text: 'Tasas'),
-          Tab(text: 'Historial'),
+        tabs: [
+          Tab(text: l.paymentsTabPending),
+          Tab(text: l.paymentsTabOverdue),
+          Tab(text: l.paymentsTabFees),
+          Tab(text: l.paymentsTabHistory),
         ],
       ),
     );
@@ -273,14 +290,15 @@ class _PendientesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
       filter: (c) {
         final d = c.daysUntilDue();
         return d == null || d >= 0;
       },
-      emptyTitle: '¡Estás al día!',
-      emptySubtitle: 'No tienes cuotas próximas a vencer.',
+      emptyTitle: l.paymentsUpToDateTitle,
+      emptySubtitle: l.paymentsUpToDateSubtitle,
       emptyIcon: Icons.verified_outlined,
       emptyColor: NexoTheme.success,
     );
@@ -293,14 +311,15 @@ class _VencidasTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
       filter: (c) {
         final d = c.daysUntilDue();
         return d != null && d < 0;
       },
-      emptyTitle: 'Sin cuotas vencidas',
-      emptySubtitle: 'Genial, no tienes cuotas con vencimiento pasado.',
+      emptyTitle: l.paymentsNoOverdueTitle,
+      emptySubtitle: l.paymentsNoOverdueSubtitle,
       emptyIcon: Icons.celebration_outlined,
       emptyColor: NexoTheme.success,
     );
@@ -326,12 +345,13 @@ class _CuotaListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) return const _LoadingList();
     if (state.error != null && !state.hasValue) {
       return EmptyState(
         icon: Icons.cloud_off_outlined,
-        title: 'No se pudo cargar',
-        subtitle: state.error.toString(),
+        title: l.paymentsLoadError,
+        subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
       );
     }
@@ -367,6 +387,7 @@ class _CuotaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final days = cuota.daysUntilDue();
     final isOverdue = days != null && days < 0;
     final isSoon = days != null && days >= 0 && days <= 3;
@@ -376,29 +397,34 @@ class _CuotaCard extends StatelessWidget {
             ? NexoTheme.warning
             : NexoTheme.textSecondary;
     final tagText = isOverdue
-        ? 'VENCIDA hace ${-days} d.'
+        ? l.paymentDaysOverdue((-days).toString())
         : days == 0
-            ? 'VENCE HOY'
+            ? l.paymentVenceHoy
             : days == 1
-                ? 'Vence mañana'
+                ? l.paymentVenceManana
                 : days == null
                     ? '—'
-                    : 'En $days días';
+                    : l.paymentDaysLeft(days.toString());
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: NexoTheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => PaymentDetailScreen.openCuota(context, cuota),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOverdue
-              ? NexoTheme.danger.withValues(alpha: 0.4)
-              : NexoTheme.border,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: NexoTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isOverdue
+                  ? NexoTheme.danger.withValues(alpha: 0.4)
+                  : NexoTheme.border,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Row(
             children: [
               Expanded(
@@ -449,8 +475,7 @@ class _CuotaCard extends StatelessWidget {
               StatusChip(text: tagText, color: tagColor),
               if (cuota.mora > 0)
                 StatusChip(
-                  text:
-                      'Mora ${cuota.tipoMoneda} ${cuota.mora.toStringAsFixed(2)}',
+                  text: l.paymentMora(cuota.tipoMoneda, cuota.mora.toStringAsFixed(2)),
                   color: NexoTheme.danger,
                   icon: Icons.warning_amber_rounded,
                 ),
@@ -485,7 +510,9 @@ class _CuotaCard extends StatelessWidget {
           ],
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -495,20 +522,21 @@ class _TasasTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) return const _LoadingList();
     if (state.error != null && !state.hasValue) {
       return EmptyState(
         icon: Icons.cloud_off_outlined,
-        title: 'No se pudo cargar',
-        subtitle: state.error.toString(),
+        title: l.paymentsLoadError,
+        subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
       );
     }
     final items = state.value ?? const <Tasa>[];
     if (items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.receipt_long_outlined,
-        title: 'Sin tasas registradas',
+        title: l.paymentsNoFeesRegistered,
       );
     }
     return ListView.separated(
@@ -526,15 +554,20 @@ class _TasaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: NexoTheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => PaymentDetailScreen.openTasa(context, tasa),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: NexoTheme.border),
-      ),
-      child: Row(
-        children: [
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: NexoTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: NexoTheme.border),
+          ),
+          child: Row(
+            children: [
           Container(
             width: 38,
             height: 38,
@@ -578,7 +611,9 @@ class _TasaCard extends StatelessWidget {
               color: NexoTheme.textPrimary,
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -590,20 +625,21 @@ class _HistorialTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) return const _LoadingList();
     if (state.error != null && !state.hasValue) {
       return EmptyState(
         icon: Icons.cloud_off_outlined,
-        title: 'No se pudo cargar',
-        subtitle: state.error.toString(),
+        title: l.paymentsLoadError,
+        subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
       );
     }
     final items = state.value ?? const <PagoHistorico>[];
     if (items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.history_rounded,
-        title: 'Sin pagos registrados',
+        title: l.paymentsNoHistoryRegistered,
       );
     }
     // Ordenar por fecha descendente.
@@ -664,15 +700,20 @@ class _HistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final esDesc = item.esDescuento;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: NexoTheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => PaymentDetailScreen.openHistorico(context, item),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NexoTheme.border),
-      ),
-      child: Row(
-        children: [
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: NexoTheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: NexoTheme.border),
+          ),
+          child: Row(
+            children: [
           Container(
             width: 34,
             height: 34,
@@ -745,7 +786,9 @@ class _HistTile extends StatelessWidget {
               color: esDesc ? NexoTheme.warning : NexoTheme.textPrimary,
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

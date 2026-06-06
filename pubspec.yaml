@@ -1,7 +1,7 @@
 name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.10.1
@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.8
   # Cliente HTTP base oficial del equipo Dart (no SDK de terceros).
   # Lo usamos como transporte; la autenticación, sesión y manejo
@@ -16,19 +19,37 @@ dependencies:
   http: ^1.2.2
   # Persistencia local del token y datos cacheados.
   shared_preferences: ^2.3.2
+  # Conectividad y base de datos local SQLite
+  connectivity_plus: ^6.0.3
+  sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.0
+  sqlite3_flutter_libs: ^0.5.24
+  path: ^1.9.0
   # Puente Flutter ↔ widgets de pantalla de inicio (Android/iOS).
   home_widget: ^0.7.0
   quick_actions: ^1.1.0
   # Notificaciones locales programadas (recordatorios de clases/pagos).
-  flutter_local_notifications: ^18.0.1
-  timezone: ^0.9.4
+  # v19+ añade soporte de Windows (escritorio). Sin esto, en Windows el
+  # `_supported` quedaba en false y NINGUNA notificación se enviaba.
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.0
   flutter_timezone: ^3.0.1
+  # Generación de PDFs (constancia de matrícula, cronograma de pagos).
+  # Pure Dart, sin SDKs propietarios. `printing` provee preview/share/print
+  # multiplataforma (Android, iOS, Web, escritorio).
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  url_launcher: ^6.3.2
+  window_manager: ^0.4.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
+  # Genera splash screens nativos (Android/iOS/Web) con el logo de Nexo,
+  # sin pantalla blanca antes de que Flutter arranque.
+  flutter_native_splash: ^2.4.4
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -49,7 +70,37 @@ flutter_launcher_icons:
     generate: true
     image_path: "assets/icon.png"
 
+# Splash screen nativo con el logo de Nexo. Se aplica a Android, iOS y Web.
+# Para regenerar tras tocar esta sección: `dart run flutter_native_splash:create`.
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/splash_text_light.png
+  color_dark: "#0A0C10"
+  image_dark: assets/splash_text_dark.png
+  android: true
+  ios: true
+  web: true
+  android_12:
+    image: assets/splash_text_light.png
+    color: "#FFFFFF"
+    icon_background_color: "#FFFFFF"
+    image_dark: assets/splash_text_dark.png
+    color_dark: "#0A0C10"
+    icon_background_color_dark: "#0A0C10"
+
 flutter:
   uses-material-design: true
+  # Activa la generación automática de AppLocalizations a partir de los
+  # archivos ARB en lib/l10n/ (configurado en l10n.yaml).
+  generate: true
   assets:
     - assets/icon.png
+    # Bundle de root CAs de Mozilla (mismo que usa curl).
+    # Lo cargamos en un SecurityContext para arreglar el handshake TLS de
+    # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando
+    # el servidor omite el intermedio. Ver lib/data/secure_http.dart.
+    - assets/certs/cacert.pem
+  fonts:
+    - family: SuperMindset
+      fonts:
+        - asset: assets/fonts/Super Mindset.ttf

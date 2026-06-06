@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/l10n/app_localizations.dart';
+
+import 'package:nexo/data/connectivity_service.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/shortcuts.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/data/ms_auth_service.dart';
 import 'package:nexo/data/session.dart';
+import 'package:nexo/features/docente/docente_cursos_screen.dart';
+import 'package:nexo/features/docente/docente_horario_screen.dart';
+import 'package:nexo/features/docente/docente_profile_screen.dart';
+import 'package:nexo/features/docente/docente_screen.dart';
 import 'package:nexo/features/grades/grades_screen.dart';
 import 'package:nexo/features/home/home_screen.dart';
 import 'package:nexo/features/payments/payments_screen.dart';
 import 'package:nexo/features/profile/profile_screen.dart';
 import 'package:nexo/features/schedule/schedule_screen.dart';
+import 'package:nexo/features/teams/teams_screen.dart';
+import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
 
 class _Tab {
   final String label;
@@ -18,14 +28,28 @@ class _Tab {
   const _Tab(this.label, this.icon, this.iconOutlined);
 }
 
-const _tabs = [
-  _Tab('Inicio', Icons.home_rounded, Icons.home_outlined),
-  _Tab('Horario', Icons.calendar_today_rounded, Icons.calendar_today_outlined),
-  _Tab('Notas', Icons.school_rounded, Icons.school_outlined),
-  _Tab('Pagos', Icons.account_balance_wallet_rounded,
-      Icons.account_balance_wallet_outlined),
-  _Tab('Perfil', Icons.person_rounded, Icons.person_outline_rounded),
-];
+/// Tabs del alumno (experiencia normal del estudiante).
+List<_Tab> _studentTabs(AppLocalizations l) => [
+      _Tab(l.tabHome, Icons.home_rounded, Icons.home_outlined),
+      _Tab(l.tabSchedule, Icons.calendar_today_rounded,
+          Icons.calendar_today_outlined),
+      _Tab(l.tabGrades, Icons.school_rounded, Icons.school_outlined),
+      _Tab(l.tabPayments, Icons.account_balance_wallet_rounded,
+          Icons.account_balance_wallet_outlined),
+    _Tab(l.tabTeams, Icons.groups_rounded, Icons.groups_outlined),
+      _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
+    ];
+
+/// Tabs del docente (experiencia completamente distinta — sin pagos, notas
+/// del alumno, ni Teams del estudiante). Cada pestaña es una pantalla
+/// separada con su propio scope, igual que la separación del alumno.
+List<_Tab> _teacherTabs(AppLocalizations l) => [
+      _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
+      _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
+      _Tab(l.tabSchedule, Icons.calendar_today_rounded,
+          Icons.calendar_today_outlined),
+      _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
+    ];
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -33,40 +57,73 @@ class AppShell extends StatefulWidget {
     required this.store,
     required this.session,
     required this.theme,
+    required this.msAuth,
+    required this.connectivity,
   });
 
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
+  final MsAuthService msAuth;
+  final ConnectivityService connectivity;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _index = 0;
   final List<int> _history = [0];
+  DateTime? _lastBoletaCheck;
 
-  final List<ScrollController> _scrollControllers = List.generate(5, (_) => ScrollController());
+  final List<ScrollController> _scrollControllers = List.generate(
+    7,
+    (_) => ScrollController(),
+  );
 
   @override
   void initState() {
     super.initState();
-    // Carga datos esenciales al entrar.
-    widget.store.loadHomeEssentials();
+    // En modo docente NO cargamos data del alumno (SIGMA/Intranet rechazaría
+    // el token y nos echaría a login).
+    final isDocente = widget.session.user?.isDocente ?? false;
+    if (!isDocente) {
+      widget.store.loadHomeEssentials();
+    }
+    _lastBoletaCheck = DateTime.now();
 
-    // Escucha acciones directas (shortcuts).
+    WidgetsBinding.instance.addObserver(this);
+
     ShortcutService.instance.addListener(_handleShortcut);
-    _handleShortcut(); // Procesa si ya hay una pendiente.
+    _handleShortcut();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowWhatsappInvite(context);
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ShortcutService.instance.removeListener(_handleShortcut);
     for (final c in _scrollControllers) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // No chequeamos boleta del alumno en modo docente.
+    if (widget.session.user?.isDocente ?? false) return;
+    final now = DateTime.now();
+    if (_lastBoletaCheck != null &&
+        now.difference(_lastBoletaCheck!) < const Duration(seconds: 60)) {
+      return;
+    }
+    _lastBoletaCheck = now;
+    widget.store.checkActiveBoleta();
   }
 
   void _handleShortcut() {
@@ -85,32 +142,49 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = Responsive.isDesktop(context);
-    final pages = [
-      PrimaryScrollController(
-        controller: _scrollControllers[0],
-        child: HomeScreen(store: widget.store, onJump: _goTo),
-      ),
-      PrimaryScrollController(
-        controller: _scrollControllers[1],
-        child: ScheduleScreen(store: widget.store),
-      ),
-      PrimaryScrollController(
-        controller: _scrollControllers[2],
-        child: GradesScreen(store: widget.store),
-      ),
-      PrimaryScrollController(
-        controller: _scrollControllers[3],
-        child: PaymentsScreen(store: widget.store),
-      ),
-      PrimaryScrollController(
-        controller: _scrollControllers[4],
-        child: ProfileScreen(
+    final isDocente = widget.session.user?.isDocente ?? false;
+    final l = AppLocalizations.of(context);
+
+    var idx = 0;
+    Widget wrap(Widget page) => PrimaryScrollController(
+        controller: _scrollControllers[idx++], child: page);
+
+    final List<_Tab> tabs;
+    final List<Widget> pages;
+
+    if (isDocente) {
+      tabs = _teacherTabs(l);
+      pages = <Widget>[
+        wrap(DocenteScreen(store: widget.store)),
+        wrap(DocenteCursosScreen(store: widget.store)),
+        wrap(DocenteHorarioScreen(store: widget.store)),
+        wrap(DocenteProfileScreen(
           store: widget.store,
           session: widget.session,
           theme: widget.theme,
-        ),
-      ),
-    ];
+        )),
+      ];
+    } else {
+      tabs = _studentTabs(l);
+      pages = <Widget>[
+        wrap(HomeScreen(
+          store: widget.store,
+          connectivity: widget.connectivity,
+          onJump: _goTo,
+        )),
+        wrap(ScheduleScreen(store: widget.store)),
+        wrap(GradesScreen(store: widget.store)),
+        wrap(PaymentsScreen(store: widget.store)),
+        wrap(TeamsScreen(store: widget.store, msAuth: widget.msAuth)),
+        wrap(ProfileScreen(
+          store: widget.store,
+          session: widget.session,
+          theme: widget.theme,
+        )),
+      ];
+    }
+
+    final safeIndex = _index.clamp(0, pages.length - 1);
 
     Widget child;
     if (isDesktop) {
@@ -119,7 +193,8 @@ class _AppShellState extends State<AppShell> {
           child: Row(
             children: [
               _SideRail(
-                index: _index,
+                tabs: tabs,
+                index: safeIndex,
                 onChange: _goTo,
                 onLogout: widget.session.logout,
               ),
@@ -130,8 +205,8 @@ class _AppShellState extends State<AppShell> {
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
                   child: KeyedSubtree(
-                    key: ValueKey(_index),
-                    child: pages[_index],
+                    key: ValueKey(safeIndex),
+                    child: pages[safeIndex],
                   ),
                 ),
               ),
@@ -145,12 +220,13 @@ class _AppShellState extends State<AppShell> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
             child: KeyedSubtree(
-              key: ValueKey(_index),
-              child: pages[_index],
+              key: ValueKey(safeIndex),
+              child: pages[safeIndex],
             ),
           ),
         ),
-        bottomNavigationBar: _BottomBar(index: _index, onChange: _goTo),
+        bottomNavigationBar:
+            _BottomBar(tabs: tabs, index: safeIndex, onChange: _goTo),
       );
     }
 
@@ -182,9 +258,14 @@ class _AppShellState extends State<AppShell> {
 }
 
 class _BottomBar extends StatelessWidget {
+  final List<_Tab> tabs;
   final int index;
   final ValueChanged<int> onChange;
-  const _BottomBar({required this.index, required this.onChange});
+  const _BottomBar({
+    required this.tabs,
+    required this.index,
+    required this.onChange,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +281,7 @@ class _BottomBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              for (var i = 0; i < _tabs.length; i++)
+              for (var i = 0; i < tabs.length; i++)
                 Expanded(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),
@@ -214,7 +295,9 @@ class _BottomBar extends StatelessWidget {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              i == index ? _tabs[i].icon : _tabs[i].iconOutlined,
+                              i == index
+                                  ? tabs[i].icon
+                                  : tabs[i].iconOutlined,
                               key: ValueKey(i == index),
                               color: i == index
                                   ? NexoTheme.primary
@@ -224,7 +307,7 @@ class _BottomBar extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _tabs[i].label,
+                            tabs[i].label,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: i == index
@@ -249,10 +332,12 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _SideRail extends StatelessWidget {
+  final List<_Tab> tabs;
   final int index;
   final ValueChanged<int> onChange;
   final Future<void> Function() onLogout;
   const _SideRail({
+    required this.tabs,
     required this.index,
     required this.onChange,
     required this.onLogout,
@@ -288,9 +373,9 @@ class _SideRail extends StatelessWidget {
               ],
             ),
           ),
-          for (var i = 0; i < _tabs.length; i++) ...[
+          for (var i = 0; i < tabs.length; i++) ...[
             _RailItem(
-              tab: _tabs[i],
+              tab: tabs[i],
               active: i == index,
               onTap: () => onChange(i),
             ),
@@ -302,7 +387,7 @@ class _SideRail extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onLogout,
               icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('Cerrar sesión'),
+              label: Text(AppLocalizations.of(context).actionLogout),
               style: OutlinedButton.styleFrom(
                 foregroundColor: NexoTheme.textSecondary,
                 minimumSize: const Size.fromHeight(44),
@@ -323,14 +408,20 @@ class _RailItem extends StatelessWidget {
   final _Tab tab;
   final bool active;
   final VoidCallback onTap;
-  const _RailItem({required this.tab, required this.active, required this.onTap});
+  const _RailItem({
+    required this.tab,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Material(
-        color: active ? NexoTheme.primary.withValues(alpha: 0.10) : Colors.transparent,
+        color: active
+            ? NexoTheme.primary.withValues(alpha: 0.10)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),

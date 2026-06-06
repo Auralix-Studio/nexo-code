@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/core/storage.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 
 /// Tarjeta destacada con la **próxima clase** (hoy o el siguiente día con clases).
@@ -61,11 +63,28 @@ class NextClassWidget extends StatelessWidget {
     final n = _next();
     if (n == null) return const SizedBox.shrink();
     final c = n.clase;
+    // Construye un ClaseAgrupada con todas las sesiones del mismo curso ese día.
+    final grupo = ClaseAgrupada.agrupar(
+      all.where((x) => x.idDia == c.idDia && x.asignatura == c.asignatura).toList(),
+    ).firstWhere(
+      (g) => g.asignatura == c.asignatura,
+      orElse: () => ClaseAgrupada(
+        asignatura: c.asignatura,
+        idDia: c.idDia,
+        sesiones: [c],
+      ),
+    );
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadii.rXxl,
+      child: InkWell(
+        onTap: () => ScheduleDetailScreen.open(context, grupo),
+        borderRadius: AppRadii.rXxl,
+        child: Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -135,15 +154,24 @@ class NextClassWidget extends StatelessWidget {
             spacing: AppSpacing.lg,
             runSpacing: AppSpacing.sm,
             children: [
-              _info(Icons.schedule, '${c.horaInicio} – ${c.horaFin}'),
-              if (c.aula.isNotEmpty)
-                _info(Icons.location_on_outlined, c.aula),
+              _info(
+                Icons.schedule,
+                () {
+                  final h24 = AppStorage.instance.use24h;
+                  return '${Fmt.time(c.horaInicio, h24: h24)} – '
+                      '${Fmt.time(c.horaFin, h24: h24)}';
+                }(),
+              ),
+               if (c.aula.isNotEmpty)
+                _info(Icons.location_on_outlined, Fmt.formatAula(c.aula)),
               _info(Icons.bookmark_border, c.tipoLargo),
               if (c.docente.isNotEmpty)
                 _info(Icons.person_outline, c.docente),
             ],
           ),
         ],
+      ),
+        ),
       ),
     );
   }

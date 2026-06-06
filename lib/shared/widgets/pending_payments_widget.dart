@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/payments/payment_detail_screen.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
 /// Widget de "Deudas pendientes" — segundo widget crítico del home.
@@ -131,21 +132,26 @@ class _CuotaRow extends StatelessWidget {
                 ? 'Mañana'
                 : 'En $days días';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isOverdue
-            ? NexoTheme.danger.withValues(alpha: 0.04)
-            : NexoTheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => PaymentDetailScreen.openCuota(context, cuota),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isOverdue
-              ? NexoTheme.danger.withValues(alpha: 0.3)
-              : NexoTheme.border,
-        ),
-      ),
-      child: Row(
-        children: [
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isOverdue
+                ? NexoTheme.danger.withValues(alpha: 0.04)
+                : NexoTheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isOverdue
+                  ? NexoTheme.danger.withValues(alpha: 0.3)
+                  : NexoTheme.border,
+            ),
+          ),
+          child: Row(
+            children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +218,9 @@ class _CuotaRow extends StatelessWidget {
               color: NexoTheme.textPrimary,
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

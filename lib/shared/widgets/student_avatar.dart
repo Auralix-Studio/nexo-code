@@ -27,7 +27,7 @@ class StudentAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = radius ?? size * 0.32;
-    final defaultGradient = const LinearGradient(
+    final defaultGradient = LinearGradient(
       colors: [NexoTheme.primary, NexoTheme.accent],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

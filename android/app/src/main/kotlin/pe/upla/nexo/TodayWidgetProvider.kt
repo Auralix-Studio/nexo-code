@@ -1,4 +1,4 @@
-package pe.upla.nexo.nexo
+package pe.upla.nexo
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -7,7 +7,7 @@ import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
-class PaymentWidgetProvider : HomeWidgetProvider() {
+class TodayWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -15,13 +15,12 @@ class PaymentWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         appWidgetIds.forEach { id ->
-            val views = RemoteViews(context.packageName, R.layout.widget_payment).apply {
-                setTextViewText(R.id.pay_amount, widgetData.getString("pay_amount", ""))
+            val views = RemoteViews(context.packageName, R.layout.widget_today).apply {
                 setTextViewText(
-                    R.id.pay_desc,
-                    widgetData.getString("pay_desc", "Sin deudas")
+                    R.id.today_list,
+                    widgetData.getString("today_list", "Sin clases hoy")
                 )
-                setTextViewText(R.id.pay_due, widgetData.getString("pay_due", ""))
+                setTextViewText(R.id.today_day, widgetData.getString("today_day", ""))
                 val intent = HomeWidgetLaunchIntent.getActivity(
                     context, MainActivity::class.java
                 )

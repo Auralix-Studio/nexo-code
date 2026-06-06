@@ -32,6 +32,11 @@ class AppStorage {
   static const _kOnboard = 'nexo.seenOnboarding';
   static const _kNotifPrefs = 'nexo.notifPrefs';
   static const _kGradeSnap = 'nexo.gradeSnapshot';
+  static const _kMsSession = 'nexo.ms.session';
+  static const _kLocale = 'nexo.locale';
+  static const _kUse24h = 'nexo.use24h';
+  static const _kRunPortable = 'nexo.runPortable';
+  static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
 
   /// Preferencias de notificaciones (JSON serializado).
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
@@ -43,16 +48,43 @@ class AppStorage {
   Future<void> setGradeSnapshot(String value) =>
       _prefs.setString(_kGradeSnap, value);
 
+  /// Sesión Microsoft (tokens + caducidad) serializada como JSON.
+  /// Independiente de la sesión SIGMA.
+  String? get msSessionJson => _prefs.getString(_kMsSession);
+  Future<void> setMsSessionJson(String? value) async {
+    if (value == null) {
+      await _prefs.remove(_kMsSession);
+    } else {
+      await _prefs.setString(_kMsSession, value);
+    }
+  }
+
   bool get acceptedTerms => _prefs.getBool(_kTerms) ?? false;
   Future<void> setAcceptedTerms(bool v) => _prefs.setBool(_kTerms, v);
 
   bool get seenOnboarding => _prefs.getBool(_kOnboard) ?? false;
   Future<void> setSeenOnboarding(bool v) => _prefs.setBool(_kOnboard, v);
 
+  bool get runPortable => _prefs.getBool(_kRunPortable) ?? false;
+  Future<void> setRunPortable(bool v) => _prefs.setBool(_kRunPortable, v);
+
+  bool get seenWhatsappInvite => _prefs.getBool(_kWhatsappInvite) ?? false;
+  Future<void> setSeenWhatsappInvite(bool v) =>
+      _prefs.setBool(_kWhatsappInvite, v);
+
   /// 'light' | 'dark' | 'system'
   String? get themeMode => _prefs.getString(_kTheme);
   Future<void> setThemeMode(String value) =>
       _prefs.setString(_kTheme, value);
+
+  /// Código de idioma (`es`, `en`). Default = español.
+  String? get localeCode => _prefs.getString(_kLocale);
+  Future<void> setLocaleCode(String value) =>
+      _prefs.setString(_kLocale, value);
+
+  /// Formato de hora: true = 24h, false = 12h. Default = 24h.
+  bool get use24h => _prefs.getBool(_kUse24h) ?? true;
+  Future<void> setUse24h(bool value) => _prefs.setBool(_kUse24h, value);
 
   String? get token => _prefs.getString(_kToken);
   Future<void> setToken(String? value) async {
