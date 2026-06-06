@@ -81,5 +81,26 @@ class IntranetRepository {
         .toList();
   }
 
+  /// Constancia de matrícula del periodo indicado.
+  /// `consultarConstanciaMatriculaEstudiante` (POST, body `periodo=YYYY-P`).
+  Future<ConstanciaMatricula> constanciaMatricula(int anio, int periodo) async {
+    final rows = await _client.postJsonList(
+      'consultarConstanciaMatriculaEstudiante',
+      {'periodo': '$anio-$periodo'},
+      referer: 'pg_reportesDelEstudiante',
+    );
+    return ConstanciaMatricula.fromRows(rows);
+  }
+
+  /// Cronograma de cuotas del periodo activo.
+  /// `consultarCuotasEstudiante` (GET, query `cuotas=N`).
+  Future<CronogramaPagos> cronogramaPagos({int cuotas = 5}) async {
+    final rows = await _client.getJsonList(
+      'consultarCuotasEstudiante?cuotas=$cuotas',
+      referer: 'pg_reportesDelEstudiante',
+    );
+    return CronogramaPagos.fromRows(rows);
+  }
+
   void invalidate() => _ready = false;
 }

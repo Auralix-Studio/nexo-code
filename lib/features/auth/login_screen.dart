@@ -5,6 +5,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/session.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -65,6 +66,11 @@ class _LoginScreenState extends State<LoginScreen>
         _userCtrl.text.trim().toUpperCase(),
         _passCtrl.text,
       );
+      // Notifica al sistema que el formulario terminó con éxito. Esto
+      // dispara el prompt nativo de "Guardar contraseña" en Android/iOS,
+      // que es lo que el gestor de credenciales necesita para almacenar
+      // la pareja y luego ofrecer auto-rellenado en logins posteriores.
+      if (mounted) TextInput.finishAutofillContext();
     } on UnauthorizedException catch (e) {
       _error = e.message;
     } on BadRequestException catch (e) {
@@ -80,12 +86,14 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isWide = Responsive.isDesktop(context);
 
     final form = _AnimatedIntro(
       controller: _intro,
       child: _FormCard(
         isWide: isWide,
+        l: l,
         formKey: _formKey,
         userCtrl: _userCtrl,
         passCtrl: _passCtrl,
@@ -167,6 +175,7 @@ class _AnimatedIntro extends StatelessWidget {
 
 class _FormCard extends StatelessWidget {
   final bool isWide;
+  final AppLocalizations l;
   final GlobalKey<FormState> formKey;
   final TextEditingController userCtrl;
   final TextEditingController passCtrl;
@@ -181,6 +190,7 @@ class _FormCard extends StatelessWidget {
 
   const _FormCard({
     required this.isWide,
+    required this.l,
     required this.formKey,
     required this.userCtrl,
     required this.passCtrl,
@@ -206,7 +216,7 @@ class _FormCard extends StatelessWidget {
             const Gap(AppSpacing.xxl),
           ],
           Text(
-            'Bienvenido de nuevo',
+            l.loginWelcomeBack,
             style: TextStyle(
               fontSize: AppFont.h1,
               fontWeight: FontWeight.w900,
@@ -216,8 +226,7 @@ class _FormCard extends StatelessWidget {
           ),
           const Gap(AppSpacing.sm),
           Text(
-            'Inicia sesión con tu cuenta institucional. Guardaremos tu sesión '
-            'para que no tengas que volver a entrar.',
+            l.loginIntro,
             style: TextStyle(
               fontSize: AppFont.body,
               height: 1.45,
@@ -225,53 +234,73 @@ class _FormCard extends StatelessWidget {
             ),
           ),
           const Gap(AppSpacing.xxxl),
-          TextFormField(
-            controller: userCtrl,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.username],
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-              LengthLimitingTextInputFormatter(12),
-              _UpperCaseFormatter(),
-            ],
-            decoration: InputDecoration(
-              labelText: 'Código o DNI',
-              hintText: 'U00021B',
-              prefixIcon: Icon(
-                Icons.badge_outlined,
-                color: NexoTheme.textSecondary,
-              ),
-            ),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Ingresa tu usuario' : null,
-          ),
-          const Gap(AppSpacing.md),
-          TextFormField(
-            controller: passCtrl,
-            focusNode: passFocus,
-            obscureText: !showPass,
-            textInputAction: TextInputAction.done,
-            autofillHints: const [AutofillHints.password],
-            onFieldSubmitted: (_) => onSubmit(),
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: NexoTheme.textSecondary,
-              ),
-              suffixIcon: IconButton(
-                tooltip: showPass ? 'Ocultar' : 'Mostrar',
-                icon: Icon(
-                  showPass
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: NexoTheme.textSecondary,
+          // AutofillGroup explícito — sin esto, los gestores de
+          // contraseñas (Google/Samsung Pass, 1Password, iOS Keychain) no
+          // siempre asocian usuario+contraseña como un solo formulario y
+          // el auto-rellenado de la contraseña falla.
+          AutofillGroup(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: userCtrl,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.username],
+                  // Teclado alfanumérico unificado: letras + fila de números
+                  // siempre visible, SIN auto-switch a modo letras al teclear
+                  // dígitos. Imprescindible para códigos tipo `U01025B` y
+                  // DNIs de 8 dígitos puros.
+                  keyboardType: TextInputType.visiblePassword,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                    LengthLimitingTextInputFormatter(12),
+                    _UpperCaseFormatter(),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: l.loginUserLabel,
+                    hintText: 'U00021B',
+                    prefixIcon: Icon(
+                      Icons.badge_outlined,
+                      color: NexoTheme.textSecondary,
+                    ),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? l.loginUserRequired
+                      : null,
                 ),
-                onPressed: onToggleShow,
-              ),
+                const Gap(AppSpacing.md),
+                TextFormField(
+                  controller: passCtrl,
+                  focusNode: passFocus,
+                  obscureText: !showPass,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  onFieldSubmitted: (_) => onSubmit(),
+                  decoration: InputDecoration(
+                    labelText: l.loginPasswordLabel,
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: NexoTheme.textSecondary,
+                    ),
+                    suffixIcon: IconButton(
+                      tooltip: showPass ? l.actionHide : l.actionShow,
+                      icon: Icon(
+                        showPass
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: NexoTheme.textSecondary,
+                      ),
+                      onPressed: onToggleShow,
+                    ),
+                  ),
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? l.loginPasswordRequired
+                      : null,
+                ),
+              ],
             ),
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Ingresa tu contraseña' : null,
           ),
           AnimatedSize(
             duration: AppDurations.fast,
@@ -287,7 +316,7 @@ class _FormCard extends StatelessWidget {
                         ),
                         const Gap.h(AppSpacing.xs),
                         Text(
-                          'Bloq Mayús está activado',
+                          l.loginCapsLockOn,
                           style: TextStyle(
                             fontSize: AppFont.small,
                             color: NexoTheme.warning,
@@ -353,10 +382,10 @@ class _FormCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Iniciar sesión',
+                    : Text(
+                        l.loginSubmit,
                         key: ValueKey('t'),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: AppFont.title,
                           fontWeight: FontWeight.w700,
                         ),
@@ -370,13 +399,12 @@ class _FormCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.lock_outline,
-                size: AppIcon.xs,
                 color: NexoTheme.textMuted,
               ),
               const Gap.h(AppSpacing.xs),
               Flexible(
                 child: Text(
-                  'Tus credenciales se guardan solo en este dispositivo',
+                  l.loginDeviceOnly,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: AppFont.small,
@@ -440,8 +468,9 @@ class _BrandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
           begin: Alignment.topLeft,
@@ -484,7 +513,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const Gap(AppSpacing.md),
                 Text(
-                  'Tu vida académica UPLA,\nen un solo lugar.',
+                  l.loginBrandTagline,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.88),
                     fontSize: AppFont.h2,
@@ -493,22 +522,13 @@ class _BrandPanel extends StatelessWidget {
                   ),
                 ),
                 const Gap(AppSpacing.huge),
-                _feature(
-                  Icons.schedule_rounded,
-                  'Horario y próxima clase al instante',
-                ),
+                _feature(Icons.schedule_rounded, l.loginFeatureSchedule),
                 const Gap(AppSpacing.lg),
-                _feature(
-                  Icons.payments_outlined,
-                  'Pagos, vencimientos y alertas',
-                ),
+                _feature(Icons.payments_outlined, l.loginFeaturePayments),
                 const Gap(AppSpacing.lg),
-                _feature(Icons.school_outlined, 'Notas y progreso académico'),
+                _feature(Icons.school_outlined, l.loginFeatureGrades),
                 const Gap(AppSpacing.lg),
-                _feature(
-                  Icons.widgets_rounded,
-                  'Widgets en tu pantalla de inicio',
-                ),
+                _feature(Icons.widgets_rounded, l.loginFeatureWidgets),
               ],
             ),
           ),

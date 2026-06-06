@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/core/errors.dart';
+import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/schedule/schedule_detail_screen.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
@@ -35,16 +41,23 @@ class _HorarioScreenState extends State<ScheduleScreen> {
       listenable: widget.store,
       builder: (context, _) {
         final state = widget.store.horario;
+        // Cuenta las clases ya agrupadas (teoría + práctica de un mismo
+        // curso en un día = 1 clase), igual que las tarjetas que ve el alumno.
+        final agrupadas = ClaseAgrupada.agrupar(state.value ?? const []).length;
         return RefreshIndicator(
           onRefresh: () => widget.store.loadHorarioActual(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverToBoxAdapter(
                 child: PageHeader(
-                  title: 'Horario',
-                  subtitle: 'Periodo activo · ${state.value?.length ?? 0} clases',
+                  title: AppLocalizations.of(context).titleSchedule,
+                  subtitle: state.hasValue
+                      ? 'Periodo activo · $agrupadas '
+                            '${agrupadas == 1 ? "clase" : "clases"}'
+                      : 'Periodo activo',
                   actions: [
                     _ViewToggle(
                       weekView: _weekView,
@@ -55,7 +68,26 @@ class _HorarioScreenState extends State<ScheduleScreen> {
               ),
               SliverToBoxAdapter(
                 child: PageBody(
-                  child: _buildBody(context, state),
+                  // Transición suave al alternar Semana ↔ Lista.
+                  child: AnimatedSwitcher(
+                    duration: AppDurations.normal,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.04),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_weekView),
+                      child: _buildBody(context, state),
+                    ),
+                  ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -66,7 +98,10 @@ class _HorarioScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context, AsyncValue<List<ClaseHorario>> state) {
+  Widget _buildBody(
+    BuildContext context,
+    AsyncValue<List<ClaseHorario>> state,
+  ) {
     if (state.loading && !state.hasValue) {
       return const _Loading();
     }
@@ -78,7 +113,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
         child: EmptyState(
           icon: Icons.cloud_off_outlined,
           title: 'No se pudo cargar el horario',
-          subtitle: state.error.toString(),
+          subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
         ),
       );
@@ -123,25 +158,27 @@ class _ViewToggle extends StatelessWidget {
   }
 
   Widget _toggle(String label, bool active, VoidCallback onTap) => InkWell(
-        onTap: onTap,
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: AnimatedContainer(
+      duration: AppDurations.fast,
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: active ? NexoTheme.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? NexoTheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? Colors.white : NexoTheme.textSecondary,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
+      ),
+      child: AnimatedDefaultTextStyle(
+        duration: AppDurations.fast,
+        style: TextStyle(
+          color: active ? Colors.white : NexoTheme.textSecondary,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
-      );
+        child: Text(label),
+      ),
+    ),
+  );
 }
 
 class _WeekView extends StatelessWidget {
@@ -160,9 +197,15 @@ class _WeekView extends StatelessWidget {
     }
 
     final today = DateTime.now().weekday;
-    final daysOrder = [1, 2, 3, 4, 5, 6, 7]
-        .where((d) => byDay.containsKey(d))
-        .toList();
+    final daysOrder = [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+    ].where((d) => byDay.containsKey(d)).toList();
     if (daysOrder.isEmpty) {
       return const EmptyState(
         icon: Icons.event_busy_rounded,
@@ -173,11 +216,14 @@ class _WeekView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final day in daysOrder) ...[
-          _DaySection(
-            day: day,
-            clases: byDay[day]!,
-            isToday: day == today,
+        for (var i = 0; i < daysOrder.length; i++) ...[
+          Reveal(
+            index: i,
+            child: _DaySection(
+              day: daysOrder[i],
+              clases: byDay[daysOrder[i]]!,
+              isToday: daysOrder[i] == today,
+            ),
           ),
           const SizedBox(height: 14),
         ],
@@ -197,7 +243,7 @@ class _DayListView extends StatelessWidget {
     for (final c in clases) {
       byDay.putIfAbsent(c.idDia, () => []).add(c);
     }
-    
+
     // Convertimos cada día en grupos unificados
     final gruposTotales = <ClaseAgrupada>[];
     final days = byDay.keys.toList()..sort();
@@ -211,9 +257,11 @@ class _DayListView extends StatelessWidget {
         child: Column(
           children: [
             for (var i = 0; i < gruposTotales.length; i++) ...[
-              _GrupoTile(grupo: gruposTotales[i], showDay: true),
-              if (i < gruposTotales.length - 1)
-                const Divider(height: 12),
+              Reveal(
+                index: i,
+                child: _GrupoTile(grupo: gruposTotales[i], showDay: true),
+              ),
+              if (i < gruposTotales.length - 1) const Divider(height: 12),
             ],
           ],
         ),
@@ -264,8 +312,7 @@ class _DaySection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                if (isToday)
-                  const StatusChip(text: 'HOY', color: NexoTheme.primary),
+                if (isToday) StatusChip(text: 'HOY', color: NexoTheme.primary),
                 const Spacer(),
                 Text(
                   '${grupos.length} ${grupos.length == 1 ? 'curso' : 'cursos'}',
@@ -289,137 +336,204 @@ class _DaySection extends StatelessWidget {
   }
 }
 
-class _GrupoTile extends StatelessWidget {
+class _GrupoTile extends StatefulWidget {
   final ClaseAgrupada grupo;
   final bool showDay;
   const _GrupoTile({required this.grupo, this.showDay = false});
 
   @override
+  State<_GrupoTile> createState() => _GrupoTileState();
+}
+
+class _GrupoTileState extends State<_GrupoTile> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: NexoTheme.bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NexoTheme.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Time block
-          Container(
-            width: 76,
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: NexoTheme.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: NexoTheme.border),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  grupo.horaInicio,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: NexoTheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                    width: 18,
-                    height: 1,
-                    color: NexoTheme.border),
-                const SizedBox(height: 2),
-                Text(
-                  grupo.horaFin,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: NexoTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(_isHovered ? 6.0 : 0.0, 0.0, 0.0),
+        decoration: BoxDecoration(
+          color: _isHovered ? NexoTheme.card : NexoTheme.bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isHovered ? NexoTheme.primary : NexoTheme.border,
+            width: _isHovered ? 1.5 : 1.0,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  grupo.asignatura,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textPrimary,
-                    height: 1.2,
+          boxShadow: _isHovered
+              ? [
+                  BoxShadow(
+                    color: NexoTheme.primary.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 4,
-                  children: [
-                    if (showDay)
-                      _meta(Icons.calendar_today_outlined,
-                          Fmt.dayLabel(grupo.idDia)),
-                    if (grupo.aula.isNotEmpty)
-                      _meta(Icons.location_on_outlined, grupo.aula),
-                    _meta(Icons.tag_rounded, grupo.sesiones.first.seccion),
-                  ],
-                ),
-                if (grupo.docente.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline_rounded,
-                          size: 14, color: NexoTheme.textMuted),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          grupo.docente,
-                          maxLines: 1,
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => ScheduleDetailScreen.open(context, widget.grupo),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Time block
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    width: 80,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: _isHovered
+                          ? NexoTheme.primary.withValues(alpha: 0.06)
+                          : NexoTheme.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _isHovered
+                            ? NexoTheme.primary.withValues(alpha: 0.4)
+                            : NexoTheme.border,
+                      ),
+                    ),
+                    child: Builder(
+                      builder: (_) {
+                        final h24 = AppStorage.instance.use24h;
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              Fmt.time(widget.grupo.horaInicio, h24: h24),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: NexoTheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Container(
+                              width: 20,
+                              height: 1.5,
+                              color: _isHovered
+                                  ? NexoTheme.primary.withValues(alpha: 0.3)
+                                  : NexoTheme.border,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              Fmt.time(widget.grupo.horaFin, h24: h24),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: NexoTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.grupo.asignatura,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              fontSize: 12, color: NexoTheme.textMuted),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 8),
-                // Sesiones unificadas
-                for (final s in grupo.sesiones)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Row(
-                      children: [
-                        Icon(
-                          s.idTipo.toUpperCase() == 'T'
-                              ? Icons.menu_book_outlined
-                              : Icons.science_outlined,
-                          size: 13,
-                          color: NexoTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${s.tipoLargo} (${s.horaInicio} - ${s.horaFin})',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: NexoTheme.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: NexoTheme.textPrimary,
+                            height: 1.2,
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          children: [
+                            if (widget.showDay)
+                              _meta(
+                                Icons.calendar_today_outlined,
+                                Fmt.dayLabel(widget.grupo.idDia),
+                              ),
+                            if (widget.grupo.aula.isNotEmpty)
+                              _meta(Icons.location_on_outlined, Fmt.formatAula(widget.grupo.aula)),
+                            _meta(Icons.tag_rounded, widget.grupo.sesiones.first.seccion),
+                          ],
+                        ),
+                        if (widget.grupo.docente.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline_rounded,
+                                size: 14,
+                                color: NexoTheme.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.grupo.docente,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: NexoTheme.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        // Sesiones unificadas
+                        for (final s in widget.grupo.sesiones)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  s.idTipo.toUpperCase() == 'T'
+                                      ? Icons.menu_book_outlined
+                                      : Icons.science_outlined,
+                                  size: 13,
+                                  color: NexoTheme.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  () {
+                                    final h24 = AppStorage.instance.use24h;
+                                    return '${s.tipoLargo} '
+                                        '(${Fmt.time(s.horaInicio, h24: h24)} '
+                                        '- ${Fmt.time(s.horaFin, h24: h24)})';
+                                  }(),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: NexoTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

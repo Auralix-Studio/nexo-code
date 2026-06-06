@@ -18,6 +18,29 @@ double? _toDouble(Object? v) {
 
 String _toStr(Object? v) => v?.toString() ?? '';
 
+/// Parsea booleanos tolerando todas las formas que devuelve SIGMA: `bool`
+/// nativo, `0/1` (int), `"true"/"false"`, `"0"/"1"`, `"S"/"N"`. Sin esto,
+/// `j['activo'] as bool?` lanzaba `TypeError` y rompía TODA la lista de
+/// periodos cuando SIGMA cambiaba de bool nativo a 0/1 — el síntoma era
+/// "no aparecen notas" porque sin periodos no se carga la boleta.
+bool _toBool(Object? v, {bool fallback = false}) {
+  if (v == null) return fallback;
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  if (v is String) {
+    final t = v.trim().toLowerCase();
+    if (t.isEmpty) return fallback;
+    if (t == 'true' || t == '1' || t == 's' || t == 'si' || t == 'sí' ||
+        t == 'y' || t == 'yes') {
+      return true;
+    }
+    if (t == 'false' || t == '0' || t == 'n' || t == 'no') {
+      return false;
+    }
+  }
+  return fallback;
+}
+
 /// Parsea una nota que puede venir como "14", "14.00", "14,5" o vacía.
 double? notaToDouble(String? raw) {
   if (raw == null) return null;
@@ -79,7 +102,7 @@ class UserInfo {
         nombres: j['nombres'] as String?,
         apellidos: j['apellidos'] as String?,
         imagen: j['imagen'] as String?,
-        isDocente: j['isDocente'] as bool? ?? false,
+        isDocente: _toBool(j['isDocente']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -131,7 +154,7 @@ class StudentProfile {
         pesId: _toStr(j['pes_Id']),
         nivel: _toStr(j['nivel']),
         ultimaMatricula: _toStr(j['ultimaMatricula']),
-        matriculado: j['matriculado'] as bool? ?? false,
+        matriculado: _toBool(j['matriculado']),
         creditoAprobado: _toInt(j['creditoAprobado']) ?? 0,
       );
 
@@ -171,7 +194,7 @@ class Periodo {
         descripcion: _toStr(j['descripcion']),
         anio: _toInt(j['anio']) ?? 0,
         periodo: _toInt(j['periodo']) ?? 0,
-        activo: j['activo'] as bool? ?? false,
+        activo: _toBool(j['activo']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -911,5 +934,485 @@ class CursoDetalleNotas {
       promedioFinalRaw: promFinal,
       estado: estado,
     );
+  }
+}
+
+// ===== Microsoft Teams / Graph Education =====
+// Modelos basados en las respuestas reales de Microsoft Graph v1.0:
+//   GET /education/me/classes      → educationClass
+//   GET /education/me/assignments  → educationAssignment
+// Se muestran tal cual llegan (sin personalización) para validar el flujo.
+
+/// Una clase de Teams = un grupo = una asignatura (educationClass).
+class TeamsClass {
+  final String id;
+  final String displayName;
+  final String description;
+  final String classCode;
+
+  const TeamsClass({
+    required this.id,
+    required this.displayName,
+    required this.description,
+    required this.classCode,
+  });
+
+  factory TeamsClass.fromJson(Map<String, dynamic> j) => TeamsClass(
+        id: _toStr(j['id']),
+        displayName: _toStr(j['displayName']),
+        description: _toStr(j['description']),
+        classCode: _toStr(j['classCode']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'displayName': displayName,
+        'description': description,
+        'classCode': classCode,
+      };
+}
+
+/// Una tarea (educationAssignment).
+///
+/// En `/me/assignments`, los campos `instructions` y `webUrl` vienen `null`;
+/// para el detalle completo hay que consultar
+/// `GET /education/classes/{classId}/assignments/{id}`.
+class TeamsAssignment {
+  final String id;
+  final String displayName;
+  final String classId;
+  /// Estado del lado del docente: draft, scheduled, published, assigned...
+  final String status;
+  /// Fecha de entrega (UTC en Graph; aquí ya en hora local). Puede ser null.
+  final DateTime? dueDateTime;
+  /// Solo presente en el detalle por clase.
+  final String? instructions;
+  final String? webUrl;
+
+  const TeamsAssignment({
+    required this.id,
+    required this.displayName,
+    required this.classId,
+    required this.status,
+    required this.dueDateTime,
+    this.instructions,
+    this.webUrl,
+  });
+
+  factory TeamsAssignment.fromJson(Map<String, dynamic> j) {
+    // dueDateTime es un DateTimeOffset ISO-8601 (string), p.ej. "2026-05-30T03:59:00Z".
+    final dueRaw = j['dueDateTime'];
+    DateTime? due;
+    if (dueRaw is String && dueRaw.isNotEmpty) {
+      due = DateTime.tryParse(dueRaw)?.toLocal();
+    } else if (dueRaw is Map) {
+      // Algunos endpoints lo envuelven como { dateTime, timeZone }.
+      final dt = dueRaw['dateTime'];
+      if (dt is String) due = DateTime.tryParse(dt)?.toLocal();
+    }
+    // instructions llega como itemBody { contentType, content }.
+    final instr = j['instructions'];
+    final instrText = instr is Map ? instr['content'] as String? : null;
+    return TeamsAssignment(
+      id: _toStr(j['id']),
+      displayName: _toStr(j['displayName']),
+      classId: _toStr(j['classId']),
+      status: _toStr(j['status']),
+      dueDateTime: due,
+      instructions: (instrText != null && instrText.isNotEmpty) ? instrText : null,
+      webUrl: j['webUrl'] as String?,
+    );
+  }
+
+  /// Días hasta la entrega (negativo si ya venció). null si no hay fecha.
+  int? daysUntilDue([DateTime? now]) {
+    final due = dueDateTime;
+    if (due == null) return null;
+    final t = now ?? DateTime.now();
+    final hoy = DateTime(t.year, t.month, t.day);
+    final venc = DateTime(due.year, due.month, due.day);
+    return venc.difference(hoy).inDays;
+  }
+
+  bool isOverdue([DateTime? now]) {
+    final due = dueDateTime;
+    if (due == null) return false;
+    return due.isBefore(now ?? DateTime.now());
+  }
+}
+
+// ===== Documentos descargables (Intranet) =====
+//
+// Constancia de matrícula y Cronograma de pagos. Las fuentes son endpoints
+// posicionales de Intranet (sin claves), mapeados según los comentarios del
+// JS oficial (intra_pg_reportesDelEstudiante.html) y verificación manual.
+
+/// Un curso dentro de la constancia de matrícula.
+class MatriculaCurso {
+  final String codigo;
+  final String asignatura;
+  final String ciclo;
+  final String seccion;
+  final String creditos;
+
+  const MatriculaCurso({
+    required this.codigo,
+    required this.asignatura,
+    required this.ciclo,
+    required this.seccion,
+    required this.creditos,
+  });
+
+  double get creditosNum => double.tryParse(creditos.trim()) ?? 0;
+}
+
+/// Constancia de matrícula completa: cabecera del estudiante + cursos.
+/// Fuente: POST `consultarConstanciaMatriculaEstudiante` body `periodo=YYYY-P`.
+class ConstanciaMatricula {
+  final String codigo;
+  final String estudiante;
+  final String facultad;
+  final String carrera;
+  final String especialidad;
+  final String planEstudios;
+  final String nivel;
+  final int anio;
+  final int periodo;
+  final String modalidad;
+  final String fotoUrl;
+  final String etiquetaCarrera; // "Carrera" o "EAP"
+  final List<MatriculaCurso> cursos;
+  final double totalCreditos;
+
+  const ConstanciaMatricula({
+    required this.codigo,
+    required this.estudiante,
+    required this.facultad,
+    required this.carrera,
+    required this.especialidad,
+    required this.planEstudios,
+    required this.nivel,
+    required this.anio,
+    required this.periodo,
+    required this.modalidad,
+    required this.fotoUrl,
+    required this.etiquetaCarrera,
+    required this.cursos,
+    required this.totalCreditos,
+  });
+
+  /// Construye desde la respuesta posicional de Intranet.
+  factory ConstanciaMatricula.fromRows(List<dynamic> rows) {
+    String at(List<dynamic> r, int i) =>
+        (i < r.length ? r[i]?.toString() ?? '' : '').trim();
+
+    final filas = rows.whereType<List<dynamic>>().toList();
+    if (filas.isEmpty) {
+      return const ConstanciaMatricula(
+        codigo: '', estudiante: '', facultad: '', carrera: '',
+        especialidad: '', planEstudios: '', nivel: '',
+        anio: 0, periodo: 0, modalidad: '', fotoUrl: '',
+        etiquetaCarrera: 'Carrera', cursos: [], totalCreditos: 0,
+      );
+    }
+    final head = filas.first;
+    final cursos = filas
+        .map((r) => MatriculaCurso(
+              codigo: at(r, 6),
+              asignatura: at(r, 7),
+              ciclo: at(r, 9),
+              seccion: at(r, 10),
+              creditos: at(r, 13),
+            ))
+        .where((c) => c.codigo.isNotEmpty)
+        .toList();
+
+    final total = double.tryParse(at(head, 17)) ??
+        cursos.fold<double>(0, (a, c) => a + c.creditosNum);
+
+    return ConstanciaMatricula(
+      codigo: at(head, 0),
+      estudiante: at(head, 1),
+      facultad: at(head, 2),
+      carrera: at(head, 4),
+      especialidad: at(head, 5),
+      planEstudios: at(head, 8),
+      nivel: at(head, 18).isNotEmpty ? at(head, 18) : at(head, 9),
+      anio: int.tryParse(at(head, 11)) ?? 0,
+      periodo: int.tryParse(at(head, 12)) ?? 0,
+      modalidad: at(head, 14),
+      fotoUrl: at(head, 19),
+      etiquetaCarrera: at(head, 21).isNotEmpty ? at(head, 21) : 'Carrera',
+      cursos: cursos,
+      totalCreditos: total,
+    );
+  }
+
+  String get periodoLabel =>
+      '$anio-${periodo == 1 ? 'I' : periodo == 2 ? 'II' : periodo}';
+}
+
+/// Una cuota del cronograma (Intranet `consultarCuotasEstudiante`).
+class CuotaCronograma {
+  final String numero;       // "01", "02"
+  final double monto;        // por cuota
+  final String fechaVencRaw; // dd/MM/yyyy
+
+  const CuotaCronograma({
+    required this.numero,
+    required this.monto,
+    required this.fechaVencRaw,
+  });
+
+  factory CuotaCronograma.fromRow(List<dynamic> r) {
+    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
+    return CuotaCronograma(
+      numero: at(3),
+      monto: double.tryParse(at(2)) ?? 0,
+      fechaVencRaw: at(4),
+    );
+  }
+
+  DateTime? get fechaVenc {
+    final p = fechaVencRaw.split('/');
+    if (p.length != 3) return null;
+    final d = int.tryParse(p[0]);
+    final m = int.tryParse(p[1]);
+    final y = int.tryParse(p[2]);
+    if (d == null || m == null || y == null) return null;
+    return DateTime(y, m, d);
+  }
+}
+
+// ===== Recursos institucionales (SIGMA) =====
+
+/// Publicación / banner institucional (SIGMA `Recursos/ListarPublicaciones`).
+class Publicacion {
+  final int idPublicacion;
+  final String tipoContenido; // "image", "video", etc.
+  final String urlPrincipal;
+  final String? urlAdaptable;
+  final String? urlReferencia;
+  final String? textoBoton;
+  final bool permiteDescarga;
+  final String dimensionPrincipal;
+
+  const Publicacion({
+    required this.idPublicacion,
+    required this.tipoContenido,
+    required this.urlPrincipal,
+    required this.urlAdaptable,
+    required this.urlReferencia,
+    required this.textoBoton,
+    required this.permiteDescarga,
+    required this.dimensionPrincipal,
+  });
+
+  factory Publicacion.fromJson(Map<String, dynamic> j) => Publicacion(
+        idPublicacion: _toInt(j['idPublicacion']) ?? 0,
+        tipoContenido: _toStr(j['tipoContenido']),
+        urlPrincipal: _toStr(j['urlPrincipal']),
+        urlAdaptable: j['urlAdaptable'] as String?,
+        urlReferencia: j['urlReferencia'] as String?,
+        textoBoton: j['textoBoton'] as String?,
+        permiteDescarga: _toBool(j['permiteDescarga']),
+        dimensionPrincipal: _toStr(j['dimensionPrincipal']),
+      );
+
+  bool get esImagen => tipoContenido.toLowerCase() == 'image';
+}
+
+/// Credencial de Wi-Fi institucional (`Recursos/ObtenerWifiUsuario`).
+/// Shape inferida del comportamiento de Intranet: usuario + contraseña.
+class WifiCredencial {
+  final String usuario;
+  final String contrasena;
+
+  const WifiCredencial({required this.usuario, required this.contrasena});
+
+  factory WifiCredencial.fromJson(Map<String, dynamic> j) => WifiCredencial(
+        usuario: _toStr(j['usuario'] ?? j['user'] ?? j['username']),
+        contrasena:
+            _toStr(j['contrasena'] ?? j['password'] ?? j['clave']),
+      );
+}
+
+/// Conteo de notas por estado (`Estudiante/MostrarConteoNotas/{año}/{periodo}`).
+/// Shape best-effort — tolerante a variaciones de nombres.
+class ConteoNotas {
+  final int aprobados;
+  final int desaprobados;
+  final int pendientes;
+  final int total;
+
+  const ConteoNotas({
+    required this.aprobados,
+    required this.desaprobados,
+    required this.pendientes,
+    required this.total,
+  });
+
+  factory ConteoNotas.fromJson(Map<String, dynamic> j) {
+    final a = _toInt(j['aprobados'] ?? j['cantAprobados']) ?? 0;
+    final d = _toInt(j['desaprobados'] ?? j['cantDesaprobados']) ?? 0;
+    final p = _toInt(j['pendientes'] ?? j['cantPendientes']) ?? 0;
+    return ConteoNotas(
+      aprobados: a,
+      desaprobados: d,
+      pendientes: p,
+      total: _toInt(j['total']) ?? (a + d + p),
+    );
+  }
+
+  double get pctAprobados =>
+      total == 0 ? 0 : aprobados / total;
+}
+
+// ===== Docente (scaffold sin verificar con cuenta real) =====
+//
+// Los siguientes modelos están construidos a partir del catálogo del bundle
+// JS (sin acceso a respuestas reales). Decodificadores tolerantes —
+// cuando un docente real pruebe, ajustamos los nombres de campos que no
+// coincidan en un solo lugar (este archivo).
+
+/// Información del docente autenticado (`Docente/GetInfoDocenteV1`).
+class DocenteInfo {
+  final String codigo;
+  final String nombres;
+  final String apellidos;
+  final String? facultad;
+  final String? especialidad;
+
+  const DocenteInfo({
+    required this.codigo,
+    required this.nombres,
+    required this.apellidos,
+    this.facultad,
+    this.especialidad,
+  });
+
+  factory DocenteInfo.fromJson(Map<String, dynamic> j) => DocenteInfo(
+        codigo: _toStr(j['codigo'] ?? j['doc_Id']),
+        nombres: _toStr(j['nombres']),
+        apellidos: _toStr(j['apellidos']),
+        facultad: j['facultad'] as String?,
+        especialidad: j['especialidad'] as String?,
+      );
+
+  String get displayName =>
+      [nombres, apellidos].where((s) => s.trim().isNotEmpty).join(' ').trim();
+}
+
+/// Asignatura que dicta un docente (`Docente/GetAsignaturaDocente`).
+class DocenteAsignatura {
+  final String id;          // cleAuto / saltemId / nrc
+  final String codigo;
+  final String asignatura;
+  final String seccion;
+  final String periodo;     // p.ej. "2026-1"
+  final int? matriculados;
+
+  const DocenteAsignatura({
+    required this.id,
+    required this.codigo,
+    required this.asignatura,
+    required this.seccion,
+    required this.periodo,
+    this.matriculados,
+  });
+
+  factory DocenteAsignatura.fromJson(Map<String, dynamic> j) =>
+      DocenteAsignatura(
+        id: _toStr(j['cleAuto'] ?? j['id'] ?? j['saltemId'] ?? j['nrc']),
+        codigo: _toStr(j['codigo'] ?? j['asg_Id']),
+        asignatura: _toStr(j['asignatura'] ?? j['nombreAsignatura']),
+        seccion: _toStr(j['seccion']),
+        periodo: _toStr(j['periodo'] ?? j['descripcionPeriodo']),
+        matriculados: _toInt(j['matriculados'] ?? j['cantMatriculados']),
+      );
+}
+
+/// Una evaluación dentro de una unidad/parcial.
+/// Fuente real: `Docente/NotasEstudianteResumenV1`.
+class NotaEvaluacion {
+  final String codigo;       // e.g. "U1-P1", "PARCIAL-1"
+  final String descripcion;  // e.g. "Práctica 1", "Examen parcial"
+  final double peso;         // % dentro de la unidad o ciclo
+  final String? nota;        // null si aún no registrada (editable)
+
+  const NotaEvaluacion({
+    required this.codigo,
+    required this.descripcion,
+    required this.peso,
+    this.nota,
+  });
+
+  NotaEvaluacion copyWith({String? nota}) => NotaEvaluacion(
+        codigo: codigo,
+        descripcion: descripcion,
+        peso: peso,
+        nota: nota ?? this.nota,
+      );
+
+  double? get notaNum =>
+      double.tryParse((nota ?? '').replaceAll(',', '.').trim());
+}
+
+/// Registro de asistencia de un alumno en una fecha.
+/// Fuente: `Docente/GetAsistencia` / `InsertaRegistroAsistencia`.
+class AsistenciaDia {
+  final DateTime fecha;
+  /// "P" = presente, "F" = falta, "T" = tardanza, "J" = justificada.
+  final String estado;
+
+  const AsistenciaDia({required this.fecha, required this.estado});
+
+  bool get presente => estado == 'P' || estado == 'T';
+}
+
+/// Un estudiante de una sección que dicta el docente
+/// (`Docente/ListarEstudianteComple?codSaltem={id}`).
+class DocenteAlumno {
+  final String codigo;
+  final String nombres;
+  final String apellidos;
+  final String? asistencia; // % o "" si no aplica
+  final String? nota;       // promedio o nota actual mostrable
+
+  const DocenteAlumno({
+    required this.codigo,
+    required this.nombres,
+    required this.apellidos,
+    this.asistencia,
+    this.nota,
+  });
+
+  factory DocenteAlumno.fromJson(Map<String, dynamic> j) => DocenteAlumno(
+        codigo: _toStr(j['codigo'] ?? j['est_Id']),
+        nombres: _toStr(j['nombres']),
+        apellidos: _toStr(j['apellidos']),
+        asistencia: j['asistencia']?.toString(),
+        nota: j['nota']?.toString() ?? j['promedio']?.toString(),
+      );
+
+  String get displayName =>
+      [apellidos, nombres].where((s) => s.trim().isNotEmpty).join(' ').trim();
+}
+
+/// Cronograma de pagos: monto total + cuotas + datos del alumno.
+class CronogramaPagos {
+  final double montoTotal;
+  final List<CuotaCronograma> cuotas;
+
+  const CronogramaPagos({required this.montoTotal, required this.cuotas});
+
+  factory CronogramaPagos.fromRows(List<dynamic> rows) {
+    final filas = rows.whereType<List<dynamic>>().toList();
+    if (filas.isEmpty) {
+      return const CronogramaPagos(montoTotal: 0, cuotas: []);
+    }
+    final total = double.tryParse(filas.first[1]?.toString() ?? '') ?? 0;
+    final cuotas = filas.map(CuotaCronograma.fromRow).toList();
+    return CronogramaPagos(montoTotal: total, cuotas: cuotas);
   }
 }

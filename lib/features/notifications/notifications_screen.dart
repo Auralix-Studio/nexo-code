@@ -5,6 +5,7 @@ import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/notification_service.dart';
 import 'package:nexo/domain/notification_prefs.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -30,8 +31,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Notificaciones')),
+      appBar: AppBar(title: Text(l.titleNotifications)),
       body: SafeArea(
         child: ListView(
           children: [
@@ -39,8 +41,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.sm),
                 child: Text(
-                  'Recibe avisos de tus clases, pagos y notas. '
-                  'Personaliza qué llega y con cuánta anticipación.',
+                  l.notificationsIntro,
                   style: TextStyle(
                     fontSize: AppFont.body,
                     color: NexoTheme.textSecondary,
@@ -70,8 +71,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             _CategoryCard(
                               icon: Icons.calendar_today_rounded,
                               color: NexoTheme.primary,
-                              title: 'Clases',
-                              subtitle: 'Aviso antes de cada clase',
+                              title: l.notificationsClassesTitle,
+                              subtitle: l.notificationsClassesSubtitle,
                               value: _p.classesEnabled,
                               onToggle: (v) =>
                                   _save(_p.copyWith(classesEnabled: v)),
@@ -87,39 +88,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             _CategoryCard(
                               icon: Icons.account_balance_wallet_rounded,
                               color: NexoTheme.warning,
-                              title: 'Pagos',
-                              subtitle: 'Aviso antes de cada vencimiento',
+                              title: l.notificationsPaymentsTitle,
+                              subtitle: l.notificationsPaymentsSubtitle,
                               value: _p.paymentsEnabled,
                               onToggle: (v) =>
                                   _save(_p.copyWith(paymentsEnabled: v)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const _MiniLabel('Avisarme'),
+                                  _MiniLabel(l.notificationsNotifyMe),
                                   const Gap(AppSpacing.sm),
                                   _ChipRow(
                                     multi: true,
-                                    options:
-                                        NotificationPrefs.opcionesLeadDays,
+                                    options: NotificationPrefs.opcionesLeadDays,
                                     selected: _p.paymentLeadDays.toSet(),
                                     label: NotificationPrefs.labelLeadDays,
                                     onSelect: (d) {
-                                      final set =
-                                          _p.paymentLeadDays.toSet();
+                                      final set = _p.paymentLeadDays.toSet();
                                       if (set.contains(d)) {
                                         set.remove(d);
                                       } else {
                                         set.add(d);
                                       }
                                       final list = set.toList()..sort();
-                                      _save(_p.copyWith(
-                                          paymentLeadDays:
-                                              list.reversed.toList()));
+                                      _save(
+                                        _p.copyWith(
+                                          paymentLeadDays: list.reversed
+                                              .toList(),
+                                        ),
+                                      );
                                     },
                                   ),
                                   const Gap(AppSpacing.md),
-                                  _MiniLabel('Hora del aviso: '
-                                      '${_p.paymentHour.toString().padLeft(2, '0')}:00'),
+                                  _MiniLabel(
+                                    l.notificationsPaymentHour(
+                                      _p.paymentHour.toString().padLeft(2, '0'),
+                                    ),
+                                  ),
                                   Slider(
                                     value: _p.paymentHour.toDouble(),
                                     min: 6,
@@ -128,7 +133,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     label:
                                         '${_p.paymentHour.toString().padLeft(2, '0')}:00',
                                     onChanged: (v) => _save(
-                                        _p.copyWith(paymentHour: v.round())),
+                                      _p.copyWith(paymentHour: v.round()),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -137,9 +143,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             _CategoryCard(
                               icon: Icons.school_rounded,
                               color: NexoTheme.success,
-                              title: 'Notas',
-                              subtitle:
-                                  'Aviso cuando se publique una nota nueva',
+                              title: l.notificationsGradesTitle,
+                              subtitle: l.notificationsGradesSubtitle,
                               value: _p.gradesEnabled,
                               onToggle: (v) =>
                                   _save(_p.copyWith(gradesEnabled: v)),
@@ -167,11 +172,12 @@ class _MasterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: enabled
-            ? const LinearGradient(
+            ? LinearGradient(
                 colors: [NexoTheme.primary, NexoTheme.primaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -205,7 +211,7 @@ class _MasterCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Habilitar notificaciones',
+                  l.notificationsEnableTitle,
                   style: TextStyle(
                     fontSize: AppFont.title,
                     fontWeight: FontWeight.w800,
@@ -213,7 +219,9 @@ class _MasterCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  enabled ? 'Activadas' : 'Desactivadas',
+                  enabled
+                      ? l.notificationsEnabledLabel
+                      : l.notificationsDisabledLabel,
                   style: TextStyle(
                     fontSize: AppFont.small,
                     color: enabled
@@ -309,8 +317,12 @@ class _CategoryCard extends StatelessWidget {
               duration: AppDurations.fast,
               child: value
                   ? Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0,
-                          AppSpacing.lg, AppSpacing.lg),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                      ),
                       child: child,
                     )
                   : const SizedBox(width: double.infinity),
@@ -356,8 +368,7 @@ class _Chip extends StatelessWidget {
   final String text;
   final bool active;
   final VoidCallback onTap;
-  const _Chip(
-      {required this.text, required this.active, required this.onTap});
+  const _Chip({required this.text, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -367,7 +378,9 @@ class _Chip extends StatelessWidget {
       child: AnimatedContainer(
         duration: AppDurations.fast,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.sm + 2),
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm + 2,
+        ),
         decoration: BoxDecoration(
           color: active ? NexoTheme.primary : NexoTheme.bg,
           borderRadius: AppRadii.rPill,
@@ -379,8 +392,7 @@ class _Chip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (active) ...[
-              const Icon(Icons.check_rounded,
-                  size: 14, color: Colors.white),
+              const Icon(Icons.check_rounded, size: 14, color: Colors.white),
               const Gap.h(AppSpacing.xs),
             ],
             Text(
@@ -403,19 +415,20 @@ class _MiniLabel extends StatelessWidget {
   const _MiniLabel(this.text);
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: TextStyle(
-          fontSize: AppFont.small,
-          fontWeight: FontWeight.w600,
-          color: NexoTheme.textSecondary,
-        ),
-      );
+    text,
+    style: TextStyle(
+      fontSize: AppFont.small,
+      fontWeight: FontWeight.w600,
+      color: NexoTheme.textSecondary,
+    ),
+  );
 }
 
 class _InfoNote extends StatelessWidget {
   const _InfoNote();
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -425,12 +438,15 @@ class _InfoNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, size: AppIcon.sm, color: NexoTheme.info),
+          const Icon(
+            Icons.info_outline,
+            size: AppIcon.sm,
+            color: NexoTheme.info,
+          ),
           const Gap.h(AppSpacing.sm),
           Expanded(
             child: Text(
-              'Las clases y pagos se programan en tu dispositivo. Las notas '
-              'se detectan al abrir la app y sincronizar.',
+              l.notificationsInfoNote,
               style: TextStyle(
                 fontSize: AppFont.caption,
                 color: NexoTheme.textSecondary,

@@ -1,22 +1,33 @@
 import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/pending_payments_widget.dart';
 import 'package:nexo/shared/widgets/next_class_widget.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
+import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/features/legal/support_screen.dart';
 
 /// Dashboard de bienvenida con resumen y accesos rápidos.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.store, required this.onJump});
+  const HomeScreen({
+    super.key,
+    required this.store,
+    required this.connectivity,
+    required this.onJump,
+  });
 
   final AppStore store;
+  final ConnectivityService connectivity;
   final ValueChanged<int> onJump;
 
   @override
@@ -30,7 +41,7 @@ class HomeScreen extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics()),
             slivers: [
-              SliverToBoxAdapter(child: _Header(store: store)),
+              SliverToBoxAdapter(child: _Header(store: store, connectivity: connectivity)),
               SliverPadding(
                 padding: EdgeInsets.symmetric(
                   horizontal: Responsive.hPad(context),
@@ -44,14 +55,20 @@ class HomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if ((store.horario.value ?? const []).isNotEmpty) ...[
-                            NextClassWidget(
-                              all: store.horario.value ?? const [],
+                            Reveal(
+                              index: 0,
+                              child: NextClassWidget(
+                                all: store.horario.value ?? const [],
+                              ),
                             ),
                             const SizedBox(height: 16),
                           ],
-                          _StatsGrid(store: store),
+                          Reveal(index: 1, child: _StatsGrid(store: store)),
                           const SizedBox(height: 16),
-                          _MainGrid(store: store, onJump: onJump),
+                          Reveal(
+                            index: 2,
+                            child: _MainGrid(store: store, onJump: onJump),
+                          ),
                           const SizedBox(height: 32),
                         ],
                       ),
@@ -69,10 +86,12 @@ class HomeScreen extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final AppStore store;
-  const _Header({required this.store});
+  final ConnectivityService connectivity;
+  const _Header({required this.store, required this.connectivity});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final profile = store.profile.value;
     final now = DateTime.now();
     return Padding(
@@ -139,10 +158,258 @@ class _Header extends StatelessWidget {
                   ],
                 ),
               ),
+              ListenableBuilder(
+                listenable: connectivity,
+                builder: (context, _) {
+                  final isOnline = connectivity.hasInternet;
+                  final sigmaOnline = connectivity.sigmaStatus == ServerStatus.online;
+                  final intranetOnline = connectivity.intranetStatus == ServerStatus.online;
+                  final isFullyOnline = isOnline && sigmaOnline && intranetOnline;
+
+                  final color = isFullyOnline ? NexoTheme.success : NexoTheme.danger;
+
+                  return Tooltip(
+                    message: l.homeVerifyConnectivity,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _showConnectivityDialog(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showConnectivityDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (context) {
+        final l = AppLocalizations.of(context);
+        return Dialog(
+          backgroundColor: NexoTheme.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: NexoTheme.border),
+          ),
+          child: ListenableBuilder(
+            listenable: connectivity,
+            builder: (context, _) {
+              final isOnline = connectivity.hasInternet;
+              final sigma = connectivity.sigmaStatus;
+              final intranet = connectivity.intranetStatus;
+
+              Widget buildStatusTile(String title, bool active, ServerStatus? status) {
+                final Color color;
+                final String label;
+                final IconData icon;
+
+                if (status != null) {
+                  switch (status) {
+                    case ServerStatus.online:
+                      color = NexoTheme.success;
+                      label = l.connectivityOnline;
+                      icon = Icons.check_circle_outline_rounded;
+                      break;
+                    case ServerStatus.degraded:
+                      color = NexoTheme.warning;
+                      label = l.connectivityDegraded;
+                      icon = Icons.error_outline_rounded;
+                      break;
+                    case ServerStatus.offline:
+                      color = NexoTheme.danger;
+                      label = l.connectivityOffline;
+                      icon = Icons.cancel_outlined;
+                      break;
+                  }
+                } else {
+                  color = active ? NexoTheme.success : NexoTheme.danger;
+                  label = active ? l.connectivityConnected : l.connectivityDisconnected;
+                  icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
+                }
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: NexoTheme.bg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: NexoTheme.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon, color: color, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: NexoTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [NexoTheme.primary, NexoTheme.primaryDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: NexoTheme.primary.withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.sensors_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l.connectivityStatusTitle,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: NexoTheme.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l.connectivityDiagnosticsSubtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: NexoTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    buildStatusTile(l.connectivityInternet, isOnline, null),
+                    buildStatusTile(l.connectivitySigma, isOnline, sigma),
+                    buildStatusTile(l.connectivityIntranet, isOnline, intranet),
+                    const SizedBox(height: 16),
+                    Text(
+                      l.connectivityBackupNote,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: NexoTheme.textMuted,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        SupportScreen.open(context);
+                      },
+                      icon: Icon(Icons.help_outline_rounded, size: 16, color: NexoTheme.success),
+                      label: Text(
+                        l.supportContactButton,
+                        style: const TextStyle(
+                          color: NexoTheme.success,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => connectivity.checkNow(),
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: Text(l.actionRetry),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(color: NexoTheme.border),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NexoTheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(l.actionClose),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -153,6 +420,7 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final p = store.profile.value;
     final cuotas = store.cuotasPendientes.value ?? const <Cuota>[];
     final horario = store.horario.value ?? const <ClaseHorario>[];
@@ -175,28 +443,28 @@ class _StatsGrid extends StatelessWidget {
 
     final stats = <_StatData>[
       _StatData(
-        label: 'Promedio',
+        label: l.homeMetricPromedio,
         value: promedio == null ? '—' : promedio.toStringAsFixed(2),
         icon: Icons.trending_up_rounded,
         color: NexoTheme.primary,
         loading: store.promedios.loading && !store.promedios.hasValue,
       ),
       _StatData(
-        label: 'Créditos',
+        label: l.homeMetricCreditos,
         value: creditosLabel,
         icon: Icons.school_rounded,
         color: NexoTheme.accent,
         loading: store.profile.loading && !store.profile.hasValue,
       ),
       _StatData(
-        label: 'Clases hoy',
+        label: l.homeMetricClasesHoy,
         value: '$clasesHoy',
         icon: Icons.today_rounded,
         color: NexoTheme.success,
         loading: store.horario.loading && !store.horario.hasValue,
       ),
       _StatData(
-        label: 'Por pagar',
+        label: l.homeMetricPorPagar,
         value: cuotas.isEmpty ? 'S/ 0' : Fmt.currency(montoPendiente),
         icon: Icons.account_balance_wallet_rounded,
         color: NexoTheme.warning,
@@ -339,9 +607,10 @@ class _ClasesHoyBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
-      return const SectionCard(
-        title: 'Hoy',
+      return SectionCard(
+        title: l.homeTodayTitle,
         icon: Icons.today_outlined,
         child: Column(
           children: [
@@ -354,12 +623,12 @@ class _ClasesHoyBlock extends StatelessWidget {
     }
     if (state.error != null && !state.hasValue) {
       return SectionCard(
-        title: 'Hoy',
+        title: l.homeTodayTitle,
         icon: Icons.today_outlined,
         child: EmptyState(
           icon: Icons.cloud_off_rounded,
-          title: 'No se pudo cargar el horario',
-          subtitle: state.error.toString(),
+          title: l.homeScheduleLoadError,
+          subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
         ),
       );
@@ -373,7 +642,7 @@ class _ClasesHoyBlock extends StatelessWidget {
           child: TextButton.icon(
             onPressed: onSeeAll,
             icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('Ver semana completa'),
+            label: Text(l.homeSeeFullWeek),
           ),
         ),
       ],
@@ -388,9 +657,10 @@ class _PagosBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
-      return const SectionCard(
-        title: 'Pagos pendientes',
+      return SectionCard(
+        title: l.homePendingPaymentsTitle,
         icon: Icons.account_balance_wallet_outlined,
         child: Column(
           children: [
@@ -403,12 +673,12 @@ class _PagosBlock extends StatelessWidget {
     }
     if (state.error != null && !state.hasValue) {
       return SectionCard(
-        title: 'Pagos pendientes',
+        title: l.homePendingPaymentsTitle,
         icon: Icons.account_balance_wallet_outlined,
         child: EmptyState(
           icon: Icons.cloud_off_rounded,
-          title: 'No se pudo cargar los pagos',
-          subtitle: state.error.toString(),
+          title: l.homePaymentsLoadError,
+          subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
         ),
       );
@@ -422,7 +692,7 @@ class _PagosBlock extends StatelessWidget {
           child: TextButton.icon(
             onPressed: onSeeAll,
             icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('Ver todos los pagos'),
+            label: Text(l.homeSeeAllPayments),
           ),
         ),
       ],

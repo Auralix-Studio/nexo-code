@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/auth/change_password_screen.dart';
+import 'package:nexo/features/legal/about_screen.dart';
+import 'package:nexo/features/legal/developer_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
-import 'package:nexo/features/notifications/notifications_screen.dart';
+import 'package:nexo/features/legal/support_screen.dart';
+import 'package:nexo/features/reports/pdf_export.dart';
+import 'package:nexo/features/settings/settings_screen.dart';
+import 'package:nexo/features/profile/wifi_dialog.dart';
+import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 
@@ -25,6 +34,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
@@ -35,24 +45,48 @@ class ProfileScreen extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics()),
             slivers: [
-              const SliverToBoxAdapter(child: PageHeader(title: 'Perfil')),
+              SliverToBoxAdapter(
+                child: PageHeader(
+                  title: l.titleProfile,
+                  actions: [
+                    IconButton(
+                      tooltip: l.wifiTitle,
+                      icon: const Icon(Icons.wifi_rounded),
+                      onPressed: () => showWifiDialog(context, store),
+                    ),
+                    IconButton(
+                      tooltip: l.profileDownloadEnrollmentPdf,
+                      icon: const Icon(Icons.file_download_outlined),
+                      onPressed: () => PdfExport.constancia(context, store),
+                    ),
+                  ],
+                ),
+              ),
               SliverToBoxAdapter(
                 child: PageBody(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _HeroCard(
-                        profile: p,
-                        promedio: store.promedioAcumulado,
-                        creditosAprob: store.creditosAprobados,
-                        creditosTotal: store.creditosTotales,
+                      Reveal(
+                        index: 0,
+                        child: _HeroCard(
+                          profile: p,
+                          promedio: store.promedioAcumulado,
+                          creditosAprob: store.creditosAprobados,
+                          creditosTotal: store.creditosTotales,
+                        ),
                       ),
                       const SizedBox(height: 14),
-                      _AcademicCard(profile: p),
+                      Reveal(index: 1, child: _AcademicCard(profile: p)),
                       const SizedBox(height: 14),
-                      _AppearanceCard(theme: theme),
-                      const SizedBox(height: 14),
-                      _ActionsCard(onLogout: session.logout, store: store),
+                      Reveal(
+                        index: 2,
+                        child: _ActionsCard(
+                          onLogout: session.logout,
+                          store: store,
+                          theme: theme,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -80,10 +114,11 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -134,13 +169,35 @@ class _HeroCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      profile?.estId ?? '',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+                    GestureDetector(
+                      onTap: () {
+                        if (profile?.estId != null) {
+                          ClipboardHelper.copyAndShow(
+                            context,
+                            profile!.estId,
+                            label: l.profileStudentCode,
+                          );
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            profile?.estId ?? '',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.copy_rounded,
+                            color: Colors.white.withValues(alpha: 0.7),
+                            size: 13,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -152,12 +209,14 @@ class _HeroCard extends StatelessWidget {
           Row(
             children: [
               _heroStat(
-                'PROMEDIO',
+                context,
+                l.homeMetricPromedio.toUpperCase(),
                 promedio == null ? '—' : promedio!.toStringAsFixed(2),
               ),
               _heroDivider(),
               _heroStat(
-                'CRÉDITOS',
+                context,
+                l.homeMetricCreditos.toUpperCase(),
                 creditosAprob == null
                     ? '—'
                     : creditosTotal != null && creditosTotal! > 0
@@ -165,7 +224,7 @@ class _HeroCard extends StatelessWidget {
                         : '$creditosAprob',
               ),
               _heroDivider(),
-              _heroStat('NIVEL', profile?.nivel ?? '—'),
+              _heroStat(context, l.detailLevel.toUpperCase(), profile?.nivel ?? '—'),
             ],
           ),
         ],
@@ -173,30 +232,37 @@ class _HeroCard extends StatelessWidget {
     );
   }
 
-  Widget _heroStat(String label, String value) => Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.3,
+  Widget _heroStat(BuildContext context, String label, String value) => Expanded(
+        child: GestureDetector(
+          onTap: () {
+            if (value != '—') {
+              ClipboardHelper.copyAndShow(context, value, label: label);
+            }
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.3,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
 
@@ -214,59 +280,60 @@ class _AcademicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final p = profile;
     final items = <_InfoItem>[
       _InfoItem(
         icon: Icons.menu_book_outlined,
-        label: 'Carrera',
+        label: l.profileCareer,
         value: p?.carrera ?? '—',
         wide: true,
         color: NexoTheme.primary,
       ),
       _InfoItem(
         icon: Icons.account_balance_outlined,
-        label: 'Facultad',
+        label: l.profileFaculty,
         value: p?.facultad ?? '—',
         wide: true,
       ),
       _InfoItem(
         icon: Icons.location_city_outlined,
-        label: 'Sede',
+        label: l.profileCampus,
         value: p?.sede ?? '—',
       ),
       _InfoItem(
         icon: Icons.video_camera_back_outlined,
-        label: 'Modalidad',
+        label: l.profileMode,
         value: p?.modalidad ?? '—',
       ),
       _InfoItem(
         icon: Icons.bookmark_outline,
-        label: 'Plan de estudios',
+        label: l.profileStudyPlan,
         value: p?.pesId ?? '—',
       ),
       _InfoItem(
         icon: Icons.layers_outlined,
-        label: 'Nivel',
+        label: l.profileLevel,
         value: p?.nivel ?? '—',
       ),
       _InfoItem(
         icon: Icons.event_available_outlined,
-        label: 'Última matrícula',
+        label: l.profileLastEnrollment,
         value: p?.ultimaMatricula ?? '—',
       ),
       _InfoItem(
         icon: p?.matriculado == true
             ? Icons.check_circle_outline
             : Icons.cancel_outlined,
-        label: 'Estado',
-        value: p?.matriculado == true ? 'Matriculado' : 'No matriculado',
+        label: l.profileStatus,
+        value: p?.matriculado == true ? l.profileStatusEnrolled : l.profileStatusNotEnrolled,
         color:
             p?.matriculado == true ? NexoTheme.success : NexoTheme.danger,
       ),
     ];
 
     return SectionCard(
-      title: 'Información académica',
+      title: l.profileAcademicInfo,
       icon: Icons.school_outlined,
       child: LayoutBuilder(builder: (ctx, c) {
         final twoCols = c.maxWidth >= 540;
@@ -347,154 +414,56 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = item.color ?? NexoTheme.primary;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: NexoTheme.bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NexoTheme.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(item.icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.label.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textMuted,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: item.color ?? NexoTheme.textPrimary,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AppearanceCard extends StatelessWidget {
-  final ThemeController theme;
-  const _AppearanceCard({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: theme,
-      builder: (context, _) {
-        final mode = theme.mode;
-        return SectionCard(
-          title: 'Apariencia',
-          icon: Icons.palette_outlined,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  _ModeOption(
-                    label: 'Claro',
-                    icon: Icons.light_mode_rounded,
-                    selected: mode == ThemeMode.light,
-                    onTap: () => theme.set(ThemeMode.light),
-                  ),
-                  const SizedBox(width: 8),
-                  _ModeOption(
-                    label: 'Oscuro',
-                    icon: Icons.dark_mode_rounded,
-                    selected: mode == ThemeMode.dark,
-                    onTap: () => theme.set(ThemeMode.dark),
-                  ),
-                  const SizedBox(width: 8),
-                  _ModeOption(
-                    label: 'Sistema',
-                    icon: Icons.brightness_auto_rounded,
-                    selected: mode == ThemeMode.system,
-                    onTap: () => theme.set(ThemeMode.system),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ModeOption extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ModeOption({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () => ClipboardHelper.copyAndShow(context, item.value, label: item.label),
         borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: selected
-                ? NexoTheme.primary.withValues(alpha: 0.12)
-                : NexoTheme.bg,
+            color: NexoTheme.bg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? NexoTheme.primary : NexoTheme.border,
-              width: selected ? 1.5 : 1,
-            ),
+            border: Border.all(color: NexoTheme.border),
           ),
-          child: Column(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                size: 22,
-                color:
-                    selected ? NexoTheme.primary : NexoTheme.textSecondary,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(item.icon, size: 18, color: color),
               ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color:
-                      selected ? NexoTheme.primary : NexoTheme.textSecondary,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.label.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.textMuted,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.value,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: item.color ?? NexoTheme.textPrimary,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -508,10 +477,16 @@ class _ModeOption extends StatelessWidget {
 class _ActionsCard extends StatelessWidget {
   final Future<void> Function() onLogout;
   final AppStore store;
-  const _ActionsCard({required this.onLogout, required this.store});
+  final ThemeController theme;
+  const _ActionsCard({
+    required this.onLogout,
+    required this.store,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Column(
         children: [
@@ -523,22 +498,64 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.notifications_active_outlined,
+              child: Icon(Icons.settings_outlined,
                   color: NexoTheme.primary, size: 20),
             ),
-            title: const Text(
-              'Notificaciones',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            title: Text(
+              l.settingsTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: Text('Clases, pagos y notas',
-                style: TextStyle(color: NexoTheme.textSecondary)),
             trailing:
                 Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => NotificationsScreen(store: store),
+                builder: (_) => SettingsScreen(store: store, theme: theme),
               ),
             ),
+          ),
+          const Divider(height: 1, indent: 70),
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: NexoTheme.warning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.lock_reset_rounded,
+                  color: NexoTheme.warning, size: 20),
+            ),
+            title: Text(
+              l.titleChangePassword,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            trailing:
+                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ChangePasswordScreen(store: store),
+              ),
+            ),
+          ),
+          const Divider(height: 1, indent: 70),
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: NexoTheme.success.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.help_outline_rounded,
+                  color: NexoTheme.success, size: 20),
+            ),
+            title: Text(
+              l.supportTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            trailing: Icon(Icons.chevron_right,
+                color: NexoTheme.textMuted),
+            onTap: () => SupportScreen.open(context),
           ),
           const Divider(height: 1, indent: 70),
           ListTile(
@@ -552,20 +569,16 @@ class _ActionsCard extends StatelessWidget {
               child:
                   const Icon(Icons.info_outline, color: NexoTheme.info, size: 20),
             ),
-            title: const Text(
-              'Acerca de Nexo',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            title: Text(
+              l.titleAbout,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: Text('Versión 0.1.0',
-                style: TextStyle(color: NexoTheme.textSecondary)),
             trailing: Icon(Icons.chevron_right,
                 color: NexoTheme.textMuted),
-            onTap: () => showAboutDialog(
-              context: context,
-              applicationName: 'Nexo · UPLA',
-              applicationVersion: '0.1.0',
-              applicationLegalese:
-                  'Cliente no oficial creado por y para estudiantes UPLA.',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AboutScreen(),
+              ),
             ),
           ),
           const Divider(height: 1, indent: 70),
@@ -580,9 +593,9 @@ class _ActionsCard extends StatelessWidget {
               child: const Icon(Icons.privacy_tip_outlined,
                   color: NexoTheme.info, size: 20),
             ),
-            title: const Text(
-              'Términos y privacidad',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            title: Text(
+              l.titleTerms,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             trailing:
                 Icon(Icons.chevron_right, color: NexoTheme.textMuted),
@@ -598,15 +611,39 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
+                color: NexoTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.code_rounded,
+                  color: NexoTheme.primary, size: 20),
+            ),
+            title: Text(
+              l.titleDeveloper,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            trailing:
+                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DeveloperScreen(),
+              ),
+            ),
+          ),
+          const Divider(height: 1, indent: 70),
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
                 color: NexoTheme.danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.logout_rounded,
                   color: NexoTheme.danger, size: 20),
             ),
-            title: const Text(
-              'Cerrar sesión',
-              style: TextStyle(
+            title: Text(
+              l.actionLogout,
+              style: const TextStyle(
                 color: NexoTheme.danger,
                 fontWeight: FontWeight.w700,
               ),
@@ -614,21 +651,100 @@ class _ActionsCard extends StatelessWidget {
             onTap: () async {
               final ok = await showDialog<bool>(
                 context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Cerrar sesión'),
-                  content: const Text('¿Quieres salir de tu cuenta?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancelar'),
+                barrierColor: Colors.black.withValues(alpha: 0.5),
+                builder: (ctx) => Dialog(
+                  backgroundColor: NexoTheme.card,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(color: NexoTheme.border),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: NexoTheme.danger.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.logout_rounded,
+                            color: NexoTheme.danger,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          l.logoutConfirmTitle,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: NexoTheme.textPrimary,
+                            letterSpacing: -0.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          l.logoutConfirmBody,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: NexoTheme.textSecondary,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: BorderSide(color: NexoTheme.border),
+                                ),
+                                child: Text(
+                                  l.actionCancel,
+                                  style: TextStyle(
+                                    color: NexoTheme.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: NexoTheme.danger,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  l.actionLogout,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: TextButton.styleFrom(
-                          foregroundColor: NexoTheme.danger),
-                      child: const Text('Cerrar sesión'),
-                    ),
-                  ],
+                  ),
                 ),
               );
               if (ok == true) await onLogout();
@@ -639,3 +755,5 @@ class _ActionsCard extends StatelessWidget {
     );
   }
 }
+
+/// Preferencias generales: idioma y formato de hora.

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
 class _Page {
@@ -22,37 +23,33 @@ class _Page {
   });
 }
 
-const _pages = <_Page>[
-  _Page(
-    icon: Icons.auto_awesome,
-    title: 'Bienvenido a Nexo',
-    body: 'Tu vida académica UPLA reimaginada: clara, rápida y siempre '
-        'contigo.',
-    color: NexoTheme.primary,
-    isIntro: true,
-  ),
-  _Page(
-    icon: Icons.calendar_today_rounded,
-    title: 'Horario inteligente',
-    body: 'Tus clases de hoy y la próxima clase con cuenta regresiva. '
-        'Teoría y práctica del mismo curso, unidas.',
-    color: NexoTheme.accent,
-  ),
-  _Page(
-    icon: Icons.account_balance_wallet_rounded,
-    title: 'Pagos sin sorpresas',
-    body: 'Cuotas pendientes, vencidas, tasas e historial. Sabrás cuánto '
-        'y cuándo pagar sin entrar al portal.',
-    color: NexoTheme.warning,
-  ),
-  _Page(
-    icon: Icons.widgets_rounded,
-    title: 'Widgets en tu pantalla',
-    body: 'Agrega widgets a la pantalla de inicio de Android: próxima '
-        'clase, pagos y tu promedio, de un vistazo.',
-    color: NexoTheme.success,
-  ),
-];
+List<_Page> _pages(AppLocalizations l) => [
+      _Page(
+        icon: Icons.auto_awesome,
+        title: l.onboardingTitleWelcome,
+        body: l.onboardingBodyWelcome,
+        color: NexoTheme.primary,
+        isIntro: true,
+      ),
+      _Page(
+        icon: Icons.calendar_today_rounded,
+        title: l.onboardingTitleSchedule,
+        body: l.onboardingBodySchedule,
+        color: NexoTheme.accent,
+      ),
+      _Page(
+        icon: Icons.account_balance_wallet_rounded,
+        title: l.onboardingTitlePayments,
+        body: l.onboardingBodyPayments,
+        color: NexoTheme.warning,
+      ),
+      _Page(
+        icon: Icons.widgets_rounded,
+        title: l.onboardingTitleWidgets,
+        body: l.onboardingBodyWidgets,
+        color: NexoTheme.success,
+      ),
+    ];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onDone});
@@ -65,8 +62,9 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
+  static const int _pageCount = 4;
 
-  bool get _isLast => _index == _pages.length - 1;
+  bool get _isLast => _index == _pageCount - 1;
 
   @override
   void dispose() {
@@ -87,15 +85,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isDesktop = context.isDesktop;
-    final page = _pages[_index];
+    final pages = _pages(l);
+    final page = pages[_index];
 
     final pager = PageView.builder(
       controller: _controller,
-      itemCount: _pages.length,
+      itemCount: pages.length,
       onPageChanged: (i) => setState(() => _index = i),
       itemBuilder: (_, i) => _Slide(
-        page: _pages[i],
+        page: pages[i],
         active: _index == i,
         compact: isDesktop, // en desktop la ilustración va al panel izq.
       ),
@@ -103,11 +103,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     final controls = _Controls(
       index: _index,
-      total: _pages.length,
+      total: pages.length,
       color: page.color,
       isLast: _isLast,
       onSkip: _isLast ? null : widget.onDone,
       onNext: _next,
+      l: l,
     );
 
     if (isDesktop) {
@@ -132,7 +133,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           duration: AppDurations.fast,
                           child: TextButton(
                             onPressed: _isLast ? null : widget.onDone,
-                            child: const Text('Saltar'),
+                              child: Text(l.actionSkip),
                           ),
                         ),
                       ),
@@ -190,7 +191,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     duration: AppDurations.fast,
                     child: TextButton(
                       onPressed: _isLast ? null : widget.onDone,
-                      child: const Text('Saltar'),
+                      child: Text(l.actionSkip),
                     ),
                   ),
                 ],
@@ -212,6 +213,7 @@ class _Controls extends StatelessWidget {
   final bool isLast;
   final VoidCallback? onSkip;
   final VoidCallback onNext;
+  final AppLocalizations l;
   const _Controls({
     required this.index,
     required this.total,
@@ -219,6 +221,7 @@ class _Controls extends StatelessWidget {
     required this.isLast,
     required this.onSkip,
     required this.onNext,
+    required this.l,
   });
 
   @override
@@ -253,7 +256,7 @@ class _Controls extends StatelessWidget {
               child: AnimatedSwitcher(
                 duration: AppDurations.fast,
                 child: Text(
-                  isLast ? 'Empezar' : 'Siguiente',
+                  isLast ? l.onboardingStart : l.actionNext,
                   key: ValueKey(isLast),
                   style: const TextStyle(
                     fontSize: AppFont.title,

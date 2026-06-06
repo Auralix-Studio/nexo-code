@@ -24,13 +24,35 @@ class ApiEnvelope<T> {
     Map<String, dynamic> json,
     T Function(Object? raw) decode,
   ) {
+    // SIGMA mezcla tipos: `success` puede venir como bool, int (0/1) o
+    // string ("true"/"false"/"1"). Antes `as bool?` lanzaba TypeError y
+    // hacía caer la petición entera, mostrando error rojo aunque el
+    // servidor respondiera 200 con datos.
     return ApiEnvelope(
-      success: json['success'] as bool? ?? false,
-      mensaje: json['mensaje'] as String?,
-      codigo: json['codigo'] as int?,
+      success: _envBool(json['success']),
+      mensaje: json['mensaje']?.toString(),
+      codigo: _envInt(json['codigo']),
       data: json.containsKey('data') ? decode(json['data']) : null,
     );
   }
+}
+
+bool _envBool(Object? v) {
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  if (v is String) {
+    final t = v.trim().toLowerCase();
+    return t == 'true' || t == '1' || t == 's' || t == 'si';
+  }
+  return false;
+}
+
+int? _envInt(Object? v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
+  return null;
 }
 
 /// Cliente HTTP con manejo manual de token, headers y errores.
@@ -80,9 +102,16 @@ class ApiClient {
     bool isRetry = false,
   }) async {
     final uri = _buildUri(path, query);
+    // SIGMA filtra silenciosamente algunos endpoints (notablemente los de
+    // pagos) cuando Origin/Referer no son del dominio oficial — responde
+    // 200 OK con `data: []` en vez de 403. Sin esto, perfil/horario/notas
+    // funcionaban pero pagos siempre salía vacío. El TS prototype también
+    // los manda (ver prototype-ts/src/client.ts).
     final headers = <String, String>{
-      'Accept': 'application/json',
+      'Accept': 'application/json, text/plain, */*',
       'Content-Type': 'application/json; charset=utf-8',
+      'Origin': 'https://sigma.upla.edu.pe',
+      'Referer': 'https://sigma.upla.edu.pe/',
       'User-Agent': AppConfig.userAgent,
     };
     if (authorize && _token != null) {
@@ -130,7 +159,7 @@ class ApiClient {
         }
       }
       onUnauthorized?.call();
-      throw UnauthorizedException(
+      throw SessionExpiredException(
           payload?['mensaje'] as String? ?? 'Sesión expirada.');
     }
     if (res.statusCode == 403) {

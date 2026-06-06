@@ -64,7 +64,7 @@ class HomeWidgetService {
         if (off == 0 && ini != null && ini <= nowMin) continue;
         nextTitle = c.asignatura;
         nextSub = '${c.horaInicio}–${c.horaFin}'
-            '${c.aula.isNotEmpty ? ' · ${c.aula}' : ''}';
+            '${c.aula.isNotEmpty ? ' · ${Fmt.formatAula(c.aula)}' : ''}';
         if (off == 0 && ini != null) {
           final d = ini - nowMin;
           nextWhen = d < 60 ? 'En $d min' : 'En ${d ~/ 60}h ${d % 60}min';

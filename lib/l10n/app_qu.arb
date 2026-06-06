@@ -1,0 +1,577 @@
+{
+  "@@locale": "qu",
+  "tabHome": "Wasi",
+  "tabSchedule": "Pacha",
+  "tabGrades": "Yupana",
+  "tabPayments": "Qullqi",
+  "tabTeacher": "Yachachiq",
+  "tabCourses": "Yachay",
+  "tabProfile": "Runa",
+  "titleHome": "Wasi",
+  "titleSchedule": "Pacha",
+  "titleGrades": "Yupana",
+  "titlePayments": "Qullqi",
+  "titleProfile": "Runa",
+  "language": "Simi",
+  "timeFormat": "Pachap rikuchinan",
+  "detailTeacher": "Yachachiq",
+  "detailRoom": "Wasi",
+  "detailNrc": "NRC",
+  "detailSection": "Sec.",
+  "detailLevel": "Nivel",
+  "detailToday": "Kunan",
+  "actionAccept": "Arí",
+  "actionCancel": "Mana",
+  "actionClose": "Wichqay",
+  "tabTeams": "Teams",
+  "settingsTitle": "Configuración",
+  "settingsAppearance": "Apariencia",
+  "settingsPalette": "Paleta",
+  "settingsSystem": "Sistema",
+  "settingsSystemDesc": "Sigue el modo claro/oscuro de tu dispositivo",
+  "settingsActive": "Activa",
+  "settingsNotificationsSubtitle": "Recordatorios y alertas",
+  "notificationsIntro": "Recibe avisos de tus clases, pagos y notas. Personaliza qué llega y con cuánta anticipación.",
+  "notificationsClassesTitle": "Clases",
+  "notificationsClassesSubtitle": "Aviso antes de cada clase",
+  "notificationsPaymentsTitle": "Pagos",
+  "notificationsPaymentsSubtitle": "Aviso antes de cada vencimiento",
+  "notificationsNotifyMe": "Avisarme",
+  "notificationsPaymentHour": "Hora del aviso: {hour}:00",
+  "@notificationsPaymentHour": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsGradesTitle": "Notas",
+  "notificationsGradesSubtitle": "Aviso cuando se publique una nota nueva",
+  "notificationsEnableTitle": "Habilitar notificaciones",
+  "notificationsEnabledLabel": "Activadas",
+  "notificationsDisabledLabel": "Desactivadas",
+  "notificationsInfoNote": "Las clases y pagos se programan en tu dispositivo. Las notas se detectan al abrir la app y sincronizar.",
+  "homeTodayTitle": "Hoy",
+  "homeScheduleLoadError": "No se pudo cargar el horario",
+  "homeSeeFullWeek": "Ver semana completa",
+  "homePendingPaymentsTitle": "Pagos pendientes",
+  "homePaymentsLoadError": "No se pudo cargar los pagos",
+  "homeSeeAllPayments": "Ver todos los pagos",
+  "schedulePeriodActive": "Periodo activo",
+  "schedulePeriodActiveCount": "{count, plural, =0{Periodo activo} =1{Periodo activo · {count} clase} other{Periodo activo · {count} clases}}",
+  "@schedulePeriodActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleErrorTitle": "Error",
+  "scheduleLoadError": "No se pudo cargar el horario",
+  "scheduleNoClassesTitle": "Sin clases",
+  "scheduleNoClassesSubtitle": "No hay clases registradas",
+  "scheduleToggleWeek": "Semana",
+  "scheduleToggleList": "Lista",
+  "scheduleNoClassesScheduled": "Sin clases programadas",
+  "gradesTitle": "Notas",
+  "gradesSubtitleNoPeriod": "Boleta de notas",
+  "gradesSubtitleUnits": "Por unidades · {period}",
+  "@gradesSubtitleUnits": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesSubtitlePartials": "Por parciales · {period}",
+  "@gradesSubtitlePartials": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesSelectPeriod": "Selecciona un periodo",
+  "gradesSubjects": "Asignaturas",
+  "gradesLoadError": "No se pudo cargar la boleta",
+  "gradesNoNotesTitle": "Sin notas en este periodo",
+  "gradesNoNotesSubtitleNewModel": "La boleta por unidades aplica desde 2026-1.",
+  "gradesSubjectsWithPeriod": "Asignaturas · {period}",
+  "@gradesSubjectsWithPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "gradesCoursesCount": "{count, plural, =1{{count} curso} other{{count} cursos}}",
+  "@gradesCoursesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamsSubtitle": "Tus asignaturas y tareas de Microsoft 365",
+  "teamsDisconnect": "Desconectar",
+  "teamsMySubjects": "Mis asignaturas",
+  "teamsAssignments": "Tareas",
+  "teamsLoadError": "No se pudo cargar",
+  "teamsConnectTitle": "Conecta tu cuenta de Microsoft",
+  "teamsConnectSubtitle": "Para ver tus clases y tareas de Teams",
+  "teamsConnectBody": "Inicia sesión con tu cuenta institucional de Microsoft 365. Te daremos un código para confirmarlo en el navegador.",
+  "teamsConnectButton": "Conectar con Microsoft",
+  "teamsDeviceCodeGenerating": "Generando código…",
+  "teamsDeviceCodeConfirmTitle": "Confirma en el navegador",
+  "teamsDeviceCodeConfirmSubtitle": "Esperando que autorices la app…",
+  "teamsDeviceCodeStep1Prefix": "Abre ",
+  "teamsCopyLink": "Copiar enlace",
+  "teamsLinkCopied": "Enlace copiado",
+  "teamsDeviceCodeStep2Label": "Introduce este código:",
+  "teamsDeviceCodeAutoRefresh": "Esto se actualizará solo cuando termines.",
+  "teamsCodeCopied": "Código copiado",
+  "actionShow": "Mostrar",
+  "actionHide": "Ocultar",
+  "actionSkip": "Saltar",
+  "actionNext": "Siguiente",
+  "validationRequired": "Requerido",
+  "changePasswordSuccess": "Contraseña actualizada correctamente.",
+  "changePasswordHeader": "Define tu nueva contraseña",
+  "changePasswordSubheader": "Se aplicará en todos los servicios institucionales que usen tu cuenta UPLA.",
+  "changePasswordCurrentLabel": "Contraseña actual",
+  "changePasswordNewLabel": "Nueva contraseña",
+  "changePasswordRepeatLabel": "Repetir nueva contraseña",
+  "changePasswordMinChars": "Mínimo {min} caracteres",
+  "@changePasswordMinChars": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "changePasswordMustBeDifferent": "Debe ser distinta a la actual",
+  "changePasswordNoMatch": "No coincide",
+  "changePasswordUpdateButton": "Actualizar contraseña",
+  "loginWelcomeBack": "Bienvenido de nuevo",
+  "loginIntro": "Inicia sesión con tu cuenta institucional. Guardaremos tu sesión para que no tengas que volver a entrar.",
+  "loginUserLabel": "Código o DNI",
+  "loginUserRequired": "Ingresa tu usuario",
+  "loginPasswordLabel": "Contraseña",
+  "loginPasswordRequired": "Ingresa tu contraseña",
+  "loginCapsLockOn": "Bloq Mayús está activado",
+  "loginSubmit": "Iniciar sesión",
+  "loginDeviceOnly": "Tus credenciales se guardan solo en este dispositivo",
+  "loginBrandTagline": "Tu vida académica UPLA,\nen un solo lugar.",
+  "loginFeatureSchedule": "Horario y próxima clase al instante",
+  "loginFeaturePayments": "Pagos, vencimientos y alertas",
+  "loginFeatureGrades": "Notas y progreso académico",
+  "loginFeatureWidgets": "Widgets en tu pantalla de inicio",
+  "onboardingTitleWelcome": "Bienvenido a Nexo",
+  "onboardingBodyWelcome": "Tu vida académica UPLA reimaginada: clara, rápida y siempre contigo.",
+  "onboardingTitleSchedule": "Horario inteligente",
+  "onboardingBodySchedule": "Tus clases de hoy y la próxima clase con cuenta regresiva. Teoría y práctica del mismo curso, unidas.",
+  "onboardingTitlePayments": "Pagos sin sorpresas",
+  "onboardingBodyPayments": "Cuotas pendientes, vencidas, tasas e historial. Sabrás cuánto y cuándo pagar sin entrar al portal.",
+  "onboardingTitleWidgets": "Widgets en tu pantalla",
+  "onboardingBodyWidgets": "Agrega widgets a la pantalla de inicio de Android: próxima clase, pagos y tu promedio, de un vistazo.",
+  "onboardingStart": "Empezar",
+  "wifiTitle": "Wi-Fi institucional",
+  "wifiSubtitle": "Misma cuenta institucional UPLA",
+  "wifiUserLabel": "USUARIO",
+  "wifiPasswordLabel": "CONTRASEÑA",
+  "wifiUserCopied": "Usuario copiado",
+  "wifiPasswordCopied": "Contraseña copiada",
+  "actionSave": "Guardar",
+  "actionCodeCopied": "Código copiado",
+  "profileSettingsSubtitle": "Apariencia, idioma, hora y notificaciones",
+  "profileChangePasswordSubtitle": "Para tu cuenta institucional UPLA",
+  "profileAboutSubtitle": "Versión {version}",
+  "@profileAboutSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutConfirmTitle": "Cerrar sesión",
+  "logoutConfirmBody": "¿Quieres salir de tu cuenta?",
+  "docenteChangeDate": "Cambiar",
+  "docenteSaveAttendance": "Guardar asistencia",
+  "docenteAttendanceSaved": "Asistencia guardada",
+  "docenteAttendanceError": "Error: {error}",
+  "@docenteAttendanceError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteGradeLabel": "Nota (0 - 20)",
+  "docenteGradeEnter": "Ingresa una nota",
+  "docenteGradeInvalidNumber": "Número inválido",
+  "docenteGradeRange": "Entre 0 y 20",
+  "termsHeaderPre": "Antes de empezar",
+  "termsHeaderTitle": "Términos de uso y privacidad",
+  "termsHeaderSubtitle": "Lee y acepta para continuar.",
+  "termsAcceptNote": "Al continuar aceptas estos términos.",
+  "termsAcceptButton": "Aceptar y continuar",
+  "termsBrandTitle": "Bienvenido a Nexo",
+  "termsBrandBody": "Privacidad primero. Tus datos viven solo en tu dispositivo.",
+  "termsItemWhatTitle": "Qué es Nexo",
+  "termsItemWhatBody": "Aplicación independiente y no oficial, creada por y para estudiantes, que reorganiza tu información académica de la UPLA de forma más clara. No está afiliada ni respaldada por la UPLA.",
+  "termsItemPrivacyTitle": "Tus datos y privacidad",
+  "termsItemPrivacyBody": "Tus credenciales y datos se guardan únicamente en tu dispositivo. Nexo no envía nada a servidores propios ni a terceros: las peticiones van directamente a los servicios de la UPLA, igual que el portal oficial.",
+  "termsItemSecurityTitle": "Seguridad",
+  "termsItemSecurityBody": "El almacenamiento local no está cifrado a nivel de sistema. Úsala solo en dispositivos de tu confianza. Puedes cerrar sesión para borrar credenciales y caché en cualquier momento.",
+  "termsItemResponsibleTitle": "Uso responsable",
+  "termsItemResponsibleBody": "Accede solo a tu propia información con tus propias credenciales. Es un proyecto educativo / de hackathon de ingeniería inversa para uso personal. Úsala conforme a los reglamentos de tu universidad.",
+  "termsItemDisclaimerTitle": "Sin garantías",
+  "termsItemDisclaimerBody": "El servicio se ofrece \"tal cual\", sin garantías. Para trámites oficiales consulta siempre el portal institucional.",
+  "aboutFeatureAllInOneTitle": "Tu universidad en un solo lugar",
+  "aboutFeatureAllInOneBody": "Perfil, horario, notas, pagos y próximas tareas, sin saltar entre SIGMA, Intranet y otros portales.",
+  "aboutFeatureMultiplatformTitle": "Multiplataforma",
+  "aboutFeatureMultiplatformBody": "Misma experiencia en Android, iOS, Web y escritorio, con una sola base de código en Flutter.",
+  "aboutFeaturePrivacyTitle": "Privacidad primero",
+  "aboutFeaturePrivacyBody": "Tus credenciales se guardan solo en tu dispositivo. Las peticiones van directo a los servicios de la UPLA, sin servidores intermedios.",
+  "aboutFeatureNoSdkTitle": "Sin SDKs de terceros",
+  "aboutFeatureNoSdkBody": "Autenticación y red implementadas a mano sobre HTTP estándar, para controlar errores y mantenerlo ligero.",
+  "aboutFooterDisclaimer": "Nexo es un proyecto independiente y no oficial, creado por y para estudiantes. No está afiliado ni respaldado por la UPLA.",
+  "aboutHeroSubtitle": "Cliente UPLA · v{version}",
+  "@aboutHeroSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutDetailsTitle": "Detalles",
+  "aboutDetailsVersionLabel": "Versión",
+  "aboutDetailsBuildLabel": "Build",
+  "aboutDetailsPlatformsLabel": "Plataformas",
+  "aboutDetailsPlatformsValue": "Android · iOS · Web · Escritorio",
+  "aboutDetailsTechLabel": "Tecnología",
+  "aboutDetailsTechValue": "Flutter",
+  "developerGithubCopied": "Enlace de GitHub copiado",
+  "developerSubtitle": "Quién creó Nexo",
+  "developerRole": "Desarrollador independiente · Estudiante UPLA",
+  "supportTitle": "Soporte Técnico",
+  "supportHeroBadge": "SOPORTE 24/7",
+  "supportHeroTitle": "¿Tienes algún problema?",
+  "supportHeroBody": "Estamos aquí para ayudarte. Si experimentas fallas en la app, problemas de conexión o errores en los datos, contáctanos directamente por WhatsApp o correo electrónico.",
+  "supportChannelsTitle": "Canales de Atención",
+  "supportChannelWhatsApp": "WhatsApp",
+  "supportChannelEmail": "Correo Electrónico",
+  "supportInfoNote": "Al presionar el canal de atención, se abrirá la aplicación correspondiente. De lo contrario, los datos de contacto se copiarán a tu portapapeles.",
+  "supportWhatsAppMessage": "Hola, tengo un problema con la aplicación Nexo",
+  "supportWhatsAppCopied": "Número de WhatsApp de Soporte copiado",
+  "supportEmailSubject": "Soporte Nexo App",
+  "supportEmailBody": "Hola, tengo un problema con la aplicación Nexo:",
+  "supportEmailCopied": "Correo electrónico de Soporte copiado",
+  "supportContactButton": "Contactar Soporte Técnico",
+  "docenteLabel": "YACHACHIQ",
+  "docenteCodeLabel": "Yachachiq yupana",
+  "docenteMetricCursos": "Yachaykuna",
+  "docenteMetricAlumnos": "Yachakuqkuna",
+  "docenteMetricPeriodo": "Periodo",
+  "docenteNoClassesToday": "Mana kunan yachachinkichu",
+  "docenteToday": "Kunan",
+  "docenteClassCount": "{count, plural, =1{{count} clase} other{{count} clases}}",
+  "@docenteClassCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteTypeTeoria": "TEO",
+  "docenteTypePractica": "PRÁC",
+  "docenteLoadingClasses": "Clasesta qapichkan...",
+  "docenteSessionsWeeklyCount": "Yachayniykuna · {count, plural, =1{1 sesión esta semana} other{{count} sesiones esta semana}}",
+  "@docenteSessionsWeeklyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteNoClassesRegistered": "Mana yachachinayki qillqasqachu kachkan",
+  "docenteCourseCount": "{count, plural, =1{{count} yachay} other{{count} yachaykuna}}",
+  "@docenteCourseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteCoursesCountPlural": "{count, plural, =1{{count} asignatura} other{{count} asignaturas}}",
+  "@docenteCoursesCountPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteMetricAlumnosCount": "{count, plural, =1{{count} yachakuq} other{{count} yachakuqkuna}}",
+  "@docenteMetricAlumnosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteLoadCoursesError": "Mana atikurqachu yachaykunata qapichiyta",
+  "docenteNoCoursesPeriod": "Mana yachaykuna churapusqachu kay periodopi",
+  "docenteTabAlumnos": "Yachakuqkuna",
+  "docenteTabAsistencia": "Asistencia",
+  "docenteTabNotas": "Yupana",
+  "docenteNoCode": "Mana yupana",
+  "docenteSectionPeriod": "Sección {seccion} · {periodo}",
+  "@docenteSectionPeriod": {
+    "placeholders": {
+      "seccion": {
+        "type": "String"
+      },
+      "periodo": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteNoAlumnosRegistered": "Mana yachakuqkuna qillqasqachu kachkan",
+  "docenteAsisPercent": "{percent}% asist.",
+  "@docenteAsisPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteAttendancePresentShort": "Pres.",
+  "docenteAttendanceTardanzaShort": "Tard.",
+  "docenteAttendanceFaltaShort": "Falta",
+  "docenteNoAlumnosInCourse": "Mana yachakuqkuna kay yachaypi",
+  "docenteAprobadosCount": "{aprobados} de {total} aprobados",
+  "@docenteAprobadosCount": {
+    "placeholders": {
+      "aprobados": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteTapToEdit": "Llamiy llankapashanapaq →",
+  "docentePromedioParcial": "PROMEDIO PARCIAL",
+  "docenteCoursePercentGraded": "{percent}% del curso\\ya calificado",
+  "@docenteCoursePercentGraded": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteEvalPending": "PENDIENTE",
+  "docenteNoAttendanceRecords": "Mana asistencia qillqasqa kachkanchu.",
+  "docenteAttendanceLabel": "ASISTENCIA",
+  "docenteSessionsRegisteredCount": "{presentes} de {total}\nsesiones registradas",
+  "@docenteSessionsRegisteredCount": {
+    "placeholders": {
+      "presentes": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteAttendancePresent": "Presente",
+  "docenteAttendanceTardanza": "Tardanza",
+  "docenteAttendanceFalta": "Falta",
+  "docenteAttendanceJustificada": "Justificada",
+  "docenteInfoTitle": "Yachachiq willakuy",
+  "docenteInfoFieldNombres": "Sutikuna",
+  "docenteInfoFieldApellidos": "Apellidokuna",
+  "docenteInfoFieldFacultad": "Facultad",
+  "docenteInfoFieldEspecialidad": "Especialidad",
+  "docenteSupportSubtitle": "Contactar por WhatsApp o Correo",
+  "connectivityStatusTitle": "Estado de Conexión",
+  "connectivityDiagnosticsSubtitle": "Diagnóstico en tiempo real",
+  "connectivityInternet": "Conexión a Internet",
+  "connectivitySigma": "Servidor SIGMA",
+  "connectivityIntranet": "Servidor INTRANET",
+  "connectivityBackupNote": "Los datos locales de respaldo se usarán automáticamente cuando no haya conexión con los servidores.",
+  "connectivityOnline": "En línea",
+  "connectivityOffline": "Caído",
+  "connectivityDegraded": "Inestable",
+  "connectivityConnected": "Conectado",
+  "connectivityDisconnected": "Desconectado",
+  "homeVerifyConnectivity": "Conexión allin kayninta rikukuy",
+  "homeMetricPromedio": "Promedio",
+  "homeMetricCreditos": "Créditos",
+  "homeMetricClasesHoy": "Kunan yachaykuna",
+  "homeMetricPorPagar": "Manu",
+  "gradesDetailLoadError": "Mana atikurqachu qapichiyta",
+  "gradesSustitutorio": "Sustitutorio",
+  "gradesNoUnitsYetTitle": "Manaraq yupanayuq",
+  "gradesNoUnitsYetSubtitle": "Lloqsimuspa rikukusunki.",
+  "gradesEvidenciaConocimiento": "Yachay rikuchiy",
+  "gradesEvidenciaDesempeno": "Desempeño rikuchiy",
+  "gradesEvidenciaProducto": "Producto rikuchiy",
+  "gradesPromedioAcumulado": "Promedio acumulado",
+  "gradesNoCreditsData": "Mana créditos willakuy",
+  "gradesNoHistoryYet": "Manaraq ñawpa willakuyniyuq",
+  "gradesEvolutionByPeriod": "Evolución por periodo",
+  "statusInProcess": "LLANKASHKAN",
+  "gradesPromedioLabel": "Promedio",
+  "gradesParcial1": "Parcial 1",
+  "gradesParcial2": "Parcial 2",
+  "gradesPromedioParcial1": "Parcial 1 promedio",
+  "gradesPromedioParcial2": "Parcial 2 promedio",
+  "gradesPromedioFinal": "Promedio final",
+  "gradesPrimerParcial": "Primer parcial",
+  "gradesSegundoParcial": "Segundo parcial",
+  "gradesPromedioPracticas": "Prácticas promedio",
+  "gradesTrabajoInvestigacion": "Trabajo de investigación",
+  "gradesExamenParcial": "Examen parcial",
+  "gradesExamenComplementario": "Examen complementario",
+  "paymentsDownloadSchedulePdf": "Cronograma uraykachiy (PDF)",
+  "paymentsTabPending": "Manaraq pagasqa",
+  "paymentsTabOverdue": "Pasasqa",
+  "paymentsTabFees": "Tasas",
+  "paymentsUpToDateTitle": "Allillan kachkanki!",
+  "paymentsUpToDateSubtitle": "Mana cuotakuna kanchu.",
+  "paymentsNoOverdueTitle": "Mana pasasqa cuotakuna",
+  "paymentsNoOverdueSubtitle": "Kusa, mana pasasqa cuotakuna kanchu.",
+  "paymentVenceHoy": "KUNAN VENCEN",
+  "paymentVenceManana": "Paqarin vencen",
+  "paymentVenceMananaCaps": "PAQARIN VENCEN",
+  "paymentsNoFeesRegistered": "Mana tasas qillqasqachu",
+  "paymentsNoHistoryRegistered": "Mana pagos qillqasqachu",
+  "paymentDetailCuota": "Cuota willakuy",
+  "paymentDetailTasa": "Tasa willakuy",
+  "paymentDetailPago": "Pago willakuy",
+  "paymentDetailTasaAdministrativa": "Tasa Administrativa",
+  "paymentDetailImporteBase": "Importe Base",
+  "paymentDetailFechaVencimiento": "Fecha de Vencimiento",
+  "paymentDetailImportePagado": "Importe Pagado",
+  "paymentDetailFechaPago": "Fecha de Pago",
+  "paymentDetailHoraPago": "Hora de Pago",
+  "paymentDetailPeriodoAcademico": "Periodo Académico",
+  "paymentDetailLugarPago": "Lugar de Pago",
+  "paymentDetailDescripcionOperacion": "Descripción de Operación",
+  "paymentDetailInformacionDetallada": "Información Detallada",
+  "profileDownloadEnrollmentPdf": "Constancia de matrícula (PDF)",
+  "profileStudentCode": "Yachakuq yupana",
+  "profileCareer": "Carrera",
+  "profileFaculty": "Facultad",
+  "profileCampus": "Sede",
+  "profileMode": "Modalidad",
+  "profileStudyPlan": "Plan de estudios",
+  "profileLevel": "Nivel",
+  "profileLastEnrollment": "Última matrícula",
+  "profileStatus": "Estado",
+  "profileStatusNotEnrolled": "Mana matriculado",
+  "profileStatusEnrolled": "Matriculado",
+  "profileAcademicInfo": "Yachay willakuy",
+  "teamsCopyCode": "Códigota copiary",
+  "teamsUnderConstruction": "Llankachkanchikraq",
+  "teamsSoonAvailable": "Chaylla chayamunqa",
+  "teamsWorkingOnSection": "Kaypi llankachkanchikraq",
+  "teamsComeBackLater": "Qayna kutimunki.",
+  "pdfExportLoadConstanciaError": "Mana constanciata qapichiyta atikunchu.",
+  "pdfExportLoadCronogramaError": "Mana cronogramata qapichiyta atikunchu.",
+  "gradesCreditsSummary": "{aprobados} de {total} créditos",
+  "@gradesCreditsSummary": {
+    "placeholders": {
+      "aprobados": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "gradesCreditsApprovedCount": "{count, plural, =1{1 crédito aprobado} other{{count} créditos aprobados}}",
+  "@gradesCreditsApprovedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "gradesRank": " · Puesto {rank}",
+  "@gradesRank": {
+    "placeholders": {
+      "rank": { "type": "String" }
+    }
+  },
+  "gradesSummary": "Resumen",
+  "gradesPractice": "Práctica {index}",
+  "@gradesPractice": {
+    "placeholders": {
+      "index": { "type": "String" }
+    }
+  },
+  "gradesProyecto": "Proyecto",
+  "gradesPromedioTiPy": "Promedio TI + PY",
+  "paymentsTabHistory": "Historial",
+  "paymentsLoadError": "Mana atikurqachu qapichiyta",
+  "paymentDaysOverdue": "Pasasqa {days} d.",
+  "@paymentDaysOverdue": {
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "paymentDaysLeft": "{days} punchawpi",
+  "@paymentDaysLeft": {
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "paymentMora": "Mora {currency} {amount}",
+  "@paymentMora": {
+    "placeholders": {
+      "currency": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "paymentVenceEl": "Vence el {date}",
+  "@paymentVenceEl": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "paymentStatusPaid": "PAGADO",
+  "paymentDateOfPayment": "Fecha de Pago: {date}",
+  "@paymentDateOfPayment": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "paymentMoraLabel": "Mora",
+  "paymentDetailObservacion": "Observación",
+  "paymentDetailConcepto": "Concepto",
+  "paymentDetailImporte": "Importe",
+  "paymentDetailComprobante": "Comprobante",
+  "paymentDetailOperacion": "Operación",
+  "setupTitle": "¡Allillam chayamunki Nexo UPLA-man!",
+  "setupSubtitle": "Tariparkanchikmi kay llikachata hawamanta purichichkanki.",
+  "setupBtnInstall": "Antañiqichaypi churanay",
+  "setupBtnPortable": "Portable nisqapi purichiy",
+  "setupPortableDesc": "Portable nisqaqa manam suyukunata paqarichinqachu ni Windows-man riqsichinqachu.",
+  "setupProgressCopied": "Imakuna patachaypi churanayta copiaq...",
+  "setupProgressShortcuts": "Sutikuna paqarichiq...",
+  "setupProgressRegister": "Windows llikaman riqsichiy...",
+  "setupProgressDone": "¡Allillam churanay tukusqa!",
+  "setupSuccessTitle": "¡Tukusqa Churanay!",
+  "setupSuccessDesc": "Nexo UPLA allillam antañiqichaypi churasqa kachkan.",
+  "setupBtnStart": "Llikachata qallariy",
+  "setupErrorTitle": "Churanaypi Pantay",
+  "setupBtnRetry": "Musuqmanta ruray",
+  "setupBtnExit": "Lluqsiy",
+  "setupCustomization": "Kikinpaq ruray",
+  "setupTermsAccept": "Ñawirini, arí nini kay kamachiykunata",
+  "setupTermsRequired": "Kamachiykunata arí ninayki tiyan hinaruranaykiraq",
+  "setupOptionDesktop": "Escritorio-pi ataqu churay",
+  "setupOptionStartMenu": "Menú Inicio-pi churay",
+  "setupOptionAutoStart": "Windows-wan Nexo qallariy",
+  "setupOptionAutoStartDesc": "Kikillanmanta kichakamunqa sesión qallarispayki",
+  "setupProgressAutoStart": "Kikillan qallariy churaq...",
+  "setupBtnBack": "Ñawpa",
+  "setupBtnNext": "Qatiq",
+  "setupBtnInstallNow": "Churay"
+}

@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/legal/support_screen.dart';
+import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/util/formatters.dart';
 
 void main() {
   test('Cuota.daysUntilDue calcula días correctamente', () {
@@ -156,5 +160,56 @@ void main() {
     expect(det.promedioFinalText, '3');
     expect(det.estado, 'Dsp.');
     expect(det.tieneSustitutorio, false);
+  });
+
+  test('Fmt.parseAula y Fmt.formatAula procesan correctamente "I 302" y otros formatos', () {
+    final parsed = Fmt.parseAula('I 302');
+    expect(parsed['pabellon'], 'I');
+    expect(parsed['aula'], '302');
+
+    final parsedSingle = Fmt.parseAula('Virtual');
+    expect(parsedSingle['pabellon'], null);
+    expect(parsedSingle['aula'], 'Virtual');
+
+    final parsedEmpty = Fmt.parseAula('   ');
+    expect(parsedEmpty['pabellon'], null);
+    expect(parsedEmpty['aula'], null);
+
+    final parsedLab = Fmt.parseAula('LABORATORIO DE COMPUTO 4');
+    expect(parsedLab['pabellon'], null);
+    expect(parsedLab['aula'], 'LABORATORIO DE COMPUTO 4');
+
+    expect(Fmt.formatAula('I 302'), 'Pab. I - Aula 302');
+    expect(Fmt.formatAula('LABORATORIO DE COMPUTO 4'), 'LABORATORIO DE COMPUTO 4');
+    expect(Fmt.formatAula('Virtual'), 'Virtual');
+    expect(Fmt.formatAula(''), '—');
+  });
+
+  testWidgets('SupportScreen renders and handles tapping contact options safely', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('es'),
+        home: SupportScreen(),
+      ),
+    );
+
+    expect(find.text('Soporte Técnico'), findsOneWidget);
+    expect(find.text('¿Tienes algún problema?'), findsOneWidget);
+    expect(find.text('WhatsApp'), findsOneWidget);
+    expect(find.text('Correo Electrónico'), findsOneWidget);
+
+    // Tap WhatsApp option
+    await tester.tap(find.text('WhatsApp'));
+    await tester.pumpAndSettle();
+
+    // Tap Email option
+    await tester.tap(find.text('Correo Electrónico'));
+    await tester.pumpAndSettle();
+
+    // Since we're in a widget test and url_launcher is not mocked,
+    // they should fail gracefully via the try-catch block and copy the text
+    // to the clipboard, rather than throwing uncaught PlatformExceptions.
   });
 }
