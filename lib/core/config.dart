@@ -151,13 +151,11 @@ class LumenConfig {
   /// ~290 MB en disco, ~500 MB RAM en runtime, 30-50 tok/s en gama media.
   /// Sin int4 disponible para móvil — Google solo publica q8.
   static const LumenModelSpec light = LumenModelSpec(
-    id: 'gemma-270m-q8',
+    id: 'gemma-270m-int8',
     displayName: 'Lumen Ligero',
-    filename: 'gemma3-270m-it-q8.task',
-    // TODO: completar tras descargar de Kaggle y subir a GH Releases.
-    // Comando: sha256sum gemma3-270m-it-q8.task (Linux/Mac) o
-    // Get-FileHash -Algorithm SHA256 gemma3-270m-it-q8.task (PowerShell).
-    sha256: 'TODO_SHA256_OF_GEMMA_270M_Q8',
+    filename: 'gemma-3-270m-it-int8.task',
+    sha256:
+        '0f7147f1c22eaf758b819bbf7841793e4c90096c9352cde7fbe5c631f2265ef5',
     sizeBytes: 303950933,
     tagline: 'Ligero · descarga rápida',
     recommendedFor: 'Teléfonos con 2-3 GB de RAM o gama media-baja.',
