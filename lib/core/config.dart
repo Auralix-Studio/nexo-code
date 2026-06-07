@@ -93,8 +93,10 @@ class MsConfig {
 class LumenConfig {
   /// Modelo por defecto: Gemma 3 1B IT, quantizado int4 (QAT) por Google.
   /// ~529 MB descarga, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
-  /// Origen: https://huggingface.co/litert-community/Gemma3-1B-IT
-  static const String modelFilename = 'gemma3-1b-it-int4.task';
+  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-1b-it-int4 v1).
+  /// Re-distribuido en GitHub Releases del propio repo Nexo — los términos
+  /// Gemma se aceptaron en Kaggle al descargar.
+  static const String modelFilename = 'gemma3-1B-it-int4.task';
 
   /// Tag del release de GitHub donde está alojado el .task.
   static const String modelReleaseTag = 'lumen-models-v1';
@@ -104,19 +106,20 @@ class LumenConfig {
       'https://github.com/Alexito-Hub/nexo/releases/download/'
       '$modelReleaseTag/$modelFilename';
 
-  /// SHA-256 esperado del archivo. TODO: completar tras subir el release.
-  /// Para calcularlo: `sha256sum gemma3-1b-it-int4.task` (Linux/macOS) o
-  /// `Get-FileHash -Algorithm SHA256 gemma3-1b-it-int4.task` (PowerShell).
-  static const String modelSha256 = 'TODO_SHA256_OF_GEMMA_1B_INT4';
+  /// SHA-256 esperado del archivo (calculado del binario de Kaggle v1).
+  /// Si Google publica una v2 del modelo, hay que actualizar este hash
+  /// junto con el release asset.
+  static const String modelSha256 =
+      'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee';
 
-  /// Tamaño esperado en bytes (para el progress bar). ~529 MB.
-  /// TODO: completar exacto tras subir el release.
-  static const int modelSizeBytes = 529 * 1024 * 1024;
+  /// Tamaño exacto en bytes (para el progress bar y validación rápida).
+  static const int modelSizeBytes = 554661243;
 
   /// `true` si el operador (Alessandro) ya subió el modelo al release y
   /// pegó el checksum real. Mientras esté en `TODO_*`, la app no intentará
   /// descargar y mostrará un mensaje claro en el onboarding.
-  static bool get isConfigured => modelSha256 != 'TODO_SHA256_OF_GEMMA_1B_INT4';
+  static bool get isConfigured =>
+      !modelSha256.startsWith('TODO_');
 
   /// Etiqueta humana del modelo activo (para UI/settings).
   static const String modelDisplayName = 'Gemma 3 · 1B';
