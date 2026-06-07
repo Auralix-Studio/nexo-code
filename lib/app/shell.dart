@@ -165,6 +165,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           store: widget.store,
           session: widget.session,
           theme: widget.theme,
+          lumen: widget.lumen,
         )),
       ];
     } else {
@@ -184,6 +185,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           store: widget.store,
           session: widget.session,
           theme: widget.theme,
+          lumen: widget.lumen,
         )),
       ];
     }

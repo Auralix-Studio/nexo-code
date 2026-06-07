@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:nexo/ai/lumen_services.dart';
+import 'package:nexo/ai/lumen_state.dart';
 import 'package:nexo/core/app_locale.dart';
+import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/features/ai/lumen_onboarding_dialog.dart';
 import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
@@ -11,9 +15,15 @@ import 'package:nexo/shared/widgets/section_card.dart';
 /// Pantalla de Configuración común a estudiante y docente.
 /// Centraliza Apariencia, Idioma, Formato de hora y Notificaciones.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.store, required this.theme});
+  const SettingsScreen({
+    super.key,
+    required this.store,
+    required this.theme,
+    required this.lumen,
+  });
   final AppStore store;
   final ThemeController theme;
+  final LumenServices lumen;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +42,8 @@ class SettingsScreen extends StatelessWidget {
                 _PreferencesCard(theme: theme),
                 const SizedBox(height: 14),
                 _NotificationsCard(store: store),
+                const SizedBox(height: 14),
+                _LumenCard(lumen: lumen),
                 const SizedBox(height: 24),
               ],
             ),
@@ -458,6 +470,112 @@ class _NotificationsCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ===== Lumen (asistente IA on-device) =====
+
+class _LumenCard extends StatelessWidget {
+  const _LumenCard({required this.lumen});
+
+  final LumenServices lumen;
+
+  Future<void> _activate(BuildContext context) async {
+    await LumenOnboardingDialog.show(context, lumen);
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Borrar modelo de Lumen'),
+        content: const Text(
+          'Esto libera ~529 MB de tu dispositivo y desactiva Lumen. '
+          'Podrás volver a descargar el modelo cuando quieras.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: NexoTheme.danger),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Borrar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await lumen.engine.unload();
+    await lumen.modelManager.delete();
+    await lumen.clearSession();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: lumen.state,
+      builder: (context, _) {
+        final status = lumen.state.status;
+        final installed = status != LumenStatus.inactive &&
+            status != LumenStatus.error;
+        return SectionCard(
+          title: 'Asistente IA · Lumen',
+          icon: Icons.auto_awesome,
+          iconColor: const Color(0xFFE89E2B),
+          subtitle: '100% on-device · sin internet en inferencia',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!installed) ...[
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.power_settings_new_rounded),
+                  title: const Text('Activar Lumen'),
+                  subtitle: const Text(
+                    'Descarga el modelo Gemma 1B (~529 MB) una sola vez.',
+                  ),
+                  trailing: Icon(Icons.chevron_right,
+                      color: NexoTheme.textMuted),
+                  onTap: () => _activate(context),
+                ),
+              ] else ...[
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.check_circle_outline,
+                      color: NexoTheme.success),
+                  title: const Text('Modelo instalado'),
+                  subtitle: Text(LumenConfig.modelDisplayName),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.delete_outline,
+                      color: NexoTheme.danger),
+                  title: Text('Borrar modelo',
+                      style: TextStyle(color: NexoTheme.danger)),
+                  subtitle: const Text(
+                    'Libera el espacio y desactiva Lumen.',
+                  ),
+                  onTap: () => _delete(context),
+                ),
+              ],
+              const Divider(height: 1),
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Lumen lee tu data UPLA (perfil, horario, cuotas, notas) '
+                  'solo para responder en tu teléfono. Nada se envía a '
+                  'internet.',
+                  style: TextStyle(fontSize: 12, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
