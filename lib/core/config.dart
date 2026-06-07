@@ -92,7 +92,9 @@ class LumenModelSpec {
   /// No cambiar entre releases sin lógica de migración.
   final String id;
 
-  /// Nombre para mostrar en UI (ej. 'Gemma 3 · 1B').
+  /// Nombre para mostrar en UI. Usamos nombres camuflados ("Lumen Ligero")
+  /// en lugar del nombre del modelo subyacente — al usuario no le importa
+  /// que sea Gemma/Qwen/Phi, le importa "rápido vs preciso".
   final String displayName;
 
   /// Nombre del .task tal como está subido al release de GH.
@@ -150,7 +152,7 @@ class LumenConfig {
   /// Sin int4 disponible para móvil — Google solo publica q8.
   static const LumenModelSpec light = LumenModelSpec(
     id: 'gemma-270m-q8',
-    displayName: 'Gemma 3 · 270M',
+    displayName: 'Lumen Ligero',
     filename: 'gemma3-270m-it-q8.task',
     // TODO: completar tras descargar de Kaggle y subir a GH Releases.
     // Comando: sha256sum gemma3-270m-it-q8.task (Linux/Mac) o
@@ -166,7 +168,7 @@ class LumenConfig {
   /// ~529 MB en disco, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
   static const LumenModelSpec standard = LumenModelSpec(
     id: 'gemma-1b-int4',
-    displayName: 'Gemma 3 · 1B',
+    displayName: 'Lumen Estándar',
     filename: 'gemma3-1B-it-int4.task',
     sha256:
         'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee',

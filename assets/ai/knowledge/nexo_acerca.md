@@ -33,15 +33,20 @@ usar para cada dato según disponibilidad y frescura.
   externas.
 
 ## Lumen (este asistente)
-- Modelo: **Gemma 3 1B IT** (~529 MB, int4 quantizado QAT por Google).
-- Motor: **flutter_gemma + MediaPipe LLM Inference**.
-- Conocimiento: tu data en vivo (horario, cuotas, notas, perfil) +
-  archivos markdown bundled (UPLA general, carreras, asignaturas,
-  trámites, este archivo).
-- Conocimiento general: hasta el corte del entrenamiento del modelo
-  Gemma (~marzo 2025). Eventos posteriores los desconoce.
-- Limitaciones: puede equivocarse. No puede navegar internet, no
-  puede modificar tus datos en SIGMA, no contacta a profesores.
+- **Variantes:** Lumen Ligero (~290 MB, ideal para teléfonos modestos)
+  y Lumen Estándar (~529 MB, mejor calidad de respuesta para hardware
+  moderno). El usuario elige cuál descargar.
+- **Ejecución:** 100% on-device. La inferencia corre en la CPU/GPU del
+  teléfono usando un motor de modelos de lenguaje pequeños. No hay
+  llamadas a APIs externas, ni a OpenAI, ni a Google, ni a nadie.
+- **Conocimiento:** la data en vivo del estudiante (horario, cuotas,
+  notas, perfil) + archivos de texto bundled con info pública de UPLA
+  (sedes, carreras, asignaturas, trámites, este archivo).
+- **Corte de conocimiento general:** principios de 2025. Eventos
+  posteriores los desconoce.
+- **Limitaciones:** puede equivocarse — los modelos chicos no son
+  perfectos. No puede navegar internet, no puede modificar datos en
+  SIGMA, no contacta a profesores.
 
 ## Cómo reportar bugs
 - GitHub: https://github.com/Alexito-Hub/nexo/issues
