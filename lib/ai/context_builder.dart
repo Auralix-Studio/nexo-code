@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../core/config.dart';
 import '../data/app_store.dart';
 import '../domain/models.dart';
 
@@ -42,8 +43,14 @@ class LumenContextBuilder {
 
   /// Devuelve el preámbulo completo listo para concatenar al primer
   /// `Message.text` del usuario.
-  Future<String> buildPreamble() async {
-    final kb = await _loadKnowledgeBase();
+  ///
+  /// El preámbulo se adapta al modelo activo:
+  /// - `LumenConfig.light` (270M) → versión compacta SIN la KB grande
+  ///   (el modelo no puede procesarla bien y se queda en blanco).
+  ///   Solo recibe datos del estudiante + reglas mínimas.
+  /// - `LumenConfig.standard` (1B) → versión completa con KB inyectada.
+  Future<String> buildPreamble({required String modelId}) async {
+    final useKb = modelId == LumenConfig.standard.id;
     final student = _renderStudent();
     final academic = _renderAcademic();
     final financial = _renderFinancial();
@@ -52,6 +59,32 @@ class LumenContextBuilder {
     final today = '${_weekday(now.weekday)} ${now.day} de ${_month(now.month)}'
         ' de ${now.year}';
 
+    if (!useKb) {
+      // Versión compacta — para modelos chicos. Sin KB, sin secciones de
+      // "Conocimiento UPLA". Solo datos del estudiante + reglas básicas.
+      return '''
+Eres Lumen, asistente IA de la app Nexo para un estudiante de UPLA.
+Respondes en español, breve y honesto. Si no sabes algo, dilo.
+Si te preguntan qué modelo usas, di "Soy Lumen, asistente local de Nexo".
+Hoy es $today.
+
+Datos del estudiante:
+$student
+
+Académico:
+$academic
+
+Finanzas:
+$financial
+
+Horario:
+$schedule
+
+Pregunta del estudiante:
+''';
+    }
+
+    final kb = await _loadKnowledgeBase();
     return '''
 Eres Lumen, asistente IA personal de la app Nexo para estudiantes de la
 Universidad Peruana Los Andes (UPLA). Respondes en español neutral, de

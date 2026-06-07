@@ -72,7 +72,8 @@ class LumenChatSession extends ChangeNotifier {
     String payload = trimmed;
     if (!_preambleSent && _contextBuilder != null) {
       try {
-        final preamble = await _contextBuilder.buildPreamble();
+        final preamble =
+            await _contextBuilder.buildPreamble(modelId: _engine.activeModelId);
         payload = '$preamble$trimmed';
         _preambleSent = true;
       } catch (e) {

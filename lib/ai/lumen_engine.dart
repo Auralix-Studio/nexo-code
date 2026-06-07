@@ -20,9 +20,10 @@ class LumenEngine {
   })  : _state = state,
         _modelManager = modelManager;
 
-  // 4096 deja ~3.5K tokens libres tras inyectar el preamble (~600 tokens) y
-  // la KB completa (~2.5K tokens). Suficiente para una conversación corta.
-  // Subirlo a 8192 si el usuario reporta truncamiento del contexto.
+  // Ventana de contexto en runtime. Tradeoff: más tokens = más RAM pero
+  // permite preámbulos largos + historial. 4096 alcanza para datos del
+  // estudiante + pregunta corta + respuesta. El KB de la variante Estándar
+  // se inyecta entera pero solo en el 1B (que la procesa bien).
   static const int _maxTokens = 4096;
 
   final LumenState _state;
@@ -33,6 +34,10 @@ class LumenEngine {
   bool _initialized = false;
 
   bool get isLoaded => _model != null && _chat != null;
+
+  /// Id del modelo actualmente cargado en RAM (`_state.activeModel.id`).
+  /// Lo expone para que el context builder pueda variar el preamble.
+  String get activeModelId => _state.activeModel.id;
 
   /// Inicializa el plugin de flutter_gemma (una sola vez por proceso).
   Future<void> _ensureInitialized() async {
@@ -63,7 +68,17 @@ class LumenEngine {
           .install();
 
       _model = await FlutterGemma.getActiveModel(maxTokens: _maxTokens);
-      _chat = await _model!.createChat();
+
+      // Sampling: temperature 0.7 + topK 40 + topP 0.95 = preset estándar
+      // para modelos chicos (Gemma small / Phi small). El default del
+      // paquete (temp 0.8, topK 1) hace decoding casi greedy que produce
+      // outputs vacíos o repetitivos con prompts complejos en el 270M.
+      _chat = await _model!.createChat(
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        modelType: ModelType.gemmaIt,
+      );
 
       _state.setStatus(LumenStatus.loaded);
     } catch (e) {
@@ -98,9 +113,15 @@ class LumenEngine {
   }
 
   /// Tira el historial de chat y crea uno nuevo sin descargar el modelo.
+  /// Mantiene los mismos parámetros de sampling que [load].
   Future<void> resetConversation() async {
     if (_model == null) return;
-    _chat = await _model!.createChat();
+    _chat = await _model!.createChat(
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      modelType: ModelType.gemmaIt,
+    );
   }
 
   /// Descarga el modelo de la RAM. El .task sigue en disco.
