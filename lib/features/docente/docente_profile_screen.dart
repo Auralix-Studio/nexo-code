@@ -360,8 +360,7 @@ class _ActionsCard extends StatelessWidget {
             title: l.settingsTitle,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    SettingsScreen(store: store, theme: theme, lumen: lumen),
+                builder: (_) => SettingsScreen(store: store, theme: theme),
               ),
             ),
           ),

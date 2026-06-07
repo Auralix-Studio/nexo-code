@@ -515,8 +515,7 @@ class _ActionsCard extends StatelessWidget {
                 Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    SettingsScreen(store: store, theme: theme, lumen: lumen),
+                builder: (_) => SettingsScreen(store: store, theme: theme),
               ),
             ),
           ),

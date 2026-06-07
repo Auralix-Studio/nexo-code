@@ -6,6 +6,7 @@ import 'package:nexo/ai/lumen_state.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/features/ai/lumen_logo.dart';
+import 'package:nexo/features/ai/lumen_settings_screen.dart';
 
 /// Pantalla principal de conversación con Lumen.
 ///
@@ -94,6 +95,15 @@ class _LumenChatScreenState extends State<LumenChatScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Limpiar conversación',
             onPressed: () => services.clearSession(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'Configuración de Lumen',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => LumenSettingsScreen(services: services),
+              ),
+            ),
           ),
         ],
       ),

@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:nexo/ai/lumen_services.dart';
-import 'package:nexo/ai/lumen_state.dart';
 import 'package:nexo/core/app_locale.dart';
-import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/features/ai/lumen_onboarding_dialog.dart';
 import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
@@ -19,11 +15,9 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     required this.store,
     required this.theme,
-    required this.lumen,
   });
   final AppStore store;
   final ThemeController theme;
-  final LumenServices lumen;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +36,6 @@ class SettingsScreen extends StatelessWidget {
                 _PreferencesCard(theme: theme),
                 const SizedBox(height: 14),
                 _NotificationsCard(store: store),
-                const SizedBox(height: 14),
-                _LumenCard(lumen: lumen),
                 const SizedBox(height: 24),
               ],
             ),
@@ -474,193 +466,3 @@ class _NotificationsCard extends StatelessWidget {
   }
 }
 
-// ===== Lumen (asistente IA on-device) =====
-
-class _LumenCard extends StatelessWidget {
-  const _LumenCard({required this.lumen});
-
-  final LumenServices lumen;
-
-  Future<void> _activate(BuildContext context) async {
-    await LumenOnboardingDialog.show(context, lumen);
-  }
-
-  Future<void> _switchModel(BuildContext context) async {
-    final picked = await showDialog<LumenModelSpec>(
-      context: context,
-      builder: (ctx) {
-        var sel = lumen.state.activeModel;
-        return StatefulBuilder(
-          builder: (ctx, setState) => AlertDialog(
-            title: const Text('Cambiar modelo de Lumen'),
-            content: SizedBox(
-              width: 380,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final m in LumenConfig.models)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      enabled: m.isConfigured,
-                      onTap: m.isConfigured
-                          ? () => setState(() => sel = m)
-                          : null,
-                      leading: Icon(
-                        sel.id == m.id
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: sel.id == m.id
-                            ? NexoTheme.primary
-                            : NexoTheme.textMuted,
-                      ),
-                      title: Text(m.displayName),
-                      subtitle: Text(
-                        '${(m.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
-                        'MB · ${m.tagline}'
-                        '${m.isConfigured ? '' : ' · (no publicado)'}',
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cambiar de modelo borra el actual y descarga el nuevo. '
-                    'Vas a necesitar internet para la descarga.',
-                    style: Theme.of(ctx).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: sel.id == lumen.state.activeModel.id
-                    ? null
-                    : () => Navigator.of(ctx).pop(sel),
-                child: const Text('Cambiar'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (picked == null) return;
-    final prev = lumen.state.activeModel;
-    await lumen.engine.unload();
-    await lumen.modelManager.delete(prev);
-    await lumen.switchModel(picked);
-    if (!context.mounted) return;
-    await LumenOnboardingDialog.show(context, lumen);
-  }
-
-  Future<void> _delete(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Borrar modelo de Lumen'),
-        content: Text(
-          'Esto libera ${(lumen.state.activeModel.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
-          'MB de tu dispositivo y desactiva Lumen. Podrás volver a '
-          'descargar el modelo cuando quieras.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: NexoTheme.danger),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Borrar'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    await lumen.engine.unload();
-    await lumen.modelManager.delete();
-    await lumen.clearSession();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: lumen.state,
-      builder: (context, _) {
-        final status = lumen.state.status;
-        final installed = status != LumenStatus.inactive &&
-            status != LumenStatus.error;
-        return SectionCard(
-          title: 'Asistente IA · Lumen',
-          icon: Icons.auto_awesome,
-          iconColor: const Color(0xFFE89E2B),
-          subtitle: '100% on-device · sin internet en inferencia',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (!installed) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.power_settings_new_rounded),
-                  title: const Text('Activar Lumen'),
-                  subtitle: const Text(
-                    'Descarga el modelo (un solo paso). Podés elegir entre '
-                    'liviano o estándar.',
-                  ),
-                  trailing: Icon(Icons.chevron_right,
-                      color: NexoTheme.textMuted),
-                  onTap: () => _activate(context),
-                ),
-              ] else ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.check_circle_outline,
-                      color: NexoTheme.success),
-                  title: Text('Modelo: ${lumen.state.activeModel.displayName}'),
-                  subtitle: Text(lumen.state.activeModel.tagline),
-                ),
-                if (LumenConfig.models.length > 1) ...[
-                  const Divider(height: 1),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.swap_horiz_rounded),
-                    title: const Text('Cambiar modelo'),
-                    subtitle: const Text(
-                      'Borra el actual y descarga otro (liviano ↔ estándar).',
-                    ),
-                    trailing: Icon(Icons.chevron_right,
-                        color: NexoTheme.textMuted),
-                    onTap: () => _switchModel(context),
-                  ),
-                ],
-                const Divider(height: 1),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.delete_outline,
-                      color: NexoTheme.danger),
-                  title: Text('Borrar modelo',
-                      style: TextStyle(color: NexoTheme.danger)),
-                  subtitle: const Text(
-                    'Libera el espacio y desactiva Lumen.',
-                  ),
-                  onTap: () => _delete(context),
-                ),
-              ],
-              const Divider(height: 1),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Lumen lee tu data UPLA (perfil, horario, cuotas, notas) '
-                  'solo para responder en tu teléfono. Nada se envía a '
-                  'internet.',
-                  style: TextStyle(fontSize: 12, height: 1.4),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
