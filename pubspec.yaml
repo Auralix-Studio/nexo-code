@@ -45,6 +45,11 @@ dependencies:
   # Cero llamadas a internet en tiempo de inferencia; la descarga del modelo
   # es opt-in y se hace una sola vez. Ver lib/ai/.
   flutter_gemma: ^0.12.6
+  # Para checksum SHA-256 del modelo descargado y ruta de Application Support.
+  # Ambas son transitivas de flutter_gemma pero las declaramos aquí porque
+  # las usamos directamente en lib/ai/model_manager.dart.
+  crypto: ^3.0.6
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:

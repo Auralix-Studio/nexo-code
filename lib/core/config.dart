@@ -71,3 +71,53 @@ class MsConfig {
   /// `true` cuando aún no se ha configurado el registro de Azure AD.
   static bool get isConfigured => clientId != 'TODO_AZURE_CLIENT_ID';
 }
+
+/// Configuración del asistente IA **Lumen**.
+///
+/// Filosofía:
+/// - 100% on-device. Toda la inferencia corre vía MediaPipe LLM Inference
+///   (CPU/GPU del dispositivo). Cero llamadas a APIs externas.
+/// - Opt-in. La descarga del modelo solo ocurre cuando el usuario activa
+///   Lumen y acepta los términos.
+/// - Gratis y sin fricción. El modelo se mirror-ea en GitHub Releases del
+///   repo Nexo (la licencia Gemma se aceptó al subirlo). El usuario no
+///   necesita cuenta de HuggingFace ni token.
+///
+/// Para publicar un modelo nuevo:
+///   1. Aceptar términos Gemma en https://huggingface.co/litert-community
+///   2. Descargar el .task de la variante deseada.
+///   3. Subirlo como release asset al repo `Alexito-Hub/nexo` con el tag
+///      indicado en [modelReleaseTag].
+///   4. Verificar el SHA-256 y actualizarlo en [modelSha256] (el manager
+///      rechaza descargas con checksum distinto).
+class LumenConfig {
+  /// Modelo por defecto: Gemma 3 1B IT, quantizado int4 (QAT) por Google.
+  /// ~529 MB descarga, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
+  /// Origen: https://huggingface.co/litert-community/Gemma3-1B-IT
+  static const String modelFilename = 'gemma3-1b-it-int4.task';
+
+  /// Tag del release de GitHub donde está alojado el .task.
+  static const String modelReleaseTag = 'lumen-models-v1';
+
+  /// URL pública de descarga directa (sin auth).
+  static const String modelDownloadUrl =
+      'https://github.com/Alexito-Hub/nexo/releases/download/'
+      '$modelReleaseTag/$modelFilename';
+
+  /// SHA-256 esperado del archivo. TODO: completar tras subir el release.
+  /// Para calcularlo: `sha256sum gemma3-1b-it-int4.task` (Linux/macOS) o
+  /// `Get-FileHash -Algorithm SHA256 gemma3-1b-it-int4.task` (PowerShell).
+  static const String modelSha256 = 'TODO_SHA256_OF_GEMMA_1B_INT4';
+
+  /// Tamaño esperado en bytes (para el progress bar). ~529 MB.
+  /// TODO: completar exacto tras subir el release.
+  static const int modelSizeBytes = 529 * 1024 * 1024;
+
+  /// `true` si el operador (Alessandro) ya subió el modelo al release y
+  /// pegó el checksum real. Mientras esté en `TODO_*`, la app no intentará
+  /// descargar y mostrará un mensaje claro en el onboarding.
+  static bool get isConfigured => modelSha256 != 'TODO_SHA256_OF_GEMMA_1B_INT4';
+
+  /// Etiqueta humana del modelo activo (para UI/settings).
+  static const String modelDisplayName = 'Gemma 3 · 1B';
+}
