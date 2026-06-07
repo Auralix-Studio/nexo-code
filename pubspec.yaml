@@ -41,6 +41,10 @@ dependencies:
   printing: ^5.13.4
   url_launcher: ^6.3.2
   window_manager: ^0.4.3
+  # Asistente IA Lumen — corre Gemma on-device via MediaPipe LLM Inference.
+  # Cero llamadas a internet en tiempo de inferencia; la descarga del modelo
+  # es opt-in y se hace una sola vez. Ver lib/ai/.
+  flutter_gemma: ^0.12.6
 
 dev_dependencies:
   flutter_test:
