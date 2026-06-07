@@ -4,6 +4,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/grades/grade_widgets.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -21,7 +22,7 @@ Color _grade(num? n) {
 /// Notas de periodos ≤2025 (modelo de 2 parciales, diseño anterior).
 class LegacyNotasList extends StatelessWidget {
   final AsyncValue<List<NotaAsignatura>> state;
-  final Periodo periodo;
+  final Term periodo;
   final AppStore store;
   const LegacyNotasList({
     super.key,
@@ -66,7 +67,7 @@ class LegacyNotasList extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () =>
-                  store.loadBoletaLegacy(periodo.anio, periodo.periodo),
+                  store.loadBoletaLegacy(periodo.year, periodo.number),
               child: Text(l.actionRetry),
             ),
           ],
@@ -85,7 +86,7 @@ class LegacyNotasList extends StatelessWidget {
       );
     }
     return SectionCard(
-      title: l.gradesSubjectsWithPeriod(periodo.descripcion),
+      title: l.gradesSubjectsWithPeriod(periodo.label),
       icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
       trailing: StatusChip(

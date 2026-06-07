@@ -141,30 +141,6 @@ class CacheManager {
     return d;
   }
 
-  // === StudentProfile ===
-  Future<void> saveProfile(StudentProfile profile) async {
-    await db.insert(
-      'student_profile',
-      {
-        'id': profile.estId,
-        'json_data': jsonEncode(profile.toJson()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<StudentProfile?> getProfile() async {
-    final List<Map<String, dynamic>> maps = await db.query('student_profile', limit: 1);
-    if (maps.isEmpty) return null;
-    try {
-      final rawJson = maps.first['json_data'] as String;
-      return StudentProfile.fromJson(jsonDecode(rawJson) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
   // === BoletaCurso (New Boleta) ===
   Future<void> saveBoleta(String anio, String periodo, List<BoletaCurso> cursos) async {
     await db.insert(
@@ -320,7 +296,7 @@ class CacheManager {
   }
 
   // === Horario ===
-  Future<void> saveHorario(List<ClaseHorario> clases) async {
+  Future<void> saveHorario(List<ScheduleClass> clases) async {
     await db.insert(
       'horario',
       {
@@ -332,7 +308,7 @@ class CacheManager {
     );
   }
 
-  Future<List<ClaseHorario>?> getHorario() async {
+  Future<List<ScheduleClass>?> getHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'horario',
       where: 'id = ?',
@@ -341,14 +317,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Docente Horario ===
-  Future<void> saveDocenteHorario(List<ClaseHorario> clases) async {
+  Future<void> saveDocenteHorario(List<ScheduleClass> clases) async {
     await db.insert(
       'horario',
       {
@@ -360,7 +336,7 @@ class CacheManager {
     );
   }
 
-  Future<List<ClaseHorario>?> getDocenteHorario() async {
+  Future<List<ScheduleClass>?> getDocenteHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'horario',
       where: 'id = ?',
@@ -369,14 +345,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Periodos ===
-  Future<void> savePeriodos(List<Periodo> periodos) async {
+  Future<void> savePeriodos(List<Term> periodos) async {
     await db.insert(
       'periodos',
       {
@@ -388,7 +364,7 @@ class CacheManager {
     );
   }
 
-  Future<List<Periodo>?> getPeriodos() async {
+  Future<List<Term>?> getPeriodos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'periodos',
       where: 'id = ?',
@@ -397,14 +373,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Periodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => Term.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Promedios ===
-  Future<void> savePromedios(List<PromedioPeriodo> promedios) async {
+  Future<void> savePromedios(List<TermAverage> promedios) async {
     await db.insert(
       'promedios',
       {
@@ -416,7 +392,7 @@ class CacheManager {
     );
   }
 
-  Future<List<PromedioPeriodo>?> getPromedios() async {
+  Future<List<TermAverage>?> getPromedios() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'promedios',
       where: 'id = ?',
@@ -425,14 +401,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => PromedioPeriodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => TermAverage.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Pagos ===
-  Future<void> savePagos(List<Cuota> pagos) async {
+  Future<void> savePagos(List<Payment> pagos) async {
     await db.insert(
       'pagos',
       {
@@ -444,7 +420,7 @@ class CacheManager {
     );
   }
 
-  Future<List<Cuota>?> getPagos() async {
+  Future<List<Payment>?> getPagos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'pagos',
       where: 'id = ?',
@@ -453,7 +429,7 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Cuota.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => Payment.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }

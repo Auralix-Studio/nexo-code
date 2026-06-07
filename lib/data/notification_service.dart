@@ -7,8 +7,8 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/notification_prefs.dart';
+import 'package:nexo/domain/unified_models.dart';
 
 class NotificationService extends ChangeNotifier {
   NotificationService._();
@@ -123,8 +123,8 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> updatePrefs(
     NotificationPrefs prefs, {
-    List<ClaseHorario>? clases,
-    List<Cuota>? cuotas,
+    List<ScheduleClass>? clases,
+    List<Payment>? cuotas,
   }) async {
     _prefs = prefs;
     await AppStorage.instance.setNotifPrefsJson(jsonEncode(prefs.toJson()));
@@ -151,8 +151,8 @@ class NotificationService extends ChangeNotifier {
       );
 
   Future<void> reschedule({
-    List<ClaseHorario>? clases,
-    List<Cuota>? cuotas,
+    List<ScheduleClass>? clases,
+    List<Payment>? cuotas,
   }) async {
     if (!_supported || !_ready) return;
     if (_supportsScheduling) {
@@ -171,15 +171,15 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
-  Future<void> _scheduleClasses(List<ClaseHorario> clases) async {
+  Future<void> _scheduleClasses(List<ScheduleClass> clases) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idClassBase;
     // Próximos 7 días de clases.
     for (var offset = 0; offset < 7; offset++) {
       final day = now.add(Duration(days: offset));
       final weekday = day.weekday; // 1=Lun..7=Dom
-      for (final c in clases.where((c) => c.idDia == weekday)) {
-        final hm = c.horaInicio.split(':');
+      for (final c in clases.where((c) => c.weekday == weekday)) {
+        final hm = c.startTime.split(':');
         if (hm.length < 2) continue;
         final h = int.tryParse(hm[0]);
         final m = int.tryParse(hm[1]);
@@ -196,7 +196,7 @@ class NotificationService extends ChangeNotifier {
         if (when.isBefore(now)) continue;
         await _zoned(
           id++,
-          c.asignatura,
+          c.subject,
           'Empieza en ${_prefs.classLeadMinutes} minutos',
           when,
           'clases',
@@ -206,11 +206,11 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
-  Future<void> _schedulePayments(List<Cuota> cuotas) async {
+  Future<void> _schedulePayments(List<Payment> pagos) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idPaymentBase;
-    for (final c in cuotas) {
-      final due = c.vencimientoDate;
+    for (final c in pagos) {
+      final due = c.dueDate;
       if (due == null) continue;
       for (final lead in _prefs.paymentLeadDays) {
         final day = due.subtract(Duration(days: lead));
@@ -231,8 +231,8 @@ class NotificationService extends ChangeNotifier {
         await _zoned(
           id++,
           'Pago pendiente — $cuando',
-          '${c.descripcion}: ${c.tipoMoneda} '
-              '${c.subtotal.toStringAsFixed(2)} (${c.fechaVencimiento})',
+          '${c.description}: ${c.currency} '
+              '${c.total.toStringAsFixed(2)} (${c.dueDateRaw})',
           when,
           'pagos',
           'Recordatorio de pagos',

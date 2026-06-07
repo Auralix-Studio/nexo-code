@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:nexo/core/data/resolver.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/storage.dart';
@@ -13,6 +14,7 @@ import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/data/teams_repository.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 
 /// Estado tipado de una porción de datos cargados desde el API.
 class AsyncValue<T> {
@@ -55,6 +57,122 @@ class AppStore extends ChangeNotifier {
         _intranet = intranet,
         _teams = teams,
         _docente = docente;
+
+  // ─── Fábricas de DataSource — un sitio para toda la ceremonia ───
+
+  DataSource<T> _sigma<T>(SourceId id, Future<T> Function() fn) =>
+      DataSource(id: id, fetch: fn);
+
+  List<DataSource<T>> _intra<T>(Future<T> Function(IntranetRepository) fn) {
+    final r = _intranet;
+    if (r == null) return const [];
+    return [
+      DataSource(
+        id: 'intranet',
+        available: () async {
+          final s = AppStorage.instance;
+          return s.credUser != null && s.credPass != null;
+        },
+        fetch: () async {
+          final s = AppStorage.instance;
+          final ok = await r.ensureSession(s.credUser!, s.credPass!);
+          if (!ok) throw const NetworkException('Sesión Intranet falló.');
+          return fn(r);
+        },
+      ),
+    ];
+  }
+
+  static bool _emptyList(List l) => l.isEmpty;
+
+  // ─── Resolvers persistentes (recursos sin parámetros) ───
+
+  // ─── Estrategia híbrida: Intranet es PRINCIPAL, SIGMA es respaldo ───
+  // SIGMA está caído (Core_ERP DB inaccesible). Intranet PHP tiene toda
+  // la data académica/financiera. SIGMA queda como segunda opción para
+  // cuando vuelva. `mergeWith` rellena campos faltantes en el primary
+  // con los del secondary.
+
+  late final Resolver<Student> _studentRes = Resolver(
+    sources: [
+      ..._intra((r) async {
+        final p = periodoActivo;
+        final now = DateTime.now();
+        final s = await r.infoEstudiante(
+          anio: p?.year ?? now.year,
+          periodo: p?.number ?? (now.month <= 7 ? 1 : 2),
+        );
+        if (s == null) throw const NetworkException('Intranet sin perfil.');
+        return s;
+      }),
+      _sigma('sigma', _repo.infoEstudiante),
+    ],
+    merge: MergeStrategies.fold<Student>((a, b) => a.mergeWith(b)),
+    isEmpty: (s) => s.id.isEmpty && s.fullName.isEmpty,
+  );
+
+  // SIGMA's Core_ERP DB is down → todos los endpoints de pagos en SIGMA
+  // devuelven [] o fallan. Pagos viene 100% de Intranet PHP. Concat para
+  // mergear cronograma + pensiones adicionales en una sola lista.
+  // PENDIENTES = `consultarPensiones` (cuotas futuras desdobladas).
+  late final Resolver<List<Payment>> _cuotasRes = Resolver(
+    sources: [..._intra((r) => r.pensionesPendientes())],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
+
+  // VENCIDAS = solo cuotas/matrícula que TIENEN fecha de vencimiento.
+  // Las tasas (seguro, etc.) no tienen fecha y van solo al tab Tasas.
+  late final Resolver<List<Payment>> _vencidasRes = Resolver(
+    sources: [
+      ..._intra((r) async {
+        final results = await Future.wait([
+          r.pensionesVencidas(),
+          r.matriculaVencida(),
+        ]);
+        return results.expand((e) => e).toList();
+      }),
+    ],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
+
+  late final Resolver<List<PaymentRecord>> _historicoRes = Resolver(
+    sources: [..._intra((r) => r.historicoPagos())],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
+
+  late final Resolver<List<Fee>> _tasasRes = Resolver(
+    sources: [..._intra((r) => r.tasasIntranet())],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
+
+  late final Resolver<List<Term>> _periodosRes = Resolver(
+    sources: [
+      ..._intra((r) => r.periodosMatriculados()),
+      _sigma('sigma', _repo.periodosEstudiante),
+    ],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
+
+  late final Resolver<List<ScheduleClass>> _horarioRes = Resolver(
+    sources: [
+      ..._intra((r) {
+        final p = periodoActivo;
+        final now = DateTime.now();
+        return r.horarioMatriculados(
+          p?.year ?? now.year,
+          p?.number ?? (now.month <= 7 ? 1 : 2),
+        );
+      }),
+      _sigma('sigma', () => _repo.horario()),
+    ],
+    merge: MergeStrategies.firstWins,
+    isEmpty: _emptyList,
+  );
   final SigmaRepository _repo;
   final CacheManager _cache;
   final ErrorHandler _errorHandler;
@@ -90,19 +208,19 @@ class AppStore extends ChangeNotifier {
     s.setGradeSnapshot(jsonEncode(next));
   }
 
-  AsyncValue<StudentProfile> profile = const AsyncValue.idle();
-  AsyncValue<List<Periodo>> periodos = const AsyncValue.idle();
-  AsyncValue<List<ClaseHorario>> horario = const AsyncValue.idle();
+  AsyncValue<Student> profile = const AsyncValue.idle();
+  AsyncValue<List<Term>> periodos = const AsyncValue.idle();
+  AsyncValue<List<ScheduleClass>> horario = const AsyncValue.idle();
   AsyncValue<NotasResumen> resumen = const AsyncValue.idle();
-  AsyncValue<List<PromedioPeriodo>> promedios = const AsyncValue.idle();
+  AsyncValue<List<TermAverage>> promedios = const AsyncValue.idle();
 
   /// Record académico completo (fuente Intranet — SIGMA lo deja vacío).
   AsyncValue<List<RecordCurso>> record = const AsyncValue.idle();
 
-  AsyncValue<List<Cuota>> cuotasPendientes = const AsyncValue.idle();
-  AsyncValue<List<Cuota>> cuotasIntranet = const AsyncValue.idle();
-  AsyncValue<List<Tasa>> tasas = const AsyncValue.idle();
-  AsyncValue<List<PagoHistorico>> historico = const AsyncValue.idle();
+  AsyncValue<List<Payment>> cuotasPendientes = const AsyncValue.idle();
+  AsyncValue<List<Payment>> cuotasIntranet = const AsyncValue.idle();
+  AsyncValue<List<Fee>> tasas = const AsyncValue.idle();
+  AsyncValue<List<PaymentRecord>> historico = const AsyncValue.idle();
 
   /// Microsoft Teams (Graph Education) — independiente de SIGMA/Intranet.
   AsyncValue<List<TeamsClass>> teamsClasses = const AsyncValue.idle();
@@ -121,7 +239,7 @@ class AppStore extends ChangeNotifier {
   AsyncValue<DocenteInfo> docenteInfo = const AsyncValue.idle();
   AsyncValue<List<DocenteAsignatura>> docenteAsignaturas =
       const AsyncValue.idle();
-  AsyncValue<List<ClaseHorario>> docenteHorario = const AsyncValue.idle();
+  AsyncValue<List<ScheduleClass>> docenteHorario = const AsyncValue.idle();
   final Map<String, AsyncValue<List<DocenteAlumno>>> _docenteAlumnos = {};
 
   AsyncValue<List<DocenteAlumno>> alumnosDe(String cleAuto) =>
@@ -134,11 +252,11 @@ class AppStore extends ChangeNotifier {
       _notasByPeriodo['$anio-$periodo'] ?? const AsyncValue.idle();
 
   /// Periodo activo (matriculado) si está disponible.
-  Periodo? get periodoActivo {
+  Term? get periodoActivo {
     final list = periodos.value;
     if (list == null) return null;
     try {
-      return list.firstWhere((p) => p.activo);
+      return list.firstWhere((p) => p.isActive);
     } catch (_) {
       return null;
     }
@@ -152,25 +270,24 @@ class AppStore extends ChangeNotifier {
     if (list == null || list.isEmpty) return null;
     final activo = periodoActivo;
     final completados = list.where((p) {
-      if (p.promedio == 0) return false;
-      if (activo != null && p.anio == activo.anio && p.periodo == activo.periodo) {
+      if (p.average == 0) return false;
+      if (activo != null && p.year == activo.year && p.number == activo.number) {
         return false;
       }
       return true;
     }).toList()
       ..sort((a, b) {
-        final byYear = a.anio.compareTo(b.anio);
-        return byYear != 0 ? byYear : a.periodo.compareTo(b.periodo);
+        final byYear = a.year.compareTo(b.year);
+        return byYear != 0 ? byYear : a.number.compareTo(b.number);
       });
     if (completados.isEmpty) return null;
-    // Promedio simple de los periodos completados.
-    final sum = completados.fold<double>(0, (a, b) => a + b.promedio);
+    final sum = completados.fold<double>(0, (a, b) => a + b.average);
     return sum / completados.length;
   }
 
   /// Créditos aprobados del estudiante (preferir perfil sobre resumen).
   int? get creditosAprobados {
-    final p = profile.value?.creditoAprobado;
+    final p = profile.value?.creditsApproved;
     final r = resumen.value?.creditosAprobados;
     if (p != null && p > 0) return p;
     if (r != null && r > 0) return r;
@@ -243,26 +360,36 @@ class AppStore extends ChangeNotifier {
 
   /// Rellena el estado con datos cacheados para mostrar algo al instante
   /// (incluso sin red o si la sesión se renueva). Se refresca en segundo plano.
-  void hydrateFromCache() {
+  /// Async porque algunos caches viven en sqlite (sqflite), no shared_prefs.
+  Future<void> hydrateFromCache() async {
     final s = AppStorage.instance;
 
+    // Profile vive en sqlite (cache_manager.unified_student) — lo leemos
+    // primero para pintar el header del home de inmediato.
+    try {
+      final cached = await _cache.getStudent();
+      if (cached != null) {
+        profile = AsyncValue.data(cached);
+        _notify();
+      }
+    } catch (_) {}
+
     final p = s.getCache(_ckProfile);
-    if (p is Map) {
-      profile = AsyncValue.data(
-          StudentProfile.fromJson(p.cast<String, dynamic>()));
+    if (p is Map && profile.value == null) {
+      profile = AsyncValue.data(Student.fromJson(p.cast<String, dynamic>()));
     }
     final per = s.getCache(_ckPeriodos);
     if (per is List) {
       periodos = AsyncValue.data(per
           .map((e) =>
-              Periodo.fromJson((e as Map).cast<String, dynamic>()))
+              Term.fromJson((e as Map).cast<String, dynamic>()))
           .toList());
     }
     final h = s.getCache(_ckHorario);
     if (h is List) {
       horario = AsyncValue.data(h
           .map((e) =>
-              ClaseHorario.fromJson((e as Map).cast<String, dynamic>()))
+              ScheduleClass.fromJson((e as Map).cast<String, dynamic>()))
           .toList());
     }
     final r = s.getCache(_ckResumen);
@@ -274,13 +401,13 @@ class AppStore extends ChangeNotifier {
     if (pr is List) {
       promedios = AsyncValue.data(pr
           .map((e) =>
-              PromedioPeriodo.fromJson((e as Map).cast<String, dynamic>()))
+              TermAverage.fromJson((e as Map).cast<String, dynamic>()))
           .toList());
     }
     final cp = s.getCache(_ckCuotasPend);
     if (cp is List) {
       cuotasPendientes = AsyncValue.data(cp
-          .map((e) => Cuota.fromJson((e as Map).cast<String, dynamic>()))
+          .map((e) => Payment.fromSigmaJson((e as Map).cast<String, dynamic>()))
           .toList());
     }
     if (profile.hasValue ||
@@ -301,8 +428,8 @@ class AppStore extends ChangeNotifier {
       loadPromedios(),
     ]);
     final p = profile.value;
-    if (p != null && p.pesId.isNotEmpty && p.nivel.isNotEmpty) {
-      await loadResumen(p.pesId, p.nivel);
+    if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
+      await loadResumen(p.studyPlan, p.level);
     }
     // Refresca la boleta del periodo activo en segundo plano para detectar
     // notas nuevas y disparar la notificación correspondiente. Sin esto,
@@ -316,24 +443,27 @@ class AppStore extends ChangeNotifier {
   Future<void> checkActiveBoleta() async {
     final activo = periodoActivo;
     if (activo == null) return;
-    if (esModeloNuevo(activo.anio, activo.periodo)) {
-      await loadBoleta(activo.anio, activo.periodo);
+    if (esModeloNuevo(activo.year, activo.number)) {
+      await loadBoleta(activo.year, activo.number);
     } else {
-      await loadBoletaLegacy(activo.anio, activo.periodo);
+      await loadBoletaLegacy(activo.year, activo.number);
     }
   }
 
-  Future<StudentProfile?> loadProfile() => _wrap(
-        _repo.infoEstudiante,
+  Future<Student?> loadProfile() => _wrap(
+        // Profile + periodos en paralelo. Si periodos aún no está, el source
+        // de Intranet usa fallback (year+month-based). En el segundo render
+        // (cuando periodos termine) el merge usa el periodoActivo correcto.
+        () => _studentRes.load(),
         () => profile,
         (v) => profile = v,
-        cached: () => _cache.getProfile(),
-        persist: (v) => _cache.saveProfile(v),
+        cached: _cache.getStudent,
+        persist: _cache.saveStudent,
         operationName: 'loadProfile',
       );
 
-  Future<List<Periodo>?> loadPeriodos() => _wrap(
-        _repo.periodosEstudiante,
+  Future<List<Term>?> loadPeriodos() => _wrap(
+        () => _resolveOrEmpty(_periodosRes),
         () => periodos,
         (v) => periodos = v,
         cached: () => _cache.getPeriodos(),
@@ -341,8 +471,8 @@ class AppStore extends ChangeNotifier {
         operationName: 'loadPeriodos',
       );
 
-  Future<List<ClaseHorario>?> loadHorarioActual() => _wrap(
-        () => _repo.horario(),
+  Future<List<ScheduleClass>?> loadHorarioActual() => _wrap(
+        () => _resolveOrEmpty(_horarioRes),
         () => horario,
         (v) => horario = v,
         cached: () => _cache.getHorario(),
@@ -370,7 +500,7 @@ class AppStore extends ChangeNotifier {
         operationName: 'loadResumen',
       );
 
-  Future<List<PromedioPeriodo>?> loadPromedios() => _wrap(
+  Future<List<TermAverage>?> loadPromedios() => _wrap(
         _repo.promediosResumen,
         () => promedios,
         (v) => promedios = v,
@@ -378,21 +508,6 @@ class AppStore extends ChangeNotifier {
         persist: (v) => _cache.savePromedios(v),
         operationName: 'loadPromedios',
       );
-
-  /// Garantiza una sesión Intranet con las credenciales guardadas.
-  Future<IntranetRepository> _intranetReady() async {
-    final intranet = _intranet;
-    if (intranet == null) throw const NetworkException('Intranet no disponible.');
-    final s = AppStorage.instance;
-    final user = s.credUser;
-    final pass = s.credPass;
-    if (user == null || pass == null) {
-      throw const UnauthorizedException('Inicia sesión para ver tus notas.');
-    }
-    final ok = await intranet.ensureSession(user, pass);
-    if (!ok) throw const NetworkException('No se pudo conectar con Intranet.');
-    return intranet;
-  }
 
   // ===== Boleta de notas (Intranet, modelo nuevo) =====
 
@@ -412,10 +527,14 @@ class AppStore extends ChangeNotifier {
     _notify();
     try {
       final data = await _errorHandler.withFallback<List<NotaAsignatura>>(
-        remote: () async {
-          final intranet = await _intranetReady();
-          return intranet.boletaLegacy(anio, periodo);
-        },
+        remote: () => Resolver<List<NotaAsignatura>>(
+          sources: [
+            ..._intra((r) => r.boletaLegacy(anio, periodo)),
+            _sigma('sigma', () => _repo.notasPeriodo(anio, periodo)),
+          ],
+          merge: MergeStrategies.firstWins,
+          isEmpty: _emptyList,
+        ).load(),
         cached: () => _cache.getBoletaLegacy(anio.toString(), periodo.toString()),
         operationName: 'loadBoletaLegacy($anio, $periodo)',
       );
@@ -437,10 +556,11 @@ class AppStore extends ChangeNotifier {
     _notify();
     try {
       final data = await _errorHandler.withFallback<List<BoletaCurso>>(
-        remote: () async {
-          final intranet = await _intranetReady();
-          return intranet.boleta(anio, periodo);
-        },
+        remote: () => Resolver<List<BoletaCurso>>(
+          sources: _intra((r) => r.boleta(anio, periodo)),
+          merge: MergeStrategies.firstWins,
+          isEmpty: _emptyList,
+        ).load(),
         cached: () => _cache.getBoleta(anio.toString(), periodo.toString()),
         operationName: 'loadBoleta($anio, $periodo)',
       );
@@ -463,32 +583,43 @@ class AppStore extends ChangeNotifier {
     _detalle[id] = AsyncValue.loading(_detalle[id]?.value);
     _notify();
     try {
-      final intranet = await _intranetReady();
-      _detalle[id] =
-          AsyncValue.data(await intranet.detalleCurso(anio, periodo, id));
+      final data = await Resolver<CursoDetalleNotas>(
+        sources: _intra((r) => r.detalleCurso(anio, periodo, id)),
+        merge: MergeStrategies.firstWins,
+      ).load();
+      _detalle[id] = AsyncValue.data(data);
     } catch (e) {
       _detalle[id] = AsyncValue.failure(e, _detalle[id]?.value);
     }
     _notify();
   }
 
-  Future<List<RecordCurso>?> loadRecord() {
-    return _wrap<List<RecordCurso>>(
-      () async {
-        final intranet = await _intranetReady();
-        final codest = profile.value?.estId.isNotEmpty == true
-            ? profile.value!.estId
-            : AppStorage.instance.credUser ?? '';
-        return intranet.recordAcademico(codest);
-      },
-      () => record,
-      (v) => record = v,
-      operationName: 'loadRecord',
-    );
+  Future<List<RecordCurso>?> loadRecord() => _wrap<List<RecordCurso>>(
+        () {
+          final codest = profile.value?.id.isNotEmpty == true
+              ? profile.value!.id
+              : AppStorage.instance.credUser ?? '';
+          return Resolver<List<RecordCurso>>(
+            sources: _intra((r) => r.recordAcademico(codest)),
+            merge: MergeStrategies.firstWins,
+            isEmpty: _emptyList,
+          ).load();
+        },
+        () => record,
+        (v) => record = v,
+        operationName: 'loadRecord',
+      );
+
+  Future<List<T>> _resolveOrEmpty<T>(Resolver<List<T>> r) async {
+    try {
+      return await r.load();
+    } on NoDataAvailableException {
+      return const [];
+    }
   }
 
-  Future<List<Cuota>?> loadCuotasPendientes() => _wrap(
-        _repo.cuotasPendientes,
+  Future<List<Payment>?> loadCuotasPendientes() => _wrap(
+        () => _resolveOrEmpty(_cuotasRes),
         () => cuotasPendientes,
         (v) => cuotasPendientes = v,
         cached: () => _cache.getPagos(),
@@ -496,22 +627,22 @@ class AppStore extends ChangeNotifier {
         operationName: 'loadCuotasPendientes',
       );
 
-  Future<List<Cuota>?> loadCuotasIntranet() => _wrap(
-        _repo.cuotasIntranet,
+  Future<List<Payment>?> loadCuotasIntranet() => _wrap(
+        () => _resolveOrEmpty(_vencidasRes),
         () => cuotasIntranet,
         (v) => cuotasIntranet = v,
         operationName: 'loadCuotasIntranet',
       );
 
-  Future<List<Tasa>?> loadTasas() => _wrap(
-        _repo.tasas,
+  Future<List<Fee>?> loadTasas() => _wrap(
+        () => _resolveOrEmpty(_tasasRes),
         () => tasas,
         (v) => tasas = v,
         operationName: 'loadTasas',
       );
 
-  Future<List<PagoHistorico>?> loadHistorico() => _wrap(
-        _repo.historicoPagos,
+  Future<List<PaymentRecord>?> loadHistorico() => _wrap(
+        () => _resolveOrEmpty(_historicoRes),
         () => historico,
         (v) => historico = v,
         operationName: 'loadHistorico',
@@ -555,28 +686,26 @@ class AppStore extends ChangeNotifier {
 
   // ===== Documentos descargables (Intranet) =====
 
-  /// Carga la constancia de matrícula del periodo activo (o el indicado).
   Future<ConstanciaMatricula?> loadConstancia({int? anio, int? periodo}) {
     final p = periodoActivo;
-    final a = anio ?? p?.anio ?? 0;
-    final per = periodo ?? p?.periodo ?? 0;
+    final a = anio ?? p?.year ?? 0;
+    final per = periodo ?? p?.number ?? 0;
     return _wrap(
-      () async {
-        final intranet = await _intranetReady();
-        return intranet.constanciaMatricula(a, per);
-      },
+      () => Resolver<ConstanciaMatricula>(
+        sources: _intra((r) => r.constanciaMatricula(a, per)),
+        merge: MergeStrategies.firstWins,
+      ).load(),
       () => constancia,
       (v) => constancia = v,
       operationName: 'loadConstancia',
     );
   }
 
-  /// Carga el cronograma de cuotas del semestre activo.
   Future<CronogramaPagos?> loadCronograma() => _wrap(
-        () async {
-          final intranet = await _intranetReady();
-          return intranet.cronogramaPagos();
-        },
+        () => Resolver<CronogramaPagos>(
+          sources: _intra((r) => r.cronogramaPagos()),
+          merge: MergeStrategies.firstWins,
+        ).load(),
         () => cronograma,
         (v) => cronograma = v,
         operationName: 'loadCronograma',
@@ -606,7 +735,7 @@ class AppStore extends ChangeNotifier {
     if (p == null) return null;
     return _wrap<ConteoNotas>(
       () async {
-        final c = await _repo.conteoNotas(p.anio, p.periodo);
+        final c = await _repo.conteoNotas(p.year, p.number);
         return c ??
             const ConteoNotas(
                 aprobados: 0, desaprobados: 0, pendientes: 0, total: 0);
@@ -648,7 +777,7 @@ class AppStore extends ChangeNotifier {
         operationName: 'loadDocenteAsignaturas',
       );
 
-  Future<List<ClaseHorario>?> loadDocenteHorario() => _wrap(
+  Future<List<ScheduleClass>?> loadDocenteHorario() => _wrap(
         () => _docenteReady().getHorario(),
         () => docenteHorario,
         (v) => docenteHorario = v,
@@ -769,7 +898,14 @@ class AppStore extends ChangeNotifier {
     _notify();
     try {
       final v = await _errorHandler.withFallback<List<NotaAsignatura>>(
-        remote: () => _repo.notasPeriodo(anio, periodo),
+        remote: () => Resolver<List<NotaAsignatura>>(
+          sources: [
+            _sigma('sigma', () => _repo.notasPeriodo(anio, periodo)),
+            ..._intra((r) => r.boletaLegacy(anio, periodo)),
+          ],
+          merge: MergeStrategies.firstWins,
+          isEmpty: _emptyList,
+        ).load(),
         cached: () => _cache.getBoletaLegacy(anio.toString(), periodo.toString()),
         operationName: 'loadNotas($anio, $periodo)',
       );

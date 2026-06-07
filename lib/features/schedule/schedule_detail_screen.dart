@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
@@ -15,10 +15,10 @@ import 'package:nexo/shared/widgets/section_card.dart';
 ///   - ScheduleScreen → tile semana / lista
 class ScheduleDetailScreen extends StatelessWidget {
   const ScheduleDetailScreen({super.key, required this.grupo});
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
 
   /// Helper para abrir esta pantalla desde cualquier widget.
-  static Future<void> open(BuildContext context, ClaseAgrupada grupo) =>
+  static Future<void> open(BuildContext context, ScheduleClassGroup grupo) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => ScheduleDetailScreen(grupo: grupo),
@@ -29,8 +29,8 @@ class ScheduleDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final h24 = AppStorage.instance.use24h;
-    final first = grupo.sesiones.first;
-    final isToday = grupo.idDia == DateTime.now().weekday;
+    final first = grupo.sessions.first;
+    final isToday = grupo.weekday == DateTime.now().weekday;
 
     return Scaffold(
       backgroundColor: NexoTheme.bg,
@@ -48,17 +48,17 @@ class ScheduleDetailScreen extends StatelessWidget {
                 const Gap(AppSpacing.lg),
                 _TimeCard(grupo: grupo, h24: h24, label: l),
                 const Gap(AppSpacing.lg),
-                if (grupo.aula.isNotEmpty || first.local.isNotEmpty || first.sede.isNotEmpty)
-                  _LocationCard(first: first, aula: grupo.aula, label: l),
-                if (grupo.aula.isNotEmpty || first.local.isNotEmpty || first.sede.isNotEmpty)
+                if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
+                  _LocationCard(first: first, aula: grupo.room, label: l),
+                if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
                   const Gap(AppSpacing.lg),
-                if (grupo.docente.isNotEmpty)
-                  _TeacherCard(docente: grupo.docente, label: l),
-                if (grupo.docente.isNotEmpty) const Gap(AppSpacing.lg),
+                if (grupo.teacher.isNotEmpty)
+                  _TeacherCard(docente: grupo.teacher, label: l),
+                if (grupo.teacher.isNotEmpty) const Gap(AppSpacing.lg),
                 _SessionsCard(grupo: grupo, h24: h24, label: l),
-                if (first.observacion.isNotEmpty) ...[
+                if (first.note.isNotEmpty) ...[
                   const Gap(AppSpacing.lg),
-                  _NotesCard(text: first.observacion, label: l),
+                  _NotesCard(text: first.note, label: l),
                 ],
               ],
             ),
@@ -70,14 +70,14 @@ class ScheduleDetailScreen extends StatelessWidget {
 }
 
 class _Hero extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
   final bool isToday;
   const _Hero({required this.grupo, required this.isToday});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final first = grupo.sesiones.first;
+    final first = grupo.sessions.first;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
@@ -100,7 +100,7 @@ class _Hero extends StatelessWidget {
         children: [
           Row(
             children: [
-              _DayBadge(idDia: grupo.idDia, isToday: isToday),
+              _DayBadge(idDia: grupo.weekday, isToday: isToday),
               const Gap.h(AppSpacing.sm),
               if (first.nrc.isNotEmpty)
                 Container(
@@ -124,7 +124,7 @@ class _Hero extends StatelessWidget {
           ),
           const Gap(AppSpacing.lg),
           Text(
-            grupo.asignatura,
+            grupo.subject,
             style: const TextStyle(
               color: Colors.white,
               fontSize: AppFont.h1,
@@ -133,12 +133,12 @@ class _Hero extends StatelessWidget {
               height: 1.15,
             ),
           ),
-          if (first.seccion.isNotEmpty) ...[
+          if (first.section.isNotEmpty) ...[
             const Gap(AppSpacing.xs),
             Text(
-              '${l.detailSection} ${first.seccion}'
-              '${first.nivel.isNotEmpty ? ' · ${l.detailLevel} ${first.nivel}' : ''}'
-              '${first.modalidad.isNotEmpty ? ' · ${first.modalidad}' : ''}',
+              '${l.detailSection} ${first.section}'
+              '${first.level.isNotEmpty ? ' · ${l.detailLevel} ${first.level}' : ''}'
+              '${first.modality.isNotEmpty ? ' · ${first.modality}' : ''}',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
                 fontSize: AppFont.body,
@@ -181,7 +181,7 @@ class _DayBadge extends StatelessWidget {
 }
 
 class _TimeCard extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
   final bool h24;
   final AppLocalizations label;
   const _TimeCard({
@@ -192,9 +192,9 @@ class _TimeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ini = Fmt.time(grupo.horaInicio, h24: h24);
-    final fin = Fmt.time(grupo.horaFin, h24: h24);
-    final duracion = grupo.sesiones.fold<int>(0, (a, s) => a + s.duracionMin);
+    final ini = Fmt.time(grupo.startTime, h24: h24);
+    final fin = Fmt.time(grupo.endTime, h24: h24);
+    final duracion = grupo.sessions.fold<int>(0, (a, s) => a + s.durationMinutes);
     return SectionCard(
       title: label.detailSchedule,
       icon: Icons.schedule_rounded,
@@ -233,7 +233,7 @@ class _TimeCard extends StatelessWidget {
 }
 
 class _LocationCard extends StatelessWidget {
-  final ClaseHorario first;
+  final ScheduleClass first;
   final String aula;
   final AppLocalizations label;
   const _LocationCard({
@@ -259,8 +259,8 @@ class _LocationCard extends StatelessWidget {
             _kv('Pabellón', pabellon),
           if (aulaOnly != null)
             _kv(label.detailRoom, aulaOnly),
-          if (first.local.isNotEmpty) _kv(label.detailBuilding, first.local),
-          if (first.sede.isNotEmpty) _kv(label.detailCampus, first.sede),
+          if (first.building.isNotEmpty) _kv(label.detailBuilding, first.building),
+          if (first.campus.isNotEmpty) _kv(label.detailCampus, first.campus),
         ],
       ),
     );
@@ -322,7 +322,7 @@ class _TeacherCard extends StatelessWidget {
 }
 
 class _SessionsCard extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
   final bool h24;
   final AppLocalizations label;
   const _SessionsCard({
@@ -339,9 +339,9 @@ class _SessionsCard extends StatelessWidget {
       iconColor: NexoTheme.success,
       child: Column(
         children: [
-          for (var i = 0; i < grupo.sesiones.length; i++) ...[
-            _SessionRow(sesion: grupo.sesiones[i], h24: h24),
-            if (i < grupo.sesiones.length - 1)
+          for (var i = 0; i < grupo.sessions.length; i++) ...[
+            _SessionRow(sesion: grupo.sessions[i], h24: h24),
+            if (i < grupo.sessions.length - 1)
               Divider(height: 14, color: NexoTheme.border),
           ],
         ],
@@ -351,13 +351,13 @@ class _SessionsCard extends StatelessWidget {
 }
 
 class _SessionRow extends StatelessWidget {
-  final ClaseHorario sesion;
+  final ScheduleClass sesion;
   final bool h24;
   const _SessionRow({required this.sesion, required this.h24});
 
   @override
   Widget build(BuildContext context) {
-    final isTeoria = sesion.idTipo.toUpperCase() == 'T';
+    final isTeoria = sesion.typeCode.toUpperCase() == 'T';
     final color = isTeoria ? NexoTheme.info : NexoTheme.success;
     return Row(
       children: [
@@ -380,7 +380,7 @@ class _SessionRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                sesion.tipoLargo,
+                sesion.typeName,
                 style: TextStyle(
                   fontSize: AppFont.body,
                   fontWeight: FontWeight.w700,
@@ -389,9 +389,9 @@ class _SessionRow extends StatelessWidget {
               ),
               const Gap(AppSpacing.xxs),
               Text(
-                '${Fmt.time(sesion.horaInicio, h24: h24)} – '
-                '${Fmt.time(sesion.horaFin, h24: h24)}'
-                '${sesion.aula.isNotEmpty ? ' · ${Fmt.formatAula(sesion.aula)}' : ''}',
+                '${Fmt.time(sesion.startTime, h24: h24)} – '
+                '${Fmt.time(sesion.endTime, h24: h24)}'
+                '${sesion.room.isNotEmpty ? ' · ${Fmt.formatAula(sesion.room)}' : ''}',
                 style: TextStyle(
                   fontSize: AppFont.small,
                   color: NexoTheme.textSecondary,

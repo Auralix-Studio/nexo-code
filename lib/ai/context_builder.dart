@@ -26,9 +26,9 @@ class LumenContextBuilder {
   /// ahora el preámbulo es el mismo para todos los modelos.
   Future<String> buildPreamble({required String modelId}) async {
     final p = _store.profile.value;
-    final name = p?.estudiante.split(' ').first ?? 'estudiante';
-    final carrera = p?.carrera ?? '';
-    final ciclo = p?.nivel ?? '';
+    final name = p?.fullName.split(' ').first ?? 'estudiante';
+    final carrera = p?.career ?? '';
+    final ciclo = p?.level ?? '';
     final now = DateTime.now();
     final today = '${_weekday(now.weekday)} ${now.day} de ${_month(now.month)}';
 

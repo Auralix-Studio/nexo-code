@@ -5,6 +5,7 @@ import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/features/schedule/schedule_detail_screen.dart';
@@ -318,10 +319,10 @@ class _TodayCard extends StatelessWidget {
       return const Skeleton(height: 140, radius: 22);
     }
 
-    final clases = (state.value ?? const <ClaseHorario>[])
-        .where((c) => c.idDia == today)
+    final clases = (state.value ?? const <ScheduleClass>[])
+        .where((c) => c.weekday == today)
         .toList()
-      ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     final h24 = AppStorage.instance.use24h;
     final isToday = today >= 1 && today <= 7;
@@ -370,22 +371,22 @@ class _TodayCard extends StatelessWidget {
 }
 
 class _TodaySessionRow extends StatelessWidget {
-  final ClaseHorario c;
+  final ScheduleClass c;
   final bool h24;
   const _TodaySessionRow({required this.c, required this.h24});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isTeoria = c.idTipo.toUpperCase() == 'T';
+    final isTeoria = c.typeCode.toUpperCase() == 'T';
     final color = isTeoria ? NexoTheme.info : NexoTheme.success;
-    final hi = Fmt.time(c.horaInicio, h24: h24);
-    final hf = Fmt.time(c.horaFin, h24: h24);
+    final hi = Fmt.time(c.startTime, h24: h24);
+    final hf = Fmt.time(c.endTime, h24: h24);
 
-    final grupo = ClaseAgrupada(
-      asignatura: c.asignatura,
-      idDia: c.idDia,
-      sesiones: [c],
+    final grupo = ScheduleClassGroup(
+      subject: c.subject,
+      weekday: c.weekday,
+      sessions: [c],
     );
 
     return Material(
@@ -416,7 +417,7 @@ class _TodaySessionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      c.asignatura,
+                      c.subject,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -446,7 +447,7 @@ class _TodaySessionRow extends StatelessWidget {
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
-                            Fmt.formatAula(c.aula),
+                            Fmt.formatAula(c.room),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

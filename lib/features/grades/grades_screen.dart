@@ -5,6 +5,7 @@ import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/grades/grade_widgets.dart';
 import 'package:nexo/features/grades/legacy_notas.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -40,33 +41,33 @@ class _GradesScreenState extends State<GradesScreen> {
     if (!widget.store.promedios.hasValue) widget.store.loadPromedios();
   }
 
-  Periodo? _currentPeriodo(List<Periodo> periodos) {
+  Term? _currentTerm(List<Term> periodos) {
     if (periodos.isEmpty) return null;
     if (_selectedId != null) {
       try {
-        return periodos.firstWhere((p) => p.periodoId == _selectedId);
+        return periodos.firstWhere((p) => p.id == _selectedId);
       } catch (_) {}
     }
     try {
-      return periodos.firstWhere((p) => p.activo);
+      return periodos.firstWhere((p) => p.isActive);
     } catch (_) {}
     return periodos.first;
   }
 
-  void _load(Periodo p) {
-    if (esModeloNuevo(p.anio, p.periodo)) {
-      if (!widget.store.boletaOf(p.anio, p.periodo).hasValue) {
-        widget.store.loadBoleta(p.anio, p.periodo);
+  void _load(Term p) {
+    if (esModeloNuevo(p.year, p.number)) {
+      if (!widget.store.boletaOf(p.year, p.number).hasValue) {
+        widget.store.loadBoleta(p.year, p.number);
       }
     } else {
-      if (!widget.store.boletaLegacyOf(p.anio, p.periodo).hasValue) {
-        widget.store.loadBoletaLegacy(p.anio, p.periodo);
+      if (!widget.store.boletaLegacyOf(p.year, p.number).hasValue) {
+        widget.store.loadBoletaLegacy(p.year, p.number);
       }
     }
   }
 
-  void _select(Periodo p) {
-    setState(() => _selectedId = p.periodoId);
+  void _select(Term p) {
+    setState(() => _selectedId = p.id);
     _load(p);
   }
 
@@ -76,16 +77,16 @@ class _GradesScreenState extends State<GradesScreen> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final periodos = widget.store.periodos.value ?? const <Periodo>[];
-        final current = _currentPeriodo(periodos);
+        final periodos = widget.store.periodos.value ?? const <Term>[];
+        final current = _currentTerm(periodos);
 
         final nuevo =
-            current != null && esModeloNuevo(current.anio, current.periodo);
+            current != null && esModeloNuevo(current.year, current.number);
 
         if (current != null) {
           final st = nuevo
-              ? widget.store.boletaOf(current.anio, current.periodo)
-              : widget.store.boletaLegacyOf(current.anio, current.periodo);
+              ? widget.store.boletaOf(current.year, current.number)
+              : widget.store.boletaLegacyOf(current.year, current.number);
           // Auto-carga solo en estado idle inicial. Si ya falló (error != null)
           // NO se reintenta automáticamente: el usuario usa pull-to-refresh o
           // el botón "Reintentar" — si no, entramos en bucle infinito al
@@ -99,10 +100,10 @@ class _GradesScreenState extends State<GradesScreen> {
 
         final boleta = current == null
             ? const AsyncValue<List<BoletaCurso>>.idle()
-            : widget.store.boletaOf(current.anio, current.periodo);
+            : widget.store.boletaOf(current.year, current.number);
         final legacy = current == null
             ? const AsyncValue<List<NotaAsignatura>>.idle()
-            : widget.store.boletaLegacyOf(current.anio, current.periodo);
+            : widget.store.boletaLegacyOf(current.year, current.number);
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -123,8 +124,8 @@ class _GradesScreenState extends State<GradesScreen> {
                   subtitle: current == null
                       ? l.gradesSubtitleNoPeriod
                       : nuevo
-                      ? l.gradesSubtitleUnits(current.descripcion)
-                      : l.gradesSubtitlePartials(current.descripcion),
+                      ? l.gradesSubtitleUnits(current.label)
+                      : l.gradesSubtitlePartials(current.label),
                 ),
               ),
               SliverToBoxAdapter(
@@ -195,7 +196,7 @@ class _GradesScreenState extends State<GradesScreen> {
 
 class _BoletaList extends StatelessWidget {
   final AsyncValue<List<BoletaCurso>> state;
-  final Periodo? periodo;
+  final Term? periodo;
   final AppStore store;
   const _BoletaList({
     required this.state,
@@ -251,7 +252,7 @@ class _BoletaList extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () =>
-                  store.loadBoleta(periodo!.anio, periodo!.periodo),
+                  store.loadBoleta(periodo!.year, periodo!.number),
               child: Text(l.actionRetry),
             ),
           ],
@@ -272,7 +273,7 @@ class _BoletaList extends StatelessWidget {
     }
 
     return SectionCard(
-      title: l.gradesSubjectsWithPeriod(periodo!.descripcion),
+      title: l.gradesSubjectsWithPeriod(periodo!.label),
       icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
       trailing: StatusChip(
@@ -293,7 +294,7 @@ class _BoletaList extends StatelessWidget {
 
 class _CursoTile extends StatelessWidget {
   final BoletaCurso curso;
-  final Periodo periodo;
+  final Term periodo;
   final AppStore store;
   const _CursoTile({
     required this.curso,
@@ -312,8 +313,8 @@ class _CursoTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: () {
           store.loadDetalle(
-            periodo.anio,
-            periodo.periodo,
+            periodo.year,
+            periodo.number,
             curso.matriculaAsignaturaId,
           );
           showModalBottomSheet<void>(
@@ -591,7 +592,7 @@ class _ResumenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final promedios = store.promedios.value ?? const <PromedioPeriodo>[];
+    final promedios = store.promedios.value ?? const <TermAverage>[];
     final acumulado = store.promedioAcumulado;
     final creditosAprob = store.creditosAprobados;
     final creditosTotal = store.creditosTotales;
@@ -707,7 +708,7 @@ class _BigMetric extends StatelessWidget {
 }
 
 class _PromediosChart extends StatelessWidget {
-  final List<PromedioPeriodo> items;
+  final List<TermAverage> items;
   const _PromediosChart({required this.items});
 
   @override
@@ -730,8 +731,8 @@ class _PromediosChart extends StatelessWidget {
     }
     final sorted = [...items]
       ..sort((a, b) {
-        final byYear = a.anio.compareTo(b.anio);
-        return byYear != 0 ? byYear : a.periodo.compareTo(b.periodo);
+        final byYear = a.year.compareTo(b.year);
+        return byYear != 0 ? byYear : a.number.compareTo(b.number);
       });
 
     return Container(
@@ -771,19 +772,19 @@ class _PromediosChart extends StatelessWidget {
 }
 
 class _BarColumn extends StatelessWidget {
-  final PromedioPeriodo p;
+  final TermAverage p;
   const _BarColumn({required this.p});
 
   @override
   Widget build(BuildContext context) {
-    final ok = p.promedio >= 11;
+    final ok = p.average >= 11;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            p.promedio == 0 ? '—' : p.promedio.toStringAsFixed(1),
+            p.average == 0 ? '—' : p.average.toStringAsFixed(1),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -795,7 +796,7 @@ class _BarColumn extends StatelessWidget {
             child: LayoutBuilder(
               builder: (ctx, c) {
                 final h = c.maxHeight;
-                final value = p.promedio == 0 ? 4.0 : (p.promedio / 20.0) * h;
+                final value = p.average == 0 ? 4.0 : (p.average / 20.0) * h;
                 return Align(
                   alignment: Alignment.bottomCenter,
                   child: AnimatedContainer(
@@ -805,7 +806,7 @@ class _BarColumn extends StatelessWidget {
                     height: value.clamp(4.0, h),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: p.promedio == 0
+                        colors: p.average == 0
                             ? [NexoTheme.border, NexoTheme.border]
                             : ok
                             ? [NexoTheme.success, NexoTheme.accent]
@@ -838,9 +839,9 @@ class _BarColumn extends StatelessWidget {
 }
 
 class _PeriodChips extends StatelessWidget {
-  final List<Periodo> periodos;
-  final Periodo? selected;
-  final ValueChanged<Periodo> onSelect;
+  final List<Term> periodos;
+  final Term? selected;
+  final ValueChanged<Term> onSelect;
 
   const _PeriodChips({
     required this.periodos,
@@ -856,10 +857,10 @@ class _PeriodChips extends StatelessWidget {
         children: [
           for (final p in periodos) ...[
             _Chip(
-              text: p.descripcion,
-              active: p.periodoId == selected?.periodoId,
+              text: p.label,
+              active: p.id == selected?.id,
               onTap: () => onSelect(p),
-              activo: p.activo,
+              activo: p.isActive,
             ),
             const SizedBox(width: 8),
           ],

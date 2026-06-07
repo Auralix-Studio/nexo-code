@@ -4,7 +4,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
@@ -41,14 +41,14 @@ class _DocenteHorarioScreenState extends State<DocenteHorarioScreen> {
         final l = AppLocalizations.of(context);
         final state = widget.store.docenteHorario;
         final loading = state.loading && !state.hasValue;
-        final clases = state.value ?? const <ClaseHorario>[];
+        final clases = state.value ?? const <ScheduleClass>[];
 
-        final byDay = <int, List<ClaseHorario>>{};
+        final byDay = <int, List<ScheduleClass>>{};
         for (final c in clases) {
-          byDay.putIfAbsent(c.idDia, () => []).add(c);
+          byDay.putIfAbsent(c.weekday, () => []).add(c);
         }
         for (final list in byDay.values) {
-          list.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+          list.sort((a, b) => a.startTime.compareTo(b.startTime));
         }
         final today = DateTime.now().weekday;
         final days = byDay.keys.toList()..sort();
@@ -129,7 +129,7 @@ class _DocenteHorarioScreenState extends State<DocenteHorarioScreen> {
 
 class _DayCard extends StatelessWidget {
   final int day;
-  final List<ClaseHorario> clases;
+  final List<ScheduleClass> clases;
   final bool isToday;
   const _DayCard({
     required this.day,
@@ -140,7 +140,7 @@ class _DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final grupos = ClaseAgrupada.agrupar(clases);
+    final grupos = ScheduleClassGroup.groupBy(clases);
     final h24 = AppStorage.instance.use24h;
 
     return SectionCard(
@@ -164,7 +164,7 @@ class _DayCard extends StatelessWidget {
 }
 
 class _GrupoTile extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
   final bool h24;
   const _GrupoTile({required this.grupo, required this.h24});
 
@@ -195,7 +195,7 @@ class _GrupoTile extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  Fmt.time(grupo.horaInicio, h24: h24),
+                  Fmt.time(grupo.startTime, h24: h24),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -206,7 +206,7 @@ class _GrupoTile extends StatelessWidget {
                 Container(width: 14, height: 1, color: NexoTheme.border),
                 const SizedBox(height: 2),
                 Text(
-                  Fmt.time(grupo.horaFin, h24: h24),
+                  Fmt.time(grupo.endTime, h24: h24),
                   style: TextStyle(
                     fontSize: 12,
                     color: NexoTheme.textSecondary,
@@ -222,7 +222,7 @@ class _GrupoTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  grupo.asignatura,
+                  grupo.subject,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -237,33 +237,33 @@ class _GrupoTile extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 4,
                   children: [
-                    _meta(Icons.tag_rounded, 'Sec. ${grupo.sesiones.first.seccion}'),
-                    if (grupo.aula.isNotEmpty)
-                      _meta(Icons.location_on_outlined, Fmt.formatAula(grupo.aula)),
+                    _meta(Icons.tag_rounded, 'Sec. ${grupo.sessions.first.section}'),
+                    if (grupo.room.isNotEmpty)
+                      _meta(Icons.location_on_outlined, Fmt.formatAula(grupo.room)),
                   ],
                 ),
                 const Gap(AppSpacing.xs + 2),
                 Row(
                   children: [
-                    for (final s in grupo.sesiones)
+                    for (final s in grupo.sessions)
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm, vertical: 2),
                           decoration: BoxDecoration(
-                            color: (s.idTipo.toUpperCase() == 'T'
+                            color: (s.typeCode.toUpperCase() == 'T'
                                     ? NexoTheme.info
                                     : NexoTheme.success)
                                 .withValues(alpha: 0.14),
                             borderRadius: AppRadii.rPill,
                           ),
                           child: Text(
-                            s.tipoLargo,
+                            s.typeName,
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: s.idTipo.toUpperCase() == 'T'
+                              color: s.typeCode.toUpperCase() == 'T'
                                   ? NexoTheme.info
                                   : NexoTheme.success,
                             ),
@@ -287,12 +287,17 @@ class _GrupoTile extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: NexoTheme.textSecondary),
           const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: NexoTheme.textSecondary,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 12,
+                color: NexoTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

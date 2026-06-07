@@ -3,29 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 
 /// Tarjeta destacada con la **próxima clase** (hoy o el siguiente día con clases).
 class NextClassWidget extends StatelessWidget {
-  final List<ClaseHorario> all;
+  final List<ScheduleClass> all;
   final DateTime? nowOverride;
   const NextClassWidget({super.key, required this.all, this.nowOverride});
 
   DateTime get _now => nowOverride ?? DateTime.now();
 
-  ({ClaseHorario clase, bool esHoy, int diasHasta})? _next() {
+  ({ScheduleClass clase, bool esHoy, int diasHasta})? _next() {
     if (all.isEmpty) return null;
     final now = _now;
     final nowMin = now.hour * 60 + now.minute;
     // Buscar en los próximos 7 días (incluye hoy).
     for (var offset = 0; offset < 8; offset++) {
       final dia = ((now.weekday - 1 + offset) % 7) + 1;
-      final delDia = all.where((c) => c.idDia == dia).toList()
-        ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+      final delDia = all.where((c) => c.weekday == dia).toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
       for (final c in delDia) {
-        final ini = _toMin(c.horaInicio);
+        final ini = _toMin(c.startTime);
         if (offset == 0 && ini != null && ini <= nowMin) continue;
         return (clase: c, esHoy: offset == 0, diasHasta: offset);
       }
@@ -41,14 +41,14 @@ class NextClassWidget extends StatelessWidget {
     return (h == null || m == null) ? null : h * 60 + m;
   }
 
-  String _relativo(({ClaseHorario clase, bool esHoy, int diasHasta}) n) {
+  String _relativo(({ScheduleClass clase, bool esHoy, int diasHasta}) n) {
     if (!n.esHoy) {
       return n.diasHasta == 1
-          ? 'Mañana · ${Fmt.dayLabel(n.clase.idDia)}'
-          : Fmt.dayLabel(n.clase.idDia);
+          ? 'Mañana · ${Fmt.dayLabel(n.clase.weekday)}'
+          : Fmt.dayLabel(n.clase.weekday);
     }
     final now = _now;
-    final ini = _toMin(n.clase.horaInicio);
+    final ini = _toMin(n.clase.startTime);
     if (ini == null) return 'Hoy';
     final diff = ini - (now.hour * 60 + now.minute);
     if (diff <= 0) return 'Ahora';
@@ -64,14 +64,14 @@ class NextClassWidget extends StatelessWidget {
     if (n == null) return const SizedBox.shrink();
     final c = n.clase;
     // Construye un ClaseAgrupada con todas las sesiones del mismo curso ese día.
-    final grupo = ClaseAgrupada.agrupar(
-      all.where((x) => x.idDia == c.idDia && x.asignatura == c.asignatura).toList(),
+    final grupo = ScheduleClassGroup.groupBy(
+      all.where((x) => x.weekday == c.weekday && x.subject == c.subject).toList(),
     ).firstWhere(
-      (g) => g.asignatura == c.asignatura,
-      orElse: () => ClaseAgrupada(
-        asignatura: c.asignatura,
-        idDia: c.idDia,
-        sesiones: [c],
+      (g) => g.subject == c.subject,
+      orElse: () => ScheduleClassGroup(
+        subject: c.subject,
+        weekday: c.weekday,
+        sessions: [c],
       ),
     );
 
@@ -138,7 +138,7 @@ class NextClassWidget extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           Text(
-            c.asignatura,
+            c.subject,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -158,15 +158,15 @@ class NextClassWidget extends StatelessWidget {
                 Icons.schedule,
                 () {
                   final h24 = AppStorage.instance.use24h;
-                  return '${Fmt.time(c.horaInicio, h24: h24)} – '
-                      '${Fmt.time(c.horaFin, h24: h24)}';
+                  return '${Fmt.time(c.startTime, h24: h24)} – '
+                      '${Fmt.time(c.endTime, h24: h24)}';
                 }(),
               ),
-               if (c.aula.isNotEmpty)
-                _info(Icons.location_on_outlined, Fmt.formatAula(c.aula)),
-              _info(Icons.bookmark_border, c.tipoLargo),
-              if (c.docente.isNotEmpty)
-                _info(Icons.person_outline, c.docente),
+               if (c.room.isNotEmpty)
+                _info(Icons.location_on_outlined, Fmt.formatAula(c.room)),
+              _info(Icons.bookmark_border, c.typeName),
+              if (c.teacher.isNotEmpty)
+                _info(Icons.person_outline, c.teacher),
             ],
           ),
         ],

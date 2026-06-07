@@ -1,5 +1,6 @@
 import 'package:nexo/data/api_client.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 
 /// Mapea endpoints SIGMA del módulo Docente → modelos de dominio.
 ///
@@ -43,14 +44,14 @@ class DocenteRepository {
 
   /// Horario de clases del docente.
   /// Real: `Horario/getListaHorario` (GET).
-  Future<List<ClaseHorario>> getHorario() async {
-    final res = await _api.get<List<ClaseHorario>>(
+  Future<List<ScheduleClass>> getHorario() async {
+    final res = await _api.get<List<ScheduleClass>>(
       'Horario/getListaHorario',
       decode: (raw) {
-        if (raw is! List) return const <ClaseHorario>[];
+        if (raw is! List) return const <ScheduleClass>[];
         return raw
             .whereType<Map>()
-            .map((e) => ClaseHorario.fromJson(e.cast<String, dynamic>()))
+            .map((e) => ScheduleClass.fromSigmaJson(e.cast<String, dynamic>()))
             .toList();
       },
     );

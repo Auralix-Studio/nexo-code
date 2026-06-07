@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'package:nexo/core/design/theme.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/payments/payment_detail_screen.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
 /// Widget de "Deudas pendientes" — segundo widget crítico del home.
 class PendingPaymentsWidget extends StatelessWidget {
-  final List<Cuota> cuotas;
+  final List<Payment> cuotas;
   final DateTime? nowOverride;
 
   const PendingPaymentsWidget({
@@ -21,19 +21,19 @@ class PendingPaymentsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sorted = [...cuotas]..sort((a, b) {
-        final da = a.vencimientoDate;
-        final db = b.vencimientoDate;
+        final da = a.dueDate;
+        final db = b.dueDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
         return da.compareTo(db);
       });
 
-    final total = sorted.fold<double>(0, (acc, c) => acc + c.subtotal);
+    final total = sorted.fold<double>(0, (acc, c) => acc + c.total);
     final next = sorted.firstOrNull;
     final hoy = DateTime(now.year, now.month, now.day);
     final vencidas =
-        sorted.where((c) => (c.vencimientoDate?.isBefore(hoy) ?? false)).length;
+        sorted.where((c) => (c.dueDate?.isBefore(hoy) ?? false)).length;
 
     return SectionCard(
       title: 'Pagos pendientes',
@@ -41,7 +41,7 @@ class PendingPaymentsWidget extends StatelessWidget {
           ? '$vencidas vencida${vencidas == 1 ? '' : 's'}'
           : (next == null
               ? 'Sin deudas'
-              : 'Próximo: ${next.fechaVencimiento}'),
+              : 'Próximo: ${next.dueDateRaw}'),
       icon: Icons.payments_outlined,
       iconColor: vencidas > 0 ? NexoTheme.danger : NexoTheme.warning,
       trailing: Container(
@@ -108,7 +108,7 @@ class PendingPaymentsWidget extends StatelessWidget {
 }
 
 class _CuotaRow extends StatelessWidget {
-  final Cuota cuota;
+  final Payment cuota;
   final DateTime now;
 
   const _CuotaRow({required this.cuota, required this.now});
@@ -157,7 +157,7 @@ class _CuotaRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  cuota.descripcion,
+                  cuota.description,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -179,7 +179,7 @@ class _CuotaRow extends StatelessWidget {
                             size: 14, color: NexoTheme.textSecondary),
                         const SizedBox(width: 4),
                         Text(
-                          cuota.fechaVencimiento,
+                          cuota.dueDateRaw,
                           style: TextStyle(
                             fontSize: 12,
                             color: NexoTheme.textSecondary,
@@ -211,7 +211,7 @@ class _CuotaRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '${cuota.tipoMoneda} ${cuota.subtotal.toStringAsFixed(2)}',
+            '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,

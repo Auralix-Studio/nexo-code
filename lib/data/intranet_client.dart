@@ -26,6 +26,33 @@ class IntranetClient {
 
   bool get isLoggedIn => _loggedIn;
 
+  /// Cookies actuales serializadas — para persistir entre cold starts y
+  /// evitar tener que rehacer el login (1 request menos = ~500ms más rápido
+  /// al arrancar la app).
+  String? exportCookies() {
+    if (_cookies.isEmpty) return null;
+    return _cookies.entries.map((e) => '${e.key}=${e.value}').join(';');
+  }
+
+  /// Restaura cookies de una sesión previa. Marca como logueado para que
+  /// las llamadas no reintenten el login a menos que reciban una respuesta
+  /// HTML (sesión caducada del lado del server).
+  void importCookies(String raw) {
+    _cookies.clear();
+    for (final part in raw.split(';')) {
+      final i = part.indexOf('=');
+      if (i > 0) _cookies[part.substring(0, i).trim()] = part.substring(i + 1).trim();
+    }
+    _loggedIn = _cookies.containsKey('PHPSESSID');
+  }
+
+  /// Invalida la sesión actual (cuando el server responde HTML / sesión
+  /// caducada). El siguiente `login()` re-establece la cookie.
+  void invalidateSession() {
+    _loggedIn = false;
+    _cookies.clear();
+  }
+
   void _storeCookies(http.BaseResponse res) {
     final raw = res.headers['set-cookie'];
     if (raw == null) return;
@@ -118,7 +145,9 @@ class IntranetClient {
     final t = body.trim();
     if (t.isEmpty) return null;
     if (t.startsWith('<')) {
-      // Página anti-bot / sesión perdida.
+      // Página anti-bot / sesión perdida — limpia cookies para forzar
+      // re-login en el siguiente `ensureSession`.
+      invalidateSession();
       throw const SessionExpiredException('Sesión de Intranet expirada.');
     }
     try {

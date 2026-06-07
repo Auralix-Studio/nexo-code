@@ -174,7 +174,7 @@ Future<void> main(List<String> args) async {
 
   await session.bootstrap();
   await msAuth.bootstrap();
-  if (session.isAuthenticated) store.hydrateFromCache();
+  if (session.isAuthenticated) await store.hydrateFromCache();
 
   // Lumen: instanciado siempre, pero arranca en `inactive`. La descarga del
   // modelo es opt-in (ver LumenHomeCard → LumenOnboardingDialog).

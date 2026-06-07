@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 
 void main() {
-  test('Cuota.daysUntilDue calcula días correctamente', () {
-    final c = Cuota.fromJson({
+  test('Payment.daysUntilDue calcula días correctamente', () {
+    final p = Payment.fromSigmaJson({
       'descripcion': 'CUOTA 02',
       'fechaVencimiento': '20-05-2026',
       'tipoMoneda': 'S/.',
@@ -17,11 +18,11 @@ void main() {
       'observacion': '',
     });
     final now = DateTime(2026, 5, 14);
-    expect(c.daysUntilDue(now), 6);
+    expect(p.daysUntilDue(now), 6);
   });
 
-  test('ClaseHorario decodifica campos clave', () {
-    final c = ClaseHorario.fromJson({
+  test('ScheduleClass decodifica campos clave', () {
+    final c = ScheduleClass.fromSigmaJson({
       'id': '331131',
       'asignatura': 'ANTROPOLOGÍA',
       'idDia': 4,
@@ -31,9 +32,9 @@ void main() {
       'docente': 'MEZA VARGAS ZENAIDA',
       'idTipo': 'T',
     });
-    expect(c.asignatura, 'ANTROPOLOGÍA');
-    expect(c.tipoLargo, 'Teoría');
-    expect(c.idDia, 4);
+    expect(c.subject, 'ANTROPOLOGÍA');
+    expect(c.typeName, 'Teoría');
+    expect(c.weekday, 4);
   });
 
   test('NotaAsignatura parsea ambos parciales con su capitalización real', () {

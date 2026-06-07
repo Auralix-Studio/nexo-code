@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -43,9 +43,12 @@ class HomeScreen extends StatelessWidget {
           onRefresh: () => store.loadHomeEssentials(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
-              SliverToBoxAdapter(child: _Header(store: store, connectivity: connectivity)),
+              SliverToBoxAdapter(
+                child: _Header(store: store, connectivity: connectivity),
+              ),
               SliverPadding(
                 padding: EdgeInsets.symmetric(
                   horizontal: Responsive.hPad(context),
@@ -105,7 +108,11 @@ class _Header extends StatelessWidget {
     final now = DateTime.now();
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          Responsive.hPad(context), 24, Responsive.hPad(context), 16),
+        Responsive.hPad(context),
+        24,
+        Responsive.hPad(context),
+        16,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1240),
@@ -123,8 +130,8 @@ class _Header extends StatelessWidget {
                   ],
                 ),
                 child: StudentAvatar(
-                  codigo: profile?.estId,
-                  nombre: profile?.estudiante ?? '',
+                  codigo: profile?.id,
+                  nombre: profile?.fullName ?? '',
                   size: 56,
                   radius: 18,
                 ),
@@ -142,9 +149,7 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      profile == null
-                          ? '...'
-                          : Fmt.firstName(profile.estudiante),
+                      profile == null ? '...' : Fmt.firstName(profile.fullName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -156,7 +161,7 @@ class _Header extends StatelessWidget {
                     ),
                     if (profile != null)
                       Text(
-                        '${profile.carrera} · Nivel ${profile.nivel}',
+                        profile.career,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -171,11 +176,16 @@ class _Header extends StatelessWidget {
                 listenable: connectivity,
                 builder: (context, _) {
                   final isOnline = connectivity.hasInternet;
-                  final sigmaOnline = connectivity.sigmaStatus == ServerStatus.online;
-                  final intranetOnline = connectivity.intranetStatus == ServerStatus.online;
-                  final isFullyOnline = isOnline && sigmaOnline && intranetOnline;
+                  final sigmaOnline =
+                      connectivity.sigmaStatus == ServerStatus.online;
+                  final intranetOnline =
+                      connectivity.intranetStatus == ServerStatus.online;
+                  final isFullyOnline =
+                      isOnline && sigmaOnline && intranetOnline;
 
-                  final color = isFullyOnline ? NexoTheme.success : NexoTheme.danger;
+                  final color = isFullyOnline
+                      ? NexoTheme.success
+                      : NexoTheme.danger;
 
                   return Tooltip(
                     message: l.homeVerifyConnectivity,
@@ -236,7 +246,11 @@ class _Header extends StatelessWidget {
               final sigma = connectivity.sigmaStatus;
               final intranet = connectivity.intranetStatus;
 
-              Widget buildStatusTile(String title, bool active, ServerStatus? status) {
+              Widget buildStatusTile(
+                String title,
+                bool active,
+                ServerStatus? status,
+              ) {
                 final Color color;
                 final String label;
                 final IconData icon;
@@ -261,13 +275,18 @@ class _Header extends StatelessWidget {
                   }
                 } else {
                   color = active ? NexoTheme.success : NexoTheme.danger;
-                  label = active ? l.connectivityConnected : l.connectivityDisconnected;
+                  label = active
+                      ? l.connectivityConnected
+                      : l.connectivityDisconnected;
                   icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
                 }
 
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: NexoTheme.bg,
                     borderRadius: BorderRadius.circular(14),
@@ -367,7 +386,11 @@ class _Header extends StatelessWidget {
                         Navigator.of(context).pop();
                         SupportScreen.open(context);
                       },
-                      icon: Icon(Icons.help_outline_rounded, size: 16, color: NexoTheme.success),
+                      icon: Icon(
+                        Icons.help_outline_rounded,
+                        size: 16,
+                        color: NexoTheme.success,
+                      ),
                       label: Text(
                         l.supportContactButton,
                         style: const TextStyle(
@@ -431,24 +454,23 @@ class _StatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final p = store.profile.value;
-    final cuotas = store.cuotasPendientes.value ?? const <Cuota>[];
-    final horario = store.horario.value ?? const <ClaseHorario>[];
+    final cuotas = store.cuotasPendientes.value ?? const <Payment>[];
+    final horario = store.horario.value ?? const <ScheduleClass>[];
 
     final today = DateTime.now().weekday;
-    final clasesHoy = horario.where((c) => c.idDia == today).length;
-    final montoPendiente =
-        cuotas.fold<double>(0, (acc, c) => acc + c.subtotal);
+    final clasesHoy = horario.where((c) => c.weekday == today).length;
+    final montoPendiente = cuotas.fold<double>(0, (acc, c) => acc + c.total);
 
     // Promedio acumulado (de periodos completados, no el actual)
     final promedio = store.promedioAcumulado;
-    final creditosAprob = store.creditosAprobados ?? p?.creditoAprobado;
+    final creditosAprob = store.creditosAprobados ?? p?.creditsApproved;
     final creditosTotal = store.creditosTotales;
 
     final creditosLabel = creditosAprob == null
         ? '—'
         : creditosTotal != null && creditosTotal > 0
-            ? '$creditosAprob/$creditosTotal'
-            : '$creditosAprob';
+        ? '$creditosAprob/$creditosTotal'
+        : '$creditosAprob';
 
     final stats = <_StatData>[
       _StatData(
@@ -477,8 +499,8 @@ class _StatsGrid extends StatelessWidget {
         value: cuotas.isEmpty ? 'S/ 0' : Fmt.currency(montoPendiente),
         icon: Icons.account_balance_wallet_rounded,
         color: NexoTheme.warning,
-        loading: store.cuotasPendientes.loading &&
-            !store.cuotasPendientes.hasValue,
+        loading:
+            store.cuotasPendientes.loading && !store.cuotasPendientes.hasValue,
       ),
     ];
 
@@ -588,7 +610,8 @@ class _MainGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final horario = store.horario;
     final cuotas = store.cuotasPendientes;
-    final isWide = Responsive.isDesktop(context) || Responsive.isTablet(context);
+    final isWide =
+        Responsive.isDesktop(context) || Responsive.isTablet(context);
 
     final claseW = _ClasesHoyBlock(state: horario, onSeeAll: () => onJump(1));
     final pagoW = _PagosBlock(state: cuotas, onSeeAll: () => onJump(3));
@@ -603,14 +626,12 @@ class _MainGrid extends StatelessWidget {
         ],
       );
     }
-    return Column(
-      children: [claseW, const SizedBox(height: 16), pagoW],
-    );
+    return Column(children: [claseW, const SizedBox(height: 16), pagoW]);
   }
 }
 
 class _ClasesHoyBlock extends StatelessWidget {
-  final AsyncValue<List<ClaseHorario>> state;
+  final AsyncValue<List<ScheduleClass>> state;
   final VoidCallback onSeeAll;
   const _ClasesHoyBlock({required this.state, required this.onSeeAll});
 
@@ -660,7 +681,7 @@ class _ClasesHoyBlock extends StatelessWidget {
 }
 
 class _PagosBlock extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
+  final AsyncValue<List<Payment>> state;
   final VoidCallback onSeeAll;
   const _PagosBlock({required this.state, required this.onSeeAll});
 

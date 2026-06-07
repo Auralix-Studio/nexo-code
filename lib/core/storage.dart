@@ -38,6 +38,8 @@ class AppStorage {
   static const _kRunPortable = 'nexo.runPortable';
   static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
   static const _kLumenModelId = 'nexo.lumen.modelId';
+  static const _kIntranetCookies = 'nexo.intranet.cookies';
+  static const _kIntranetUser = 'nexo.intranet.user';
 
   /// Preferencias de notificaciones (JSON serializado).
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
@@ -81,6 +83,20 @@ class AppStorage {
       await _prefs.remove(_kLumenModelId);
     } else {
       await _prefs.setString(_kLumenModelId, value);
+    }
+  }
+
+  /// Cookies persistidas de Intranet (PHPSESSID) — evita re-login en cold
+  /// start. Pareadas con el usuario que las creó para invalidar si cambia.
+  String? get intranetCookies => _prefs.getString(_kIntranetCookies);
+  String? get intranetUser => _prefs.getString(_kIntranetUser);
+  Future<void> setIntranetSession(String? cookies, String? user) async {
+    if (cookies == null || user == null) {
+      await _prefs.remove(_kIntranetCookies);
+      await _prefs.remove(_kIntranetUser);
+    } else {
+      await _prefs.setString(_kIntranetCookies, cookies);
+      await _prefs.setString(_kIntranetUser, user);
     }
   }
 

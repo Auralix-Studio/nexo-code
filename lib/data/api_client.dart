@@ -102,16 +102,9 @@ class ApiClient {
     bool isRetry = false,
   }) async {
     final uri = _buildUri(path, query);
-    // SIGMA filtra silenciosamente algunos endpoints (notablemente los de
-    // pagos) cuando Origin/Referer no son del dominio oficial — responde
-    // 200 OK con `data: []` en vez de 403. Sin esto, perfil/horario/notas
-    // funcionaban pero pagos siempre salía vacío. El TS prototype también
-    // los manda (ver prototype-ts/src/client.ts).
     final headers = <String, String>{
-      'Accept': 'application/json, text/plain, */*',
+      'Accept': 'application/json',
       'Content-Type': 'application/json; charset=utf-8',
-      'Origin': 'https://sigma.upla.edu.pe',
-      'Referer': 'https://sigma.upla.edu.pe/',
       'User-Agent': AppConfig.userAgent,
     };
     if (authorize && _token != null) {
@@ -135,8 +128,25 @@ class ApiClient {
     }
 
     Map<String, dynamic>? payload;
+    final bodyText = utf8.decode(res.bodyBytes, allowMalformed: true);
+
+    // Si SIGMA devuelve HTML con 200 OK, es porque la ruta del API ya no
+    // existe y el SPA está sirviendo su fallback (catch-all del frontend).
+    // Antes esto cascaba como "data nulo" — engañoso. Mejor un error
+    // explícito para distinguir "endpoint movido" de "data vacía real".
+    final trimmedHead = bodyText.trimLeft();
+    if (res.statusCode < 400 &&
+        (trimmedHead.startsWith('<!doctype') ||
+            trimmedHead.startsWith('<!DOCTYPE') ||
+            trimmedHead.startsWith('<html'))) {
+      throw ServerException(
+        'Endpoint movido o no disponible (SIGMA respondió con HTML del SPA): $path',
+        status: res.statusCode,
+      );
+    }
+
     try {
-      final parsed = jsonDecode(utf8.decode(res.bodyBytes));
+      final parsed = jsonDecode(bodyText);
       if (parsed is Map<String, dynamic>) payload = parsed;
     } catch (_) {
       // respuesta no JSON

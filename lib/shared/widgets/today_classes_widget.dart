@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
 /// Widget de "Asignaturas de hoy" — fusiona teoría + práctica del mismo curso.
 class TodayClassesWidget extends StatelessWidget {
-  final List<ClaseHorario> all;
+  final List<ScheduleClass> all;
   final DateTime? nowOverride;
 
   const TodayClassesWidget({
@@ -24,8 +24,8 @@ class TodayClassesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = now.weekday; // 1=Lun..7=Dom (igual que SIGMA)
-    final hoy = all.where((c) => c.idDia == today).toList(growable: false);
-    final grupos = ClaseAgrupada.agrupar(hoy);
+    final hoy = all.where((c) => c.weekday == today).toList(growable: false);
+    final grupos = ScheduleClassGroup.groupBy(hoy);
     final nowHM = _hm(now);
 
     return SectionCard(
@@ -93,18 +93,18 @@ class _Empty extends StatelessWidget {
 }
 
 class _CourseTile extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup grupo;
   final String nowHM;
   const _CourseTile({required this.grupo, required this.nowHM});
 
-  bool _isOngoing(ClaseHorario c) =>
-      c.horaInicio.compareTo(nowHM) <= 0 && nowHM.compareTo(c.horaFin) < 0;
-  bool _isPast(String horaFin) => horaFin.compareTo(nowHM) <= 0;
+  bool _isOngoing(ScheduleClass c) =>
+      c.startTime.compareTo(nowHM) <= 0 && nowHM.compareTo(c.endTime) < 0;
+  bool _isPast(String endTime) => endTime.compareTo(nowHM) <= 0;
 
   @override
   Widget build(BuildContext context) {
-    final anyOngoing = grupo.sesiones.any(_isOngoing);
-    final allPast = grupo.sesiones.every((s) => _isPast(s.horaFin));
+    final anyOngoing = grupo.sessions.any(_isOngoing);
+    final allPast = grupo.sessions.every((s) => _isPast(s.endTime));
     final accent = anyOngoing
         ? NexoTheme.success
         : allPast
@@ -151,7 +151,7 @@ class _CourseTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            grupo.asignatura,
+                            grupo.subject,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -170,7 +170,7 @@ class _CourseTile extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if (grupo.aula.isNotEmpty) ...[
+                    if (grupo.room.isNotEmpty) ...[
                       const Gap(AppSpacing.xs),
                       Row(
                         children: [
@@ -179,7 +179,7 @@ class _CourseTile extends StatelessWidget {
                               color: NexoTheme.textSecondary),
                           const Gap.h(AppSpacing.xs),
                           Text(
-                            Fmt.formatAula(grupo.aula),
+                            Fmt.formatAula(grupo.room),
                             style: TextStyle(
                               fontSize: AppFont.small,
                               color: NexoTheme.textSecondary,
@@ -195,10 +195,10 @@ class _CourseTile extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           // Lista de sesiones (teoría/práctica) fusionadas.
-          ...grupo.sesiones.map((s) => _SessionRow(
+          ...grupo.sessions.map((s) => _SessionRow(
                 sesion: s,
                 ongoing: _isOngoing(s),
-                past: _isPast(s.horaFin),
+                past: _isPast(s.endTime),
               )),
         ],
       ),
@@ -226,7 +226,7 @@ class _CourseTile extends StatelessWidget {
 }
 
 class _SessionRow extends StatelessWidget {
-  final ClaseHorario sesion;
+  final ScheduleClass sesion;
   final bool ongoing;
   final bool past;
   const _SessionRow({
@@ -247,7 +247,7 @@ class _SessionRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            sesion.idTipo.toUpperCase() == 'T'
+            sesion.typeCode.toUpperCase() == 'T'
                 ? Icons.menu_book_outlined
                 : Icons.science_outlined,
             size: AppIcon.xs,
@@ -255,7 +255,7 @@ class _SessionRow extends StatelessWidget {
           ),
           const Gap.h(AppSpacing.sm - 2),
           Text(
-            sesion.tipoLargo,
+            sesion.typeName,
             style: TextStyle(
               fontSize: AppFont.small,
               fontWeight: FontWeight.w600,
@@ -266,8 +266,8 @@ class _SessionRow extends StatelessWidget {
           Builder(builder: (_) {
             final h24 = AppStorage.instance.use24h;
             return Text(
-              '${Fmt.time(sesion.horaInicio, h24: h24)} – '
-              '${Fmt.time(sesion.horaFin, h24: h24)}',
+              '${Fmt.time(sesion.startTime, h24: h24)} – '
+              '${Fmt.time(sesion.endTime, h24: h24)}',
               style: TextStyle(
                 fontSize: AppFont.small,
                 color: c,
