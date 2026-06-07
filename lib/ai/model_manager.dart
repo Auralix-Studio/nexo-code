@@ -31,47 +31,61 @@ class LumenModelManager {
     return dir;
   }
 
-  /// Ruta absoluta donde vive (o vivirá) el modelo.
-  Future<String> modelPath() async {
+  /// Ruta absoluta donde vive (o vivirá) el modelo [model]. Si se omite,
+  /// usa el modelo activo en [LumenState].
+  Future<String> modelPath([LumenModelSpec? model]) async {
+    final spec = model ?? _state.activeModel;
     final dir = await _modelDir();
-    return p.join(dir.path, LumenConfig.modelFilename);
+    return p.join(dir.path, spec.filename);
   }
 
-  /// `true` si el archivo existe en disco con tamaño no nulo.
-  /// No valida checksum (eso lo hace [verify]).
-  Future<bool> isDownloaded() async {
-    final f = File(await modelPath());
+  /// `true` si el modelo [model] (o el activo) existe en disco con tamaño
+  /// no nulo. No valida checksum (eso lo hace [verify]).
+  Future<bool> isDownloaded([LumenModelSpec? model]) async {
+    final f = File(await modelPath(model));
     if (!await f.exists()) return false;
     final size = await f.length();
     return size > 0;
   }
 
-  /// Descarga el modelo con progreso streaming. Si ya existe, no hace nada.
+  /// Lista los modelos del catálogo que están actualmente descargados.
+  /// Útil para limpiar variantes antiguas cuando el user cambia de modelo.
+  Future<List<LumenModelSpec>> installedModels() async {
+    final installed = <LumenModelSpec>[];
+    for (final m in LumenConfig.models) {
+      if (await isDownloaded(m)) installed.add(m);
+    }
+    return installed;
+  }
+
+  /// Descarga el modelo activo con progreso streaming. Si ya existe, no
+  /// hace nada.
   ///
-  /// Lanza [LumenModelException] si la descarga falla o el config no está
-  /// listo (checksum/URL en TODO).
+  /// Lanza [LumenModelException] si la descarga falla o el modelo no está
+  /// configurado (checksum en TODO).
   Future<void> download({CancelToken? cancel}) async {
-    if (!LumenConfig.isConfigured) {
-      throw const LumenModelException(
-        'El modelo no está publicado aún. Pídele a Alessandro que suba el '
-        'release a GitHub.',
+    final spec = _state.activeModel;
+    if (!spec.isConfigured) {
+      throw LumenModelException(
+        'El modelo "${spec.displayName}" no está publicado aún. '
+        'Pídele a Alessandro que suba el release a GitHub.',
       );
     }
 
-    if (await isDownloaded()) {
+    if (await isDownloaded(spec)) {
       _state.setStatus(LumenStatus.ready);
       return;
     }
 
-    final outPath = await modelPath();
+    final outPath = await modelPath(spec);
     final tmpPath = '$outPath.part';
     final tmp = File(tmpPath);
     if (await tmp.exists()) await tmp.delete();
 
     _state.setStatus(LumenStatus.downloading);
-    _state.setDownloadProgress(received: 0, total: LumenConfig.modelSizeBytes);
+    _state.setDownloadProgress(received: 0, total: spec.sizeBytes);
 
-    final req = http.Request('GET', Uri.parse(LumenConfig.modelDownloadUrl));
+    final req = http.Request('GET', Uri.parse(spec.downloadUrl));
     final resp = await _http.send(req);
 
     if (resp.statusCode != 200) {
@@ -80,7 +94,7 @@ class LumenModelManager {
       throw LumenModelException('HTTP ${resp.statusCode}');
     }
 
-    final total = resp.contentLength ?? LumenConfig.modelSizeBytes;
+    final total = resp.contentLength ?? spec.sizeBytes;
     var received = 0;
     final sink = tmp.openWrite();
 
@@ -106,7 +120,7 @@ class LumenModelManager {
     }
 
     _state.setStatus(LumenStatus.verifying);
-    final ok = await _verifyChecksum(tmp);
+    final ok = await _verifyChecksum(tmp, spec);
     if (!ok) {
       await tmp.delete();
       _state.setStatus(LumenStatus.error,
@@ -118,24 +132,29 @@ class LumenModelManager {
     _state.setStatus(LumenStatus.ready);
   }
 
-  /// Verifica el SHA-256 del archivo descargado contra [LumenConfig.modelSha256].
-  Future<bool> verify() async {
-    final f = File(await modelPath());
+  /// Verifica el SHA-256 del modelo [model] (o el activo) en disco.
+  Future<bool> verify([LumenModelSpec? model]) async {
+    final spec = model ?? _state.activeModel;
+    final f = File(await modelPath(spec));
     if (!await f.exists()) return false;
-    return _verifyChecksum(f);
+    return _verifyChecksum(f, spec);
   }
 
-  Future<bool> _verifyChecksum(File f) async {
-    final expected = LumenConfig.modelSha256.toLowerCase();
+  Future<bool> _verifyChecksum(File f, LumenModelSpec spec) async {
+    final expected = spec.sha256.toLowerCase();
     final digest = await sha256.bind(f.openRead()).first;
     return digest.toString().toLowerCase() == expected;
   }
 
-  /// Borra el modelo del disco. Libera ~529 MB.
-  Future<void> delete() async {
-    final f = File(await modelPath());
+  /// Borra el modelo [model] (o el activo) del disco.
+  Future<void> delete([LumenModelSpec? model]) async {
+    final spec = model ?? _state.activeModel;
+    final f = File(await modelPath(spec));
     if (await f.exists()) await f.delete();
-    _state.reset();
+    // Solo resetear el state si el modelo borrado es el activo.
+    if (model == null || model.id == _state.activeModel.id) {
+      _state.reset();
+    }
   }
 }
 

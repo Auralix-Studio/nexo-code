@@ -485,14 +485,84 @@ class _LumenCard extends StatelessWidget {
     await LumenOnboardingDialog.show(context, lumen);
   }
 
+  Future<void> _switchModel(BuildContext context) async {
+    final picked = await showDialog<LumenModelSpec>(
+      context: context,
+      builder: (ctx) {
+        var sel = lumen.state.activeModel;
+        return StatefulBuilder(
+          builder: (ctx, setState) => AlertDialog(
+            title: const Text('Cambiar modelo de Lumen'),
+            content: SizedBox(
+              width: 380,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final m in LumenConfig.models)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      enabled: m.isConfigured,
+                      onTap: m.isConfigured
+                          ? () => setState(() => sel = m)
+                          : null,
+                      leading: Icon(
+                        sel.id == m.id
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: sel.id == m.id
+                            ? NexoTheme.primary
+                            : NexoTheme.textMuted,
+                      ),
+                      title: Text(m.displayName),
+                      subtitle: Text(
+                        '${(m.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
+                        'MB · ${m.tagline}'
+                        '${m.isConfigured ? '' : ' · (no publicado)'}',
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cambiar de modelo borra el actual y descarga el nuevo. '
+                    'Vas a necesitar internet para la descarga.',
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: sel.id == lumen.state.activeModel.id
+                    ? null
+                    : () => Navigator.of(ctx).pop(sel),
+                child: const Text('Cambiar'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked == null) return;
+    final prev = lumen.state.activeModel;
+    await lumen.engine.unload();
+    await lumen.modelManager.delete(prev);
+    await lumen.switchModel(picked);
+    if (!context.mounted) return;
+    await LumenOnboardingDialog.show(context, lumen);
+  }
+
   Future<void> _delete(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Borrar modelo de Lumen'),
-        content: const Text(
-          'Esto libera ~529 MB de tu dispositivo y desactiva Lumen. '
-          'Podrás volver a descargar el modelo cuando quieras.',
+        content: Text(
+          'Esto libera ${(lumen.state.activeModel.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
+          'MB de tu dispositivo y desactiva Lumen. Podrás volver a '
+          'descargar el modelo cuando quieras.',
         ),
         actions: [
           TextButton(
@@ -535,7 +605,8 @@ class _LumenCard extends StatelessWidget {
                   leading: const Icon(Icons.power_settings_new_rounded),
                   title: const Text('Activar Lumen'),
                   subtitle: const Text(
-                    'Descarga el modelo Gemma 1B (~529 MB) una sola vez.',
+                    'Descarga el modelo (un solo paso). Podés elegir entre '
+                    'liviano o estándar.',
                   ),
                   trailing: Icon(Icons.chevron_right,
                       color: NexoTheme.textMuted),
@@ -546,9 +617,23 @@ class _LumenCard extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.check_circle_outline,
                       color: NexoTheme.success),
-                  title: const Text('Modelo instalado'),
-                  subtitle: Text(LumenConfig.modelDisplayName),
+                  title: Text('Modelo: ${lumen.state.activeModel.displayName}'),
+                  subtitle: Text(lumen.state.activeModel.tagline),
                 ),
+                if (LumenConfig.models.length > 1) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.swap_horiz_rounded),
+                    title: const Text('Cambiar modelo'),
+                    subtitle: const Text(
+                      'Borra el actual y descarga otro (liviano ↔ estándar).',
+                    ),
+                    trailing: Icon(Icons.chevron_right,
+                        color: NexoTheme.textMuted),
+                    onTap: () => _switchModel(context),
+                  ),
+                ],
                 const Divider(height: 1),
                 ListTile(
                   contentPadding: EdgeInsets.zero,

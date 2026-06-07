@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/config.dart';
+
 /// Estados del ciclo de vida del modelo Lumen.
 enum LumenStatus {
   /// Lumen no está activado (no hay modelo en disco, no se intenta descargar).
@@ -34,11 +36,15 @@ enum LumenStatus {
 /// (descarga, inferencia) vive en otras clases que se llaman desde aquí
 /// y reportan vía los setters internos.
 class LumenState extends ChangeNotifier {
+  LumenState({LumenModelSpec? initialModel})
+      : _activeModel = initialModel ?? LumenConfig.defaultModel;
+
   LumenStatus _status = LumenStatus.inactive;
   double _downloadProgress = 0;
   int _downloadedBytes = 0;
   int _totalBytes = 0;
   String? _error;
+  LumenModelSpec _activeModel;
 
   LumenStatus get status => _status;
   double get downloadProgress => _downloadProgress;
@@ -46,8 +52,19 @@ class LumenState extends ChangeNotifier {
   int get totalBytes => _totalBytes;
   String? get error => _error;
 
+  /// Modelo seleccionado por el usuario (o el default si nunca eligió).
+  /// Cambiar este valor NO descarga ni borra nada — solo dice "cuando se
+  /// invoque al manager, opera sobre este". El llamador debe coordinar.
+  LumenModelSpec get activeModel => _activeModel;
+
   bool get isReady => _status == LumenStatus.ready ||
       _status == LumenStatus.loaded;
+
+  void setActiveModel(LumenModelSpec model) {
+    if (_activeModel.id == model.id) return;
+    _activeModel = model;
+    notifyListeners();
+  }
 
   void setStatus(LumenStatus next, {String? error}) {
     if (_status == next && error == _error) return;

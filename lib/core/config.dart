@@ -72,6 +72,54 @@ class MsConfig {
   static bool get isConfigured => clientId != 'TODO_AZURE_CLIENT_ID';
 }
 
+/// Metadata de un modelo Lumen instalable.
+///
+/// Cada variante (270M, 1B, etc) es una instancia const de esta clase.
+/// El manager opera siempre sobre una instancia activa que el usuario
+/// elige en el onboarding y puede cambiar desde settings.
+class LumenModelSpec {
+  const LumenModelSpec({
+    required this.id,
+    required this.displayName,
+    required this.filename,
+    required this.sha256,
+    required this.sizeBytes,
+    required this.tagline,
+    required this.recommendedFor,
+  });
+
+  /// Identificador estable, persistido en SharedPreferences.
+  /// No cambiar entre releases sin lógica de migración.
+  final String id;
+
+  /// Nombre para mostrar en UI (ej. 'Gemma 3 · 1B').
+  final String displayName;
+
+  /// Nombre del .task tal como está subido al release de GH.
+  final String filename;
+
+  /// SHA-256 esperado. Si está en TODO_*, el modelo no se considera
+  /// configurado y la UI lo deshabilita.
+  final String sha256;
+
+  /// Tamaño exacto en bytes — para progress bar y validación rápida.
+  final int sizeBytes;
+
+  /// Una línea corta para el selector ('Ligero · descarga rápida').
+  final String tagline;
+
+  /// Para qué hardware se recomienda esta variante.
+  final String recommendedFor;
+
+  /// URL pública de descarga directa (sin auth) en GH Releases.
+  String get downloadUrl =>
+      'https://github.com/Alexito-Hub/nexo/releases/download/'
+      '${LumenConfig.releaseTag}/$filename';
+
+  /// `true` cuando el operador ya subió el modelo y pegó el checksum real.
+  bool get isConfigured => !sha256.startsWith('TODO_');
+}
+
 /// Configuración del asistente IA **Lumen**.
 ///
 /// Filosofía:
@@ -79,48 +127,73 @@ class MsConfig {
 ///   (CPU/GPU del dispositivo). Cero llamadas a APIs externas.
 /// - Opt-in. La descarga del modelo solo ocurre cuando el usuario activa
 ///   Lumen y acepta los términos.
-/// - Gratis y sin fricción. El modelo se mirror-ea en GitHub Releases del
-///   repo Nexo (la licencia Gemma se aceptó al subirlo). El usuario no
-///   necesita cuenta de HuggingFace ni token.
+/// - Gratis y sin fricción. Los modelos se mirror-ean en GitHub Releases
+///   del repo Nexo (la licencia Gemma se aceptó al subirlos). El usuario
+///   no necesita cuenta de HuggingFace ni token.
 ///
 /// Para publicar un modelo nuevo:
-///   1. Aceptar términos Gemma en https://huggingface.co/litert-community
+///   1. Aceptar términos Gemma en Kaggle o HuggingFace.
 ///   2. Descargar el .task de la variante deseada.
 ///   3. Subirlo como release asset al repo `Alexito-Hub/nexo` con el tag
-///      indicado en [modelReleaseTag].
-///   4. Verificar el SHA-256 y actualizarlo en [modelSha256] (el manager
-///      rechaza descargas con checksum distinto).
+///      indicado en [releaseTag].
+///   4. Verificar el SHA-256 y pegarlo en la entrada del modelo en [models]
+///      (el manager rechaza descargas con checksum distinto).
 class LumenConfig {
-  /// Modelo por defecto: Gemma 3 1B IT, quantizado int4 (QAT) por Google.
-  /// ~529 MB descarga, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
+  /// Tag del release de GitHub donde están alojados los .task de todos
+  /// los modelos.
+  static const String releaseTag = 'lumen-models-v1';
+
+  /// Variante ligera — para teléfonos viejos o con poca RAM.
+  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-270m-it-q8 v1)
+  /// equivalente a https://huggingface.co/litert-community/gemma-3-270m-it.
+  /// ~290 MB en disco, ~500 MB RAM en runtime, 30-50 tok/s en gama media.
+  /// Sin int4 disponible para móvil — Google solo publica q8.
+  static const LumenModelSpec light = LumenModelSpec(
+    id: 'gemma-270m-q8',
+    displayName: 'Gemma 3 · 270M',
+    filename: 'gemma3-270m-it-q8.task',
+    // TODO: completar tras descargar de Kaggle y subir a GH Releases.
+    // Comando: sha256sum gemma3-270m-it-q8.task (Linux/Mac) o
+    // Get-FileHash -Algorithm SHA256 gemma3-270m-it-q8.task (PowerShell).
+    sha256: 'TODO_SHA256_OF_GEMMA_270M_Q8',
+    sizeBytes: 303950933,
+    tagline: 'Ligero · descarga rápida',
+    recommendedFor: 'Teléfonos con 2-3 GB de RAM o gama media-baja.',
+  );
+
+  /// Variante estándar — recomendada para hardware moderno.
   /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-1b-it-int4 v1).
-  /// Re-distribuido en GitHub Releases del propio repo Nexo — los términos
-  /// Gemma se aceptaron en Kaggle al descargar.
-  static const String modelFilename = 'gemma3-1B-it-int4.task';
+  /// ~529 MB en disco, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
+  static const LumenModelSpec standard = LumenModelSpec(
+    id: 'gemma-1b-int4',
+    displayName: 'Gemma 3 · 1B',
+    filename: 'gemma3-1B-it-int4.task',
+    sha256:
+        'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee',
+    sizeBytes: 554661243,
+    tagline: 'Mejor calidad de respuestas',
+    recommendedFor: 'Teléfonos con 4 GB de RAM o más.',
+  );
 
-  /// Tag del release de GitHub donde está alojado el .task.
-  static const String modelReleaseTag = 'lumen-models-v1';
+  /// Catálogo completo de modelos disponibles.
+  static const List<LumenModelSpec> models = [light, standard];
 
-  /// URL pública de descarga directa (sin auth).
-  static const String modelDownloadUrl =
-      'https://github.com/Alexito-Hub/nexo/releases/download/'
-      '$modelReleaseTag/$modelFilename';
+  /// Modelo seleccionado por defecto si el usuario no elige uno explícito
+  /// en el onboarding. Pickeamos el liviano para maximizar compatibilidad.
+  static const LumenModelSpec defaultModel = light;
 
-  /// SHA-256 esperado del archivo (calculado del binario de Kaggle v1).
-  /// Si Google publica una v2 del modelo, hay que actualizar este hash
-  /// junto con el release asset.
-  static const String modelSha256 =
-      'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee';
+  /// Busca un modelo por id; devuelve [defaultModel] si no se encuentra
+  /// (útil para tolerar SharedPreferences viejas con ids removidos).
+  static LumenModelSpec byId(String? id) {
+    if (id == null) return defaultModel;
+    return models.firstWhere(
+      (m) => m.id == id,
+      orElse: () => defaultModel,
+    );
+  }
 
-  /// Tamaño exacto en bytes (para el progress bar y validación rápida).
-  static const int modelSizeBytes = 554661243;
-
-  /// `true` si el operador (Alessandro) ya subió el modelo al release y
-  /// pegó el checksum real. Mientras esté en `TODO_*`, la app no intentará
-  /// descargar y mostrará un mensaje claro en el onboarding.
-  static bool get isConfigured =>
-      !modelSha256.startsWith('TODO_');
-
-  /// Etiqueta humana del modelo activo (para UI/settings).
-  static const String modelDisplayName = 'Gemma 3 · 1B';
+  /// `true` si AL MENOS uno de los modelos del catálogo está listo para
+  /// descargar (tiene checksum real). Si todos están en TODO, la app
+  /// muestra el aviso de "no disponible aún".
+  static bool get anyConfigured => models.any((m) => m.isConfigured);
 }

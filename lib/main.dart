@@ -180,7 +180,7 @@ Future<void> main(List<String> args) async {
   // modelo es opt-in (ver LumenHomeCard → LumenOnboardingDialog).
   // El AppStore se inyecta para que el context builder pueda leer perfil,
   // horario, notas y cuotas en cada primer turno de chat.
-  final lumen = LumenServices(store: store);
+  final lumen = LumenServices(store: store, storage: AppStorage.instance);
 
   runApp(NexoApp(
     session: session,

@@ -37,6 +37,7 @@ class AppStorage {
   static const _kUse24h = 'nexo.use24h';
   static const _kRunPortable = 'nexo.runPortable';
   static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
+  static const _kLumenModelId = 'nexo.lumen.modelId';
 
   /// Preferencias de notificaciones (JSON serializado).
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
@@ -71,6 +72,17 @@ class AppStorage {
   bool get seenWhatsappInvite => _prefs.getBool(_kWhatsappInvite) ?? false;
   Future<void> setSeenWhatsappInvite(bool v) =>
       _prefs.setBool(_kWhatsappInvite, v);
+
+  /// Id del modelo Lumen seleccionado por el usuario (ver LumenConfig.models).
+  /// `null` si nunca eligió uno — el caller debe caer al default.
+  String? get lumenModelId => _prefs.getString(_kLumenModelId);
+  Future<void> setLumenModelId(String? value) async {
+    if (value == null) {
+      await _prefs.remove(_kLumenModelId);
+    } else {
+      await _prefs.setString(_kLumenModelId, value);
+    }
+  }
 
   /// 'light' | 'dark' | 'system'
   String? get themeMode => _prefs.getString(_kTheme);
