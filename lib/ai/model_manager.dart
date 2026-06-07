@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -9,10 +10,12 @@ import 'package:path_provider/path_provider.dart';
 import '../core/config.dart';
 import 'lumen_state.dart';
 
-/// Descarga, verifica y borra el archivo `.task` del modelo Lumen.
+/// Descarga, verifica y borra el archivo de modelo de Lumen.
 ///
-/// El archivo se guarda en `getApplicationSupportDirectory()/lumen/<filename>`
-/// — esta ruta sobrevive a limpieza de caché (a diferencia de temp/cache).
+/// Selecciona automáticamente el artefacto correcto para la plataforma
+/// (`.task` en móvil/web, `.litertlm` en escritorio). El archivo se
+/// guarda en `getApplicationSupportDirectory()/lumen/<filename>` — esa
+/// ruta sobrevive limpieza de caché del SO.
 ///
 /// Reporta progreso y errores en una instancia inyectada de [LumenState].
 class LumenModelManager {
@@ -21,6 +24,26 @@ class LumenModelManager {
 
   final LumenState _state;
   final http.Client _http;
+
+  /// `true` si estamos corriendo en escritorio (Windows/macOS/Linux).
+  /// En Web `kIsWeb` corta antes de intentar leer `Platform`.
+  static bool get _isDesktop {
+    if (kIsWeb) return false;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
+
+  /// Devuelve el artefacto apropiado para esta plataforma. Lanza
+  /// [LumenModelException] si el modelo no tiene variante para escritorio
+  /// y estamos en Windows/macOS/Linux.
+  LumenModelArtifact _artifact(LumenModelSpec spec) {
+    if (_isDesktop && spec.desktop == null) {
+      throw LumenModelException(
+        'El modelo "${spec.displayName}" todavía no está disponible para '
+        'escritorio. Probá la otra variante o usá Nexo en tu teléfono.',
+      );
+    }
+    return spec.artifactFor(isDesktop: _isDesktop);
+  }
 
   Future<Directory> _modelDir() async {
     final base = await getApplicationSupportDirectory();
@@ -31,21 +54,26 @@ class LumenModelManager {
     return dir;
   }
 
-  /// Ruta absoluta donde vive (o vivirá) el modelo [model]. Si se omite,
-  /// usa el modelo activo en [LumenState].
+  /// Ruta absoluta donde vive (o vivirá) el modelo [model] para la
+  /// plataforma actual. Si se omite, usa el modelo activo en [LumenState].
   Future<String> modelPath([LumenModelSpec? model]) async {
     final spec = model ?? _state.activeModel;
+    final art = _artifact(spec);
     final dir = await _modelDir();
-    return p.join(dir.path, spec.filename);
+    return p.join(dir.path, art.filename);
   }
 
-  /// `true` si el modelo [model] (o el activo) existe en disco con tamaño
-  /// no nulo. No valida checksum (eso lo hace [verify]).
+  /// `true` si el archivo correspondiente a la plataforma actual existe
+  /// en disco con tamaño no nulo. No valida checksum (eso lo hace [verify]).
   Future<bool> isDownloaded([LumenModelSpec? model]) async {
-    final f = File(await modelPath(model));
-    if (!await f.exists()) return false;
-    final size = await f.length();
-    return size > 0;
+    try {
+      final f = File(await modelPath(model));
+      if (!await f.exists()) return false;
+      return await f.length() > 0;
+    } on LumenModelException {
+      // El modelo no tiene variante desktop → no puede estar instalado.
+      return false;
+    }
   }
 
   /// Lista los modelos del catálogo que están actualmente descargados.
@@ -60,15 +88,14 @@ class LumenModelManager {
 
   /// Descarga el modelo activo con progreso streaming. Si ya existe, no
   /// hace nada.
-  ///
-  /// Lanza [LumenModelException] si la descarga falla o el modelo no está
-  /// configurado (checksum en TODO).
   Future<void> download({CancelToken? cancel}) async {
     final spec = _state.activeModel;
-    if (!spec.isConfigured) {
+    final art = _artifact(spec); // tira LumenModelException si no hay desktop
+
+    if (!art.isConfigured) {
       throw LumenModelException(
-        'El modelo "${spec.displayName}" no está publicado aún. '
-        'Pídele a Alessandro que suba el release a GitHub.',
+        'El modelo "${spec.displayName}" no está publicado aún para esta '
+        'plataforma. Pídele a Alessandro que suba el release.',
       );
     }
 
@@ -83,9 +110,9 @@ class LumenModelManager {
     if (await tmp.exists()) await tmp.delete();
 
     _state.setStatus(LumenStatus.downloading);
-    _state.setDownloadProgress(received: 0, total: spec.sizeBytes);
+    _state.setDownloadProgress(received: 0, total: art.sizeBytes);
 
-    final req = http.Request('GET', Uri.parse(spec.downloadUrl));
+    final req = http.Request('GET', Uri.parse(art.downloadUrl));
     final resp = await _http.send(req);
 
     if (resp.statusCode != 200) {
@@ -94,7 +121,7 @@ class LumenModelManager {
       throw LumenModelException('HTTP ${resp.statusCode}');
     }
 
-    final total = resp.contentLength ?? spec.sizeBytes;
+    final total = resp.contentLength ?? art.sizeBytes;
     var received = 0;
     final sink = tmp.openWrite();
 
@@ -120,7 +147,7 @@ class LumenModelManager {
     }
 
     _state.setStatus(LumenStatus.verifying);
-    final ok = await _verifyChecksum(tmp, spec);
+    final ok = await _verifyChecksum(tmp, art);
     if (!ok) {
       await tmp.delete();
       _state.setStatus(LumenStatus.error,
@@ -135,13 +162,18 @@ class LumenModelManager {
   /// Verifica el SHA-256 del modelo [model] (o el activo) en disco.
   Future<bool> verify([LumenModelSpec? model]) async {
     final spec = model ?? _state.activeModel;
-    final f = File(await modelPath(spec));
-    if (!await f.exists()) return false;
-    return _verifyChecksum(f, spec);
+    try {
+      final art = _artifact(spec);
+      final f = File(await modelPath(spec));
+      if (!await f.exists()) return false;
+      return _verifyChecksum(f, art);
+    } on LumenModelException {
+      return false;
+    }
   }
 
-  Future<bool> _verifyChecksum(File f, LumenModelSpec spec) async {
-    final expected = spec.sha256.toLowerCase();
+  Future<bool> _verifyChecksum(File f, LumenModelArtifact art) async {
+    final expected = art.sha256.toLowerCase();
     final digest = await sha256.bind(f.openRead()).first;
     return digest.toString().toLowerCase() == expected;
   }
@@ -149,9 +181,12 @@ class LumenModelManager {
   /// Borra el modelo [model] (o el activo) del disco.
   Future<void> delete([LumenModelSpec? model]) async {
     final spec = model ?? _state.activeModel;
-    final f = File(await modelPath(spec));
-    if (await f.exists()) await f.delete();
-    // Solo resetear el state si el modelo borrado es el activo.
+    try {
+      final f = File(await modelPath(spec));
+      if (await f.exists()) await f.delete();
+    } on LumenModelException {
+      // Modelo no instalable en esta plataforma — nada que borrar.
+    }
     if (model == null || model.id == _state.activeModel.id) {
       _state.reset();
     }

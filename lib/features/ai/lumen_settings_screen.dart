@@ -61,7 +61,7 @@ class _LumenSettingsScreenState extends State<LumenSettingsScreen> {
                       ),
                       title: Text(m.displayName),
                       subtitle: Text(
-                        '${(m.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
+                        '${(m.mobile.sizeBytes / (1024 * 1024)).toStringAsFixed(0)} '
                         'MB · ${m.tagline}'
                         '${m.isConfigured ? '' : ' · (no publicado)'}',
                       ),
@@ -103,7 +103,7 @@ class _LumenSettingsScreenState extends State<LumenSettingsScreen> {
 
   Future<void> _delete() async {
     final lumen = widget.services;
-    final sizeMb = (lumen.state.activeModel.sizeBytes / (1024 * 1024))
+    final sizeMb = (lumen.state.activeModel.mobile.sizeBytes / (1024 * 1024))
         .toStringAsFixed(0);
     final ok = await showDialog<bool>(
       context: context,

@@ -195,7 +195,7 @@ class _ModelOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final mb = (spec.sizeBytes / (1024 * 1024)).toStringAsFixed(0);
+    final mb = (spec.mobile.sizeBytes / (1024 * 1024)).toStringAsFixed(0);
     final enabled = spec.isConfigured;
     return Opacity(
       opacity: enabled ? 1 : 0.55,

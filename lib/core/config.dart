@@ -72,6 +72,37 @@ class MsConfig {
   static bool get isConfigured => clientId != 'TODO_AZURE_CLIENT_ID';
 }
 
+/// Artefacto descargable de un modelo Lumen para una plataforma específica.
+///
+/// flutter_gemma usa formatos distintos por plataforma:
+/// - Mobile (Android/iOS) y Web → `.task` (MediaPipe).
+/// - Desktop (Windows/macOS/Linux) → `.litertlm` (LiteRT-LM).
+///
+/// Cada [LumenModelSpec] referencia una o dos variantes según los
+/// archivos publicados.
+class LumenModelArtifact {
+  const LumenModelArtifact({
+    required this.filename,
+    required this.sha256,
+    required this.sizeBytes,
+  });
+
+  /// Nombre del archivo tal como está subido al release de GH.
+  final String filename;
+
+  /// SHA-256 esperado. Si empieza con `TODO_` se considera no publicado.
+  final String sha256;
+
+  /// Tamaño exacto en bytes (para progress bar y validación rápida).
+  final int sizeBytes;
+
+  String get downloadUrl =>
+      'https://github.com/Alexito-Hub/nexo-releases/releases/download/'
+      '${LumenConfig.releaseTag}/$filename';
+
+  bool get isConfigured => !sha256.startsWith('TODO_');
+}
+
 /// Metadata de un modelo Lumen instalable.
 ///
 /// Cada variante (270M, 1B, etc) es una instancia const de esta clase.
@@ -81,11 +112,10 @@ class LumenModelSpec {
   const LumenModelSpec({
     required this.id,
     required this.displayName,
-    required this.filename,
-    required this.sha256,
-    required this.sizeBytes,
     required this.tagline,
     required this.recommendedFor,
+    required this.mobile,
+    this.desktop,
   });
 
   /// Identificador estable, persistido en SharedPreferences.
@@ -97,29 +127,31 @@ class LumenModelSpec {
   /// que sea Gemma/Qwen/Phi, le importa "rápido vs preciso".
   final String displayName;
 
-  /// Nombre del .task tal como está subido al release de GH.
-  final String filename;
-
-  /// SHA-256 esperado. Si está en TODO_*, el modelo no se considera
-  /// configurado y la UI lo deshabilita.
-  final String sha256;
-
-  /// Tamaño exacto en bytes — para progress bar y validación rápida.
-  final int sizeBytes;
-
   /// Una línea corta para el selector ('Ligero · descarga rápida').
   final String tagline;
 
   /// Para qué hardware se recomienda esta variante.
   final String recommendedFor;
 
-  /// URL pública de descarga directa (sin auth) en GH Releases.
-  String get downloadUrl =>
-      'https://github.com/Alexito-Hub/nexo/releases/download/'
-      '${LumenConfig.releaseTag}/$filename';
+  /// Variante para móviles (Android/iOS) y Web — formato `.task`.
+  final LumenModelArtifact mobile;
 
-  /// `true` cuando el operador ya subió el modelo y pegó el checksum real.
-  bool get isConfigured => !sha256.startsWith('TODO_');
+  /// Variante para escritorio (Windows/macOS/Linux) — formato `.litertlm`.
+  /// `null` si no publicamos versión desktop para este modelo todavía.
+  final LumenModelArtifact? desktop;
+
+  /// Devuelve el artefacto adecuado para la plataforma indicada por el
+  /// caller. El manager pasa `isDesktop` calculado con `Platform.isWindows |
+  /// isMacOS | isLinux` (sin importar dart:io desde un getter de modelo).
+  LumenModelArtifact artifactFor({required bool isDesktop}) {
+    if (isDesktop && desktop != null) return desktop!;
+    return mobile;
+  }
+
+  /// `true` cuando AL MENOS la variante móvil está publicada.
+  /// (La desktop puede faltar y el modelo igual se considera utilizable
+  /// en celulares.)
+  bool get isConfigured => mobile.isConfigured;
 }
 
 /// Configuración del asistente IA **Lumen**.
@@ -146,33 +178,46 @@ class LumenConfig {
   static const String releaseTag = 'lumen-models-v1';
 
   /// Variante ligera — para teléfonos viejos o con poca RAM.
-  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-270m-it-q8 v1)
-  /// equivalente a https://huggingface.co/litert-community/gemma-3-270m-it.
+  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-270m-it-q8 v1).
   /// ~290 MB en disco, ~500 MB RAM en runtime, 30-50 tok/s en gama media.
   /// Sin int4 disponible para móvil — Google solo publica q8.
   static const LumenModelSpec light = LumenModelSpec(
     id: 'gemma-270m-int8',
     displayName: 'Lumen Ligero',
-    filename: 'gemma-3-270m-it-int8.task',
-    sha256:
-        '0f7147f1c22eaf758b819bbf7841793e4c90096c9352cde7fbe5c631f2265ef5',
-    sizeBytes: 303950933,
     tagline: 'Ligero · descarga rápida',
     recommendedFor: 'Teléfonos con 2-3 GB de RAM o gama media-baja.',
+    mobile: LumenModelArtifact(
+      filename: 'gemma-3-270m-it-int8.task',
+      sha256:
+          '0f7147f1c22eaf758b819bbf7841793e4c90096c9352cde7fbe5c631f2265ef5',
+      sizeBytes: 303950933,
+    ),
+    desktop: LumenModelArtifact(
+      filename: 'gemma-3-270m-it-int8.litertlm',
+      sha256:
+          '757e9119fa5bd667a2774fb470ac4afcd3190a21c677f8e69a5d6bc908abdd63',
+      sizeBytes: 304005120,
+    ),
   );
 
   /// Variante estándar — recomendada para hardware moderno.
   /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-1b-it-int4 v1).
   /// ~529 MB en disco, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
+  /// TODO desktop: bajar la variante `.litertlm` de 1B de Kaggle y subirla.
   static const LumenModelSpec standard = LumenModelSpec(
     id: 'gemma-1b-int4',
     displayName: 'Lumen Estándar',
-    filename: 'gemma3-1B-it-int4.task',
-    sha256:
-        'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee',
-    sizeBytes: 554661243,
     tagline: 'Mejor calidad de respuestas',
     recommendedFor: 'Teléfonos con 4 GB de RAM o más.',
+    mobile: LumenModelArtifact(
+      filename: 'gemma3-1B-it-int4.task',
+      sha256:
+          'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee',
+      sizeBytes: 554661243,
+    ),
+    // desktop: TODO_LITERTLM_1B — pendiente de subir el .litertlm
+    // correspondiente al release. En Windows/macOS/Linux el Estándar
+    // todavía no puede cargar; usar Ligero hasta que tengamos el asset.
   );
 
   /// Catálogo completo de modelos disponibles.
