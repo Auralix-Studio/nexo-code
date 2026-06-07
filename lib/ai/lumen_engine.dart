@@ -20,7 +20,10 @@ class LumenEngine {
   })  : _state = state,
         _modelManager = modelManager;
 
-  static const int _maxTokens = 2048;
+  // 4096 deja ~3.5K tokens libres tras inyectar el preamble (~600 tokens) y
+  // la KB completa (~2.5K tokens). Suficiente para una conversación corta.
+  // Subirlo a 8192 si el usuario reporta truncamiento del contexto.
+  static const int _maxTokens = 4096;
 
   final LumenState _state;
   final LumenModelManager _modelManager;

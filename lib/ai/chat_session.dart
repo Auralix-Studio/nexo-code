@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'context_builder.dart';
 import 'lumen_engine.dart';
 
 /// Origen de un mensaje en la conversación.
@@ -26,12 +27,19 @@ class ChatMessage {
 /// Es lo que la UI escucha (extends [ChangeNotifier]). El engine se inyecta
 /// para poder testear con un fake. El historial vive en memoria: si el user
 /// cierra la app, se pierde (decisión consciente de v1; sqlite en v2).
+///
+/// El [contextBuilder] genera el system preamble (KB + datos del estudiante)
+/// que se concatena al primer mensaje del usuario. Si es null, la sesión
+/// envía sin contexto (útil para tests).
 class LumenChatSession extends ChangeNotifier {
-  LumenChatSession(this._engine);
+  LumenChatSession(this._engine, {LumenContextBuilder? contextBuilder})
+      : _contextBuilder = contextBuilder;
 
   final LumenEngine _engine;
+  final LumenContextBuilder? _contextBuilder;
   final List<ChatMessage> _messages = [];
   bool _busy = false;
+  bool _preambleSent = false;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isBusy => _busy;
@@ -58,8 +66,23 @@ class LumenChatSession extends ChangeNotifier {
     _busy = true;
     notifyListeners();
 
+    // Construir el payload real para el modelo. Para el primer turno
+    // preponemos el system preamble — la burbuja del user sigue mostrando
+    // solo `trimmed`, pero el modelo recibe el contexto completo.
+    String payload = trimmed;
+    if (!_preambleSent && _contextBuilder != null) {
+      try {
+        final preamble = await _contextBuilder.buildPreamble();
+        payload = '$preamble$trimmed';
+        _preambleSent = true;
+      } catch (e) {
+        // Si falla armar el preamble, mandamos sin contexto y seguimos.
+        debugPrint('Lumen: no se pudo armar el preamble: $e');
+      }
+    }
+
     try {
-      await for (final token in _engine.respond(trimmed)) {
+      await for (final token in _engine.respond(payload)) {
         pending.text += token;
         notifyListeners();
       }
@@ -80,11 +103,13 @@ class LumenChatSession extends ChangeNotifier {
     await _engine.stop();
   }
 
-  /// Limpia el historial visible y el contexto del engine.
+  /// Limpia el historial visible y el contexto del engine. El preamble
+  /// volverá a inyectarse en el próximo turno.
   Future<void> clear() async {
     await _engine.resetConversation();
     _messages.clear();
     _busy = false;
+    _preambleSent = false;
     notifyListeners();
   }
 }

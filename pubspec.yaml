@@ -109,6 +109,10 @@ flutter:
     # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando
     # el servidor omite el intermedio. Ver lib/data/secure_http.dart.
     - assets/certs/cacert.pem
+    # Knowledge base de Lumen — markdown estático con info pública de UPLA.
+    # Se inyecta completa en el system prompt (suma ~10 KB ≈ ~2.5K tokens,
+    # cabe en la ventana de contexto de Gemma 3 1B sin retrieval).
+    - assets/ai/knowledge/
   fonts:
     - family: SuperMindset
       fonts:

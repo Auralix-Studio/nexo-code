@@ -178,7 +178,9 @@ Future<void> main(List<String> args) async {
 
   // Lumen: instanciado siempre, pero arranca en `inactive`. La descarga del
   // modelo es opt-in (ver LumenHomeCard → LumenOnboardingDialog).
-  final lumen = LumenServices();
+  // El AppStore se inyecta para que el context builder pueda leer perfil,
+  // horario, notas y cuotas en cada primer turno de chat.
+  final lumen = LumenServices(store: store);
 
   runApp(NexoApp(
     session: session,
