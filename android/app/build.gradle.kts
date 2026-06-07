@@ -26,7 +26,9 @@ android {
         applicationId = "pe.upla.nexo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // MediaPipe LLM Inference (usado por Lumen via flutter_gemma) requiere
+        // Android 7.0+ — el default de Flutter (21) no alcanza.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
