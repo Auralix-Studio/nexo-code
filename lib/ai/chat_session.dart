@@ -24,13 +24,15 @@ class ChatMessage {
 
 /// Historial de chat de una sesión + orquestación de envíos al [LumenEngine].
 ///
-/// Es lo que la UI escucha (extends [ChangeNotifier]). El engine se inyecta
-/// para poder testear con un fake. El historial vive en memoria: si el user
-/// cierra la app, se pierde (decisión consciente de v1; sqlite en v2).
+/// **Modo single-shot por turno (v1.2).** Cada [send] limpia el chat del
+/// engine antes de enviar, construye un prompt fresco con la data
+/// relevante para ESA query (via [LumenContextBuilder]) y stream-ea la
+/// respuesta. Sin historial multi-turno del lado del modelo — la lista
+/// `_messages` que ve la UI es solo cosmética.
 ///
-/// El [contextBuilder] genera el system preamble (KB + datos del estudiante)
-/// que se concatena al primer mensaje del usuario. Si es null, la sesión
-/// envía sin contexto (útil para tests).
+/// Trade-off: el modelo no recuerda el turno anterior. A cambio: cada
+/// respuesta tiene exactamente el contexto que necesita, cero
+/// contaminación entre temas, y el budget de tokens nunca se infla.
 class LumenChatSession extends ChangeNotifier {
   LumenChatSession(this._engine, {LumenContextBuilder? contextBuilder})
       : _contextBuilder = contextBuilder;
@@ -39,16 +41,13 @@ class LumenChatSession extends ChangeNotifier {
   final LumenContextBuilder? _contextBuilder;
   final List<ChatMessage> _messages = [];
   bool _busy = false;
-  bool _preambleSent = false;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isBusy => _busy;
 
-  /// Envía [text] del usuario, encola un mensaje vacío de Lumen y lo va
-  /// rellenando con cada token del stream.
-  ///
-  /// Si ya hay un envío en curso, lanza [StateError] — la UI debería
-  /// desactivar el botón hasta que `isBusy = false`.
+  /// Envía [text] del usuario. Encola un mensaje vacío de Lumen y lo va
+  /// rellenando con cada token del stream. Tira [StateError] si ya hay
+  /// un envío en curso.
   Future<void> send(String text) async {
     if (_busy) {
       throw StateError('Ya hay una respuesta en curso.');
@@ -66,32 +65,36 @@ class LumenChatSession extends ChangeNotifier {
     _busy = true;
     notifyListeners();
 
-    // Construir el payload real para el modelo. Para el primer turno
-    // preponemos el system preamble — la burbuja del user sigue mostrando
-    // solo `trimmed`, pero el modelo recibe el contexto completo.
-    String payload = trimmed;
-    if (!_preambleSent && _contextBuilder != null) {
-      try {
-        final preamble =
-            await _contextBuilder.buildPreamble(modelId: _engine.activeModelId);
-        payload = '$preamble$trimmed';
-        _preambleSent = true;
-      } catch (e) {
-        // Si falla armar el preamble, mandamos sin contexto y seguimos.
-        debugPrint('Lumen: no se pudo armar el preamble: $e');
-      }
+    // Single-shot: limpiar chat anterior y construir prompt fresco
+    // específico para esta query.
+    try {
+      await _engine.resetConversation();
+    } catch (e) {
+      debugPrint('Lumen: resetConversation falló: $e');
     }
 
-    try {
-      // Detector de runaway: si el modelo entra en mode collapse
-      // (caso conocido: `**\n\n**\n\n**` infinito sin texto real), corta
-      // el stream para que el user no vea spinner eterno. Heurística:
-      // contamos tokens consecutivos que solo aportan whitespace/markdown
-      // vacío. Si pasamos el umbral, paramos.
-      const garbageThreshold = 25;
-      var consecutiveGarbage = 0;
+    String prompt;
+    if (_contextBuilder != null) {
+      try {
+        prompt = await _contextBuilder.buildPrompt(
+          modelId: _engine.activeModelId,
+          userQuery: trimmed,
+        );
+      } catch (e) {
+        debugPrint('Lumen: no se pudo armar el prompt: $e');
+        prompt = trimmed;
+      }
+    } else {
+      prompt = trimmed;
+    }
 
-      await for (final token in _engine.respond(payload)) {
+    // Detector de runaway: si el modelo entra en mode collapse
+    // (`**\n\n**\n\n**` infinito), cortamos.
+    const garbageThreshold = 25;
+    var consecutiveGarbage = 0;
+
+    try {
+      await for (final token in _engine.respond(prompt)) {
         pending.text += token;
         notifyListeners();
 
@@ -101,8 +104,8 @@ class LumenChatSession extends ChangeNotifier {
             await _engine.stop();
             pending.text = pending.text.trim().isEmpty
                 ? '(El modelo no pudo generar una respuesta coherente. '
-                    'Probá reformular tu pregunta o cambiar a Lumen Estándar '
-                    'si estás en Ligero.)'
+                    'Probá reformular tu pregunta o cambiar a Lumen '
+                    'Estándar si estás en Ligero.)'
                 : '${pending.text.trim()}\n\n[respuesta interrumpida]';
             break;
           }
@@ -135,13 +138,11 @@ class LumenChatSession extends ChangeNotifier {
     return stripped.isEmpty;
   }
 
-  /// Limpia el historial visible y el contexto del engine. El preamble
-  /// volverá a inyectarse en el próximo turno.
+  /// Limpia el historial visible y el contexto del engine.
   Future<void> clear() async {
     await _engine.resetConversation();
     _messages.clear();
     _busy = false;
-    _preambleSent = false;
     notifyListeners();
   }
 }
