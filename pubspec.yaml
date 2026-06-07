@@ -104,6 +104,10 @@ flutter:
   generate: true
   assets:
     - assets/icon.png
+    # Logo Lumen (destello multicolor) — avatar en home card, chat y onboarding.
+    - assets/lumen_icon.png
+    # Wordmark "LUMEN AI" — disponible para headers y splash de Lumen.
+    - assets/lumen_wordmark.png
     # Bundle de root CAs de Mozilla (mismo que usa curl).
     # Lo cargamos en un SecurityContext para arreglar el handshake TLS de
     # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando

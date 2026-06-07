@@ -5,6 +5,7 @@ import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/ai/lumen_state.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/features/ai/lumen_logo.dart';
 
 /// Pantalla principal de conversación con Lumen.
 ///
@@ -71,18 +72,7 @@ class _LumenChatScreenState extends State<LumenChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                gradient: const RadialGradient(
-                  colors: [Color(0xFFFFB84D), Color(0xFFE89E2B)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.auto_awesome,
-                  color: Colors.white, size: 18),
-            ),
+            const LumenLogo(size: 32),
             const Gap.h(AppSpacing.sm),
             ListenableBuilder(
               listenable: services.state,
@@ -147,8 +137,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome,
-              size: 48, color: NexoTheme.textMuted),
+          const LumenLogo(size: 80),
           const Gap(AppSpacing.md),
           Text(
             'Hola. Soy Lumen.',

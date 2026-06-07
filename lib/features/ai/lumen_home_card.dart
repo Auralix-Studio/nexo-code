@@ -6,6 +6,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 
 import 'lumen_chat_screen.dart';
+import 'lumen_logo.dart';
 import 'lumen_onboarding_dialog.dart';
 
 /// Tarjeta en el Home que sirve de entrada a Lumen.
@@ -67,18 +68,7 @@ class _LumenHomeCardState extends State<LumenHomeCard> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [Color(0xFFFFB84D), Color(0xFFE89E2B)],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.auto_awesome,
-                        color: Colors.white, size: 22),
-                  ),
+                  const LumenLogo(size: 48),
                   const Gap.h(AppSpacing.md),
                   Expanded(
                     child: Column(

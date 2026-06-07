@@ -6,6 +6,7 @@ import 'package:nexo/ai/model_manager.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/features/ai/lumen_logo.dart';
 
 /// Diálogo de bienvenida para Lumen — explica qué es, deja al usuario
 /// elegir entre el modelo ligero (270M) y el estándar (1B), y dispara
@@ -66,19 +67,8 @@ class _LumenOnboardingDialogState extends State<LumenOnboardingDialog> {
         return AlertDialog(
           title: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const RadialGradient(
-                    colors: [Color(0xFFFFB84D), Color(0xFFE89E2B)],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.auto_awesome,
-                    color: Colors.white, size: 20),
-              ),
-              const Gap.h(AppSpacing.md),
+              const LumenLogo(size: 40),
+              const Gap.h(AppSpacing.sm),
               const Text('Lumen'),
             ],
           ),
