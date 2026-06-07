@@ -39,6 +39,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Reglas extra de R8 — preservan clases de MediaPipe y Protobuf
+            // que flutter_gemma referencia por reflection desde JNI.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
