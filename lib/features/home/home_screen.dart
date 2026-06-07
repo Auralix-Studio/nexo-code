@@ -16,7 +16,6 @@ import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
 import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/features/ai/lumen_home_card.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 
 /// Dashboard de bienvenida con resumen y accesos rápidos.
@@ -76,12 +75,11 @@ class HomeScreen extends StatelessWidget {
                             index: 2,
                             child: _MainGrid(store: store, onJump: onJump),
                           ),
-                          const SizedBox(height: 16),
-                          Reveal(
-                            index: 3,
-                            child: LumenHomeCard(services: lumen),
-                          ),
-                          const SizedBox(height: 32),
+                          // El FAB de Lumen vive en el shell (overlay
+                          // scroll-aware), por eso aquí solo dejamos el
+                          // padding inferior extra para que el último
+                          // contenido no quede tapado por el FAB.
+                          const SizedBox(height: 96),
                         ],
                       ),
                     ),

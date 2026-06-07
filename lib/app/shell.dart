@@ -3,6 +3,7 @@ import 'package:nexo/l10n/app_localizations.dart';
 
 import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/features/ai/lumen_fab_overlay.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
@@ -206,13 +207,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               ),
               const VerticalDivider(width: 1),
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  child: KeyedSubtree(
-                    key: ValueKey(safeIndex),
-                    child: pages[safeIndex],
+                child: LumenFabOverlay(
+                  services: widget.lumen,
+                  bottomInset: 24,
+                  rightInset: 24,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: KeyedSubtree(
+                      key: ValueKey(safeIndex),
+                      child: pages[safeIndex],
+                    ),
                   ),
                 ),
               ),
@@ -223,11 +229,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     } else {
       child = Scaffold(
         body: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: KeyedSubtree(
-              key: ValueKey(safeIndex),
-              child: pages[safeIndex],
+          child: LumenFabOverlay(
+            services: widget.lumen,
+            // bottomInset un poco mayor para que el FAB no quede pegado
+            // a la nav inferior.
+            bottomInset: 12,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: KeyedSubtree(
+                key: ValueKey(safeIndex),
+                child: pages[safeIndex],
+              ),
             ),
           ),
         ),
