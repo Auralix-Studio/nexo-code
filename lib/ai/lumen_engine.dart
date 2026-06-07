@@ -74,9 +74,12 @@ class LumenEngine {
       // paquete (temp 0.8, topK 1) hace decoding casi greedy que produce
       // outputs vacíos o repetitivos con prompts complejos en el 270M.
       _chat = await _model!.createChat(
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
+        // Sampling muy conservador para evitar mode collapse en modelos
+        // chicos. temp=0 + topK=1 = greedy puro: siempre elige el token
+        // más probable. Da respuestas deterministas y a veces secas,
+        // pero NUNCA entra en loops de basura como `**\n\n**\n\n**`.
+        temperature: 0.0,
+        topK: 1,
         modelType: ModelType.gemmaIt,
       );
 

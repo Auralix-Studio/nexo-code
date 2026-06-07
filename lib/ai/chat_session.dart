@@ -83,9 +83,32 @@ class LumenChatSession extends ChangeNotifier {
     }
 
     try {
+      // Detector de runaway: si el modelo entra en mode collapse
+      // (caso conocido: `**\n\n**\n\n**` infinito sin texto real), corta
+      // el stream para que el user no vea spinner eterno. Heurística:
+      // contamos tokens consecutivos que solo aportan whitespace/markdown
+      // vacío. Si pasamos el umbral, paramos.
+      const garbageThreshold = 25;
+      var consecutiveGarbage = 0;
+
       await for (final token in _engine.respond(payload)) {
         pending.text += token;
         notifyListeners();
+
+        if (_isGarbageToken(token)) {
+          consecutiveGarbage++;
+          if (consecutiveGarbage >= garbageThreshold) {
+            await _engine.stop();
+            pending.text = pending.text.trim().isEmpty
+                ? '(El modelo no pudo generar una respuesta coherente. '
+                    'Probá reformular tu pregunta o cambiar a Lumen Estándar '
+                    'si estás en Ligero.)'
+                : '${pending.text.trim()}\n\n[respuesta interrumpida]';
+            break;
+          }
+        } else {
+          consecutiveGarbage = 0;
+        }
       }
     } catch (e) {
       pending.text = pending.text.isEmpty
@@ -102,6 +125,14 @@ class LumenChatSession extends ChangeNotifier {
   Future<void> stop() async {
     if (!_busy) return;
     await _engine.stop();
+  }
+
+  /// `true` si [token] solo aporta whitespace o marcadores markdown sin
+  /// contenido real. Usado para detectar mode collapse del modelo.
+  static bool _isGarbageToken(String token) {
+    if (token.isEmpty) return true;
+    final stripped = token.replaceAll(RegExp(r'[\s\*\-_#`>]'), '');
+    return stripped.isEmpty;
   }
 
   /// Limpia el historial visible y el contexto del engine. El preamble
