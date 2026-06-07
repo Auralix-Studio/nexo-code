@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
+import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
 
 import 'package:nexo/core/design/theme.dart';
@@ -59,6 +60,7 @@ class AppShell extends StatefulWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
+    required this.lumen,
   });
 
   final AppStore store;
@@ -66,6 +68,7 @@ class AppShell extends StatefulWidget {
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
+  final LumenServices lumen;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -170,6 +173,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         wrap(HomeScreen(
           store: widget.store,
           connectivity: widget.connectivity,
+          lumen: widget.lumen,
           onJump: _goTo,
         )),
         wrap(ScheduleScreen(store: widget.store)),

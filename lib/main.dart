@@ -37,6 +37,7 @@ import 'package:nexo/data/teams_repository.dart';
 import 'package:nexo/features/auth/login_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/onboarding/onboarding_screen.dart';
+import 'package:nexo/ai/lumen_services.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -174,12 +175,18 @@ Future<void> main(List<String> args) async {
   await session.bootstrap();
   await msAuth.bootstrap();
   if (session.isAuthenticated) store.hydrateFromCache();
+
+  // Lumen: instanciado siempre, pero arranca en `inactive`. La descarga del
+  // modelo es opt-in (ver LumenHomeCard → LumenOnboardingDialog).
+  final lumen = LumenServices();
+
   runApp(NexoApp(
     session: session,
     store: store,
     theme: theme,
     msAuth: msAuth,
     connectivity: connectivity,
+    lumen: lumen,
     isSetup: isSetup,
     isUninstall: isUninstall,
   ));
@@ -193,6 +200,7 @@ class NexoApp extends StatelessWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
+    required this.lumen,
     required this.isSetup,
     required this.isUninstall,
   });
@@ -202,6 +210,7 @@ class NexoApp extends StatelessWidget {
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
+  final LumenServices lumen;
   final bool isSetup;
   final bool isUninstall;
 
@@ -244,6 +253,7 @@ class NexoApp extends StatelessWidget {
             theme: theme,
             msAuth: msAuth,
             connectivity: connectivity,
+            lumen: lumen,
             isSetup: isSetup,
             isUninstall: isUninstall,
           ),
@@ -260,6 +270,7 @@ class _Gate extends StatefulWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
+    required this.lumen,
     required this.isSetup,
     required this.isUninstall,
   });
@@ -268,6 +279,7 @@ class _Gate extends StatefulWidget {
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
+  final LumenServices lumen;
   final bool isSetup;
   final bool isUninstall;
 
@@ -368,6 +380,7 @@ class _GateState extends State<_Gate> {
                 theme: widget.theme,
                 msAuth: widget.msAuth,
                 connectivity: widget.connectivity,
+                lumen: widget.lumen,
               ),
               SessionStatus.unauthenticated => LoginScreen(
                 session: widget.session,

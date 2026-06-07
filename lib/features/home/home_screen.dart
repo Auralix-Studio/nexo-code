@@ -14,7 +14,9 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
+import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/features/ai/lumen_home_card.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 
 /// Dashboard de bienvenida con resumen y accesos rápidos.
@@ -23,11 +25,13 @@ class HomeScreen extends StatelessWidget {
     super.key,
     required this.store,
     required this.connectivity,
+    required this.lumen,
     required this.onJump,
   });
 
   final AppStore store;
   final ConnectivityService connectivity;
+  final LumenServices lumen;
   final ValueChanged<int> onJump;
 
   @override
@@ -68,6 +72,11 @@ class HomeScreen extends StatelessWidget {
                           Reveal(
                             index: 2,
                             child: _MainGrid(store: store, onJump: onJump),
+                          ),
+                          const SizedBox(height: 16),
+                          Reveal(
+                            index: 3,
+                            child: LumenHomeCard(services: lumen),
                           ),
                           const SizedBox(height: 32),
                         ],
