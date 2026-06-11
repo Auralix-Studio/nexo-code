@@ -41,6 +41,16 @@ class AppStorage {
   static const _kIntranetCookies = 'nexo.intranet.cookies';
   static const _kIntranetUser = 'nexo.intranet.user';
 
+  // ===== Autoupdater =====
+  // Metadatos del último chequeo a GitHub Releases y del APK ya descargado
+  // en disco (para no volver a bajarlo si el usuario aún no instaló).
+  static const _kUpdLastCheckMs = 'nexo.upd.lastCheckMs';
+  static const _kUpdLatestVer = 'nexo.upd.latestVer';
+  static const _kUpdApkUrl = 'nexo.upd.apkUrl';
+  static const _kUpdApkSize = 'nexo.upd.apkSize';
+  static const _kUpdDownloadedVer = 'nexo.upd.downloadedVer';
+  static const _kUpdApkPath = 'nexo.upd.apkPath';
+
   /// Preferencias de notificaciones (JSON serializado).
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
   Future<void> setNotifPrefsJson(String value) =>
@@ -202,6 +212,45 @@ class AppStorage {
     for (final k in keys) {
       await _prefs.remove(k);
     }
+  }
+
+  // ===== Autoupdater =====
+
+  int? get updLastCheckMs => _prefs.getInt(_kUpdLastCheckMs);
+  Future<void> setUpdLastCheckMs(int value) =>
+      _prefs.setInt(_kUpdLastCheckMs, value);
+
+  String? get updLatestVer => _prefs.getString(_kUpdLatestVer);
+  String? get updApkUrl => _prefs.getString(_kUpdApkUrl);
+  int? get updApkSize => _prefs.getInt(_kUpdApkSize);
+
+  Future<void> setUpdLatest({
+    required String version,
+    required String url,
+    required int size,
+  }) async {
+    await _prefs.setString(_kUpdLatestVer, version);
+    await _prefs.setString(_kUpdApkUrl, url);
+    await _prefs.setInt(_kUpdApkSize, size);
+  }
+
+  Future<void> clearUpdLatest() async {
+    await _prefs.remove(_kUpdLatestVer);
+    await _prefs.remove(_kUpdApkUrl);
+    await _prefs.remove(_kUpdApkSize);
+  }
+
+  String? get updDownloadedVer => _prefs.getString(_kUpdDownloadedVer);
+  String? get updApkPath => _prefs.getString(_kUpdApkPath);
+
+  Future<void> setUpdDownloaded(String version, String path) async {
+    await _prefs.setString(_kUpdDownloadedVer, version);
+    await _prefs.setString(_kUpdApkPath, path);
+  }
+
+  Future<void> clearUpdDownloaded() async {
+    await _prefs.remove(_kUpdDownloadedVer);
+    await _prefs.remove(_kUpdApkPath);
   }
 
   /// Limpia la sesión. [keepCredentials] permite el re-login automático.

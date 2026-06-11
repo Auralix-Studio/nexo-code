@@ -49,7 +49,7 @@ usar para cada dato según disponibilidad y frescura.
   SIGMA, no contacta a profesores.
 
 ## Cómo reportar bugs
-- GitHub: https://github.com/Alexito-Hub/nexo/issues
+- GitHub: https://github.com/auralix-studio/nexo/issues
 - Incluir: pasos, screenshot, dispositivo, versión de la app
   (visible en Perfil → Acerca).
 

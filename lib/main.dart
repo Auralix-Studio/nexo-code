@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ import 'package:nexo/data/graph_client.dart';
 import 'package:nexo/data/ms_auth_service.dart';
 import 'package:nexo/data/secure_http.dart';
 import 'package:nexo/data/teams_repository.dart';
+import 'package:nexo/data/update_service.dart';
 import 'package:nexo/features/auth/login_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/onboarding/onboarding_screen.dart';
@@ -148,6 +150,14 @@ Future<void> main(List<String> args) async {
   await widgets.init();
   ShortcutService.instance.init();
   await NotificationService.instance.init();
+
+  // Autoupdater (Android-only). El bootstrap hace housekeeping rápido
+  // (borra APK ya instalado) y dispara el chequeo a GitHub Releases en
+  // background — sin bloquear el arranque. Cableamos el tap de la notif
+  // de "listo para instalar" para que abra el instalador del sistema.
+  final updater = UpdateService(httpClient: secureHttp);
+  NotificationService.instance.onInstallUpdateTap = updater.installDownloaded;
+  unawaited(updater.bootstrap());
 
   // Detección de notas nuevas → notificación inmediata.
   store.onGradeChange = (curso, nota) =>

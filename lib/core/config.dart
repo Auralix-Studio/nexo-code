@@ -1,9 +1,34 @@
+/// Configuración del autoupdater de la app y mirror de modelos Lumen.
+///
+/// Un solo repo en GitHub (`auralix-studio/nexo`) hostea **dos** tipos
+/// de releases:
+///   - Releases de la **app**: tag semver (`v1.0.1`) con un asset `.apk`.
+///     El release marcado como "Latest" en GitHub UI es el target del
+///     autoupdater (`/releases/latest` de la API).
+///   - Releases de **modelos Lumen**: tag fijo (`lumen-models-v1`), NO
+///     marcado como Latest, con los `.task`/`.litertlm`. Lo consulta
+///     [LumenModelArtifact.downloadUrl] por tag, no por "latest".
+class UpdateConfig {
+  static const String repo = 'auralix-studio/nexo';
+  static const String latestReleaseApi =
+      'https://api.github.com/repos/$repo/releases/latest';
+
+  /// Solo APKs cuyo nombre acaba en `.apk` se consideran aptos para el
+  /// autoupdate. Si el release no trae ninguno, se ignora silenciosamente
+  /// (puede ser un release exclusivo de modelos).
+  static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
+
+  /// Throttle del chequeo automático en el arranque para no martillar el
+  /// rate limit anónimo de GitHub API (60 req/h por IP).
+  static const Duration checkInterval = Duration(hours: 24);
+}
+
 /// Configuración global de la aplicación.
 class AppConfig {
   /// Versión semver de la app. Fuente única — usar en UI y user-agent.
   /// Mantener sincronizada con `version:` en pubspec.yaml.
-  static const String appVersion = '1.0.0';
-  static const int appBuild = 1;
+  static const String appVersion = '1.1.1';
+  static const int appBuild = 3;
 
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';
@@ -97,7 +122,7 @@ class LumenModelArtifact {
   final int sizeBytes;
 
   String get downloadUrl =>
-      'https://github.com/Alexito-Hub/nexo-releases/releases/download/'
+      'https://github.com/${UpdateConfig.repo}/releases/download/'
       '${LumenConfig.releaseTag}/$filename';
 
   bool get isConfigured => !sha256.startsWith('TODO_');
@@ -168,7 +193,7 @@ class LumenModelSpec {
 /// Para publicar un modelo nuevo:
 ///   1. Aceptar términos Gemma en Kaggle o HuggingFace.
 ///   2. Descargar el .task de la variante deseada.
-///   3. Subirlo como release asset al repo `Alexito-Hub/nexo` con el tag
+///   3. Subirlo como release asset al repo `auralix-studio/nexo` con el tag
 ///      indicado en [releaseTag].
 ///   4. Verificar el SHA-256 y pegarlo en la entrada del modelo en [models]
 ///      (el manager rechaza descargas con checksum distinto).

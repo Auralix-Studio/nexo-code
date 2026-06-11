@@ -34,6 +34,9 @@ class LumenContextBuilder {
 
   static const _kbAssets = <LumenBlock, String>{
     LumenBlock.careersKb: 'assets/ai/knowledge/carreras.md',
+    // asignaturas.md existía en disco pero no estaba cableado — el modelo
+    // contestaba "no sé" a preguntas sobre prerequisitos y carga académica.
+    LumenBlock.subjectsKb: 'assets/ai/knowledge/asignaturas.md',
     LumenBlock.proceduresKb: 'assets/ai/knowledge/tramites.md',
     LumenBlock.uplaKb: 'assets/ai/knowledge/upla_general.md',
     LumenBlock.aboutKb: 'assets/ai/knowledge/nexo_acerca.md',
@@ -101,6 +104,7 @@ class LumenContextBuilder {
     // Bloques de knowledge base (estáticos)
     for (final kbBlock in [
       LumenBlock.careersKb,
+      LumenBlock.subjectsKb,
       LumenBlock.proceduresKb,
       LumenBlock.uplaKb,
       LumenBlock.aboutKb,
@@ -124,8 +128,17 @@ class LumenContextBuilder {
   // ───── Renderers para data en vivo ─────
 
   String _renderSchedule() {
-    final clases = _store.horario.value ?? const <ScheduleClass>[];
+    final slice = _store.horario;
+    final clases = slice.value ?? const <ScheduleClass>[];
     if (clases.isEmpty) {
+      // Distinguir "estamos cargando" de "no hay datos" — antes los dos
+      // casos colapsaban al mismo mensaje y el modelo le decía al usuario
+      // que abriera el horario cuando en realidad la app ya lo estaba
+      // sincronizando.
+      if (slice.loading) {
+        return 'Los datos del horario aún se están cargando desde SIGMA/'
+            'Intranet. Pide al estudiante esperar unos segundos.';
+      }
       return 'No hay horario cargado todavía. Pide al estudiante que '
           'abra la pestaña Horario para sincronizar.';
     }
@@ -182,8 +195,13 @@ class LumenContextBuilder {
   }
 
   String _renderPayments() {
-    final pend = _store.cuotasPendientes.value ?? const <Payment>[];
+    final slice = _store.cuotasPendientes;
+    final pend = slice.value ?? const <Payment>[];
     if (pend.isEmpty) {
+      if (slice.loading) {
+        return 'Los datos de pagos aún se están cargando. Pide al '
+            'estudiante esperar unos segundos.';
+      }
       return 'No hay cuotas pendientes cargadas.';
     }
     final now = DateTime.now();
@@ -236,7 +254,13 @@ class LumenContextBuilder {
       buf.writeln('Último periodo: $label, '
           'promedio ${last.average.toStringAsFixed(2)}.');
     }
-    if (buf.isEmpty) return 'No hay datos académicos cargados.';
+    if (buf.isEmpty) {
+      if (_store.profile.loading || _store.promedios.loading) {
+        return 'Los datos académicos aún se están cargando. Pide al '
+            'estudiante esperar unos segundos.';
+      }
+      return 'No hay datos académicos cargados.';
+    }
     return buf.toString();
   }
 
@@ -244,6 +268,7 @@ class LumenContextBuilder {
 
   static String _kbLabel(LumenBlock b) => switch (b) {
         LumenBlock.careersKb => 'CARRERAS UPLA',
+        LumenBlock.subjectsKb => 'ASIGNATURAS Y PREREQUISITOS',
         LumenBlock.proceduresKb => 'TRÁMITES UPLA',
         LumenBlock.uplaKb => 'UPLA — INFORMACIÓN GENERAL',
         LumenBlock.aboutKb => 'SOBRE NEXO Y LUMEN',

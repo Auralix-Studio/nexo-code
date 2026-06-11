@@ -68,9 +68,11 @@ class IntranetRepository {
   /// Asegura una sesión Intranet activa. Si varios sources llaman a la vez
   /// (caso típico cuando AppStore hace `Future.wait([...])` cargando todo),
   /// comparten el MISMO login future en lugar de pisarse cookies. En cold
-  /// start intenta primero rehidratar la cookie persistida — solo hace el
-  /// POST /login si el server marca la sesión como caducada (HTML response).
+  /// start intenta primero rehidratar la cookie persistida — el cliente
+  /// re-loguea por su cuenta vía [_armReauth] si esa cookie quedó caduca
+  /// server-side (responde HTML).
   Future<bool> ensureSession(String usuario, String contrasena) async {
+    _armReauth(usuario, contrasena);
     if (_ready && _client.isLoggedIn && _currentUser == usuario) return true;
     final inFlight = _loginInFlight;
     if (inFlight != null) return inFlight;
@@ -99,6 +101,24 @@ class IntranetRepository {
     } finally {
       _loginInFlight = null;
     }
+  }
+
+  /// Arma el callback de re-login del cliente con las credenciales actuales.
+  /// Cuando un request reciba HTML (PHPSESSID caduca server-side), el cliente
+  /// dispara este callback para re-loguear de forma transparente y reintentar.
+  /// Refresca la cookie persistida en éxito para que el próximo cold start
+  /// arranque ya con la nueva.
+  void _armReauth(String usuario, String contrasena) {
+    _client.reauthenticate = () async {
+      final ok = await _client.login(usuario, contrasena);
+      if (ok) {
+        _currentUser = usuario;
+        _ready = true;
+        await AppStorage.instance
+            .setIntranetSession(_client.exportCookies(), usuario);
+      }
+      return ok;
+    };
   }
 
   /// Boleta de notas del periodo (modelo nuevo 2026-1+).

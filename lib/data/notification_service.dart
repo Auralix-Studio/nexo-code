@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -42,6 +43,13 @@ class NotificationService extends ChangeNotifier {
   static const _idClassBase = 10000;
   static const _idPaymentBase = 20000;
   static const _idGradeBase = 30000;
+  static const _idUpdate = 40001;
+  static const _payloadUpdateInstall = 'nexo:update:install';
+
+  /// Callback que se dispara cuando el usuario toca la notificación de
+  /// actualización lista. Lo setea el wiring en main.dart con la instancia
+  /// de UpdateService que debe lanzar el instalador.
+  Future<void> Function()? onInstallUpdateTap;
 
   Future<void> init() async {
     final raw = AppStorage.instance.notifPrefsJson;
@@ -79,8 +87,16 @@ class NotificationService extends ChangeNotifier {
         linux: linux,
         windows: windows,
       ),
+      onDidReceiveNotificationResponse: _onTap,
     );
     _ready = true;
+  }
+
+  void _onTap(NotificationResponse r) {
+    if (r.payload == _payloadUpdateInstall) {
+      final cb = onInstallUpdateTap;
+      if (cb != null) unawaited(cb());
+    }
   }
 
   Future<bool> requestPermission() async {
@@ -270,6 +286,32 @@ class NotificationService extends ChangeNotifier {
       'Nueva nota publicada',
       '$curso: $nota',
       _details('notas', 'Notas'),
+    );
+  }
+
+  /// Hay una versión nueva detectada pero aún no se pudo descargar (sin red,
+  /// fallo de GitHub, etc.). Se mostrará la "ready" cuando la descarga
+  /// termine — esta es un fallback informativo.
+  Future<void> showUpdateAvailable(String version) async {
+    if (!_supported || !_ready) return;
+    await _plugin.show(
+      _idUpdate,
+      'Actualización disponible',
+      'Nexo $version está disponible. Se descargará cuando haya conexión.',
+      _details('actualizaciones', 'Actualizaciones'),
+    );
+  }
+
+  /// El APK nuevo ya está descargado — tocar la notificación dispara el
+  /// instalador del sistema vía [onInstallUpdateTap].
+  Future<void> showUpdateReady(String version) async {
+    if (!_supported || !_ready) return;
+    await _plugin.show(
+      _idUpdate,
+      'Actualización lista para instalar',
+      'Toca para instalar Nexo $version.',
+      _details('actualizaciones', 'Actualizaciones'),
+      payload: _payloadUpdateInstall,
     );
   }
 }

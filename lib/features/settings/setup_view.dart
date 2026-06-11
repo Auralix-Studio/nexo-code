@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/win_setup_service.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
@@ -69,7 +70,7 @@ class _InstallViewState extends State<InstallView> {
         _step = InstallProgressStep.registering;
         _progress = 0.85;
       });
-      await WinSetupService.registerUninstall(version: "1.0.0");
+      await WinSetupService.registerUninstall(version: AppConfig.appVersion);
 
       // 4. Configurar auto-inicio si el usuario lo eligió
       if (widget.options.autoStart) {

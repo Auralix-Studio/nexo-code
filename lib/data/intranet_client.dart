@@ -23,8 +23,14 @@ class IntranetClient {
   final http.Client _http;
   final Map<String, String> _cookies = {};
   bool _loggedIn = false;
+  Future<bool>? _reauthInFlight;
 
   bool get isLoggedIn => _loggedIn;
+
+  /// Hook para re-login transparente cuando el server marca la sesión como
+  /// caducada (responde HTML en vez de JSON). Lo setea el repositorio
+  /// con las credenciales guardadas. Simétrico a `ApiClient.reauthenticate`.
+  Future<bool> Function()? reauthenticate;
 
   /// Cookies actuales serializadas — para persistir entre cold starts y
   /// evitar tener que rehacer el login (1 request menos = ~500ms más rápido
@@ -158,22 +164,68 @@ class IntranetClient {
     }
   }
 
-  /// GET que devuelve JSON (array de arrays posicionales).
-  Future<List<dynamic>> getJsonList(String path, {String? referer}) async {
-    final res = await _get(path, referer: referer);
-    final data = _decode(res.body);
-    return data is List ? data : const [];
+  /// Re-autentica una sola vez aunque varios requests caigan en paralelo
+  /// con HTML (sesión caducada). Sin esto, N requests dispararían N logins
+  /// que se pisarían cookies entre sí.
+  Future<bool> _reauthOnce() {
+    return _reauthInFlight ??= () async {
+      try {
+        final cb = reauthenticate;
+        if (cb == null) return false;
+        return await cb();
+      } finally {
+        _reauthInFlight = null;
+      }
+    }();
   }
 
-  /// POST que devuelve JSON.
+  /// GET que devuelve JSON (array de arrays posicionales).
+  /// Si el server responde HTML (sesión caducada), invalida cookies,
+  /// re-loguea con las credenciales del repo y reintenta UNA vez.
+  Future<List<dynamic>> getJsonList(String path, {String? referer}) =>
+      _jsonListGet(path, referer: referer, isRetry: false);
+
+  Future<List<dynamic>> _jsonListGet(
+    String path, {
+    String? referer,
+    required bool isRetry,
+  }) async {
+    final res = await _get(path, referer: referer);
+    try {
+      final data = _decode(res.body);
+      return data is List ? data : const [];
+    } on SessionExpiredException {
+      if (isRetry || reauthenticate == null) rethrow;
+      final ok = await _reauthOnce();
+      if (!ok) rethrow;
+      return _jsonListGet(path, referer: referer, isRetry: true);
+    }
+  }
+
+  /// POST que devuelve JSON. Mismo retry-on-HTML que [getJsonList].
   Future<List<dynamic>> postJsonList(
     String path,
     Map<String, String> body, {
     String? referer,
+  }) =>
+      _jsonListPost(path, body, referer: referer, isRetry: false);
+
+  Future<List<dynamic>> _jsonListPost(
+    String path,
+    Map<String, String> body, {
+    String? referer,
+    required bool isRetry,
   }) async {
     final res = await _post(path, body, referer: referer);
-    final data = _decode(res.body);
-    return data is List ? data : const [];
+    try {
+      final data = _decode(res.body);
+      return data is List ? data : const [];
+    } on SessionExpiredException {
+      if (isRetry || reauthenticate == null) rethrow;
+      final ok = await _reauthOnce();
+      if (!ok) rethrow;
+      return _jsonListPost(path, body, referer: referer, isRetry: true);
+    }
   }
 
   void close() => _http.close();

@@ -130,15 +130,36 @@ class ApiClient {
     Map<String, dynamic>? payload;
     final bodyText = utf8.decode(res.bodyBytes, allowMalformed: true);
 
-    // Si SIGMA devuelve HTML con 200 OK, es porque la ruta del API ya no
-    // existe y el SPA está sirviendo su fallback (catch-all del frontend).
-    // Antes esto cascaba como "data nulo" — engañoso. Mejor un error
-    // explícito para distinguir "endpoint movido" de "data vacía real".
+    // Si SIGMA devuelve HTML con 200 OK puede ser una de dos cosas:
+    //   (a) el token expiró y el SPA está sirviendo su shell (caso común
+    //       cuando el middleware de auth no devuelve 401 sino que redirige
+    //       al login del front);
+    //   (b) la ruta del API ya no existe y el SPA está sirviendo su
+    //       catch-all genuino.
+    // No podemos distinguirlos por el cuerpo. Resolución: si es endpoint
+    // autorizado y aún no reintentamos, intentamos reauth+retry. Si tras
+    // el retry seguimos viendo HTML, es realmente endpoint movido (caso b)
+    // y lanzamos `ServerException`.
     final trimmedHead = bodyText.trimLeft();
-    if (res.statusCode < 400 &&
+    final isHtml = res.statusCode < 400 &&
         (trimmedHead.startsWith('<!doctype') ||
             trimmedHead.startsWith('<!DOCTYPE') ||
-            trimmedHead.startsWith('<html'))) {
+            trimmedHead.startsWith('<html'));
+    if (isHtml) {
+      if (authorize && !isRetry && reauthenticate != null) {
+        final ok = await reauthenticate!();
+        if (ok) {
+          return _send<T>(
+            method,
+            path,
+            query: query,
+            body: body,
+            authorize: authorize,
+            decode: decode,
+            isRetry: true,
+          );
+        }
+      }
       throw ServerException(
         'Endpoint movido o no disponible (SIGMA respondió con HTML del SPA): $path',
         status: res.statusCode,

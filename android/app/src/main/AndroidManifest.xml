@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Autoupdater: necesario para lanzar el instalador del sistema con el
+         APK descargado (Android 8+). El usuario debe aprobar el prompt una
+         vez por "fuente desconocida" — no se puede sortear sin firma de OEM. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="Nexo"
         android:name="${applicationName}"
@@ -114,6 +118,13 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Autoupdater: para lanzar el instalador del APK descargado.
+             Android 11+ exige declarar package visibility para resolver
+             el ACTION_VIEW de application/vnd.android.package-archive. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
         </intent>
     </queries>
 </manifest>
