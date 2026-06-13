@@ -74,8 +74,8 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
   ) {
     final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
-      return Column(
-        children: const [
+      return const Column(
+        children: [
           Skeleton(height: 90, radius: 16),
           SizedBox(height: 12),
           Skeleton(height: 90, radius: 16),

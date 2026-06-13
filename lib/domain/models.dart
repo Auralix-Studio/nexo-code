@@ -380,6 +380,7 @@ class BoletaCurso {
   final String codigo;
   final String nombre;
   final String seccion;
+  final double credito; // col [3] de la fila — necesario para el ponderado
   final String asistenciaRaw;
   final String promedioRaw;
   final String estado; // "Dsp." en desarrollo, "-", etc.
@@ -393,6 +394,7 @@ class BoletaCurso {
     required this.asistenciaRaw,
     required this.promedioRaw,
     required this.estado,
+    this.credito = 0,
   });
 
   factory BoletaCurso.fromRow(List<dynamic> r) {
@@ -400,6 +402,9 @@ class BoletaCurso {
     return BoletaCurso(
       matriculaAsignaturaId: at(0),
       plan: at(1),
+      // [2]=nivel · [3]=crédito (confirmado contra el "Promedio ponderado" del
+      // portal Intranet).
+      credito: double.tryParse(at(3)) ?? 0,
       codigo: at(4),
       nombre: at(5),
       seccion: at(6),
@@ -408,6 +413,30 @@ class BoletaCurso {
       estado: at(10),
     );
   }
+
+  factory BoletaCurso.fromJson(Map<String, dynamic> j) => BoletaCurso(
+        matriculaAsignaturaId: _toStr(j['matriculaAsignaturaId']),
+        plan: _toStr(j['plan']),
+        codigo: _toStr(j['codigo']),
+        nombre: _toStr(j['nombre']),
+        seccion: _toStr(j['seccion']),
+        credito: _toDouble(j['credito']) ?? 0,
+        asistenciaRaw: _toStr(j['asistenciaRaw']),
+        promedioRaw: _toStr(j['promedioRaw']),
+        estado: _toStr(j['estado']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'matriculaAsignaturaId': matriculaAsignaturaId,
+        'plan': plan,
+        'codigo': codigo,
+        'nombre': nombre,
+        'seccion': seccion,
+        'credito': credito,
+        'asistenciaRaw': asistenciaRaw,
+        'promedioRaw': promedioRaw,
+        'estado': estado,
+      };
 
   double? get promedio => notaToDouble(promedioRaw);
   String get promedioText => notaFmt(promedioRaw);

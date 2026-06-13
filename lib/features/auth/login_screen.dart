@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isWide = Responsive.isDesktop(context);
+    final isWide = context.isDesktop;
 
     final form = _AnimatedIntro(
       controller: _intro,
@@ -317,7 +318,7 @@ class _FormCard extends StatelessWidget {
                         const Gap.h(AppSpacing.xs),
                         Text(
                           l.loginCapsLockOn,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: AppFont.small,
                             color: NexoTheme.warning,
                             fontWeight: FontWeight.w600,
@@ -384,7 +385,7 @@ class _FormCard extends StatelessWidget {
                       )
                     : Text(
                         l.loginSubmit,
-                        key: ValueKey('t'),
+                        key: const ValueKey('t'),
                         style: const TextStyle(
                           fontSize: AppFont.title,
                           fontWeight: FontWeight.w700,

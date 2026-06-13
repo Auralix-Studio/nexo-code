@@ -23,12 +23,21 @@ import 'lumen_router.dart';
 /// Trade-off: se pierde la "conversación fluida" multi-turno. La sesión
 /// es más como un Q&A. Para v1.3 podríamos retener last-N turns en el
 /// payload si la UX se siente seca.
+/// Un turno previo de la conversación, para la memoria multi-turno.
+/// Record simple para no acoplar el builder a [ChatMessage] (evita import
+/// circular con chat_session).
+typedef LumenTurn = ({bool fromUser, String text});
+
 class LumenContextBuilder {
   LumenContextBuilder(this._store, {LumenRouter? router})
       : _router = router ?? const LumenRouter();
 
   final AppStore _store;
   final LumenRouter _router;
+
+  /// Tope de caracteres por mensaje del historial — evita que un turno largo
+  /// reviente la ventana de contexto (4096 tokens, compartida con la KB).
+  static const int _historyCharCap = 240;
 
   // ───── Knowledge base (lazy + cacheada) ─────
 
@@ -61,8 +70,19 @@ class LumenContextBuilder {
   Future<String> buildPrompt({
     required String modelId,
     required String userQuery,
+    List<LumenTurn> history = const [],
+    bool toolMode = false,
   }) async {
-    final blocks = _router.route(userQuery);
+    // Routing con contexto: si el turno previo del estudiante existe, lo
+    // concatenamos para que un follow-up ("¿y mañana?", "¿cuánto es?") jale
+    // los bloques de datos correctos aunque la query suelta no matchee.
+    final prevUser = history.lastWhere(
+      (t) => t.fromUser,
+      orElse: () => (fromUser: true, text: ''),
+    );
+    final routingText =
+        prevUser.text.isEmpty ? userQuery : '${prevUser.text} $userQuery';
+    final blocks = _router.route(routingText);
     final p = _store.profile.value;
     final name = p?.fullName.split(' ').first ?? 'estudiante';
     final carrera = p?.career ?? '';
@@ -84,21 +104,32 @@ class LumenContextBuilder {
     buf.writeln('Hoy es $today.');
     buf.writeln('Estudiante: $name${carrera.isEmpty ? '' : ', $carrera'}.');
 
-    // Bloques de data en vivo
-    if (blocks.contains(LumenBlock.schedule)) {
-      buf.writeln();
-      buf.writeln('=== HORARIO ===');
-      buf.writeln(_renderSchedule());
-    }
-    if (blocks.contains(LumenBlock.payments)) {
-      buf.writeln();
-      buf.writeln('=== CUOTAS Y PAGOS ===');
-      buf.writeln(_renderPayments());
-    }
-    if (blocks.contains(LumenBlock.grades)) {
-      buf.writeln();
-      buf.writeln('=== ACADÉMICO ===');
-      buf.writeln(_renderAcademic());
+    if (toolMode) {
+      // Modo tool-calling: NO pre-inyectamos los datos en vivo. El modelo los
+      // obtiene llamando funciones (obtener_horario, obtener_pagos,
+      // obtener_promedio, obtener_notas, obtener_perfil).
+      buf.writeln(
+        'Para datos del estudiante (horario, pagos, promedio, notas, perfil) '
+        'llama a la función correspondiente en vez de inventar; usa su '
+        'resultado para responder.',
+      );
+    } else {
+      // Pre-inyección clásica de los bloques de datos en vivo relevantes.
+      if (blocks.contains(LumenBlock.schedule)) {
+        buf.writeln();
+        buf.writeln('=== HORARIO ===');
+        buf.writeln(_renderSchedule());
+      }
+      if (blocks.contains(LumenBlock.payments)) {
+        buf.writeln();
+        buf.writeln('=== CUOTAS Y PAGOS ===');
+        buf.writeln(_renderPayments());
+      }
+      if (blocks.contains(LumenBlock.grades)) {
+        buf.writeln();
+        buf.writeln('=== ACADÉMICO ===');
+        buf.writeln(_renderAcademic());
+      }
     }
 
     // Bloques de knowledge base (estáticos)
@@ -113,6 +144,21 @@ class LumenContextBuilder {
         buf.writeln();
         buf.writeln('=== ${_kbLabel(kbBlock)} ===');
         buf.writeln(await _loadKb(kbBlock));
+      }
+    }
+
+    // Memoria multi-turno: los últimos turnos como contexto. El engine sigue
+    // siendo stateless (resetea su chat cada turno); la "memoria" vive aquí.
+    if (history.isNotEmpty) {
+      buf.writeln();
+      buf.writeln('=== CONVERSACIÓN PREVIA ===');
+      for (final t in history) {
+        final who = t.fromUser ? 'Estudiante' : 'Lumen';
+        var text = t.text.trim().replaceAll('\n', ' ');
+        if (text.length > _historyCharCap) {
+          text = '${text.substring(0, _historyCharCap)}…';
+        }
+        buf.writeln('$who: $text');
       }
     }
 
@@ -238,22 +284,44 @@ class LumenContextBuilder {
     final p = _store.profile.value;
     final buf = StringBuffer();
     if (p != null) {
-      buf.writeln('Ciclo / nivel: ${p.level}.');
+      if (p.level.isNotEmpty) buf.writeln('Ciclo / nivel: ${p.level}.');
       if (p.creditsApproved != null) {
         buf.writeln('Créditos aprobados: ${p.creditsApproved}'
             '${p.creditsTotal != null ? ' de ${p.creditsTotal}' : ''}.');
       }
-      if (p.gpa != null) {
-        buf.writeln('Promedio acumulado: ${p.gpa!.toStringAsFixed(2)}.');
-      }
     }
+
+    // Dos promedios distintos, calculados por GradeCalculator (no confundir):
+    //  - ciclo actual: ponderado por créditos de la boleta del periodo activo.
+    //  - acumulado: media de periodos ya cerrados (excluye el activo).
+    final cicloActual = _store.promedioCicloActual;
+    if (cicloActual != null) {
+      buf.writeln('Promedio del ciclo actual (en curso): '
+          '${cicloActual.toStringAsFixed(2)}.');
+    }
+    final acumulado = _store.promedioAcumulado;
+    if (acumulado != null) {
+      buf.writeln('Promedio acumulado (periodos cerrados): '
+          '${acumulado.toStringAsFixed(2)}.');
+    }
+
+    // Último periodo cerrado con su promedio — el más reciente con nota, no
+    // `last` (la lista no está garantizada en orden cronológico).
     final proms = _store.promedios.value;
     if (proms != null && proms.isNotEmpty) {
-      final last = proms.last;
-      final label = '${last.year}-${last.number == 1 ? 'I' : 'II'}';
-      buf.writeln('Último periodo: $label, '
-          'promedio ${last.average.toStringAsFixed(2)}.');
+      final cerrados = proms.where((t) => t.average > 0).toList()
+        ..sort((a, b) {
+          final byYear = a.year.compareTo(b.year);
+          return byYear != 0 ? byYear : a.number.compareTo(b.number);
+        });
+      if (cerrados.isNotEmpty) {
+        final last = cerrados.last;
+        final label = '${last.year}-${last.number == 1 ? 'I' : 'II'}';
+        buf.writeln('Último periodo cerrado: $label, '
+            'promedio ${last.average.toStringAsFixed(2)}.');
+      }
     }
+
     if (buf.isEmpty) {
       if (_store.profile.loading || _store.promedios.loading) {
         return 'Los datos académicos aún se están cargando. Pide al '

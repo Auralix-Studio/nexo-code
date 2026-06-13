@@ -89,7 +89,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (_, controller) => Container(
+      builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -107,7 +107,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
             ),
             const SizedBox(height: 8),
             _Header(alumno: widget.alumno),
-            Container(
+            ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
                 controller: _tabs,
@@ -211,11 +211,11 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: NexoTheme.danger),
+                        borderSide: const BorderSide(color: NexoTheme.danger),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: NexoTheme.danger, width: 2),
+                        borderSide: const BorderSide(color: NexoTheme.danger, width: 2),
                       ),
                     ),
                     validator: (v) {
@@ -547,7 +547,7 @@ class _EvalRow extends StatelessWidget {
                 ),
                 child: Text(
                   l.docenteEvalPending,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: NexoTheme.warning,

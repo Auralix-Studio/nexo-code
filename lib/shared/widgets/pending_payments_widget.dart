@@ -91,9 +91,9 @@ class PendingPaymentsWidget extends StatelessWidget {
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(Icons.verified_outlined,
+            const Icon(Icons.verified_outlined,
                 size: 36, color: NexoTheme.success),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               '¡Estás al día!',
               style: TextStyle(

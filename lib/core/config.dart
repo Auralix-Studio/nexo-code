@@ -2,9 +2,11 @@
 ///
 /// Un solo repo en GitHub (`auralix-studio/nexo`) hostea **dos** tipos
 /// de releases:
-///   - Releases de la **app**: tag semver (`v1.0.1`) con un asset `.apk`.
-///     El release marcado como "Latest" en GitHub UI es el target del
-///     autoupdater (`/releases/latest` de la API).
+///   - Releases de la **app**: tag semver (`v1.3.0`) con los artefactos:
+///     APK universal + APKs split por ABI (Android) y el zip/instalador de
+///     Windows. El release "Latest" en GitHub es el target del autoupdater
+///     (`/releases/latest`). El updater elige el artefacto por plataforma y,
+///     en Android, prefiere el **universal**.
 ///   - Releases de **modelos Lumen**: tag fijo (`lumen-models-v1`), NO
 ///     marcado como Latest, con los `.task`/`.litertlm`. Lo consulta
 ///     [LumenModelArtifact.downloadUrl] por tag, no por "latest".
@@ -13,10 +15,20 @@ class UpdateConfig {
   static const String latestReleaseApi =
       'https://api.github.com/repos/$repo/releases/latest';
 
-  /// Solo APKs cuyo nombre acaba en `.apk` se consideran aptos para el
-  /// autoupdate. Si el release no trae ninguno, se ignora silenciosamente
-  /// (puede ser un release exclusivo de modelos).
+  /// APKs aptos para el autoupdate (Android). Si el release no trae ninguno,
+  /// se ignora (puede ser un release exclusivo de modelos).
   static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
+
+  /// Artefacto de Windows (instalador o zip portable).
+  static bool isWindowsAsset(String name) {
+    final n = name.toLowerCase();
+    return n.endsWith('.exe') || n.endsWith('.msix') || n.endsWith('.zip');
+  }
+
+  /// El APK **universal** corre en todo dispositivo; se prefiere sobre los
+  /// split por ABI (arm64-v8a, armeabi-v7a, x86_64) para el auto-update.
+  static bool isUniversalApk(String name) =>
+      isApkAsset(name) && name.toLowerCase().contains('universal');
 
   /// Throttle del chequeo automático en el arranque para no martillar el
   /// rate limit anónimo de GitHub API (60 req/h por IP).
@@ -27,8 +39,8 @@ class UpdateConfig {
 class AppConfig {
   /// Versión semver de la app. Fuente única — usar en UI y user-agent.
   /// Mantener sincronizada con `version:` en pubspec.yaml.
-  static const String appVersion = '1.1.1';
-  static const int appBuild = 3;
+  static const String appVersion = '1.3.0';
+  static const int appBuild = 5;
 
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';

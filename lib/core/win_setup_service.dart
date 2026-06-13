@@ -157,7 +157,7 @@ class WinSetupService {
 
     // 2. Eliminar accesos directos
     onStepProgress("Eliminando accesos directos...");
-    final script = '''
+    const script = '''
       \$DesktopPath = [System.Environment]::GetFolderPath('Desktop')
       Remove-Item -Path (Join-Path \$DesktopPath "Nexo UPLA.lnk") -Force -ErrorAction SilentlyContinue
       

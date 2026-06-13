@@ -13,6 +13,7 @@ import 'package:nexo/data/docente_repository.dart';
 import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/data/teams_repository.dart';
+import 'package:nexo/domain/grade_calculator.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
@@ -262,27 +263,38 @@ class AppStore extends ChangeNotifier {
     }
   }
 
-  /// Promedio académico significativo:
-  ///   - El último periodo completado con promedio > 0 (excluye el activo en curso).
-  ///   - Si no hay datos, null.
+  /// Promedio **acumulado** (periodos cerrados, excluye el activo en curso).
+  /// Delega en [GradeCalculator] — lógica pura y testeada.
   double? get promedioAcumulado {
     final list = promedios.value;
-    if (list == null || list.isEmpty) return null;
+    if (list == null) return null;
     final activo = periodoActivo;
-    final completados = list.where((p) {
-      if (p.average == 0) return false;
-      if (activo != null && p.year == activo.year && p.number == activo.number) {
-        return false;
-      }
-      return true;
-    }).toList()
-      ..sort((a, b) {
-        final byYear = a.year.compareTo(b.year);
-        return byYear != 0 ? byYear : a.number.compareTo(b.number);
-      });
-    if (completados.isEmpty) return null;
-    final sum = completados.fold<double>(0, (a, b) => a + b.average);
-    return sum / completados.length;
+    return GradeCalculator.promedioAcumulado(
+      list,
+      activeYear: activo?.year,
+      activeNumber: activo?.number,
+    );
+  }
+
+  /// Promedio del **ciclo actual** = el "Promedio ponderado" oficial de la
+  /// boleta de Intranet: `Σ(crédito × nota) / Σ(crédito)` sobre los cursos con
+  /// nota. Reproduce exacto el número que muestra el portal (p.ej. 8.23 en
+  /// 2026-1), que es el que confía el estudiante — NO el de SIGMA, que para el
+  /// ciclo en curso devuelve otro valor.
+  ///
+  /// `null` si la boleta del periodo activo aún no está cargada (mejor "—" que
+  /// un valor de otra fuente).
+  double? get promedioCicloActual {
+    final activo = periodoActivo;
+    if (activo == null) return null;
+    if (esModeloNuevo(activo.year, activo.number)) {
+      final cursos = boletaOf(activo.year, activo.number).value;
+      if (cursos == null) return null;
+      return GradeCalculator.promedioPonderadoBoleta(cursos);
+    }
+    final cursos = boletaLegacyOf(activo.year, activo.number).value;
+    if (cursos == null) return null;
+    return GradeCalculator.promedioPonderadoLegacy(cursos);
   }
 
   /// Créditos aprobados del estudiante (preferir perfil sobre resumen).
@@ -610,11 +622,22 @@ class AppStore extends ChangeNotifier {
         operationName: 'loadRecord',
       );
 
+  /// Carga un resolver tolerando el caso de "lista legítimamente vacía".
+  ///
+  /// Distingue dos situaciones que el `Resolver` colapsa en
+  /// `NoDataAvailableException`:
+  ///   - `cause == null`: TODAS las fuentes respondieron, pero vacío. Es una
+  ///     lista vacía real → devolvemos `[]`.
+  ///   - `cause != null`: alguna fuente **falló** (backend caído / sin red).
+  ///     Propagamos para que `withFallback` caiga a la copia local en vez de
+  ///     pisar el estado con `[]`. Sin esto, una caída de SIGMA/Intranet
+  ///     borraba notas y deudas en pantalla ("pantallas vacías").
   Future<List<T>> _resolveOrEmpty<T>(Resolver<List<T>> r) async {
     try {
       return await r.load();
-    } on NoDataAvailableException {
-      return const [];
+    } on NoDataAvailableException catch (e) {
+      if (e.cause == null) return const [];
+      rethrow;
     }
   }
 

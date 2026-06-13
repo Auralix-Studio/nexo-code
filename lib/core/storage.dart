@@ -37,6 +37,7 @@ class AppStorage {
   static const _kUse24h = 'nexo.use24h';
   static const _kRunPortable = 'nexo.runPortable';
   static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
+  static const _kFestivityDecor = 'nexo.festivityDecor';
   static const _kLumenModelId = 'nexo.lumen.modelId';
   static const _kIntranetCookies = 'nexo.intranet.cookies';
   static const _kIntranetUser = 'nexo.intranet.user';
@@ -84,6 +85,12 @@ class AppStorage {
   bool get seenWhatsappInvite => _prefs.getBool(_kWhatsappInvite) ?? false;
   Future<void> setSeenWhatsappInvite(bool v) =>
       _prefs.setBool(_kWhatsappInvite, v);
+
+  /// Adornos/animaciones de festividades (aniversario UPLA, Navidad, etc.).
+  /// Activado por defecto; el usuario puede apagarlo en Configuración.
+  bool get festivityDecor => _prefs.getBool(_kFestivityDecor) ?? true;
+  Future<void> setFestivityDecor(bool v) =>
+      _prefs.setBool(_kFestivityDecor, v);
 
   /// Id del modelo Lumen seleccionado por el usuario (ver LumenConfig.models).
   /// `null` si nunca eligió uno — el caller debe caer al default.

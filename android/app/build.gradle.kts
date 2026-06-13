@@ -32,9 +32,9 @@ android {
         // y agregaba ~80 MB de native libs (incluyendo el LLM engine duplicado).
         // Si en el futuro hay que dar build de emulador, generarlo aparte
         // con `flutter build apk --target-platform android-x64`.
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
-        }
+        // ndk {
+        //     abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        // }
     }
 
     // flutter_gemma empaqueta toda la pila MediaPipe (vision, image-gen,

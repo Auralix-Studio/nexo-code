@@ -30,12 +30,18 @@ class ErrorHandler {
       final result = await remote();
       return result;
     } on SessionExpiredException {
+      // 401 + reauth fallida = sesión realmente muerta → cerrar sesión.
       debugPrint('ErrorHandler: Session expired in $operationName. Logging out.');
       await session.logout();
       rethrow;
-    } on UnauthorizedException {
-      debugPrint('ErrorHandler: Unauthorized in $operationName. Logging out.');
-      await session.logout();
+    } on UnauthorizedException catch (e) {
+      // 403 = autenticado pero SIN permiso para ESTE recurso (p.ej. un alumno
+      // tocando un endpoint de docente). NO es sesión muerta: deslogear aquí
+      // cerraba toda la sesión por un único endpoint prohibido. Conservamos la
+      // sesión, intentamos cache y propagamos el error solo de esta operación.
+      debugPrint('ErrorHandler: Forbidden (403) in $operationName: $e. Keeping session, trying cache.');
+      final cachedResult = await cached();
+      if (cachedResult != null) return cachedResult;
       rethrow;
     } on NetworkException catch (e) {
       debugPrint('ErrorHandler: Network exception in $operationName: $e. Trying cache.');

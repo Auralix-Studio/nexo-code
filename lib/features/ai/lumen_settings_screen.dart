@@ -151,11 +151,11 @@ class _LumenSettingsScreenState extends State<LumenSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Row(
+        title: const Row(
           children: [
-            const LumenLogo(size: 28),
-            const Gap.h(AppSpacing.sm),
-            const Text('Configuración de Lumen'),
+            LumenLogo(size: 28),
+            Gap.h(AppSpacing.sm),
+            Text('Configuración de Lumen'),
           ],
         ),
       ),
@@ -333,7 +333,7 @@ class _PrivacyNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.shield_outlined, color: NexoTheme.success),
+          const Icon(Icons.shield_outlined, color: NexoTheme.success),
           const Gap.h(AppSpacing.md),
           Expanded(
             child: Column(

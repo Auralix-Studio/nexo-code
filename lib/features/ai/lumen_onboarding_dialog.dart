@@ -65,11 +65,11 @@ class _LumenOnboardingDialogState extends State<LumenOnboardingDialog> {
         final isDownloading = s.status == LumenStatus.downloading ||
             s.status == LumenStatus.verifying;
         return AlertDialog(
-          title: Row(
+          title: const Row(
             children: [
-              const LumenLogo(size: 40),
-              const Gap.h(AppSpacing.sm),
-              const Text('Lumen'),
+              LumenLogo(size: 40),
+              Gap.h(AppSpacing.sm),
+              Text('Lumen'),
             ],
           ),
           content: SizedBox(
@@ -148,13 +148,13 @@ class _Explainer extends StatelessWidget {
           const Gap(AppSpacing.sm),
         ],
         const Gap(AppSpacing.sm),
-        _Bullet(
+        const _Bullet(
           icon: Icons.lock_outline_rounded,
           color: NexoTheme.success,
           title: 'Privado por diseño',
           subtitle: 'Cero llamadas a APIs externas.',
         ),
-        _Bullet(
+        const _Bullet(
           icon: Icons.warning_amber_rounded,
           color: NexoTheme.warning,
           title: 'Puede equivocarse',
@@ -356,7 +356,7 @@ class _DownloadProgress extends StatelessWidget {
         else if (state.status == LumenStatus.verifying)
           const LinearProgressIndicator()
         else if (state.status == LumenStatus.error)
-          Icon(Icons.error_outline, color: NexoTheme.danger, size: AppIcon.xl),
+          const Icon(Icons.error_outline, color: NexoTheme.danger, size: AppIcon.xl),
         const Gap(AppSpacing.md),
         Text(label,
             style: t.bodyMedium?.copyWith(

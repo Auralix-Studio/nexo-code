@@ -263,7 +263,7 @@ class _DeviceCodeCard extends StatelessWidget {
       return SectionCard(
         title: l.teamsDeviceCodeGenerating,
         icon: Icons.cloud_sync_outlined,
-        child: Padding(
+        child: const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
           child: Center(child: CircularProgressIndicator()),
         ),

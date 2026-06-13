@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+
+/// Distribuye tiles de curso en 1 columna (móvil/tablet) o 2 (escritorio),
+/// para que la lista de notas use el ancho como un dashboard en vez de quedar
+/// en una columna angosta.
+Widget gradeTileGrid(BuildContext context, List<Widget> tiles) {
+  if (!context.isDesktop) {
+    return Column(
+      children: [
+        for (var i = 0; i < tiles.length; i++) ...[
+          tiles[i],
+          if (i < tiles.length - 1) const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+  const spacing = 12.0;
+  return LayoutBuilder(
+    builder: (ctx, c) {
+      final w = (c.maxWidth - spacing) / 2;
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: [for (final t in tiles) SizedBox(width: w, child: t)],
+      );
+    },
+  );
+}
 
 /// Color de una nota según rango.
 Color gradeColor(num? n) {
@@ -259,7 +287,7 @@ class GradeSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final promColor = gradeColor(notaToDouble(promedioRaw));
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: NexoTheme.surface,
         borderRadius: AppRadii.rXxl,

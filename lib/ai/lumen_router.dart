@@ -117,7 +117,25 @@ class LumenRouter {
     caseSensitive: false,
   );
 
-  Set<LumenBlock> route(String query) {
+  /// Normaliza la query antes de matchear: minúsculas + sin diacríticos.
+  /// Es seguro con los patrones existentes (sus clases `[áa]` ya incluyen la
+  /// letra base), y añade robustez ante tildes omitidas o mal puestas
+  /// ("matricula", "cuanto", "miercoles") y mayúsculas.
+  static String _normalize(String s) {
+    const from = 'áàäâãéèëêíìïîóòöôõúùüûñ';
+    const to = 'aaaaaeeeeiiiiooooouuuun';
+    final lower = s.toLowerCase();
+    final sb = StringBuffer();
+    for (var i = 0; i < lower.length; i++) {
+      final ch = lower[i];
+      final idx = from.indexOf(ch);
+      sb.write(idx >= 0 ? to[idx] : ch);
+    }
+    return sb.toString();
+  }
+
+  Set<LumenBlock> route(String rawQuery) {
+    final query = _normalize(rawQuery);
     final blocks = <LumenBlock>{};
     if (_schedule.hasMatch(query)) blocks.add(LumenBlock.schedule);
     if (_payments.hasMatch(query)) blocks.add(LumenBlock.payments);

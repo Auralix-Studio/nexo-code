@@ -146,13 +146,31 @@ class IntranetClient {
     return _loggedIn;
   }
 
+  /// Detecta la firma real de sesión caducada de Intranet: un **302 que
+  /// redirige a la página de login (`sesion`)**. Con `followRedirects=false`
+  /// el server NO devuelve HTML como suponíamos: responde `302 Location: sesion`
+  /// con cuerpo vacío en TODOS los endpoints de datos cuando el `PHPSESSID`
+  /// caducó server-side. Verificado con `probe_session_expiry` (2026-06-11):
+  /// la respuesta válida es `200 + JSON`, la caducada es `302 → sesion`.
+  ///
+  /// Sin esta detección, el cuerpo vacío se interpretaba como "sin datos"
+  /// (lista vacía) y nunca se disparaba el re-login → la app mostraba datos
+  /// vacíos y exigía login manual constante.
+  void _checkSession(http.Response res) {
+    if (res.statusCode == 302 &&
+        (res.headers['location'] ?? '').contains('sesion')) {
+      invalidateSession();
+      throw const SessionExpiredException('Sesión de Intranet expirada.');
+    }
+  }
+
   /// Decodifica el cuerpo (a veces con espacios/newline iniciales) a JSON.
   dynamic _decode(String body) {
     final t = body.trim();
     if (t.isEmpty) return null;
     if (t.startsWith('<')) {
-      // Página anti-bot / sesión perdida — limpia cookies para forzar
-      // re-login en el siguiente `ensureSession`.
+      // Página anti-bot / login HTML — defensivo: si en vez del 302 el
+      // server alguna vez sirve el HTML de login, también re-logueamos.
       invalidateSession();
       throw const SessionExpiredException('Sesión de Intranet expirada.');
     }
@@ -192,6 +210,7 @@ class IntranetClient {
   }) async {
     final res = await _get(path, referer: referer);
     try {
+      _checkSession(res);
       final data = _decode(res.body);
       return data is List ? data : const [];
     } on SessionExpiredException {
@@ -218,6 +237,7 @@ class IntranetClient {
   }) async {
     final res = await _post(path, body, referer: referer);
     try {
+      _checkSession(res);
       final data = _decode(res.body);
       return data is List ? data : const [];
     } on SessionExpiredException {

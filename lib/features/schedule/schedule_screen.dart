@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -44,7 +45,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
         // Cuenta las clases ya agrupadas (teoría + práctica de un mismo
         // curso en un día = 1 clase), igual que las tarjetas que ve el alumno.
         final agrupadas = ScheduleClassGroup.groupBy(state.value ?? const []).length;
-        return RefreshIndicator(
+        final list = RefreshIndicator(
           onRefresh: () => widget.store.loadHorarioActual(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
@@ -94,6 +95,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
             ],
           ),
         );
+        return list;
       },
     );
   }
@@ -213,18 +215,41 @@ class _WeekView extends StatelessWidget {
       );
     }
 
+    final cards = [
+      for (var i = 0; i < daysOrder.length; i++)
+        Reveal(
+          index: i,
+          child: _DaySection(
+            day: daysOrder[i],
+            clases: byDay[daysOrder[i]]!,
+            isToday: daysOrder[i] == today,
+          ),
+        ),
+    ];
+
+    // Escritorio: grilla de 2 columnas (cada día en su lugar, no una columna
+    // angosta). Móvil/tablet: apilado vertical.
+    if (context.isDesktop) {
+      const spacing = 14.0;
+      return LayoutBuilder(
+        builder: (ctx, c) {
+          final w = (c.maxWidth - spacing) / 2;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (final card in cards) SizedBox(width: w, child: card),
+            ],
+          );
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < daysOrder.length; i++) ...[
-          Reveal(
-            index: i,
-            child: _DaySection(
-              day: daysOrder[i],
-              clases: byDay[daysOrder[i]]!,
-              isToday: daysOrder[i] == today,
-            ),
-          ),
+        for (final card in cards) ...[
+          card,
           const SizedBox(height: 14),
         ],
       ],
@@ -569,12 +594,12 @@ class _Loading extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < 3; i++) ...[
-          Card(
+          const Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: const [
+                children: [
                   Skeleton(height: 18, width: 120),
                   SizedBox(height: 16),
                   Skeleton(height: 64, radius: 14),

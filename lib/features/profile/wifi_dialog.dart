@@ -138,7 +138,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: NexoTheme.card,
         borderRadius: AppRadii.rXxl,

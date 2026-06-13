@@ -22,8 +22,30 @@ class ScheduleDetailScreen extends StatelessWidget {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => ScheduleDetailScreen(grupo: grupo),
+          // El nombre alimenta el breadcrumb del sidebar (p.ej. "Horario › Física").
+          settings: RouteSettings(name: grupo.subject),
         ),
       );
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Scaffold(
+      backgroundColor: NexoTheme.bg,
+      appBar: AppBar(
+        title: Text(l.scheduleDetailTitle),
+      ),
+      body: SafeArea(child: ScheduleDetailBody(grupo: grupo)),
+    );
+  }
+}
+
+/// Cuerpo del detalle, sin Scaffold/AppBar — embebible tanto en la ruta
+/// móvil ([ScheduleDetailScreen]) como en el panel de detalle de escritorio
+/// (master-detail).
+class ScheduleDetailBody extends StatelessWidget {
+  const ScheduleDetailBody({super.key, required this.grupo});
+  final ScheduleClassGroup grupo;
 
   @override
   Widget build(BuildContext context) {
@@ -32,37 +54,29 @@ class ScheduleDetailScreen extends StatelessWidget {
     final first = grupo.sessions.first;
     final isToday = grupo.weekday == DateTime.now().weekday;
 
-    return Scaffold(
-      backgroundColor: NexoTheme.bg,
-      appBar: AppBar(
-        title: Text(l.scheduleDetailTitle),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              children: [
-                _Hero(grupo: grupo, isToday: isToday),
-                const Gap(AppSpacing.lg),
-                _TimeCard(grupo: grupo, h24: h24, label: l),
-                const Gap(AppSpacing.lg),
-                if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
-                  _LocationCard(first: first, aula: grupo.room, label: l),
-                if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
-                  const Gap(AppSpacing.lg),
-                if (grupo.teacher.isNotEmpty)
-                  _TeacherCard(docente: grupo.teacher, label: l),
-                if (grupo.teacher.isNotEmpty) const Gap(AppSpacing.lg),
-                _SessionsCard(grupo: grupo, h24: h24, label: l),
-                if (first.note.isNotEmpty) ...[
-                  const Gap(AppSpacing.lg),
-                  _NotesCard(text: first.note, label: l),
-                ],
-              ],
-            ),
-          ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          children: [
+            _Hero(grupo: grupo, isToday: isToday),
+            const Gap(AppSpacing.lg),
+            _TimeCard(grupo: grupo, h24: h24, label: l),
+            const Gap(AppSpacing.lg),
+            if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
+              _LocationCard(first: first, aula: grupo.room, label: l),
+            if (grupo.room.isNotEmpty || first.building.isNotEmpty || first.campus.isNotEmpty)
+              const Gap(AppSpacing.lg),
+            if (grupo.teacher.isNotEmpty)
+              _TeacherCard(docente: grupo.teacher, label: l),
+            if (grupo.teacher.isNotEmpty) const Gap(AppSpacing.lg),
+            _SessionsCard(grupo: grupo, h24: h24, label: l),
+            if (first.note.isNotEmpty) ...[
+              const Gap(AppSpacing.lg),
+              _NotesCard(text: first.note, label: l),
+            ],
+          ],
         ),
       ),
     );

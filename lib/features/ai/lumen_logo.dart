@@ -13,10 +13,13 @@ class LumenLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cache = (size * 3).round();
     return Image.asset(
       'assets/lumen_icon.png',
       width: size,
       height: size,
+      cacheWidth: cache,
+      cacheHeight: cache,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
     );

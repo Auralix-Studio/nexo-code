@@ -57,17 +57,39 @@ class UpdateStatus {
 ///
 /// Nunca lanza al caller — todos los errores quedan en debugPrint para
 /// que el autoupdate no rompa el arranque de la app.
-class UpdateService {
+class UpdateService extends ChangeNotifier {
   UpdateService({http.Client? httpClient, NotificationService? notifications})
       : _http = httpClient ?? http.Client(),
-        _notifications = notifications ?? NotificationService.instance;
+        _notifications = notifications ?? NotificationService.instance {
+    instance = this;
+  }
+
+  /// Instancia activa — la UI (tarjeta de Ajustes y banner) la consume
+  /// directamente, igual que `NotificationService.instance`, para evitar
+  /// pasarla por todo el árbol de widgets. La setea el ctor en main.dart.
+  static UpdateService? instance;
 
   final http.Client _http;
   final NotificationService _notifications;
   Future<void>? _downloadInFlight;
 
+  /// Hay una operación de red en curso (chequeo o descarga). La UI lo usa
+  /// para mostrar spinner y deshabilitar el botón.
+  bool _busy = false;
+  bool get isBusy => _busy;
+
+  void _setBusy(bool v) {
+    if (_busy == v) return;
+    _busy = v;
+    notifyListeners();
+  }
+
+  bool get isSupported => _isSupported;
+
   bool get _isSupported =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.windows);
 
   /// Llamar una vez en el arranque, **después** de `NotificationService.init()`
   /// para que el handler de tap esté listo si llega a disparar una notif.
@@ -81,10 +103,20 @@ class UpdateService {
   }
 
   /// Chequeo manual (botón "Buscar actualizaciones"). Ignora el throttle.
+  /// Es disparado por el usuario en primer plano: aprovechamos para pedir
+  /// el permiso de notificaciones (Android 13+ lo exige en runtime) — sin
+  /// esto, la notificación de "actualización lista" nunca llegaba aunque la
+  /// descarga sí ocurriera.
   Future<UpdateStatus> checkNow() async {
     if (!_isSupported) return const UpdateStatus(state: UpdateState.unsupported);
-    await _runCheckAndDownload(force: true);
-    return currentStatus();
+    _setBusy(true);
+    try {
+      await _notifications.requestPermission();
+      await _runCheckAndDownload(force: true);
+      return currentStatus();
+    } finally {
+      _setBusy(false);
+    }
   }
 
   /// Estado actual derivado de la metadata persistida — útil para pintar
@@ -115,21 +147,27 @@ class UpdateService {
   /// instalación — eso solo se sabe al próximo arranque).
   Future<bool> installDownloaded() async {
     if (!_isSupported) return false;
-    var status = currentStatus();
-    if (status.state == UpdateState.available) {
-      await _downloadOnce();
-      status = currentStatus();
-    }
-    if (status.state != UpdateState.ready || status.apkPath == null) {
-      return false;
-    }
+    _setBusy(true);
     try {
-      final res = await OpenFilex.open(status.apkPath!);
-      // ResultType.done = el sistema lanzó el visor/instalador.
-      return res.type == ResultType.done;
-    } catch (e) {
-      debugPrint('[UpdateService] install failed: $e');
-      return false;
+      var status = currentStatus();
+      if (status.state == UpdateState.available) {
+        await _downloadOnce();
+        status = currentStatus();
+        notifyListeners();
+      }
+      if (status.state != UpdateState.ready || status.apkPath == null) {
+        return false;
+      }
+      try {
+        final res = await OpenFilex.open(status.apkPath!);
+        // ResultType.done = el sistema lanzó el visor/instalador.
+        return res.type == ResultType.done;
+      } catch (e) {
+        debugPrint('[UpdateService] install failed: $e');
+        return false;
+      }
+    } finally {
+      _setBusy(false);
     }
   }
 
@@ -175,6 +213,9 @@ class UpdateService {
         // Descarga falló — al menos avisamos que hay actualización.
         await _notifications.showUpdateAvailable(version);
       }
+      // Notifica a la UI (banner/tarjeta) que el estado pudo cambiar, aunque
+      // la notificación del sistema no se haya podido mostrar.
+      notifyListeners();
     } catch (e) {
       debugPrint('[UpdateService] check failed: $e');
     }
@@ -214,7 +255,9 @@ class UpdateService {
     }
 
     final dir = await _apkDir();
-    final dest = File(p.join(dir.path, 'nexo-$version.apk'));
+    // La extensión sale del propio asset: .apk en Android, .zip/.exe en Windows.
+    final ext = _extensionFromUrl(url) ?? '.apk';
+    final dest = File(p.join(dir.path, 'nexo-$version$ext'));
     final part = File('${dest.path}.part');
 
     // Descarga streaming a .part — rename atómico al final para no dejar
@@ -281,11 +324,25 @@ class UpdateService {
   Future<void> _purgeStaleApks(Directory dir, {required String keep}) async {
     try {
       await for (final f in dir.list()) {
-        if (f is File && f.path != keep && f.path.endsWith('.apk')) {
+        // Borra artefactos viejos (apk/zip/exe) salvo el que acabamos de bajar.
+        final isArtifact = f.path.endsWith('.apk') ||
+            f.path.endsWith('.zip') ||
+            f.path.endsWith('.exe') ||
+            f.path.endsWith('.msix');
+        if (f is File && f.path != keep && isArtifact) {
           await _safeDelete(f);
         }
       }
     } catch (_) {}
+  }
+
+  /// Extensión (con punto) del archivo apuntado por [url], o `null`.
+  static String? _extensionFromUrl(String url) {
+    final segs = Uri.parse(url).pathSegments;
+    final name = segs.isNotEmpty ? segs.last : '';
+    final dot = name.lastIndexOf('.');
+    if (dot <= 0) return null;
+    return name.substring(dot);
   }
 
   Future<void> _safeDelete(FileSystemEntity f) async {
@@ -295,10 +352,16 @@ class UpdateService {
   }
 
   Future<Directory> _apkDir() async {
-    // External cache dir — visible para el sistema cuando se lanza el
-    // instalador, y se limpia automáticamente si el SO necesita espacio.
-    final base = await getExternalStorageDirectory() ??
-        await getApplicationSupportDirectory();
+    // Android: external cache dir (visible al lanzar el instalador, lo limpia
+    // el SO si falta espacio). Windows: Application Support
+    // (getExternalStorageDirectory no existe ahí y lanzaría).
+    final Directory base;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      base = await getExternalStorageDirectory() ??
+          await getApplicationSupportDirectory();
+    } else {
+      base = await getApplicationSupportDirectory();
+    }
     final dir = Directory(p.join(base.path, 'updates'));
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
@@ -321,17 +384,27 @@ class UpdateService {
     if (tag == null || tag.isEmpty) return null;
     final version = _stripVPrefix(tag);
     final assets = (json['assets'] as List?) ?? const [];
-    _GhAsset? apk;
+    final isWindows = defaultTargetPlatform == TargetPlatform.windows;
+    _GhAsset? chosen;
     for (final a in assets.whereType<Map<String, dynamic>>()) {
       final name = a['name'] as String? ?? '';
-      if (!UpdateConfig.isApkAsset(name)) continue;
+      final matches = isWindows
+          ? UpdateConfig.isWindowsAsset(name)
+          : UpdateConfig.isApkAsset(name);
+      if (!matches) continue;
       final url = a['browser_download_url'] as String?;
       final size = (a['size'] as num?)?.toInt();
       if (url == null || size == null) continue;
-      apk = _GhAsset(url: url, size: size);
-      break;
+      final asset = _GhAsset(url: url, size: size, name: name);
+      // Android: preferir el universal (corre en todo dispositivo). Si lo
+      // encontramos, lo fijamos; si no, el primero sirve de fallback.
+      if (!isWindows && UpdateConfig.isUniversalApk(name)) {
+        chosen = asset;
+        break;
+      }
+      chosen ??= asset;
     }
-    return _GhRelease(version: version, apkAsset: apk);
+    return _GhRelease(version: version, apkAsset: chosen);
   }
 
   /// Quita el `v` líder (`v1.0.1` → `1.0.1`) y trim. No valida formato:
@@ -377,7 +450,8 @@ class _GhRelease {
 }
 
 class _GhAsset {
-  _GhAsset({required this.url, required this.size});
+  _GhAsset({required this.url, required this.size, required this.name});
   final String url;
   final int size;
+  final String name;
 }

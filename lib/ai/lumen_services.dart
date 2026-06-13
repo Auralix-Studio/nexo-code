@@ -5,6 +5,7 @@ import 'chat_session.dart';
 import 'context_builder.dart';
 import 'lumen_engine.dart';
 import 'lumen_state.dart';
+import 'lumen_tools.dart';
 import 'model_manager.dart';
 
 /// Bundle de las dependencias de Lumen, creadas en `main.dart` y propagadas
@@ -21,7 +22,15 @@ class LumenServices {
         _contextBuilder = LumenContextBuilder(store),
         _internal = _Internal() {
     modelManager = LumenModelManager(state);
-    engine = LumenEngine(state: state, modelManager: modelManager);
+    final tools = LumenTools(store);
+    engine = LumenEngine(
+      state: state,
+      modelManager: modelManager,
+      // Definiciones siempre disponibles; el engine solo las usa si
+      // `LumenEngine.useTools` está activo (ver flag).
+      tools: LumenTools.definitions,
+      toolExecutor: tools.execute,
+    );
   }
 
   final AppStorage _storage;

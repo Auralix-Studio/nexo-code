@@ -56,7 +56,7 @@ class _DocenteCursoDetailScreenState extends State<DocenteCursoDetailScreen>
         child: Column(
           children: [
             _Header(curso: widget.curso),
-            Container(
+            ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
                 controller: _tabs,

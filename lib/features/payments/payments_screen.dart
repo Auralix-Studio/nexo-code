@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
@@ -55,7 +56,7 @@ class _PagosScreenState extends State<PaymentsScreen>
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        return RefreshIndicator(
+        final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
               widget.store.loadCuotasPendientes(),
@@ -85,7 +86,7 @@ class _PagosScreenState extends State<PaymentsScreen>
               SliverToBoxAdapter(
                 child: Reveal(index: 0, child: _SummaryCards(store: widget.store)),
               ),
-              SliverToBoxAdapter(child: SizedBox(height: 12)),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverToBoxAdapter(
                 child: PageBody(
                   child: _TabBar(controller: _tab),
@@ -108,6 +109,7 @@ class _PagosScreenState extends State<PaymentsScreen>
             ),
           ),
         );
+        return list;
       },
     );
   }
@@ -284,6 +286,38 @@ class _TabBar extends StatelessWidget {
 
 // ============== Tabs ==============
 
+/// Lista de tarjetas en 1 columna (móvil) o 2 (escritorio), agrupando en
+/// pares y preservando el scroll de la pestaña.
+Widget _cardList(BuildContext context, List<Widget> cards) {
+  if (!context.isDesktop) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      itemBuilder: (_, i) => cards[i],
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemCount: cards.length,
+    );
+  }
+  final rows = <Widget>[];
+  for (var i = 0; i < cards.length; i += 2) {
+    rows.add(Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: cards[i]),
+        const SizedBox(width: 12),
+        Expanded(
+          child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
+        ),
+      ],
+    ));
+  }
+  return ListView.separated(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    itemBuilder: (_, i) => rows[i],
+    separatorBuilder: (_, _) => const SizedBox(height: 12),
+    itemCount: rows.length,
+  );
+}
+
 class _PendientesTab extends StatelessWidget {
   final AsyncValue<List<Payment>> state;
   const _PendientesTab({required this.state});
@@ -366,12 +400,7 @@ class _CuotaListTab extends StatelessWidget {
         color: emptyColor,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _CuotaCard(cuota: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final c in items) _CuotaCard(cuota: c)]);
   }
 }
 
@@ -533,12 +562,7 @@ class _TasasTab extends StatelessWidget {
         title: l.paymentsNoFeesRegistered,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _TasaCard(tasa: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final t in items) _TasaCard(tasa: t)]);
   }
 }
 
@@ -697,7 +721,7 @@ class _HistorialTabState extends State<_HistorialTab> {
           ),
         Expanded(
           child: byDate.isEmpty
-              ? EmptyState(
+              ? const EmptyState(
                   icon: Icons.filter_alt_off_outlined,
                   title: 'Sin pagos en este periodo',
                 )

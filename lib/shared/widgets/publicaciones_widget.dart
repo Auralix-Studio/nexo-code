@@ -79,10 +79,10 @@ class _Slide extends StatelessWidget {
                 p.urlPrincipal,
                 fit: BoxFit.cover,
                 loadingBuilder: (_, child, prog) =>
-                    prog == null ? child : _Placeholder(loading: true),
-                errorBuilder: (_, _, _) => _Placeholder(loading: false),
+                    prog == null ? child : const _Placeholder(loading: true),
+                errorBuilder: (_, _, _) => const _Placeholder(loading: false),
               )
-            : _Placeholder(loading: false),
+            : const _Placeholder(loading: false),
       ),
     );
   }

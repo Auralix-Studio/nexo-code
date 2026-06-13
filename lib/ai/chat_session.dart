@@ -89,6 +89,8 @@ class LumenChatSession extends ChangeNotifier {
         prompt = await _contextBuilder.buildPrompt(
           modelId: _engine.activeModelId,
           userQuery: trimmed,
+          history: _recentHistory(),
+          toolMode: _engine.toolsEnabled,
         );
       } catch (e) {
         debugPrint('[LumenChatSession] buildPrompt falló: $e');
@@ -208,6 +210,25 @@ class LumenChatSession extends ChangeNotifier {
       outcome.complete(_SendOutcome.cancelled);
     }
     try { await _engine.stop(); } catch (_) {}
+  }
+
+  /// Últimos turnos de la conversación para la memoria multi-turno.
+  /// Excluye los 2 mensajes recién agregados (la pregunta actual + el pending
+  /// de Lumen), los vacíos y los placeholders de sistema de Lumen (que van
+  /// entre paréntesis: "(Cancelado…)", "(Lumen no produjo…)").
+  List<LumenTurn> _recentHistory({int maxTurns = 3}) {
+    final prior = _messages.length > 2
+        ? _messages.sublist(0, _messages.length - 2)
+        : const <ChatMessage>[];
+    final tail = prior.length > maxTurns * 2
+        ? prior.sublist(prior.length - maxTurns * 2)
+        : prior;
+    return [
+      for (final m in tail)
+        if (m.text.trim().isNotEmpty &&
+            !(m.role == ChatRole.lumen && m.text.trimLeft().startsWith('(')))
+          (fromUser: m.role == ChatRole.user, text: m.text),
+    ];
   }
 
   static bool _isGarbageToken(String token) {

@@ -28,6 +28,7 @@ class PaymentDetailScreen extends StatelessWidget {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.cuota(cuota: cuota),
+          settings: RouteSettings(name: cuota.description),
         ),
       );
 
@@ -35,6 +36,7 @@ class PaymentDetailScreen extends StatelessWidget {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.tasa(tasa: tasa),
+          settings: RouteSettings(name: tasa.description),
         ),
       );
 
@@ -42,6 +44,7 @@ class PaymentDetailScreen extends StatelessWidget {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.historico(pago: pago),
+          settings: RouteSettings(name: pago.concept),
         ),
       );
 
@@ -60,18 +63,31 @@ class PaymentDetailScreen extends StatelessWidget {
         title: Text(title),
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              children: [
-                _Hero(payment: payment, type: type),
-                const Gap(AppSpacing.lg),
-                _DetailsCard(payment: payment, type: type),
-              ],
-            ),
-          ),
+        child: PaymentDetailBody(payment: payment, type: type),
+      ),
+    );
+  }
+}
+
+/// Cuerpo del detalle de pago, sin Scaffold/AppBar — embebible en la ruta
+/// móvil y en el panel de detalle de escritorio (master-detail).
+class PaymentDetailBody extends StatelessWidget {
+  const PaymentDetailBody({super.key, required this.payment, required this.type});
+  final Object payment;
+  final PaymentType type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          children: [
+            _Hero(payment: payment, type: type),
+            const Gap(AppSpacing.lg),
+            _DetailsCard(payment: payment, type: type),
+          ],
         ),
       ),
     );
@@ -154,7 +170,7 @@ class _Hero extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm + 2, vertical: 3),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: AppRadii.rPill,
                 ),

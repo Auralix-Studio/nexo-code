@@ -970,6 +970,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeMetricPromedio => 'Promedio';
 
   @override
+  String get homeMetricPromedioCiclo => 'Prom. ciclo';
+
+  @override
+  String get homeMetricPromedioAcumulado => 'Prom. acum.';
+
+  @override
   String get homeMetricCreditos => 'Créditos';
 
   @override
@@ -1358,4 +1364,69 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setupBtnInstallNow => 'Instalar';
+
+  @override
+  String get updTitle => 'Actualizaciones';
+
+  @override
+  String get updInstalledVersion => 'Versión instalada';
+
+  @override
+  String get updStatusChecking => 'Buscando…';
+
+  @override
+  String get updStatusAvailable => 'Disponible';
+
+  @override
+  String get updStatusUpToDate => 'Al día';
+
+  @override
+  String get updStatusUnknown => 'Sin verificar';
+
+  @override
+  String get updCheck => 'Buscar actualizaciones';
+
+  @override
+  String get updInstallNow => 'Instalar ahora';
+
+  @override
+  String get updDownloadInstall => 'Descargar e instalar';
+
+  @override
+  String updAvailableLine(String version) {
+    return 'Nexo $version está disponible.';
+  }
+
+  @override
+  String get updSnackUpToDate => 'Ya tienes la última versión.';
+
+  @override
+  String updSnackAvailable(String version) {
+    return 'Nueva versión $version disponible.';
+  }
+
+  @override
+  String get updSnackCheckFailed => 'No se pudo verificar. Revisa tu conexión.';
+
+  @override
+  String get updSnackInstallFailed => 'No se pudo iniciar la instalación.';
+
+  @override
+  String get updBannerReadyTitle => 'Actualización lista para instalar';
+
+  @override
+  String get updBannerAvailableTitle => 'Actualización disponible';
+
+  @override
+  String updBannerReadyBody(String version) {
+    return 'Toca para instalar Nexo $version.';
+  }
+
+  @override
+  String updBannerAvailableBody(String version) {
+    return 'Toca para descargar Nexo $version.';
+  }
+
+  @override
+  String get updDismiss => 'Descartar';
 }

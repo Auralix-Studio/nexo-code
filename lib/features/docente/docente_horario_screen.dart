@@ -70,8 +70,8 @@ class _DocenteHorarioScreenState extends State<DocenteHorarioScreen> {
               SliverToBoxAdapter(
                 child: PageBody(
                   child: loading
-                      ? Column(
-                          children: const [
+                      ? const Column(
+                          children: [
                             Skeleton(height: 120, radius: 22),
                             Gap(AppSpacing.md),
                             Skeleton(height: 120, radius: 22),

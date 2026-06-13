@@ -16,11 +16,26 @@ class LumenEngine {
   LumenEngine({
     required LumenState state,
     required LumenModelManager modelManager,
+    List<Tool> tools = const [],
+    Future<Map<String, dynamic>> Function(String name, Map<String, dynamic> args)?
+        toolExecutor,
   })  : _state = state,
-        _modelManager = modelManager;
+        _modelManager = modelManager,
+        _tools = tools,
+        _toolExecutor = toolExecutor;
+
+  /// Flag maestro de tool-calling. **Default false**: hasta que el modelo
+  /// entrenado emita function calls de forma fiable, Lumen sigue con la
+  /// pre-inyección de datos (más robusta para modelos chicos). Cuando el
+  /// modelo soporte tools, poné esto en `true`.
+  static const bool useTools = false;
 
   // Ventana de contexto. 4096 cubre preámbulo + KB chico + pregunta corta.
   static const int _maxTokens = 4096;
+
+  /// Máximo de rondas tool→resultado→modelo por turno (evita loops infinitos
+  /// si el modelo sigue pidiendo herramientas sin converger a una respuesta).
+  static const int _maxToolRounds = 4;
 
   // Sampling único — usado tanto en load() como en resetConversation().
   // Greedy puro: con temp=0 + topK=1 el 270M nunca entra en loops de
@@ -37,12 +52,19 @@ class LumenEngine {
 
   final LumenState _state;
   final LumenModelManager _modelManager;
+  final List<Tool> _tools;
+  final Future<Map<String, dynamic>> Function(
+      String name, Map<String, dynamic> args)? _toolExecutor;
 
   InferenceModel? _model;
   InferenceChat? _chat;
   bool _initialized = false;
 
   bool get isLoaded => _model != null && _chat != null;
+
+  /// ¿Está activo el modo tool-calling? Requiere el flag + tools + ejecutor.
+  bool get toolsEnabled =>
+      useTools && _tools.isNotEmpty && _toolExecutor != null;
 
   String get activeModelId => _state.activeModel.id;
 
@@ -57,6 +79,8 @@ class LumenEngine {
       temperature: _temperature,
       topK: _topK,
       modelType: ModelType.gemmaIt,
+      tools: toolsEnabled ? _tools : const [],
+      supportsFunctionCalls: toolsEnabled,
     );
   }
 
@@ -118,24 +142,59 @@ class LumenEngine {
   }
 
   /// Stream de tokens parciales de la respuesta del modelo a [userMessage].
+  ///
+  /// Con [toolsEnabled] corre un loop tool-calling: si el modelo emite un
+  /// [FunctionCallResponse], ejecuta la herramienta, reenvía el resultado y
+  /// vuelve a generar — hasta [_maxToolRounds] rondas o hasta que el modelo
+  /// produzca texto final. Sin tools, es un único pase (comportamiento previo).
   Stream<String> respond(String userMessage) async* {
     final chat = _chat;
     if (chat == null) {
       throw StateError('Engine no cargado. Llamar load() primero.');
     }
 
-    await chat.addQuery(Message.text(text: userMessage, isUser: true));
-
-    await for (final response in chat.generateChatResponseAsync()) {
-      if (response is TextResponse) {
-        yield response.token;
-      } else {
-        // Otros tipos (function calls, metadata) no se forwarean como
-        // tokens — pero los logueamos para no perderlos silenciosamente
-        // si algún día el modelo empieza a emitirlos.
-        debugPrint('[LumenEngine] non-text response: ${response.runtimeType}');
+    if (!toolsEnabled) {
+      await chat.addQuery(Message.text(text: userMessage, isUser: true));
+      await for (final response in chat.generateChatResponseAsync()) {
+        if (response is TextResponse) {
+          yield response.token;
+        } else {
+          debugPrint('[LumenEngine] non-text response: ${response.runtimeType}');
+        }
       }
+      return;
     }
+
+    // ── Modo tool-calling ──
+    Message next = Message.text(text: userMessage, isUser: true);
+    for (var round = 0; round < _maxToolRounds; round++) {
+      await chat.addQuery(next);
+
+      FunctionCallResponse? call;
+      await for (final response in chat.generateChatResponseAsync()) {
+        if (response is TextResponse) {
+          yield response.token;
+        } else if (response is FunctionCallResponse) {
+          call = response;
+          break; // ejecutar la herramienta y reenviar el resultado
+        } else {
+          debugPrint('[LumenEngine] otra respuesta: ${response.runtimeType}');
+        }
+      }
+
+      if (call == null) return; // el modelo dio su respuesta final en texto
+
+      Map<String, dynamic> result;
+      try {
+        result = await _toolExecutor!(call.name, call.args);
+      } catch (e) {
+        result = {'error': e.toString()};
+      }
+      next = Message.toolResponse(toolName: call.name, response: result);
+    }
+    // Tope de rondas alcanzado: el modelo siguió pidiendo herramientas sin
+    // converger. Mejor cerrar el turno que quedar en loop.
+    debugPrint('[LumenEngine] tool loop alcanzó $_maxToolRounds rondas');
   }
 
   Future<void> stop() async {

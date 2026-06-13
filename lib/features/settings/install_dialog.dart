@@ -84,8 +84,8 @@ class _SetupWizardState extends State<SetupWizard> {
       h = _heights[step] ?? 500;
     }
     final size = Size(_w, h);
-    await windowManager.setMinimumSize(Size(_w, 340));
-    await windowManager.setMaximumSize(Size(_w, 700));
+    await windowManager.setMinimumSize(const Size(_w, 340));
+    await windowManager.setMaximumSize(const Size(_w, 700));
     await windowManager.setSize(size);
   }
 
@@ -615,7 +615,7 @@ class _StepTerms extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4),
             child: Text(
               l.setupTermsRequired,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 10,
                   color: NexoTheme.danger,
                   fontWeight: FontWeight.w500),
@@ -861,7 +861,7 @@ class _StepConfig extends StatelessWidget {
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
                   onPressed: onFinish,
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.check_rounded,
                     size: 14,
                   ),
