@@ -1,4 +1,4 @@
-/// Configuración del autoupdater de la app y mirror de modelos Lumen.
+﻿/// Configuración del autoupdater de la app y mirror de modelos Lumen.
 ///
 /// Un solo repo en GitHub (`auralix-studio/nexo`) hostea **dos** tipos
 /// de releases:
@@ -39,8 +39,8 @@ class UpdateConfig {
 class AppConfig {
   /// Versión semver de la app. Fuente única — usar en UI y user-agent.
   /// Mantener sincronizada con `version:` en pubspec.yaml.
-  static const String appVersion = '1.3.0';
-  static const int appBuild = 5;
+  static const String appVersion = '1.3.1';
+  static const int appBuild = 6;
 
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';

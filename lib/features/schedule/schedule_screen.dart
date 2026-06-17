@@ -117,6 +117,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
           title: 'No se pudo cargar el horario',
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
+          onRetry: () => widget.store.loadHorarioActual(),
         ),
       );
     }

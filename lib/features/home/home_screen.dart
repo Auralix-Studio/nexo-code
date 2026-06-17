@@ -704,7 +704,11 @@ class _DashboardArea extends StatelessWidget {
           NextClassWidget(all: horario),
           const SizedBox(height: 16),
         ],
-        _ClasesHoyBlock(state: store.horario, onSeeAll: () => onJump(1)),
+        _ClasesHoyBlock(
+          state: store.horario,
+          onSeeAll: () => onJump(1),
+          onRetry: () => store.loadHorarioActual(),
+        ),
       ],
     );
     return Row(
@@ -717,6 +721,7 @@ class _DashboardArea extends StatelessWidget {
           child: _PagosBlock(
             state: store.cuotasPendientes,
             onSeeAll: () => onJump(3),
+            onRetry: () => store.loadCuotasPendientes(),
           ),
         ),
       ],
@@ -740,9 +745,17 @@ class _MobileStack extends StatelessWidget {
           NextClassWidget(all: horario),
           const SizedBox(height: 16),
         ],
-        _ClasesHoyBlock(state: store.horario, onSeeAll: () => onJump(1)),
+        _ClasesHoyBlock(
+          state: store.horario,
+          onSeeAll: () => onJump(1),
+          onRetry: () => store.loadHorarioActual(),
+        ),
         const SizedBox(height: 16),
-        _PagosBlock(state: store.cuotasPendientes, onSeeAll: () => onJump(3)),
+        _PagosBlock(
+          state: store.cuotasPendientes,
+          onSeeAll: () => onJump(3),
+          onRetry: () => store.loadCuotasPendientes(),
+        ),
       ],
     );
   }
@@ -751,7 +764,12 @@ class _MobileStack extends StatelessWidget {
 class _ClasesHoyBlock extends StatelessWidget {
   final AsyncValue<List<ScheduleClass>> state;
   final VoidCallback onSeeAll;
-  const _ClasesHoyBlock({required this.state, required this.onSeeAll});
+  final VoidCallback? onRetry;
+  const _ClasesHoyBlock({
+    required this.state,
+    required this.onSeeAll,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -778,6 +796,7 @@ class _ClasesHoyBlock extends StatelessWidget {
           title: l.homeScheduleLoadError,
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
+          onRetry: onRetry,
         ),
       );
     }
@@ -801,7 +820,12 @@ class _ClasesHoyBlock extends StatelessWidget {
 class _PagosBlock extends StatelessWidget {
   final AsyncValue<List<Payment>> state;
   final VoidCallback onSeeAll;
-  const _PagosBlock({required this.state, required this.onSeeAll});
+  final VoidCallback? onRetry;
+  const _PagosBlock({
+    required this.state,
+    required this.onSeeAll,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -828,6 +852,7 @@ class _PagosBlock extends StatelessWidget {
           title: l.homePaymentsLoadError,
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
+          onRetry: onRetry,
         ),
       );
     }

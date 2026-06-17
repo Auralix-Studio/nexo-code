@@ -24,6 +24,7 @@ import 'package:nexo/features/payments/payments_screen.dart';
 import 'package:nexo/features/profile/profile_screen.dart';
 import 'package:nexo/features/schedule/schedule_screen.dart';
 import 'package:nexo/features/teams/teams_screen.dart';
+import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/update_banner.dart';
 import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
 
@@ -258,7 +259,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           tabs: tabs,
                           index: safeIndex,
                           onChange: _goTo,
-                          onLogout: widget.session.logout,
+                          onLogout: () => _confirmLogout(context),
                           collapsed: _railCollapsed,
                           onToggleCollapse: () =>
                               setState(() => _railCollapsed = !_railCollapsed),
@@ -350,23 +351,52 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         SingleActivator(digits[i], control: true): () => _goTo(i),
         SingleActivator(digits[i], meta: true): () => _goTo(i),
       },
+      // Esc cierra el detalle abierto (vuelve a la lista).
+      const SingleActivator(LogicalKeyboardKey.escape): _closeDetail,
     };
+  }
+
+  void _closeDetail() {
+    final nav = _tabNavKeys[_index].currentState;
+    if (nav != null && nav.canPop()) nav.popUntil((r) => r.isFirst);
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    if (await showLogoutConfirm(context)) {
+      await widget.session.logout();
+    }
   }
 
   void _goTo(int i) {
     if (_index == i) {
-      // Re-tocar la pestaña activa: si hay un detalle abierto en su Navigator
-      // anidado, volver a la raíz (cerrar el detalle). En móvil el key no está
-      // montado → no-op seguro.
-      _tabNavKeys[i].currentState?.popUntil((r) => r.isFirst);
+      // Re-tocar la pestaña activa: si hay un detalle abierto (escritorio),
+      // cerrarlo; si no, subir al tope de la lista (gesto esperado en móvil).
+      final nav = _tabNavKeys[i].currentState;
+      if (nav != null && nav.canPop()) {
+        nav.popUntil((r) => r.isFirst);
+      } else {
+        _scrollToTop(i);
+      }
       return;
     }
+    HapticFeedback.selectionClick();
     setState(() {
       _visitedTabs.add(i);
       _history.remove(i);
       _history.add(i);
       _index = i;
     });
+  }
+
+  void _scrollToTop(int i) {
+    final c = _scrollControllers[i];
+    if (c.hasClients) {
+      c.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 }
 

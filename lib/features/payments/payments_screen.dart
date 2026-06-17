@@ -100,10 +100,22 @@ class _PagosScreenState extends State<PaymentsScreen>
                   // Cada tab tiene su propia fuente — Intranet ya pre-filtra
                   // pendientes vs vencidas server-side. No hace falta filtrar
                   // por fecha en cliente.
-                  _PendientesTab(state: widget.store.cuotasPendientes),
-                  _VencidasTab(state: widget.store.cuotasIntranet),
-                  _TasasTab(state: widget.store.tasas),
-                  _HistorialTab(state: widget.store.historico),
+                  _PendientesTab(
+                    state: widget.store.cuotasPendientes,
+                    onRetry: () => widget.store.loadCuotasPendientes(),
+                  ),
+                  _VencidasTab(
+                    state: widget.store.cuotasIntranet,
+                    onRetry: () => widget.store.loadCuotasIntranet(),
+                  ),
+                  _TasasTab(
+                    state: widget.store.tasas,
+                    onRetry: () => widget.store.loadTasas(),
+                  ),
+                  _HistorialTab(
+                    state: widget.store.historico,
+                    onRetry: () => widget.store.loadHistorico(),
+                  ),
                 ],
               ),
             ),
@@ -320,7 +332,8 @@ Widget _cardList(BuildContext context, List<Widget> cards) {
 
 class _PendientesTab extends StatelessWidget {
   final AsyncValue<List<Payment>> state;
-  const _PendientesTab({required this.state});
+  final VoidCallback? onRetry;
+  const _PendientesTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -332,13 +345,15 @@ class _PendientesTab extends StatelessWidget {
       emptySubtitle: l.paymentsUpToDateSubtitle,
       emptyIcon: Icons.verified_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
 
 class _VencidasTab extends StatelessWidget {
   final AsyncValue<List<Payment>> state;
-  const _VencidasTab({required this.state});
+  final VoidCallback? onRetry;
+  const _VencidasTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +365,7 @@ class _VencidasTab extends StatelessWidget {
       emptySubtitle: l.paymentsNoOverdueSubtitle,
       emptyIcon: Icons.celebration_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
@@ -361,6 +377,7 @@ class _CuotaListTab extends StatelessWidget {
   final String emptySubtitle;
   final IconData emptyIcon;
   final Color emptyColor;
+  final VoidCallback? onRetry;
 
   const _CuotaListTab({
     required this.state,
@@ -369,6 +386,7 @@ class _CuotaListTab extends StatelessWidget {
     required this.emptySubtitle,
     required this.emptyIcon,
     required this.emptyColor,
+    this.onRetry,
   });
 
   @override
@@ -381,6 +399,7 @@ class _CuotaListTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
     final items = (state.value ?? const <Payment>[]).where(filter).toList()
@@ -541,7 +560,8 @@ class _CuotaCard extends StatelessWidget {
 
 class _TasasTab extends StatelessWidget {
   final AsyncValue<List<Fee>> state;
-  const _TasasTab({required this.state});
+  final VoidCallback? onRetry;
+  const _TasasTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -553,6 +573,7 @@ class _TasasTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
     final items = state.value ?? const <Fee>[];
@@ -639,7 +660,8 @@ class _TasaCard extends StatelessWidget {
 
 class _HistorialTab extends StatefulWidget {
   final AsyncValue<List<PaymentRecord>> state;
-  const _HistorialTab({required this.state});
+  final VoidCallback? onRetry;
+  const _HistorialTab({required this.state, this.onRetry});
 
   @override
   State<_HistorialTab> createState() => _HistorialTabState();
@@ -659,6 +681,7 @@ class _HistorialTabState extends State<_HistorialTab> {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: widget.onRetry,
       );
     }
     final items = state.value ?? const <PaymentRecord>[];

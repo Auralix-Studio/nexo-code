@@ -51,6 +51,12 @@ class NotificationService extends ChangeNotifier {
   /// de UpdateService que debe lanzar el instalador.
   Future<void> Function()? onInstallUpdateTap;
 
+  /// Modo de alarma en Android. Por defecto **EXACTO**: las inexactas las
+  /// agrupa/posterga el sistema (Doze) y llegaban con 30+ min de retraso o a
+  /// media clase. Si el dispositivo no permite exactas (Android 13+ sin el
+  /// permiso SCHEDULE_EXACT_ALARM concedido), cae a inexacto como respaldo.
+  AndroidScheduleMode _androidMode = AndroidScheduleMode.exactAllowWhileIdle;
+
   Future<void> init() async {
     final raw = AppStorage.instance.notifPrefsJson;
     if (raw != null) {
@@ -107,6 +113,9 @@ class NotificationService extends ChangeNotifier {
             AndroidFlutterLocalNotificationsPlugin
           >();
       final granted = await android?.requestNotificationsPermission();
+      // Además del permiso de notificaciones, asegurar el de alarmas exactas
+      // para que los recordatorios lleguen a tiempo.
+      await _ensureExactAlarms(request: true);
       return granted ?? false;
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -135,6 +144,28 @@ class NotificationService extends ChangeNotifier {
     }
     // Linux/Windows: no requieren permiso explícito en runtime.
     return true;
+  }
+
+  /// Resuelve si podemos programar alarmas **exactas** (Android 12+ requiere el
+  /// permiso `SCHEDULE_EXACT_ALARM`). Si [request] y no está concedido, lo pide
+  /// (en Android 13+ abre la pantalla de Ajustes). Ajusta [_androidMode]: exacto
+  /// si está permitido, inexacto como respaldo.
+  Future<void> _ensureExactAlarms({bool request = false}) async {
+    if (!_supportsScheduling ||
+        defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+    var can = await android.canScheduleExactNotifications() ?? false;
+    if (!can && request) {
+      await android.requestExactAlarmsPermission();
+      can = await android.canScheduleExactNotifications() ?? false;
+    }
+    _androidMode = can
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   Future<void> updatePrefs(
@@ -178,6 +209,10 @@ class NotificationService extends ChangeNotifier {
 
     // Programaciones futuras solo donde el backend soporta zonedSchedule.
     if (!_supportsScheduling) return;
+
+    // Elegir exacto/inexacto según el permiso actual (sin abrir Ajustes aquí;
+    // eso se pide al activar las notificaciones).
+    await _ensureExactAlarms();
 
     if (_prefs.classesEnabled && clases != null) {
       await _scheduleClasses(clases);
@@ -272,9 +307,25 @@ class NotificationService extends ChangeNotifier {
         body,
         when,
         _details(channelId, channelName),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: _androidMode,
       );
-    } catch (_) {}
+    } catch (_) {
+      // Si las exactas no están permitidas en este dispositivo, no perder la
+      // notificación: bajar a inexacto el resto de la sesión y reintentar.
+      if (_androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
+        _androidMode = AndroidScheduleMode.inexactAllowWhileIdle;
+        try {
+          await _plugin.zonedSchedule(
+            id,
+            title,
+            body,
+            when,
+            _details(channelId, channelName),
+            androidScheduleMode: _androidMode,
+          );
+        } catch (_) {}
+      }
+    }
   }
 
   Future<void> showGradeChanged(String curso, String nota) async {
