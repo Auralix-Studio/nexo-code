@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/features/ai/lumen_fab_overlay.dart';
 
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
@@ -23,7 +21,7 @@ import 'package:nexo/features/home/home_screen.dart';
 import 'package:nexo/features/payments/payments_screen.dart';
 import 'package:nexo/features/profile/profile_screen.dart';
 import 'package:nexo/features/schedule/schedule_screen.dart';
-import 'package:nexo/features/teams/teams_screen.dart';
+// import 'package:nexo/features/teams/teams_screen.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/update_banner.dart';
 import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
@@ -43,7 +41,7 @@ List<_Tab> _studentTabs(AppLocalizations l) => [
       _Tab(l.tabGrades, Icons.school_rounded, Icons.school_outlined),
       _Tab(l.tabPayments, Icons.account_balance_wallet_rounded,
           Icons.account_balance_wallet_outlined),
-    _Tab(l.tabTeams, Icons.groups_rounded, Icons.groups_outlined),
+    // _Tab(l.tabTeams, Icons.groups_rounded, Icons.groups_outlined),
       _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
     ];
 
@@ -66,7 +64,7 @@ class AppShell extends StatefulWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
-    required this.lumen,
+
   });
 
   final AppStore store;
@@ -74,7 +72,7 @@ class AppShell extends StatefulWidget {
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
-  final LumenServices lumen;
+
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -197,7 +195,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           store: widget.store,
           session: widget.session,
           theme: widget.theme,
-          lumen: widget.lumen,
+
         )),
       ];
     } else {
@@ -206,18 +204,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         wrap(HomeScreen(
           store: widget.store,
           connectivity: widget.connectivity,
-          lumen: widget.lumen,
           onJump: _goTo,
         )),
         wrap(ScheduleScreen(store: widget.store)),
         wrap(GradesScreen(store: widget.store)),
         wrap(PaymentsScreen(store: widget.store)),
-        wrap(TeamsScreen(store: widget.store, msAuth: widget.msAuth)),
+        // wrap(TeamsScreen(store: widget.store, msAuth: widget.msAuth)),
         wrap(ProfileScreen(
           store: widget.store,
           session: widget.session,
           theme: widget.theme,
-          lumen: widget.lumen,
+
         )),
       ];
     }
@@ -267,12 +264,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                         ),
                         const VerticalDivider(width: 1),
                         Expanded(
-                          child: LumenFabOverlay(
-                            services: widget.lumen,
-                            bottomInset: 24,
-                            rightInset: 24,
-                            child: content,
-                          ),
+                          child: content,
                         ),
                       ],
                     ),
@@ -290,19 +282,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             children: [
               const UpdateBanner(),
               Expanded(
-                child: LumenFabOverlay(
-                  services: widget.lumen,
-                  // bottomInset un poco mayor para que el FAB no quede pegado
-                  // a la nav inferior.
-                  bottomInset: 12,
-                  child: AnimatedSwitcher(
+                child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),
                     child: KeyedSubtree(
                       key: ValueKey(safeIndex),
                       child: pages[safeIndex],
                     ),
                   ),
-                ),
               ),
             ],
           ),

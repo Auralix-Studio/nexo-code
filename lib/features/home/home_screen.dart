@@ -19,7 +19,7 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
-import 'package:nexo/ai/lumen_services.dart';
+
 import 'package:nexo/data/connectivity_service.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 
@@ -29,13 +29,12 @@ class HomeScreen extends StatelessWidget {
     super.key,
     required this.store,
     required this.connectivity,
-    required this.lumen,
     required this.onJump,
   });
 
   final AppStore store;
   final ConnectivityService connectivity;
-  final LumenServices lumen;
+
   final ValueChanged<int> onJump;
 
   @override
@@ -78,10 +77,6 @@ class HomeScreen extends StatelessWidget {
                                 ? _DashboardArea(store: store, onJump: onJump)
                                 : _MobileStack(store: store, onJump: onJump),
                           ),
-                          // El FAB de Lumen vive en el shell (overlay
-                          // scroll-aware), por eso aquí solo dejamos el
-                          // padding inferior extra para que el último
-                          // contenido no quede tapado por el FAB.
                           const SizedBox(height: 96),
                         ],
                       ),

@@ -38,7 +38,7 @@ class AppStorage {
   static const _kRunPortable = 'nexo.runPortable';
   static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
   static const _kFestivityDecor = 'nexo.festivityDecor';
-  static const _kLumenModelId = 'nexo.lumen.modelId';
+
   static const _kIntranetCookies = 'nexo.intranet.cookies';
   static const _kIntranetUser = 'nexo.intranet.user';
 
@@ -92,16 +92,7 @@ class AppStorage {
   Future<void> setFestivityDecor(bool v) =>
       _prefs.setBool(_kFestivityDecor, v);
 
-  /// Id del modelo Lumen seleccionado por el usuario (ver LumenConfig.models).
-  /// `null` si nunca eligió uno — el caller debe caer al default.
-  String? get lumenModelId => _prefs.getString(_kLumenModelId);
-  Future<void> setLumenModelId(String? value) async {
-    if (value == null) {
-      await _prefs.remove(_kLumenModelId);
-    } else {
-      await _prefs.setString(_kLumenModelId, value);
-    }
-  }
+
 
   /// Cookies persistidas de Intranet (PHPSESSID) — evita re-login en cold
   /// start. Pareadas con el usuario que las creó para invalidar si cambia.

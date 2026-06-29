@@ -1,4 +1,4 @@
-﻿name: nexo
+name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
 version: 1.3.1+6
@@ -41,15 +41,8 @@ dependencies:
   printing: ^5.13.4
   url_launcher: ^6.3.2
   window_manager: ^0.4.3
-  # Asistente IA Lumen — corre Gemma on-device via MediaPipe LLM Inference.
-  # Cero llamadas a internet en tiempo de inferencia; la descarga del modelo
-  # es opt-in y se hace una sola vez. Ver lib/ai/.
-  flutter_gemma: ^0.12.6
-  # Para checksum SHA-256 del modelo descargado y ruta de Application Support.
-  # Ambas son transitivas de flutter_gemma pero las declaramos aquí porque
-  # las usamos directamente en lib/ai/model_manager.dart.
-  crypto: ^3.0.6
   path_provider: ^2.1.4
+
   # Autoupdater: lanza el instalador del sistema para el APK descargado.
   # En Android usa ACTION_VIEW + FileProvider (el plugin lo configura por
   # nosotros, sin tocar AndroidManifest manualmente). Ver lib/data/update_service.dart.
@@ -108,19 +101,13 @@ flutter:
   generate: true
   assets:
     - assets/icon.png
-    # Logo Lumen (destello multicolor) — avatar en home card, chat y onboarding.
-    - assets/lumen_icon.png
-    # Wordmark "LUMEN AI" — disponible para headers y splash de Lumen.
-    - assets/lumen_wordmark.png
+
     # Bundle de root CAs de Mozilla (mismo que usa curl).
     # Lo cargamos en un SecurityContext para arreglar el handshake TLS de
     # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando
     # el servidor omite el intermedio. Ver lib/data/secure_http.dart.
     - assets/certs/cacert.pem
-    # Knowledge base de Lumen — markdown estático con info pública de UPLA.
-    # Se inyecta completa en el system prompt (suma ~10 KB ≈ ~2.5K tokens,
-    # cabe en la ventana de contexto de Gemma 3 1B sin retrieval).
-    - assets/ai/knowledge/
+
   fonts:
     - family: SuperMindset
       fonts:

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-import 'package:nexo/ai/lumen_services.dart';
+
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
@@ -27,13 +27,13 @@ class ProfileScreen extends StatelessWidget {
     required this.store,
     required this.session,
     required this.theme,
-    required this.lumen,
+
   });
 
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
-  final LumenServices lumen;
+
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +88,7 @@ class ProfileScreen extends StatelessWidget {
                           onLogout: session.logout,
                           store: store,
                           theme: theme,
-                          lumen: lumen,
+
                         ),
                       ),
                     ],
@@ -482,12 +482,12 @@ class _ActionsCard extends StatelessWidget {
   final Future<void> Function() onLogout;
   final AppStore store;
   final ThemeController theme;
-  final LumenServices lumen;
+
   const _ActionsCard({
     required this.onLogout,
     required this.store,
     required this.theme,
-    required this.lumen,
+
   });
 
   @override
