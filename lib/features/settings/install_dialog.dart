@@ -7,7 +7,6 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-/// Opciones de instalación que el usuario selecciona en el wizard.
 class InstallOptions {
   final bool desktopShortcut;
   final bool startMenuShortcut;
@@ -19,55 +18,31 @@ class InstallOptions {
   });
 }
 
-/// Wizard de instalación de 4 pasos:
-///   1. Bienvenida — elegir instalar o modo portable
-///   2. Términos y privacidad — aceptar para continuar
-///   3. Personalización — accesos directos, auto-inicio (solo si eligió instalar)
-///   4. Configuración — tema, idioma, formato de hora
 class SetupWizard extends StatefulWidget {
   final void Function(InstallOptions options) onInstall;
   final VoidCallback onRunPortable;
   final ThemeController theme;
-
   const SetupWizard({
     super.key,
     required this.onInstall,
     required this.onRunPortable,
     required this.theme,
   });
-
   @override
   State<SetupWizard> createState() => _SetupWizardState();
 }
 
 class _SetupWizardState extends State<SetupWizard> {
-  // Paso actual: 0=Bienvenida, 1=Términos, 2=Personalización, 3=Configuración
   int _step = 0;
-
-  // Paso 0 — Modo de instalación
   bool _isPortable = false;
-
-  // Paso 1 — Aceptación de términos
   bool _termsAccepted = false;
   bool _termsError = false;
-
-  // Paso 2 — Opciones de instalación
   bool _desktopShortcut = true;
   bool _startMenuShortcut = true;
   bool _autoStart = false;
-
-  /// Número total de pasos (3 si portable, 4 si instalación normal).
   int get _totalSteps => _isPortable ? 3 : 4;
-
-  // ─── Tamaños de ventana por paso ───
   static const double _w = 480;
-  static const Map<int, double> _heights = {
-    0: 380, // Bienvenida
-    1: 580, // Términos
-    2: 420, // Personalización / Config (portable)
-    3: 530, // Config
-  };
-
+  static const Map<int, double> _heights = {0: 380, 1: 580, 2: 420, 3: 530};
   @override
   void initState() {
     super.initState();
@@ -76,7 +51,6 @@ class _SetupWizardState extends State<SetupWizard> {
 
   Future<void> _resizeWindow(int step) async {
     if (kIsWeb || !Platform.isWindows) return;
-    // En portable, paso 2 es Config → usar altura de config
     final double h;
     if (_isPortable && step == 2) {
       h = _heights[3]!;
@@ -90,12 +64,10 @@ class _SetupWizardState extends State<SetupWizard> {
   }
 
   void _nextStep() {
-    // Validar paso actual
     if (_step == 1 && !_termsAccepted) {
       setState(() => _termsError = true);
       return;
     }
-
     if (_step < _totalSteps - 1) {
       final next = _step + 1;
       setState(() {
@@ -104,7 +76,6 @@ class _SetupWizardState extends State<SetupWizard> {
       });
       _resizeWindow(next);
     } else {
-      // Último paso: finalizar
       _finish();
     }
   }
@@ -126,11 +97,13 @@ class _SetupWizardState extends State<SetupWizard> {
     if (_isPortable) {
       widget.onRunPortable();
     } else {
-      widget.onInstall(InstallOptions(
-        desktopShortcut: _desktopShortcut,
-        startMenuShortcut: _startMenuShortcut,
-        autoStart: _autoStart,
-      ));
+      widget.onInstall(
+        InstallOptions(
+          desktopShortcut: _desktopShortcut,
+          startMenuShortcut: _startMenuShortcut,
+          autoStart: _autoStart,
+        ),
+      );
     }
   }
 
@@ -160,13 +133,16 @@ class _SetupWizardState extends State<SetupWizard> {
                     transitionBuilder: (child, anim) => FadeTransition(
                       opacity: anim,
                       child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.05, 0),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: anim,
-                          curve: Curves.easeOutCubic,
-                        )),
+                        position:
+                            Tween<Offset>(
+                              begin: const Offset(0.05, 0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: anim,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
                         child: child,
                       ),
                     ),
@@ -185,7 +161,11 @@ class _SetupWizardState extends State<SetupWizard> {
     final l = AppLocalizations.of(context);
     switch (_step) {
       case 0:
-        return _StepWelcome(key: const ValueKey('s0'), l: l, onSelect: _selectMode);
+        return _StepWelcome(
+          key: const ValueKey('s0'),
+          l: l,
+          onSelect: _selectMode,
+        );
       case 1:
         return _StepTerms(
           key: const ValueKey('s1'),
@@ -201,7 +181,6 @@ class _SetupWizardState extends State<SetupWizard> {
         );
       case 2:
         if (_isPortable) {
-          // Portable: paso 2 es Configuración (el último)
           return _StepConfig(
             key: const ValueKey('s2c'),
             l: l,
@@ -234,8 +213,6 @@ class _SetupWizardState extends State<SetupWizard> {
         return const SizedBox.shrink();
     }
   }
-
-  // ─── Header ───
 
   Widget _buildHeader() {
     return Column(
@@ -273,13 +250,9 @@ class _SetupWizardState extends State<SetupWizard> {
     );
   }
 
-  // ─── Step indicator ───
-
   Widget _buildStepIndicator() {
-    // Pasos a mostrar (sin el paso 0 que es el de selección)
     final int visibleSteps = _totalSteps - 1;
     final int currentVisible = _step - 1;
-
     return Row(
       children: List.generate(visibleSteps, (i) {
         final isActive = i == currentVisible;
@@ -302,8 +275,8 @@ class _SetupWizardState extends State<SetupWizard> {
                   color: isDone
                       ? NexoTheme.primary
                       : isActive
-                          ? NexoTheme.primary.withValues(alpha: 0.15)
-                          : NexoTheme.surface,
+                      ? NexoTheme.primary.withValues(alpha: 0.15)
+                      : NexoTheme.surface,
                   border: Border.all(
                     color: isDone || isActive
                         ? NexoTheme.primary
@@ -313,8 +286,11 @@ class _SetupWizardState extends State<SetupWizard> {
                 ),
                 child: Center(
                   child: isDone
-                      ? const Icon(Icons.check_rounded,
-                          size: 12, color: Colors.white)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 12,
+                          color: Colors.white,
+                        )
                       : Text(
                           '${i + 1}',
                           style: TextStyle(
@@ -342,15 +318,10 @@ class _SetupWizardState extends State<SetupWizard> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  PASO 0 — Bienvenida: Instalar vs Portable
-// ═══════════════════════════════════════════════════════════════════
-
 class _StepWelcome extends StatelessWidget {
   final AppLocalizations l;
   final void Function(bool isPortable) onSelect;
   const _StepWelcome({super.key, required this.l, required this.onSelect});
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -378,19 +349,16 @@ class _StepWelcome extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-
-        // Opción: Instalar
         _ModeCard(
           icon: Icons.install_desktop_rounded,
           title: l.setupBtnInstall,
-          subtitle: l.setupProgressShortcuts.replaceAll('...', ', ') +
+          subtitle:
+              l.setupProgressShortcuts.replaceAll('...', ', ') +
               l.setupProgressRegister.toLowerCase(),
           color: NexoTheme.primary,
           onTap: () => onSelect(false),
         ),
         const SizedBox(height: 10),
-
-        // Opción: Modo portable
         _ModeCard(
           icon: Icons.folder_open_outlined,
           title: l.setupBtnPortable,
@@ -416,7 +384,6 @@ class _ModeCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -467,18 +434,17 @@ class _ModeCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 20, color: NexoTheme.textMuted),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: NexoTheme.textMuted,
+            ),
           ],
         ),
       ),
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-//  PASO 1 — Términos y Privacidad
-// ═══════════════════════════════════════════════════════════════════
 
 class _StepTerms extends StatelessWidget {
   final AppLocalizations l;
@@ -496,14 +462,12 @@ class _StepTerms extends StatelessWidget {
     required this.onNext,
     required this.onBack,
   });
-
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Título
         Text(
           l.termsHeaderTitle,
           style: TextStyle(
@@ -520,8 +484,6 @@ class _StepTerms extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-
-        // Contenedor scrollable con los términos
         Container(
           constraints: const BoxConstraints(maxHeight: 260),
           decoration: BoxDecoration(
@@ -536,28 +498,41 @@ class _StepTerms extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _termsItem(Icons.info_outline_rounded,
-                      l.termsItemWhatTitle, l.termsItemWhatBody),
+                  _termsItem(
+                    Icons.info_outline_rounded,
+                    l.termsItemWhatTitle,
+                    l.termsItemWhatBody,
+                  ),
                   const SizedBox(height: 12),
-                  _termsItem(Icons.shield_outlined,
-                      l.termsItemPrivacyTitle, l.termsItemPrivacyBody),
+                  _termsItem(
+                    Icons.shield_outlined,
+                    l.termsItemPrivacyTitle,
+                    l.termsItemPrivacyBody,
+                  ),
                   const SizedBox(height: 12),
-                  _termsItem(Icons.lock_outline_rounded,
-                      l.termsItemSecurityTitle, l.termsItemSecurityBody),
+                  _termsItem(
+                    Icons.lock_outline_rounded,
+                    l.termsItemSecurityTitle,
+                    l.termsItemSecurityBody,
+                  ),
                   const SizedBox(height: 12),
-                  _termsItem(Icons.handshake_outlined,
-                      l.termsItemResponsibleTitle, l.termsItemResponsibleBody),
+                  _termsItem(
+                    Icons.handshake_outlined,
+                    l.termsItemResponsibleTitle,
+                    l.termsItemResponsibleBody,
+                  ),
                   const SizedBox(height: 12),
-                  _termsItem(Icons.warning_amber_rounded,
-                      l.termsItemDisclaimerTitle, l.termsItemDisclaimerBody),
+                  _termsItem(
+                    Icons.warning_amber_rounded,
+                    l.termsItemDisclaimerTitle,
+                    l.termsItemDisclaimerBody,
+                  ),
                 ],
               ),
             ),
           ),
         ),
         const SizedBox(height: 10),
-
-        // Checkbox
         InkWell(
           onTap: () => onAcceptChanged(!accepted),
           borderRadius: BorderRadius.circular(10),
@@ -568,15 +543,15 @@ class _StepTerms extends StatelessWidget {
               color: showError
                   ? NexoTheme.danger.withValues(alpha: 0.08)
                   : accepted
-                      ? NexoTheme.primary.withValues(alpha: 0.08)
-                      : Colors.transparent,
+                  ? NexoTheme.primary.withValues(alpha: 0.08)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: showError
                     ? NexoTheme.danger.withValues(alpha: 0.5)
                     : accepted
-                        ? NexoTheme.primary.withValues(alpha: 0.4)
-                        : NexoTheme.border,
+                    ? NexoTheme.primary.withValues(alpha: 0.4)
+                    : NexoTheme.border,
               ),
             ),
             child: Row(
@@ -616,13 +591,13 @@ class _StepTerms extends StatelessWidget {
             child: Text(
               l.setupTermsRequired,
               style: const TextStyle(
-                  fontSize: 10,
-                  color: NexoTheme.danger,
-                  fontWeight: FontWeight.w500),
+                fontSize: 10,
+                color: NexoTheme.danger,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
-
         const SizedBox(height: 14),
         _NavButtons(
           backLabel: l.setupBtnBack,
@@ -644,17 +619,23 @@ class _StepTerms extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: NexoTheme.textPrimary)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: NexoTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(body,
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: NexoTheme.textSecondary,
-                      height: 1.4)),
+              Text(
+                body,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: NexoTheme.textSecondary,
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),
@@ -663,14 +644,12 @@ class _StepTerms extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  PASO 2 — Personalización (solo si eligió instalar)
-// ═══════════════════════════════════════════════════════════════════
-
 class _StepCustomize extends StatelessWidget {
   final AppLocalizations l;
   final bool desktop, startMenu, autoStart;
-  final ValueChanged<bool> onDesktopChanged, onStartMenuChanged, onAutoStartChanged;
+  final ValueChanged<bool> onDesktopChanged,
+      onStartMenuChanged,
+      onAutoStartChanged;
   final VoidCallback onNext, onBack;
   const _StepCustomize({
     super.key,
@@ -684,7 +663,6 @@ class _StepCustomize extends StatelessWidget {
     required this.onNext,
     required this.onBack,
   });
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -734,10 +712,6 @@ class _StepCustomize extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  PASO 3 (o 2 en portable) — Configuración: Tema, Idioma, Hora
-// ═══════════════════════════════════════════════════════════════════
-
 class _StepConfig extends StatelessWidget {
   final AppLocalizations l;
   final ThemeController theme;
@@ -750,7 +724,6 @@ class _StepConfig extends StatelessWidget {
     required this.onBack,
     required this.onFinish,
   });
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -770,15 +743,12 @@ class _StepConfig extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 14),
-
-            // ─── Paleta de tema ───
             _sectionLabel(l.settingsPalette),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
-                // Opción "Sistema"
                 _ThemeChip(
                   label: l.settingsSystem,
                   colors: null,
@@ -795,8 +765,6 @@ class _StepConfig extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // ─── Idioma ───
             _sectionLabel(l.language),
             const SizedBox(height: 8),
             Row(
@@ -814,8 +782,6 @@ class _StepConfig extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // ─── Formato de hora ───
             _sectionLabel(l.timeFormat),
             const SizedBox(height: 8),
             Row(
@@ -838,8 +804,6 @@ class _StepConfig extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
-            // ─── Botones ───
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -850,31 +814,38 @@ class _StepConfig extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: NexoTheme.textSecondary,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 9),
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
                     textStyle: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w700),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     side: BorderSide(color: NexoTheme.border),
                   ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
                   onPressed: onFinish,
-                  icon: const Icon(
-                    Icons.check_rounded,
-                    size: 14,
-                  ),
+                  icon: const Icon(Icons.check_rounded, size: 14),
                   label: Text(l.setupBtnInstallNow),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: NexoTheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 9),
+                      horizontal: 18,
+                      vertical: 9,
+                    ),
                     textStyle: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w700),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     elevation: 0,
                     minimumSize: Size.zero,
                   ),
@@ -900,10 +871,6 @@ class _StepConfig extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  Widgets compartidos
-// ═══════════════════════════════════════════════════════════════════
-
 class _NavButtons extends StatelessWidget {
   final String backLabel, nextLabel;
   final VoidCallback onBack, onNext;
@@ -913,7 +880,6 @@ class _NavButtons extends StatelessWidget {
     required this.onBack,
     required this.onNext,
   });
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -926,10 +892,13 @@ class _NavButtons extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: NexoTheme.textSecondary,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            textStyle:
-                const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             side: BorderSide(color: NexoTheme.border),
           ),
         ),
@@ -942,10 +911,13 @@ class _NavButtons extends StatelessWidget {
             backgroundColor: NexoTheme.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            textStyle:
-                const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             elevation: 0,
             minimumSize: Size.zero,
           ),
@@ -968,7 +940,6 @@ class _OptionTile extends StatelessWidget {
     required this.value,
     required this.onChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -990,24 +961,32 @@ class _OptionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon,
-                size: 18, color: value ? NexoTheme.primary : NexoTheme.textMuted),
+            Icon(
+              icon,
+              size: 18,
+              color: value ? NexoTheme.primary : NexoTheme.textMuted,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: value
-                              ? NexoTheme.primary
-                              : NexoTheme.textPrimary)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: value ? NexoTheme.primary : NexoTheme.textPrimary,
+                    ),
+                  ),
                   if (subtitle != null)
-                    Text(subtitle!,
-                        style: TextStyle(
-                            fontSize: 10, color: NexoTheme.textMuted)),
+                    Text(
+                      subtitle!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: NexoTheme.textMuted,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1040,7 +1019,6 @@ class _ThemeChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -1055,9 +1033,7 @@ class _ThemeChip extends StatelessWidget {
               : NexoTheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected
-                ? NexoTheme.primary
-                : NexoTheme.border,
+            color: selected ? NexoTheme.primary : NexoTheme.border,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -1071,17 +1047,16 @@ class _ThemeChip extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: colors!.primary,
-                  border: Border.all(
-                    color: colors!.bg,
-                    width: 2,
-                  ),
+                  border: Border.all(color: colors!.bg, width: 2),
                 ),
               ),
               const SizedBox(width: 5),
             ] else ...[
-              Icon(Icons.brightness_auto_rounded,
-                  size: 14,
-                  color: selected ? NexoTheme.primary : NexoTheme.textMuted),
+              Icon(
+                Icons.brightness_auto_rounded,
+                size: 14,
+                color: selected ? NexoTheme.primary : NexoTheme.textMuted,
+              ),
               const SizedBox(width: 5),
             ],
             Text(
@@ -1108,7 +1083,6 @@ class _PrefChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(

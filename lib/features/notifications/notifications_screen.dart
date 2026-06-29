@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
@@ -11,7 +10,6 @@ import 'package:nexo/shared/widgets/page_scaffold.dart';
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key, required this.store});
   final AppStore store;
-
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
@@ -19,13 +17,12 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _svc = NotificationService.instance;
   late NotificationPrefs _p = _svc.prefs;
-
   Future<void> _save(NotificationPrefs next) async {
     setState(() => _p = next);
     await _svc.updatePrefs(
       next,
-      clases: widget.store.horario.value,
-      cuotas: widget.store.cuotasPendientes.value,
+      clases: widget.store.schedule.value,
+      installments: widget.store.pendingInstallments.value,
     );
   }
 
@@ -57,7 +54,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onChanged: (v) => _save(_p.copyWith(enabled: v)),
               ),
             ),
-            // Sección desplegable de personalización.
             AnimatedSize(
               duration: AppDurations.normal,
               curve: Curves.easeOut,
@@ -79,7 +75,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               child: _ChipRow(
                                 options: NotificationPrefs.opcionesLeadMinutes,
                                 selected: {_p.classLeadMinutes},
-                                label: NotificationPrefs.labelLeadMinutes,
+                                label: (m) => NotificationPrefs.labelLeadMinutes(context, m),
                                 onSelect: (m) =>
                                     _save(_p.copyWith(classLeadMinutes: m)),
                               ),
@@ -102,7 +98,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     multi: true,
                                     options: NotificationPrefs.opcionesLeadDays,
                                     selected: _p.paymentLeadDays.toSet(),
-                                    label: NotificationPrefs.labelLeadDays,
+                                    label: (d) => NotificationPrefs.labelLeadDays(context, d),
                                     onSelect: (d) {
                                       final set = _p.paymentLeadDays.toSet();
                                       if (set.contains(d)) {
@@ -169,7 +165,6 @@ class _MasterCard extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
   const _MasterCard({required this.enabled, required this.onChanged});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -261,7 +256,6 @@ class _CategoryCard extends StatelessWidget {
     required this.onToggle,
     this.child,
   });
-
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -346,7 +340,6 @@ class _ChipRow extends StatelessWidget {
     required this.onSelect,
     this.multi = false,
   });
-
   @override
   Widget build(BuildContext context) {
     return Wrap(
@@ -369,7 +362,6 @@ class _Chip extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
   const _Chip({required this.text, required this.active, required this.onTap});
-
   @override
   Widget build(BuildContext context) {
     return InkWell(

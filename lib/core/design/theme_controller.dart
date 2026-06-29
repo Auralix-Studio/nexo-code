@@ -1,26 +1,15 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/app_locale.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/storage.dart';
 
-/// Selección posible: `system` o un id de paleta concreto.
-/// `system` resuelve a `light` u `dark` según `MediaQuery.platformBrightness`.
 class ThemeController extends ChangeNotifier {
-  /// Selección del usuario. `'system'` o un `NexoColors.id`.
   String _selection = 'system';
   String get selection => _selection;
-
-  /// Idioma activo (también propaga a [Strings.apply]).
   AppLocale _locale = AppLocale.es;
   AppLocale get locale => _locale;
-
-  /// Formato de hora: true = 24h, false = 12h.
   bool _use24h = true;
   bool get use24h => _use24h;
-
-  /// Compatibilidad con el modo Material clásico (claro/oscuro/sistema).
-  /// Para paletas distintas a light/dark se asume oscuro/claro según su flag.
   ThemeMode get mode {
     switch (_selection) {
       case 'system':
@@ -65,28 +54,20 @@ class ThemeController extends ChangeNotifier {
     await AppStorage.instance.setThemeMode(selection);
   }
 
-  /// API legacy: aceptar `ThemeMode` (lo usaba la UI antigua).
   Future<void> set(ThemeMode mode) => setSelection(switch (mode) {
-        ThemeMode.light => 'light',
-        ThemeMode.dark => 'dark',
-        ThemeMode.system => 'system',
-      });
-
-  /// Resuelve la paleta a aplicar, considerando "Sistema".
+    ThemeMode.light => 'light',
+    ThemeMode.dark => 'dark',
+    ThemeMode.system => 'system',
+  });
   NexoColors resolvedPalette(BuildContext context) {
     if (_selection == 'system') {
-      final dark =
-          MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+      final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
       return dark ? NexoColors.dark : NexoColors.light;
     }
     return NexoColors.byId(_selection);
   }
 
-  /// Mantenido por compatibilidad: ¿el tema activo es oscuro?
-  bool resolvedDark(BuildContext context) =>
-      resolvedPalette(context).isDark;
-
-  /// Alterna claro ↔ oscuro (manteniendo la API previa).
+  bool resolvedDark(BuildContext context) => resolvedPalette(context).isDark;
   Future<void> toggle(BuildContext context) =>
       setSelection(resolvedDark(context) ? 'light' : 'dark');
 }

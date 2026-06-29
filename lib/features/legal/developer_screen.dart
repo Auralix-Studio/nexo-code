@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
-// Datos del desarrollador (editar aquí si cambian).
 const _devName = 'Alessandro';
 const _devGithubLabel = 'github.com/Alexito-Hub';
 const _devGithubUrl = 'https://github.com/Alexito-Hub';
 
-/// Pantalla "Desarrollador": créditos de quién creó la app.
 class DeveloperScreen extends StatelessWidget {
   const DeveloperScreen({super.key});
-
   void _copyGithub(BuildContext context) {
     Clipboard.setData(const ClipboardData(text: _devGithubUrl));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -76,12 +72,16 @@ class DeveloperScreen extends StatelessWidget {
                             color: NexoTheme.primary.withValues(alpha: 0.06),
                             borderRadius: AppRadii.rMd,
                             border: Border.all(
-                                color: NexoTheme.primary.withValues(alpha: 0.2)),
+                              color: NexoTheme.primary.withValues(alpha: 0.2),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.link_rounded,
-                                  size: AppIcon.md, color: NexoTheme.primary),
+                              Icon(
+                                Icons.link_rounded,
+                                size: AppIcon.md,
+                                color: NexoTheme.primary,
+                              ),
                               const Gap.h(AppSpacing.sm),
                               Expanded(
                                 child: Text(
@@ -93,8 +93,11 @@ class DeveloperScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              Icon(Icons.copy_rounded,
-                                  size: AppIcon.sm, color: NexoTheme.textMuted),
+                              Icon(
+                                Icons.copy_rounded,
+                                size: AppIcon.sm,
+                                color: NexoTheme.textMuted,
+                              ),
                             ],
                           ),
                         ),

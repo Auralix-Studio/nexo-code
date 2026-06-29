@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 
-/// Esqueleto rectangular animado para estados de carga.
-/// Compatible con modo claro y oscuro (usa la paleta neutra).
 class Skeleton extends StatefulWidget {
   final double? width;
   final double height;
@@ -15,7 +12,6 @@ class Skeleton extends StatefulWidget {
     this.height = AppSpacing.lg,
     this.radius = AppRadii.xs,
   });
-
   @override
   State<Skeleton> createState() => _SkeletonState();
 }
@@ -23,7 +19,6 @@ class Skeleton extends StatefulWidget {
 class _SkeletonState extends State<Skeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-
   @override
   void initState() {
     super.initState();

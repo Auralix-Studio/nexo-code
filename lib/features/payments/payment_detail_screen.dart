@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/unified_models.dart';
@@ -11,19 +10,15 @@ enum PaymentType { cuota, tasa, historico }
 class PaymentDetailScreen extends StatelessWidget {
   final Object payment;
   final PaymentType type;
-
   const PaymentDetailScreen.cuota({super.key, required Payment cuota})
-      : payment = cuota,
-        type = PaymentType.cuota;
-
+    : payment = cuota,
+      type = PaymentType.cuota;
   const PaymentDetailScreen.tasa({super.key, required Fee tasa})
-      : payment = tasa,
-        type = PaymentType.tasa;
-
+    : payment = tasa,
+      type = PaymentType.tasa;
   const PaymentDetailScreen.historico({super.key, required PaymentRecord pago})
-      : payment = pago,
-        type = PaymentType.historico;
-
+    : payment = pago,
+      type = PaymentType.historico;
   static Future<void> openCuota(BuildContext context, Payment cuota) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -31,7 +26,6 @@ class PaymentDetailScreen extends StatelessWidget {
           settings: RouteSettings(name: cuota.description),
         ),
       );
-
   static Future<void> openTasa(BuildContext context, Fee tasa) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -39,7 +33,6 @@ class PaymentDetailScreen extends StatelessWidget {
           settings: RouteSettings(name: tasa.description),
         ),
       );
-
   static Future<void> openHistorico(BuildContext context, PaymentRecord pago) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -47,7 +40,6 @@ class PaymentDetailScreen extends StatelessWidget {
           settings: RouteSettings(name: pago.concept),
         ),
       );
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -56,12 +48,9 @@ class PaymentDetailScreen extends StatelessWidget {
       PaymentType.tasa => l.paymentDetailTasa,
       PaymentType.historico => l.paymentDetailPago,
     };
-
     return Scaffold(
       backgroundColor: NexoTheme.bg,
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: SafeArea(
         child: PaymentDetailBody(payment: payment, type: type),
       ),
@@ -69,13 +58,14 @@ class PaymentDetailScreen extends StatelessWidget {
   }
 }
 
-/// Cuerpo del detalle de pago, sin Scaffold/AppBar — embebible en la ruta
-/// móvil y en el panel de detalle de escritorio (master-detail).
 class PaymentDetailBody extends StatelessWidget {
-  const PaymentDetailBody({super.key, required this.payment, required this.type});
+  const PaymentDetailBody({
+    super.key,
+    required this.payment,
+    required this.type,
+  });
   final Object payment;
   final PaymentType type;
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -97,9 +87,7 @@ class PaymentDetailBody extends StatelessWidget {
 class _Hero extends StatelessWidget {
   final Object payment;
   final PaymentType type;
-
   const _Hero({required this.payment, required this.type});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -108,7 +96,6 @@ class _Hero extends StatelessWidget {
     String amountText = '';
     Color statusColor = NexoTheme.primary;
     String statusLabel = '';
-
     if (type == PaymentType.cuota) {
       final cuota = payment as Payment;
       title = cuota.description;
@@ -119,15 +106,15 @@ class _Hero extends StatelessWidget {
       statusColor = isOverdue
           ? NexoTheme.danger
           : isSoon
-              ? NexoTheme.warning
-              : NexoTheme.success;
+          ? NexoTheme.warning
+          : NexoTheme.success;
       statusLabel = isOverdue
           ? l.paymentsTabOverdue.toUpperCase()
           : days == 0
-              ? l.paymentVenceHoy
-              : days == 1
-                  ? l.paymentVenceMananaCaps
-                  : l.paymentsTabPending.toUpperCase();
+          ? l.paymentVenceHoy
+          : days == 1
+          ? l.paymentVenceMananaCaps
+          : l.paymentsTabPending.toUpperCase();
       subtitle = l.paymentVenceEl(cuota.dueDateRaw);
     } else if (type == PaymentType.tasa) {
       final tasa = payment as Fee;
@@ -144,7 +131,6 @@ class _Hero extends StatelessWidget {
       statusLabel = l.paymentStatusPaid;
       subtitle = l.paymentDateOfPayment(hist.date);
     }
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
@@ -169,7 +155,9 @@ class _Hero extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm + 2, vertical: 3),
+                  horizontal: AppSpacing.sm + 2,
+                  vertical: 3,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: AppRadii.rPill,
@@ -225,62 +213,155 @@ class _Hero extends StatelessWidget {
 class _DetailsCard extends StatelessWidget {
   final Object payment;
   final PaymentType type;
-
-  const _DetailsCard({
-    required this.payment,
-    required this.type,
-  });
-
+  const _DetailsCard({required this.payment, required this.type});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final fields = <_DetailField>[];
-
     if (type == PaymentType.cuota) {
       final cuota = payment as Payment;
-      fields.add(_DetailField(l.paymentDetailImporteBase, '${cuota.currency} ${cuota.amount.toStringAsFixed(2)}', Icons.payments_outlined));
+      fields.add(
+        _DetailField(
+          l.paymentDetailImporteBase,
+          '${cuota.currency} ${cuota.amount.toStringAsFixed(2)}',
+          Icons.payments_outlined,
+        ),
+      );
       if (cuota.lateFee > 0) {
-        fields.add(_DetailField(l.paymentMoraLabel, '${cuota.currency} ${cuota.lateFee.toStringAsFixed(2)}', Icons.warning_amber_rounded, isWarning: true));
+        fields.add(
+          _DetailField(
+            l.paymentMoraLabel,
+            '${cuota.currency} ${cuota.lateFee.toStringAsFixed(2)}',
+            Icons.warning_amber_rounded,
+            isWarning: true,
+          ),
+        );
       }
-      fields.add(_DetailField(l.paymentDetailFechaVencimiento, cuota.dueDateRaw, Icons.event_outlined));
+      fields.add(
+        _DetailField(
+          l.paymentDetailFechaVencimiento,
+          cuota.dueDateRaw,
+          Icons.event_outlined,
+        ),
+      );
       if (cuota.note.trim().isNotEmpty && cuota.note.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, cuota.note, Icons.info_outline));
+        fields.add(
+          _DetailField(
+            l.paymentDetailObservacion,
+            cuota.note,
+            Icons.info_outline,
+          ),
+        );
       }
     } else if (type == PaymentType.tasa) {
       final tasa = payment as Fee;
-      fields.add(_DetailField(l.paymentDetailConcepto, tasa.description, Icons.receipt_long_rounded));
-      fields.add(_DetailField(l.paymentDetailImporte, '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}', Icons.payments_outlined));
+      fields.add(
+        _DetailField(
+          l.paymentDetailConcepto,
+          tasa.description,
+          Icons.receipt_long_rounded,
+        ),
+      );
+      fields.add(
+        _DetailField(
+          l.paymentDetailImporte,
+          '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}',
+          Icons.payments_outlined,
+        ),
+      );
       if (tasa.note.trim().isNotEmpty && tasa.note.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, tasa.note, Icons.info_outline));
+        fields.add(
+          _DetailField(
+            l.paymentDetailObservacion,
+            tasa.note,
+            Icons.info_outline,
+          ),
+        );
       }
     } else if (type == PaymentType.historico) {
       final hist = payment as PaymentRecord;
-      fields.add(_DetailField(l.paymentDetailConcepto, hist.concept, Icons.receipt_long_rounded));
-      fields.add(_DetailField(l.paymentDetailImportePagado, '${hist.currency} ${hist.amount.toStringAsFixed(2)}', Icons.payments_outlined));
-      fields.add(_DetailField(l.paymentDetailFechaPago, hist.date, Icons.event_outlined));
+      fields.add(
+        _DetailField(
+          l.paymentDetailConcepto,
+          hist.concept,
+          Icons.receipt_long_rounded,
+        ),
+      );
+      fields.add(
+        _DetailField(
+          l.paymentDetailImportePagado,
+          '${hist.currency} ${hist.amount.toStringAsFixed(2)}',
+          Icons.payments_outlined,
+        ),
+      );
+      fields.add(
+        _DetailField(l.paymentDetailFechaPago, hist.date, Icons.event_outlined),
+      );
       if (hist.time.trim().isNotEmpty && hist.time.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailHoraPago, hist.time, Icons.schedule_rounded));
+        fields.add(
+          _DetailField(
+            l.paymentDetailHoraPago,
+            hist.time,
+            Icons.schedule_rounded,
+          ),
+        );
       }
       if (hist.term.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailPeriodoAcademico, hist.term, Icons.school_outlined));
+        fields.add(
+          _DetailField(
+            l.paymentDetailPeriodoAcademico,
+            hist.term,
+            Icons.school_outlined,
+          ),
+        );
       }
       if (hist.voucher.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailComprobante, hist.voucher, Icons.assignment_outlined));
+        fields.add(
+          _DetailField(
+            l.paymentDetailComprobante,
+            hist.voucher,
+            Icons.assignment_outlined,
+          ),
+        );
       }
       if (hist.place.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailLugarPago, hist.place, Icons.storefront_outlined));
+        fields.add(
+          _DetailField(
+            l.paymentDetailLugarPago,
+            hist.place,
+            Icons.storefront_outlined,
+          ),
+        );
       }
       if (hist.serial.trim().isNotEmpty || hist.number.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailOperacion, '${hist.serial} - ${hist.number}', Icons.vpn_key_outlined));
+        fields.add(
+          _DetailField(
+            l.paymentDetailOperacion,
+            '${hist.serial} - ${hist.number}',
+            Icons.vpn_key_outlined,
+          ),
+        );
       }
-      if (hist.operationType.trim().isNotEmpty && hist.operationType.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailDescripcionOperacion, hist.operationType, Icons.description_outlined));
+      if (hist.operationType.trim().isNotEmpty &&
+          hist.operationType.trim() != '--') {
+        fields.add(
+          _DetailField(
+            l.paymentDetailDescripcionOperacion,
+            hist.operationType,
+            Icons.description_outlined,
+          ),
+        );
       }
       if (hist.note.trim().isNotEmpty && hist.note.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, hist.note, Icons.info_outline));
+        fields.add(
+          _DetailField(
+            l.paymentDetailObservacion,
+            hist.note,
+            Icons.info_outline,
+          ),
+        );
       }
     }
-
     return SectionCard(
       title: l.paymentDetailInformacionDetallada,
       icon: Icons.info_outline,
@@ -303,15 +384,12 @@ class _DetailField {
   final String value;
   final IconData icon;
   final bool isWarning;
-
   _DetailField(this.label, this.value, this.icon, {this.isWarning = false});
 }
 
 class _FieldRow extends StatelessWidget {
   final _DetailField field;
-
   const _FieldRow({required this.field});
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -340,7 +418,9 @@ class _FieldRow extends StatelessWidget {
                 field.value,
                 style: TextStyle(
                   fontSize: 14,
-                  color: field.isWarning ? NexoTheme.danger : NexoTheme.textPrimary,
+                  color: field.isWarning
+                      ? NexoTheme.danger
+                      : NexoTheme.textPrimary,
                   fontWeight: FontWeight.w600,
                   height: 1.3,
                 ),

@@ -1,33 +1,29 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/features/docente/docente_curso_detail.dart';
+import 'package:nexo/features/teacher/teacher_course_detail.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 
-/// Pantalla dedicada de "Mis cursos" del docente. Reemplaza el card que
-/// vivía dentro del dashboard de Inicio.
-class DocenteCursosScreen extends StatefulWidget {
-  const DocenteCursosScreen({super.key, required this.store});
+class TeacherCoursesScreen extends StatefulWidget {
+  const TeacherCoursesScreen({super.key, required this.store});
   final AppStore store;
-
   @override
-  State<DocenteCursosScreen> createState() => _DocenteCursosScreenState();
+  State<TeacherCoursesScreen> createState() => _TeacherCoursesScreenState();
 }
 
-class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
+class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.store.docenteAsignaturas.hasValue) {
-      widget.store.loadDocenteAsignaturas();
+    if (!widget.store.teacherSubjects.hasValue) {
+      widget.store.loadTeacherSubjects();
     }
   }
 
@@ -36,28 +32,26 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final state = widget.store.docenteAsignaturas;
-        final cursos = state.value ?? const <DocenteAsignatura>[];
+        final state = widget.store.teacherSubjects;
+        final courses = state.value ?? const <TeacherSubject>[];
         final l = AppLocalizations.of(context);
-
         return RefreshIndicator(
-          onRefresh: () => widget.store.loadDocenteAsignaturas().then((_) {}),
+          onRefresh: () => widget.store.loadTeacherSubjects().then((_) {}),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverToBoxAdapter(
                 child: PageHeader(
                   title: l.titleCourses,
                   subtitle: state.hasValue
-                      ? l.docenteCoursesCountPlural(cursos.length)
+                      ? l.docenteCoursesCountPlural(courses.length)
                       : l.subtitleCourses,
                 ),
               ),
               SliverToBoxAdapter(
-                child: PageBody(
-                  child: _body(context, state, cursos),
-                ),
+                child: PageBody(child: _body(context, state, courses)),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
@@ -69,8 +63,8 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
 
   Widget _body(
     BuildContext context,
-    AsyncValue<List<DocenteAsignatura>> state,
-    List<DocenteAsignatura> cursos,
+    AsyncValue<List<TeacherSubject>> state,
+    List<TeacherSubject> courses,
   ) {
     final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
@@ -97,7 +91,7 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
         ),
       );
     }
-    if (cursos.isEmpty) {
+    if (courses.isEmpty) {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -111,10 +105,10 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < cursos.length; i++) ...[
+        for (var i = 0; i < courses.length; i++) ...[
           Reveal(
             index: i,
-            child: _CursoTile(curso: cursos[i], store: widget.store),
+            child: _CursoTile(course: courses[i], store: widget.store),
           ),
           const Gap(AppSpacing.md),
         ],
@@ -123,13 +117,10 @@ class _DocenteCursosScreenState extends State<DocenteCursosScreen> {
   }
 }
 
-/// Tarjeta tocable de un curso. Diseño rico — más espacio para datos clave
-/// (alumnos, código, sección, periodo).
 class _CursoTile extends StatelessWidget {
-  final DocenteAsignatura curso;
+  final TeacherSubject course;
   final AppStore store;
-  const _CursoTile({required this.curso, required this.store});
-
+  const _CursoTile({required this.course, required this.store});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -139,10 +130,8 @@ class _CursoTile extends StatelessWidget {
         borderRadius: AppRadii.rXl,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => DocenteCursoDetailScreen(
-              store: store,
-              curso: curso,
-            ),
+            builder: (_) =>
+                TeacherCourseDetailScreen(store: store, course: course),
           ),
         ),
         child: Container(
@@ -164,8 +153,11 @@ class _CursoTile extends StatelessWidget {
                       color: NexoTheme.primary.withValues(alpha: 0.12),
                       borderRadius: AppRadii.rLg,
                     ),
-                    child: Icon(Icons.class_rounded,
-                        color: NexoTheme.primary, size: 24),
+                    child: Icon(
+                      Icons.class_rounded,
+                      color: NexoTheme.primary,
+                      size: 24,
+                    ),
                   ),
                   const Gap.h(AppSpacing.md),
                   Expanded(
@@ -173,7 +165,7 @@ class _CursoTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          curso.codigo,
+                          course.code,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -183,7 +175,7 @@ class _CursoTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          curso.asignatura,
+                          course.subject,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -197,8 +189,7 @@ class _CursoTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: NexoTheme.textMuted),
+                  Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
                 ],
               ),
               const Gap(AppSpacing.md),
@@ -208,18 +199,20 @@ class _CursoTile extends StatelessWidget {
                 children: [
                   _pill(
                     icon: Icons.tag_rounded,
-                    label: '${l.detailSection} ${curso.seccion}',
+                    label: '${l.detailSection} ${course.section}',
                     color: NexoTheme.info,
                   ),
                   const Gap.h(AppSpacing.sm),
                   _pill(
                     icon: Icons.groups_rounded,
-                    label: l.docenteMetricAlumnosCount(curso.matriculados ?? 0),
+                    label: l.docenteMetricAlumnosCount(
+                      course.enrolledCount ?? 0,
+                    ),
                     color: NexoTheme.accent,
                   ),
                   const Spacer(),
                   Text(
-                    curso.periodo,
+                    course.periodo,
                     style: TextStyle(
                       fontSize: AppFont.small,
                       color: NexoTheme.textSecondary,
@@ -242,7 +235,9 @@ class _CursoTile extends StatelessWidget {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2, vertical: 4),
+        horizontal: AppSpacing.sm + 2,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: AppRadii.rPill,

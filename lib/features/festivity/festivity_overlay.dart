@@ -1,30 +1,21 @@
 import 'dart:async';
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/core/storage.dart';
 
-/// ¿Deben mostrarse los adornos? Flag de usuario + reduce-motion del sistema.
 bool _decorEnabled(BuildContext context) =>
     AppStorage.instance.festivityDecor &&
     !MediaQuery.of(context).disableAnimations;
 
-/// Envuelve la app y, si hay una festividad activa, superpone una capa de
-/// partículas sutil (sin bloquear toques). Liviano: un solo Ticker + un
-/// RepaintBoundary, ~34 partículas.
 class FestivityOverlay extends StatelessWidget {
   const FestivityOverlay({super.key, required this.child});
   final Widget child;
-
   @override
   Widget build(BuildContext context) {
-    // La capa de adornos va como hermana de `child` (no lo envuelve), así su
-    // re-evaluación periódica NO reconstruye toda la app.
     return Stack(
       children: [
         child,
@@ -34,19 +25,14 @@ class FestivityOverlay extends StatelessWidget {
   }
 }
 
-/// Capa de adornos auto-actualizable: recalcula la festividad activa cada
-/// minuto (y en cada rebuild), de modo que los eventos aparecen y desaparecen
-/// solos al cruzar sus ventanas, aunque la app quede abierta.
 class _DecorLayer extends StatefulWidget {
   const _DecorLayer();
-
   @override
   State<_DecorLayer> createState() => _DecorLayerState();
 }
 
 class _DecorLayerState extends State<_DecorLayer> {
   late final Timer _timer;
-
   @override
   void initState() {
     super.initState();
@@ -72,8 +58,6 @@ class _DecorLayerState extends State<_DecorLayer> {
         Positioned.fill(
           child: IgnorePointer(child: _Particles(decor: active.decor)),
         ),
-        // Número del aniversario colgado de un hilo, en la esquina sup. der.
-        // Solo en escritorio (en móvil estorba / no hay espacio).
         if (active.number != null && context.isDesktop)
           Positioned(
             top: 0,
@@ -89,12 +73,9 @@ class _DecorLayerState extends State<_DecorLayer> {
   }
 }
 
-/// Número colgado de un hilo que se balancea como un péndulo (para el
-/// aniversario UPLA). Fuente decorativa (SuperMindset).
 class _HangingNumber extends StatefulWidget {
   const _HangingNumber({required this.number});
   final String number;
-
   @override
   State<_HangingNumber> createState() => _HangingNumberState();
 }
@@ -105,7 +86,6 @@ class _HangingNumberState extends State<_HangingNumber>
     vsync: this,
     duration: const Duration(milliseconds: 3200),
   )..repeat();
-
   @override
   void dispose() {
     _c.dispose();
@@ -118,18 +98,16 @@ class _HangingNumberState extends State<_HangingNumber>
     return AnimatedBuilder(
       animation: _c,
       builder: (context, childW) {
-        // Péndulo suave: ~9° a cada lado (seno → velocidad máx en el centro).
         final angle = 0.16 * math.sin(_c.value * 2 * math.pi);
         return Transform.rotate(
           angle: angle,
-          alignment: Alignment.topCenter, // pivota desde donde se ata el hilo
+          alignment: Alignment.topCenter,
           child: childW,
         );
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Nudo de anclaje.
           Container(
             width: 7,
             height: 7,
@@ -138,13 +116,11 @@ class _HangingNumberState extends State<_HangingNumber>
               shape: BoxShape.circle,
             ),
           ),
-          // Hilo.
           Container(
             width: 1.5,
             height: 34,
             color: NexoTheme.textMuted.withValues(alpha: 0.6),
           ),
-          // Medalla con el número.
           Container(
             width: 54,
             height: 54,
@@ -185,16 +161,9 @@ class _HangingNumberState extends State<_HangingNumber>
   }
 }
 
-/// Wordmark del sidebar (escritorio) que, durante una festividad activa, rota
-/// entre "Nexo" y las palabras de la festividad — ej. Nexo → UPLA 43 →
-/// Aniversario. Sin festividad (o con reduce-motion / flag off) muestra "Nexo"
-/// fijo. Reemplaza al banner.
 class FestivityWordmark extends StatefulWidget {
   const FestivityWordmark({super.key, this.style});
-
-  /// Estilo base del texto (el del wordmark del sidebar).
   final TextStyle? style;
-
   @override
   State<FestivityWordmark> createState() => _FestivityWordmarkState();
 }
@@ -202,12 +171,9 @@ class FestivityWordmark extends StatefulWidget {
 class _FestivityWordmarkState extends State<FestivityWordmark> {
   late final Timer _timer;
   int _i = 0;
-
   @override
   void initState() {
     super.initState();
-    // Tick continuo: rota las palabras y re-evalúa la festividad en cada build,
-    // así aparece/desaparece sola al cruzar la ventana (sin reiniciar la app).
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) setState(() => _i++);
     });
@@ -221,33 +187,35 @@ class _FestivityWordmarkState extends State<FestivityWordmark> {
 
   @override
   Widget build(BuildContext context) {
-    final base = widget.style ??
+    final base =
+        widget.style ??
         TextStyle(
           fontSize: 21,
           fontWeight: FontWeight.w900,
           color: NexoTheme.textPrimary,
           letterSpacing: -0.5,
         );
-    final enabled = AppStorage.instance.festivityDecor &&
+    final enabled =
+        AppStorage.instance.festivityDecor &&
         !MediaQuery.of(context).disableAnimations;
     final active = enabled ? FestivityService.active(DateTime.now()) : null;
     final words = active?.wordmark ?? const ['Nexo'];
-
-    // Sin festividad (o deshabilitado) → "Nexo" fijo, pegado a la izquierda.
     if (words.length <= 1) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: Text('Nexo',
-            maxLines: 1, overflow: TextOverflow.ellipsis, style: base),
+        child: Text(
+          'Nexo',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: base,
+        ),
       );
     }
     final idx = _i % words.length;
     final word = words[idx];
-    final festive = idx != 0; // las palabras de la festividad van en color
+    final festive = idx != 0;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
-      // layoutBuilder alineado a la IZQUIERDA: el texto queda pegado al logo,
-      // no centrado (que es el default de AnimatedSwitcher).
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.centerLeft,
         children: [...previous, ?current],
@@ -276,38 +244,35 @@ class _FestivityWordmarkState extends State<FestivityWordmark> {
   }
 }
 
-// ───── Partículas ─────
-
 List<Color> _palette(FestivityDecor d) => switch (d) {
-      FestivityDecor.snow => const [Colors.white, Color(0xFFE3F2FD)],
-      FestivityDecor.flagsPeru => const [Color(0xFFD91023), Colors.white],
-      FestivityDecor.petals => const [Color(0xFFF48FB1), Color(0xFFF8BBD0)],
-      FestivityDecor.confetti => const [
-          Color(0xFFEF5350),
-          Color(0xFF42A5F5),
-          Color(0xFF66BB6A),
-          Color(0xFFFFCA28),
-          Color(0xFFAB47BC),
-        ],
-      FestivityDecor.graduation => const [
-          Color(0xFFFFC107), // dorado
-          Color(0xFF1E88E5),
-          Color(0xFFE53935),
-          Colors.white,
-        ],
-    };
+  FestivityDecor.snow => const [Colors.white, Color(0xFFE3F2FD)],
+  FestivityDecor.flagsPeru => const [Color(0xFFD91023), Colors.white],
+  FestivityDecor.petals => const [Color(0xFFF48FB1), Color(0xFFF8BBD0)],
+  FestivityDecor.confetti => const [
+    Color(0xFFEF5350),
+    Color(0xFF42A5F5),
+    Color(0xFF66BB6A),
+    Color(0xFFFFCA28),
+    Color(0xFFAB47BC),
+  ],
+  FestivityDecor.graduation => const [
+    Color(0xFFFFC107),
+    Color(0xFF1E88E5),
+    Color(0xFFE53935),
+    Colors.white,
+  ],
+};
 
 class _Particle {
   _Particle(math.Random r, List<Color> palette)
-      : x0 = r.nextDouble(),
-        size = 4 + r.nextDouble() * 6,
-        speed = 0.03 + r.nextDouble() * 0.06, // fracción de alto por segundo
-        seed = r.nextDouble(),
-        driftAmp = 0.01 + r.nextDouble() * 0.03,
-        driftFreq = 0.5 + r.nextDouble() * 1.0,
-        spin = (r.nextBool() ? 1 : -1) * (0.5 + r.nextDouble()),
-        color = palette[r.nextInt(palette.length)];
-
+    : x0 = r.nextDouble(),
+      size = 4 + r.nextDouble() * 6,
+      speed = 0.03 + r.nextDouble() * 0.06,
+      seed = r.nextDouble(),
+      driftAmp = 0.01 + r.nextDouble() * 0.03,
+      driftFreq = 0.5 + r.nextDouble() * 1.0,
+      spin = (r.nextBool() ? 1 : -1) * (0.5 + r.nextDouble()),
+      color = palette[r.nextInt(palette.length)];
   final double x0, size, speed, seed, driftAmp, driftFreq, spin;
   final Color color;
 }
@@ -315,7 +280,6 @@ class _Particle {
 class _Particles extends StatefulWidget {
   const _Particles({required this.decor});
   final FestivityDecor decor;
-
   @override
   State<_Particles> createState() => _ParticlesState();
 }
@@ -325,12 +289,10 @@ class _ParticlesState extends State<_Particles>
   late final Ticker _ticker;
   final ValueNotifier<double> _t = ValueNotifier(0);
   late List<_Particle> _particles;
-
   @override
   void initState() {
     super.initState();
     _build();
-    // El tiempo crece de forma monótona (segundos) → caída continua sin saltos.
     _ticker = createTicker((e) => _t.value = e.inMicroseconds / 1e6)..start();
   }
 
@@ -374,13 +336,10 @@ class _ParticlePainter extends CustomPainter {
     required this.particles,
     required this.isSnow,
   }) : super(repaint: t);
-
   final ValueNotifier<double> t;
   final List<_Particle> particles;
   final bool isSnow;
-
   double _frac(double v) => v - v.floorToDouble();
-
   @override
   void paint(Canvas canvas, Size size) {
     final time = t.value;
@@ -393,14 +352,16 @@ class _ParticlePainter extends CustomPainter {
       if (isSnow) {
         canvas.drawCircle(Offset(x, y), p.size * 0.5, paint);
       } else {
-        // Pequeños rectángulos redondeados que rotan (confeti/pétalos/banderas).
         canvas.save();
         canvas.translate(x, y);
         canvas.rotate(time * p.spin + p.seed * 6.28);
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(
-                center: Offset.zero, width: p.size, height: p.size * 0.6),
+              center: Offset.zero,
+              width: p.size,
+              height: p.size * 0.6,
+            ),
             Radius.circular(p.size * 0.2),
           ),
           paint,
@@ -411,5 +372,5 @@ class _ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ParticlePainter old) => false; // repinta vía `repaint`
+  bool shouldRepaint(covariant _ParticlePainter old) => false;
 }

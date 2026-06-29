@@ -45,34 +45,34 @@ class AppLocalizationsQu extends AppLocalizations {
   String get titleProfile => 'Runa';
 
   @override
-  String get titleTeacher => 'Docente';
+  String get titleTeacher => 'Yachachiq';
 
   @override
-  String get titleCourses => 'Mis cursos';
+  String get titleCourses => 'Kursukuna';
 
   @override
-  String get subtitleCourses => 'Asignaturas que dictas';
+  String get subtitleCourses => 'Tukuy kursukunayki';
 
   @override
-  String get titleAbout => 'Acerca de Nexo';
+  String get titleAbout => 'Manta';
 
   @override
-  String get titleTerms => 'Términos y privacidad';
+  String get titleTerms => 'Kamachiykuna';
 
   @override
-  String get titleDeveloper => 'Desarrollador';
+  String get titleDeveloper => 'Ruwaq';
 
   @override
-  String get titleChangePassword => 'Cambiar contraseña';
+  String get titleChangePassword => 'Kichanata wakinchay';
 
   @override
-  String get titleNotifications => 'Notificaciones';
+  String get titleNotifications => 'Willakuykuna';
 
   @override
-  String get subtitlePayments => 'Cuotas, tasas e historial';
+  String get subtitlePayments => 'Qullqi qunakuna';
 
   @override
-  String get subtitleTeacher => 'Tus cursos y estudiantes';
+  String get subtitleTeacher => 'Yachakuqniykikuna';
 
   @override
   String get language => 'Simi';
@@ -81,13 +81,13 @@ class AppLocalizationsQu extends AppLocalizations {
   String get timeFormat => 'Pachap rikuchinan';
 
   @override
-  String get hours24 => '24 horas';
+  String get hours24 => '24 pacha';
 
   @override
-  String get hours12 => '12 horas';
+  String get hours12 => '12 pacha';
 
   @override
-  String get actionLogout => 'Cerrar sesión';
+  String get actionLogout => 'Lluqsiy';
 
   @override
   String get actionAccept => 'Arí';
@@ -96,40 +96,40 @@ class AppLocalizationsQu extends AppLocalizations {
   String get actionCancel => 'Mana';
 
   @override
-  String get actionRetry => 'Reintentar';
+  String get actionRetry => 'Kutipay';
 
   @override
   String get actionClose => 'Wichqay';
 
   @override
-  String get actionCopy => 'Copiar';
+  String get actionCopy => 'Kipipay';
 
   @override
-  String get scheduleDetailTitle => 'Detalle de la clase';
+  String get scheduleDetailTitle => 'Sut\'inchanakuna';
 
   @override
-  String get detailSchedule => 'Horario';
+  String get detailSchedule => 'Pachakuna';
 
   @override
-  String get detailLocation => 'Ubicación';
+  String get detailLocation => 'Maypi';
 
   @override
   String get detailRoom => 'Wasi';
 
   @override
-  String get detailBuilding => 'Local';
+  String get detailBuilding => 'Wasi';
 
   @override
-  String get detailCampus => 'Sede';
+  String get detailCampus => 'Kancha';
 
   @override
   String get detailTeacher => 'Yachachiq';
 
   @override
-  String get detailSessions => 'Sesiones';
+  String get detailSessions => 'Tinkuykuna';
 
   @override
-  String get detailNotes => 'Observaciones';
+  String get detailNotes => 'Qillqakuna';
 
   @override
   String get detailNrc => 'NRC';
@@ -145,7 +145,7 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String detailDuration(int minutes) {
-    return 'Duración total: $minutes minutos';
+    return 'Unaynin';
   }
 
   @override
@@ -1437,4 +1437,168 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get updDismiss => 'Wikuy';
+
+  @override
+  String get assignmentNoDate => 'Mana kachkanchu';
+
+  @override
+  String get assignmentOverdue => 'Pasaq';
+
+  @override
+  String get assignmentDueToday => 'Kunan p\'unchaw';
+
+  @override
+  String get assignmentDueTomorrow => 'Paqarin p\'unchaw';
+
+  @override
+  String assignmentDueInDays(int days) {
+    return '$days p\'unchawpi';
+  }
+
+  @override
+  String get assignmentEmpty => 'Mana ruranayki kanchu.';
+
+  @override
+  String get widgetNoPendingDebts => 'Mana manu kanchu';
+
+  @override
+  String get widgetUpToDate => '✓ P\'unchawninpi';
+
+  @override
+  String widgetOverdue(int d) {
+    return '$d p\'unchaw pasasqa';
+  }
+
+  @override
+  String get widgetDueToday => 'Kunan p\'unchaw';
+
+  @override
+  String widgetDueIn(int d, String date) {
+    return '$d p\'unchawpi ($date)';
+  }
+
+  @override
+  String notifStartsIn(int minutes) {
+    return '$minutes minutopi qallarin';
+  }
+
+  @override
+  String get notifDueToday => 'kunan p\'unchaw';
+
+  @override
+  String get notifDueTomorrow => 'paqarin p\'unchaw';
+
+  @override
+  String notifDueInDays(int days) {
+    return '$days p\'unchawpi';
+  }
+
+  @override
+  String get notifClassesReminder => 'Yachaykuna yuyarichiy';
+
+  @override
+  String notifPendingPayment(String when) {
+    return 'Qullqi quna — $when';
+  }
+
+  @override
+  String get notifPaymentsReminder => 'Qullqi quna yuyarichiy';
+
+  @override
+  String get prefSameDay => 'Kikin p\'unchawpi';
+
+  @override
+  String get prefOneDayBefore => '1 p\'unchaw ñawpaqta';
+
+  @override
+  String prefDaysBefore(int d) {
+    return '$d p\'unchaw ñawpaqta';
+  }
+
+  @override
+  String get prefOneHourBefore => '1 pacha ñawpaqta';
+
+  @override
+  String get prefTwoHoursBefore => '2 pacha ñawpaqta';
+
+  @override
+  String prefMinBefore(int m) {
+    return '$m min ñawpaqta';
+  }
+
+  @override
+  String get classOngoing => 'QALLARISQA';
+
+  @override
+  String get homeNoClassesToday => 'Mana yachaykuna kanchu';
+
+  @override
+  String get homeNextClassTitle => 'QAMUQ YACHAY';
+
+  @override
+  String homeNextClassTomorrowDay(String day) {
+    return 'Paqarin · $day';
+  }
+
+  @override
+  String get homeNextClassNow => 'Kunan';
+
+  @override
+  String homeNextClassInMin(int m) {
+    return '$m min ukhupi';
+  }
+
+  @override
+  String homeNextClassInHours(int h) {
+    return '${h}h ukhupi';
+  }
+
+  @override
+  String homeNextClassInHoursMin(int h, int m) {
+    return '${h}h ${m}min ukhupi';
+  }
+
+  @override
+  String homePendingPaymentsOverdueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pasasqa',
+      one: '$count pasasqa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get widgetTeamsTitle => 'Yachayniykuna';
+
+  @override
+  String get widgetTeamsSubtitle => 'Teams huñukuna';
+
+  @override
+  String get widgetTeamsEmpty => 'Mana yachaykuna Teams ukhupi kanchu';
+
+  @override
+  String get widgetAssignmentsTitle => 'Ruranakuna';
+
+  @override
+  String get widgetAssignmentsSubtitle => 'Pisi p\'unchawkunallañam puchun';
+
+  @override
+  String get whatsappBannerTitle => 'Nexo waqyayman hukllawakuy';
+
+  @override
+  String get whatsappBannerDesc =>
+      'WhatsApp waqyayta qatiy Nexomanta musuq willakuykunata yachanaykipaq.';
+
+  @override
+  String get whatsappBannerFollow => 'Waqyayta qatiy';
+
+  @override
+  String get whatsappBannerLater => 'Kunanqa manam';
+
+  @override
+  String homePendingPaymentsMore(int count) {
+    return '+ $count tasakuna';
+  }
 }

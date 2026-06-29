@@ -515,27 +515,37 @@
   "gradesCreditsSummary": "{aprobados} of {total} credits",
   "@gradesCreditsSummary": {
     "placeholders": {
-      "aprobados": { "type": "String" },
-      "total": { "type": "String" }
+      "aprobados": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
     }
   },
   "gradesCreditsApprovedCount": "{count, plural, =1{1 credit approved} other{{count} credits approved}}",
   "@gradesCreditsApprovedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "gradesRank": " · Rank {rank}",
   "@gradesRank": {
     "placeholders": {
-      "rank": { "type": "String" }
+      "rank": {
+        "type": "String"
+      }
     }
   },
   "gradesSummary": "Summary",
   "gradesPractice": "Practice {index}",
   "@gradesPractice": {
     "placeholders": {
-      "index": { "type": "String" }
+      "index": {
+        "type": "String"
+      }
     }
   },
   "gradesProyecto": "Project",
@@ -545,33 +555,45 @@
   "paymentDaysOverdue": "OVERDUE {days} d. ago",
   "@paymentDaysOverdue": {
     "placeholders": {
-      "days": { "type": "String" }
+      "days": {
+        "type": "String"
+      }
     }
   },
   "paymentDaysLeft": "In {days} days",
   "@paymentDaysLeft": {
     "placeholders": {
-      "days": { "type": "String" }
+      "days": {
+        "type": "String"
+      }
     }
   },
   "paymentMora": "Late fee {currency} {amount}",
   "@paymentMora": {
     "placeholders": {
-      "currency": { "type": "String" },
-      "amount": { "type": "String" }
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "paymentVenceEl": "Due on {date}",
   "@paymentVenceEl": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "paymentStatusPaid": "PAID",
   "paymentDateOfPayment": "Payment Date: {date}",
   "@paymentDateOfPayment": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "paymentMoraLabel": "Late fee",
@@ -624,5 +646,152 @@
   "updBannerAvailableTitle": "Update available",
   "updBannerReadyBody": "Tap to install Nexo {version}.",
   "updBannerAvailableBody": "Tap to download Nexo {version}.",
-  "updDismiss": "Dismiss"
+  "updDismiss": "Dismiss",
+  "assignmentNoDate": "No due date",
+  "assignmentOverdue": "Overdue",
+  "assignmentDueToday": "Due today",
+  "assignmentDueTomorrow": "Due tomorrow",
+  "assignmentDueInDays": "In {days} days",
+  "@assignmentDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "assignmentEmpty": "No pending assignments.",
+  "widgetNoPendingDebts": "No pending debts",
+  "widgetUpToDate": "✓ Up to date",
+  "widgetOverdue": "Overdue by {d} d",
+  "@widgetOverdue": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetDueToday": "Due today",
+  "widgetDueIn": "Due in {d} d ({date})",
+  "@widgetDueIn": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "notifStartsIn": "Starts in {minutes} minutes",
+  "@notifStartsIn": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notifDueToday": "due today",
+  "notifDueTomorrow": "due tomorrow",
+  "notifDueInDays": "due in {days} days",
+  "@notifDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notifClassesReminder": "Classes reminder",
+  "notifPendingPayment": "Pending payment — {when}",
+  "@notifPendingPayment": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "notifPaymentsReminder": "Payments reminder",
+  "prefSameDay": "Same day",
+  "prefOneDayBefore": "1 day before",
+  "prefDaysBefore": "{d} days before",
+  "@prefDaysBefore": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "prefOneHourBefore": "1 hour before",
+  "prefTwoHoursBefore": "2 hours before",
+  "prefMinBefore": "{m} min before",
+  "@prefMinBefore": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "classOngoing": "ONGOING",
+  "homeNoClassesToday": "No classes today",
+  "homeNextClassTitle": "NEXT CLASS",
+  "homeNextClassTomorrowDay": "Tomorrow · {day}",
+  "@homeNextClassTomorrowDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNextClassNow": "Now",
+  "homeNextClassInMin": "In {m} min",
+  "@homeNextClassInMin": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextClassInHours": "In {h}h",
+  "@homeNextClassInHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextClassInHoursMin": "In {h}h {m}min",
+  "@homeNextClassInHoursMin": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "homePendingPaymentsOverdueCount": "{count, plural, =1{{count} overdue} other{{count} overdue}}",
+  "@homePendingPaymentsOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetTeamsTitle": "My subjects",
+  "widgetTeamsSubtitle": "Teams groups",
+  "widgetTeamsEmpty": "No subjects in Teams",
+  "widgetAssignmentsTitle": "Assignments",
+  "widgetAssignmentsSubtitle": "Nearing deadline",
+  "whatsappBannerTitle": "Join Nexo's channel",
+  "whatsappBannerDesc": "Follow the WhatsApp channel to learn about news, improvements, and important notices about Nexo.",
+  "whatsappBannerFollow": "Follow channel",
+  "whatsappBannerLater": "Not now",
+  "homePendingPaymentsMore": "+ {count} more fees",
+  "@homePendingPaymentsMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

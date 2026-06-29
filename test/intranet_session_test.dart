@@ -79,7 +79,7 @@ void main() {
       expect(data.first, ['2025', '1']);
       expect(mock.loginHits, 1, reason: 're-login disparado una sola vez');
       expect(mock.dataHits, 2,
-          reason: 'primer hit caduca (302), reintento tras login devuelve 200');
+          reason: 'firstTerm hit caduca (302), reintento tras login devuelve 200');
     });
 
     test('sin callback de re-login, propaga SessionExpiredException '

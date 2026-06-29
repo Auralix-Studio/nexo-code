@@ -29,7 +29,7 @@ void main() {
       'horaInicio': '13:45',
       'horaFin': '15:15',
       'aula': 'I 304',
-      'docente': 'MEZA VARGAS ZENAIDA',
+      'teacher': 'MEZA VARGAS ZENAIDA',
       'idTipo': 'T',
     });
     expect(c.subject, 'ANTROPOLOGÍA');
@@ -37,10 +37,10 @@ void main() {
     expect(c.weekday, 4);
   });
 
-  test('NotaAsignatura parsea ambos parciales con su capitalización real', () {
-    // Caso real de SIGMA: campos en minúscula para el primer parcial
-    // y prefijo "_2" + Nta capitalizado para el segundo.
-    final n = NotaAsignatura.fromJson({
+  test('CourseGrade parsea ambos parciales con su capitalización real', () {
+    // Caso real de SIGMA: campos en minúscula para el firstTerm parcial
+    // y prefijo "_2" + Nta capitalizado para el secondTerm.
+    final n = CourseGrade.fromJson({
       'codigo': '331126',
       'asignatura': 'INVESTIGACIÓN FORMATIVA',
       'seccion': 'A1',
@@ -78,63 +78,63 @@ void main() {
       '_2NtaPromTiPy': '12.75',
       '_2NtaParcial1': '13   ',
     });
-    expect(n.notaActualNum, 11);
-    expect(n.notaActualText, '11');
-    expect(n.aprobado, true);
+    expect(n.currentGradeNum, 11);
+    expect(n.currentGradeText, '11');
+    expect(n.isApproved, true);
     expect(n.asistenciaPct, 100);
     expect(n.pF1, '09');
     expect(n.pF2, '13');
 
-    expect(n.primer.practicas, ['15', '12', '15', '']);
-    expect(n.primer.promPracticas, '14.00');
-    expect(n.primer.trabajoInv, '15');
-    expect(n.primer.promTiPy, '14.50');
-    expect(n.primer.examen, '3');
+    expect(n.firstTerm.practices, ['15', '12', '15', '']);
+    expect(n.firstTerm.practicesAverage, '14.00');
+    expect(n.firstTerm.researchWork, '15');
+    expect(n.firstTerm.researchProjectAverage, '14.50');
+    expect(n.firstTerm.exam, '3');
 
-    expect(n.segundo.practicas, ['13', '14', '', '']);
-    expect(n.segundo.promPracticas, '13.50');
-    expect(n.segundo.examen, '13');
-    expect(n.segundo.vacio, false);
+    expect(n.secondTerm.practices, ['13', '14', '', '']);
+    expect(n.secondTerm.practicesAverage, '13.50');
+    expect(n.secondTerm.exam, '13');
+    expect(n.secondTerm.isEmpty, false);
   });
 
-  test('notaFmt y RecordCurso manejan decimales', () {
-    expect(notaFmt('14.00'), '14');
-    expect(notaFmt('14.50'), '14.50');
-    expect(notaFmt('15'), '15');
-    expect(notaFmt('  '), '—');
-    expect(notaFmt('--'), '—');
-    expect(notaToDouble('14,5'), 14.5);
+  test('formatGrade y RecordCourse manejan decimales', () {
+    expect(formatGrade('14.00'), '14');
+    expect(formatGrade('14.50'), '14.50');
+    expect(formatGrade('15'), '15');
+    expect(formatGrade('  '), '—');
+    expect(formatGrade('--'), '—');
+    expect(parseGrade('14,5'), 14.5);
 
-    final c = RecordCurso.fromRow([
+    final c = RecordCourse.fromRow([
       'INGENIERÍA', 'INGENIERÍA DE SISTEMAS Y COMPUTACIÓN', '2022',
-      'concluido', 'TN', '1', '33111A', 'METODOLOGÍA', '2', '0',
+      'isFinished', 'TN', '1', '33111A', 'METODOLOGÍA', '2', '0',
       '33111A', ' ', '14.00', ' ', '1', 'Jul 13 2025', 'ALESSANDRO',
     ]);
-    expect(c.nombre, 'METODOLOGÍA');
-    expect(c.nota, 14.0);
+    expect(c.name, 'METODOLOGÍA');
+    expect(c.grade, 14.0);
     expect(c.notaText, '14');
-    expect(c.aprobado, true);
-    expect(c.concluido, true);
+    expect(c.isApproved, true);
+    expect(c.isFinished, true);
   });
 
-  test('BoletaCurso parsea la fila real (modelo nuevo 2026-1)', () {
-    final b = BoletaCurso.fromRow([
+  test('ReportCardCourse parsea la fila real (modelo nuevo 2026-1)', () {
+    final b = ReportCardCourse.fromRow([
       '72AF4D09-553C-4E2D-BF80-203D0F381292', '2022', '02', '2',
       '332123', 'ALGEBRA LINEAL', 'A1', '100', '2.8000', '3', 'Dsp.',
     ]);
-    expect(b.matriculaAsignaturaId, '72AF4D09-553C-4E2D-BF80-203D0F381292');
-    expect(b.codigo, '332123');
-    expect(b.nombre, 'ALGEBRA LINEAL');
-    expect(b.seccion, 'A1');
-    expect(b.asistencia, 100);
-    expect(b.promedio, 2.8);
+    expect(b.enrollmentSubjectId, '72AF4D09-553C-4E2D-BF80-203D0F381292');
+    expect(b.code, '332123');
+    expect(b.name, 'ALGEBRA LINEAL');
+    expect(b.section, 'A1');
+    expect(b.attendance, 100);
+    expect(b.average, 2.8);
     expect(b.promedioText, '2.80');
-    expect(b.enProceso, true);
+    expect(b.inProgress, true);
   });
 
-  test('CursoDetalleNotas agrupa unidades/evidencias/promedios', () {
+  test('CourseGradeDetail agrupa units/evidences/promedios', () {
     const id = 'F7AADDA4-A1B3-4D53-8131-3A70A2C42057';
-    final det = CursoDetalleNotas.fromRows([
+    final det = CourseGradeDetail.fromRows([
       ['210131', id, '12', '121', 'UNIDAD 1', '20.00', '11',
         'EVIDENCIA DE CONOCIMIENTO', '100.00', '15.00', ' ', 'tbl1'],
       ['210168', id, '12', '121', 'UNIDAD 1', '20.00', '12',
@@ -150,17 +150,17 @@ void main() {
         'tbl5'],
       [' ', id, ' ', ' ', ' ', ' ', ' ', ' ', ' ', '3.00', 'Dsp.', 'tbl6'],
     ]);
-    expect(det.unidades.length, 1);
-    final u = det.unidades.first;
-    expect(u.nombre, 'UNIDAD 1');
-    expect(u.peso, 20.0);
-    expect(u.evidencias.length, 3);
-    expect(u.evidencias.first.tipo, 'EVIDENCIA DE CONOCIMIENTO');
-    expect(u.evidencias.first.notaText, '15');
+    expect(det.units.length, 1);
+    final u = det.units.first;
+    expect(u.name, 'UNIDAD 1');
+    expect(u.weight, 20.0);
+    expect(u.evidences.length, 3);
+    expect(u.evidences.first.type, 'EVIDENCIA DE CONOCIMIENTO');
+    expect(u.evidences.first.notaText, '15');
     expect(u.promedioText, '14.33');
-    expect(det.promedioFinalText, '3');
-    expect(det.estado, 'Dsp.');
-    expect(det.tieneSustitutorio, false);
+    expect(det.finalAverageText, '3');
+    expect(det.state, 'Dsp.');
+    expect(det.hasSubstitute, false);
   });
 
   test('Fmt.parseAula y Fmt.formatAula procesan correctamente "I 302" y otros formatos', () {

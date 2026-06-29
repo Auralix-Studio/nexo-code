@@ -8,7 +8,6 @@ enum AppShortcutType {
 
   final String id;
   const AppShortcutType(this.id);
-
   static AppShortcutType? fromId(String id) {
     for (final type in values) {
       if (type.id == id) return type;
@@ -20,17 +19,15 @@ enum AppShortcutType {
 class ShortcutService extends ChangeNotifier {
   static final ShortcutService instance = ShortcutService._();
   ShortcutService._();
-
   final QuickActions _quickActions = const QuickActions();
   AppShortcutType? _pendingAction;
-
   AppShortcutType? get pendingAction => _pendingAction;
-
   void init() {
-    if (kIsWeb || (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS)) {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
       return;
     }
-
     _quickActions.initialize((String shortcutType) {
       final type = AppShortcutType.fromId(shortcutType);
       if (type != null) {
@@ -38,7 +35,6 @@ class ShortcutService extends ChangeNotifier {
         notifyListeners();
       }
     });
-
     _quickActions.setShortcutItems(<ShortcutItem>[
       const ShortcutItem(
         type: 'action_schedule',

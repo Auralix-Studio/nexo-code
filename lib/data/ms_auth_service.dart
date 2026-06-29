@@ -1,44 +1,31 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/graph_client.dart';
 
-/// Estado de la sesión Microsoft. Independiente de la sesión SIGMA.
 enum MsAuthStatus { unknown, signedOut, connecting, authenticated }
 
-/// Servicio de autenticación Microsoft 365 vía OAuth2 Device Code Flow,
-/// con peticiones HTTP propias (ver [GraphClient]). Persiste tokens y los
-/// refresca de forma transparente.
 class MsAuthService extends ChangeNotifier {
   MsAuthService(this._client) {
     _client.reauthenticate = _refresh;
     _client.onUnauthorized = _onAuthFailed;
   }
-
   final GraphClient _client;
-
   MsAuthStatus _status = MsAuthStatus.unknown;
   MsTokens? _tokens;
-
-  /// Código a mostrar al alumno mientras se conecta (Device Code Flow).
   DeviceCodeInfo? _deviceCode;
   String? _error;
   bool _cancelRequested = false;
   Future<bool>? _inFlightRefresh;
-
   MsAuthStatus get status => _status;
   bool get isAuthenticated => _status == MsAuthStatus.authenticated;
   bool get isConnecting => _status == MsAuthStatus.connecting;
   DeviceCodeInfo? get deviceCode => _deviceCode;
   String? get error => _error;
   bool get isConfigured => MsConfig.isConfigured;
-
-  /// Arranque: rehidrata tokens guardados.
   Future<void> bootstrap() async {
     final raw = AppStorage.instance.msSessionJson;
     if (raw == null) {
@@ -60,7 +47,6 @@ class MsAuthService extends ChangeNotifier {
       _setStatus(MsAuthStatus.authenticated);
       return;
     }
-    // Caducado: intenta refrescar.
     if (await _refresh()) {
       _setStatus(MsAuthStatus.authenticated);
     } else {
@@ -68,8 +54,6 @@ class MsAuthService extends ChangeNotifier {
     }
   }
 
-  /// Inicia el Device Code Flow: pide el código y sondea hasta que el alumno
-  /// lo confirma en el navegador. La UI debe escuchar [deviceCode].
   Future<void> startSignIn() async {
     if (!MsConfig.isConfigured) {
       _error =
@@ -116,13 +100,14 @@ class MsAuthService extends ChangeNotifier {
     }
   }
 
-  /// Cancela un inicio de sesión en curso.
   void cancelSignIn() {
     _cancelRequested = true;
     _deviceCode = null;
-    _setStatus(_tokens != null && !_tokens!.isExpired
-        ? MsAuthStatus.authenticated
-        : MsAuthStatus.signedOut);
+    _setStatus(
+      _tokens != null && !_tokens!.isExpired
+          ? MsAuthStatus.authenticated
+          : MsAuthStatus.signedOut,
+    );
   }
 
   Future<void> _persist(MsTokens tokens) async {
@@ -131,7 +116,6 @@ class MsAuthService extends ChangeNotifier {
     await AppStorage.instance.setMsSessionJson(jsonEncode(tokens.toJson()));
   }
 
-  /// Refresh transparente (deduplicado si hay varias llamadas en vuelo).
   Future<bool> _refresh() {
     return _inFlightRefresh ??= _doRefresh()
       ..whenComplete(() => _inFlightRefresh = null);
@@ -142,12 +126,13 @@ class MsAuthService extends ChangeNotifier {
     if (rt == null || rt.isEmpty) return false;
     try {
       final fresh = await _client.refreshTokens(rt);
-      // Azure puede no devolver un refresh nuevo: conservamos el anterior.
-      await _persist(MsTokens(
-        accessToken: fresh.accessToken,
-        refreshToken: fresh.refreshToken ?? rt,
-        expiresAt: fresh.expiresAt,
-      ));
+      await _persist(
+        MsTokens(
+          accessToken: fresh.accessToken,
+          refreshToken: fresh.refreshToken ?? rt,
+          expiresAt: fresh.expiresAt,
+        ),
+      );
       return true;
     } catch (_) {
       return false;

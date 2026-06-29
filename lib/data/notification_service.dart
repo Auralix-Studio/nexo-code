@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
-
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/domain/notification_prefs.dart';
 import 'package:nexo/domain/unified_models.dart';
@@ -14,16 +15,10 @@ import 'package:nexo/domain/unified_models.dart';
 class NotificationService extends ChangeNotifier {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
-
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
   NotificationPrefs _prefs = const NotificationPrefs();
-
   NotificationPrefs get prefs => _prefs;
-
-  /// Plataformas con backend nativo de notificaciones. Web no tiene; las
-  /// demás (Android/iOS/macOS/Linux/Windows) están soportadas por
-  /// flutter_local_notifications >=19.
   bool get _supported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
@@ -31,32 +26,15 @@ class NotificationService extends ChangeNotifier {
           defaultTargetPlatform == TargetPlatform.macOS ||
           defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.windows);
-
-  /// Plataformas donde tiene sentido programar notificaciones futuras
-  /// (`zonedSchedule`). En Windows, el backend WinRT no soporta
-  /// `zonedSchedule`; ahí solo usamos `show()` (inmediatas, como las de
-  /// "nueva nota publicada"). Programaciones futuras de clases/pagos siguen
-  /// activas en mobile/macOS/Linux.
   bool get _supportsScheduling =>
       _supported && defaultTargetPlatform != TargetPlatform.windows;
-
   static const _idClassBase = 10000;
   static const _idPaymentBase = 20000;
   static const _idGradeBase = 30000;
   static const _idUpdate = 40001;
   static const _payloadUpdateInstall = 'nexo:update:install';
-
-  /// Callback que se dispara cuando el usuario toca la notificación de
-  /// actualización lista. Lo setea el wiring en main.dart con la instancia
-  /// de UpdateService que debe lanzar el instalador.
   Future<void> Function()? onInstallUpdateTap;
-
-  /// Modo de alarma en Android. Por defecto **EXACTO**: las inexactas las
-  /// agrupa/posterga el sistema (Doze) y llegaban con 30+ min de retraso o a
-  /// media clase. Si el dispositivo no permite exactas (Android 13+ sin el
-  /// permiso SCHEDULE_EXACT_ALARM concedido), cae a inexacto como respaldo.
   AndroidScheduleMode _androidMode = AndroidScheduleMode.exactAllowWhileIdle;
-
   Future<void> init() async {
     final raw = AppStorage.instance.notifPrefsJson;
     if (raw != null) {
@@ -72,14 +50,10 @@ class NotificationService extends ChangeNotifier {
       final name = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(name));
     } catch (_) {}
-
     const android = AndroidInitializationSettings('@mipmap/launcher_icon');
     const ios = DarwinInitializationSettings();
     const macos = DarwinInitializationSettings();
     const linux = LinuxInitializationSettings(defaultActionName: 'Abrir');
-    // AUMID consistente con la instalación de Windows (HKCU\...\Uninstall\Nexo
-    // y los .lnk creados por WinSetupService apuntan al mismo ejecutable).
-    // GUID estable para que Action Center agrupe correctamente.
     const windows = WindowsInitializationSettings(
       appName: 'Nexo UPLA',
       appUserModelId: 'pe.upla.nexo',
@@ -113,8 +87,6 @@ class NotificationService extends ChangeNotifier {
             AndroidFlutterLocalNotificationsPlugin
           >();
       final granted = await android?.requestNotificationsPermission();
-      // Además del permiso de notificaciones, asegurar el de alarmas exactas
-      // para que los recordatorios lleguen a tiempo.
       await _ensureExactAlarms(request: true);
       return granted ?? false;
     }
@@ -142,21 +114,18 @@ class NotificationService extends ChangeNotifier {
       );
       return granted ?? false;
     }
-    // Linux/Windows: no requieren permiso explícito en runtime.
     return true;
   }
 
-  /// Resuelve si podemos programar alarmas **exactas** (Android 12+ requiere el
-  /// permiso `SCHEDULE_EXACT_ALARM`). Si [request] y no está concedido, lo pide
-  /// (en Android 13+ abre la pantalla de Ajustes). Ajusta [_androidMode]: exacto
-  /// si está permitido, inexacto como respaldo.
   Future<void> _ensureExactAlarms({bool request = false}) async {
     if (!_supportsScheduling ||
         defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android == null) return;
     var can = await android.canScheduleExactNotifications() ?? false;
     if (!can && request) {
@@ -171,13 +140,13 @@ class NotificationService extends ChangeNotifier {
   Future<void> updatePrefs(
     NotificationPrefs prefs, {
     List<ScheduleClass>? clases,
-    List<Payment>? cuotas,
+    List<Payment>? installments,
   }) async {
     _prefs = prefs;
     await AppStorage.instance.setNotifPrefsJson(jsonEncode(prefs.toJson()));
     notifyListeners();
     if (prefs.enabled) await requestPermission();
-    await reschedule(clases: clases, cuotas: cuotas);
+    await reschedule(clases: clases, installments: installments);
   }
 
   AndroidNotificationDetails _androidDetails(String channelId, String name) =>
@@ -187,7 +156,6 @@ class NotificationService extends ChangeNotifier {
         importance: Importance.high,
         priority: Priority.high,
       );
-
   NotificationDetails _details(String channelId, String name) =>
       NotificationDetails(
         android: _androidDetails(channelId, name),
@@ -196,39 +164,31 @@ class NotificationService extends ChangeNotifier {
         linux: const LinuxNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       );
-
   Future<void> reschedule({
     List<ScheduleClass>? clases,
-    List<Payment>? cuotas,
+    List<Payment>? installments,
   }) async {
     if (!_supported || !_ready) return;
     if (_supportsScheduling) {
       await _plugin.cancelAll();
     }
     if (!_prefs.enabled) return;
-
-    // Programaciones futuras solo donde el backend soporta zonedSchedule.
     if (!_supportsScheduling) return;
-
-    // Elegir exacto/inexacto según el permiso actual (sin abrir Ajustes aquí;
-    // eso se pide al activar las notificaciones).
     await _ensureExactAlarms();
-
     if (_prefs.classesEnabled && clases != null) {
       await _scheduleClasses(clases);
     }
-    if (_prefs.paymentsEnabled && cuotas != null) {
-      await _schedulePayments(cuotas);
+    if (_prefs.paymentsEnabled && installments != null) {
+      await _schedulePayments(installments);
     }
   }
 
   Future<void> _scheduleClasses(List<ScheduleClass> clases) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idClassBase;
-    // Próximos 7 días de clases.
     for (var offset = 0; offset < 7; offset++) {
       final day = now.add(Duration(days: offset));
-      final weekday = day.weekday; // 1=Lun..7=Dom
+      final weekday = day.weekday;
       for (final c in clases.where((c) => c.weekday == weekday)) {
         final hm = c.startTime.split(':');
         if (hm.length < 2) continue;
@@ -245,13 +205,14 @@ class NotificationService extends ChangeNotifier {
         );
         final when = start.subtract(Duration(minutes: _prefs.classLeadMinutes));
         if (when.isBefore(now)) continue;
+        final l10n = lookupAppLocalizations(Locale(AppStorage.instance.localeCode ?? 'es'));
         await _zoned(
           id++,
           c.subject,
-          'Empieza en ${_prefs.classLeadMinutes} minutos',
+          l10n.notifStartsIn(_prefs.classLeadMinutes),
           when,
-          'clases',
-          'Recordatorio de clases',
+          'classes',
+          l10n.notifClassesReminder,
         );
       }
     }
@@ -274,19 +235,20 @@ class NotificationService extends ChangeNotifier {
           0,
         );
         if (when.isBefore(now)) continue;
+        final l10n = lookupAppLocalizations(Locale(AppStorage.instance.localeCode ?? 'es'));
         final cuando = lead == 0
-            ? 'vence hoy'
+            ? l10n.notifDueToday
             : lead == 1
-            ? 'vence mañana'
-            : 'vence en $lead días';
+            ? l10n.notifDueTomorrow
+            : l10n.notifDueInDays(lead);
         await _zoned(
           id++,
-          'Pago pendiente — $cuando',
+          l10n.notifPendingPayment(cuando),
           '${c.description}: ${c.currency} '
               '${c.total.toStringAsFixed(2)} (${c.dueDateRaw})',
           when,
-          'pagos',
-          'Recordatorio de pagos',
+          'payments',
+          l10n.notifPaymentsReminder,
         );
       }
     }
@@ -310,8 +272,6 @@ class NotificationService extends ChangeNotifier {
         androidScheduleMode: _androidMode,
       );
     } catch (_) {
-      // Si las exactas no están permitidas en este dispositivo, no perder la
-      // notificación: bajar a inexacto el resto de la sesión y reintentar.
       if (_androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
         _androidMode = AndroidScheduleMode.inexactAllowWhileIdle;
         try {
@@ -328,21 +288,18 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
-  Future<void> showGradeChanged(String curso, String nota) async {
+  Future<void> showGradeChanged(String course, String grade) async {
     if (!_supported || !_ready || !_prefs.enabled || !_prefs.gradesEnabled) {
       return;
     }
     await _plugin.show(
-      _idGradeBase + (curso.hashCode % 1000),
+      _idGradeBase + (course.hashCode % 1000),
       'Nueva nota publicada',
-      '$curso: $nota',
-      _details('notas', 'Notas'),
+      '$course: $grade',
+      _details('grades', 'Notas'),
     );
   }
 
-  /// Hay una versión nueva detectada pero aún no se pudo descargar (sin red,
-  /// fallo de GitHub, etc.). Se mostrará la "ready" cuando la descarga
-  /// termine — esta es un fallback informativo.
   Future<void> showUpdateAvailable(String version) async {
     if (!_supported || !_ready) return;
     await _plugin.show(
@@ -353,8 +310,6 @@ class NotificationService extends ChangeNotifier {
     );
   }
 
-  /// El APK nuevo ya está descargado — tocar la notificación dispara el
-  /// instalador del sistema vía [onInstallUpdateTap].
   Future<void> showUpdateReady(String version) async {
     if (!_supported || !_ready) return;
     await _plugin.show(

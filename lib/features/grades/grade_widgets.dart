@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -7,9 +6,6 @@ import 'package:nexo/domain/models.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-/// Distribuye tiles de curso en 1 columna (móvil/tablet) o 2 (escritorio),
-/// para que la lista de notas use el ancho como un dashboard en vez de quedar
-/// en una columna angosta.
 Widget gradeTileGrid(BuildContext context, List<Widget> tiles) {
   if (!context.isDesktop) {
     return Column(
@@ -34,7 +30,6 @@ Widget gradeTileGrid(BuildContext context, List<Widget> tiles) {
   );
 }
 
-/// Color de una nota según rango.
 Color gradeColor(num? n) {
   if (n == null) return NexoTheme.textMuted;
   if (n >= 14) return NexoTheme.success;
@@ -42,7 +37,6 @@ Color gradeColor(num? n) {
   return NexoTheme.danger;
 }
 
-/// Badge cuadrado redondeado con la nota. Tamaño configurable.
 class GradeBadge extends StatelessWidget {
   final String text;
   final double size;
@@ -53,13 +47,11 @@ class GradeBadge extends StatelessWidget {
     this.size = 52,
     this.fontSize = 18,
   });
-
   factory GradeBadge.fromRaw(String raw, {double size = 52, double fs = 18}) =>
-      GradeBadge(text: notaFmt(raw), size: size, fontSize: fs);
-
+      GradeBadge(text: formatGrade(raw), size: size, fontSize: fs);
   @override
   Widget build(BuildContext context) {
-    final c = gradeColor(notaToDouble(text == '—' ? null : text));
+    final c = gradeColor(parseGrade(text == '—' ? null : text));
     return Container(
       width: size,
       height: size,
@@ -82,25 +74,24 @@ class GradeBadge extends StatelessWidget {
   }
 }
 
-/// Encabezado de detalle: nota final + nombre + meta.
 class GradeHeader extends StatelessWidget {
   final String titulo;
   final String subtitulo;
   final String notaFinalText;
-  final bool enProceso;
+  final bool inProgress;
   const GradeHeader({
     super.key,
     required this.titulo,
     required this.subtitulo,
     required this.notaFinalText,
-    this.enProceso = false,
+    this.inProgress = false,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = gradeColor(
-        notaToDouble(notaFinalText == '—' ? null : notaFinalText));
+      parseGrade(notaFinalText == '—' ? null : notaFinalText),
+    );
     return GestureDetector(
       onTap: () => ClipboardHelper.copyAndShow(
         context,
@@ -153,7 +144,7 @@ class GradeHeader extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (enProceso) ...[
+                      if (inProgress) ...[
                         const Gap.h(AppSpacing.sm),
                         _miniChip(l.statusInProcess, NexoTheme.warning),
                       ],
@@ -169,26 +160,23 @@ class GradeHeader extends StatelessWidget {
   }
 
   Widget _miniChip(String t, Color color) => Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          borderRadius: AppRadii.rPill,
-        ),
-        child: Text(
-          t,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: 0.4,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.16),
+      borderRadius: AppRadii.rPill,
+    ),
+    child: Text(
+      t,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        color: color,
+        letterSpacing: 0.4,
+      ),
+    ),
+  );
 }
 
-/// Fila de evaluación: etiqueta a la izquierda, nota a la derecha,
-/// con barra de progreso sutil. Estilo "tabla", no chips.
 class GradeRow extends StatelessWidget {
   final String label;
   final String valueRaw;
@@ -201,25 +189,19 @@ class GradeRow extends StatelessWidget {
     this.strong = false,
     this.last = false,
   });
-
   @override
   Widget build(BuildContext context) {
-    final n = notaToDouble(valueRaw);
+    final n = parseGrade(valueRaw);
     final c = gradeColor(n);
-    final txt = notaFmt(valueRaw);
+    final txt = formatGrade(valueRaw);
     return GestureDetector(
-      onTap: () => ClipboardHelper.copyAndShow(
-        context,
-        '$label: $txt',
-        label: label,
-      ),
+      onTap: () =>
+          ClipboardHelper.copyAndShow(context, '$label: $txt', label: label),
       child: Container(
         decoration: BoxDecoration(
           border: last
               ? null
-              : Border(
-                  bottom: BorderSide(color: NexoTheme.divider),
-                ),
+              : Border(bottom: BorderSide(color: NexoTheme.divider)),
         ),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
@@ -229,7 +211,9 @@ class GradeRow extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: AppFont.body,
-                  color: strong ? NexoTheme.textPrimary : NexoTheme.textSecondary,
+                  color: strong
+                      ? NexoTheme.textPrimary
+                      : NexoTheme.textSecondary,
                   fontWeight: strong ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
@@ -268,25 +252,22 @@ class GradeRow extends StatelessWidget {
   }
 }
 
-/// Tarjeta de sección (Unidad / Parcial): cabecera con título, peso y
-/// promedio, y lista de filas.
 class GradeSectionCard extends StatelessWidget {
   final String titulo;
-  final String? pesoText; // "20%"
-  final String? promedioRaw;
+  final String? pesoText;
+  final String? rawAverage;
   final List<Widget> rows;
   const GradeSectionCard({
     super.key,
     required this.titulo,
     required this.rows,
     this.pesoText,
-    this.promedioRaw,
+    this.rawAverage,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final promColor = gradeColor(notaToDouble(promedioRaw));
+    final promColor = gradeColor(parseGrade(rawAverage));
     return DecoratedBox(
       decoration: BoxDecoration(
         color: NexoTheme.surface,
@@ -296,16 +277,19 @@ class GradeSectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Cabecera
           Container(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md,
-                AppSpacing.lg, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
             decoration: BoxDecoration(
               color: NexoTheme.bg,
               borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadii.xl)),
-              border: Border(
-                  bottom: BorderSide(color: NexoTheme.border)),
+                top: Radius.circular(AppRadii.xl),
+              ),
+              border: Border(bottom: BorderSide(color: NexoTheme.border)),
             ),
             child: Row(
               children: [
@@ -330,7 +314,9 @@ class GradeSectionCard extends StatelessWidget {
                   const Gap.h(AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: 2),
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: NexoTheme.accent.withValues(alpha: 0.14),
                       borderRadius: AppRadii.rPill,
@@ -346,7 +332,7 @@ class GradeSectionCard extends StatelessWidget {
                   ),
                 ],
                 const Spacer(),
-                if (promedioRaw != null && notaFmt(promedioRaw) != '—')
+                if (rawAverage != null && formatGrade(rawAverage) != '—')
                   Row(
                     children: [
                       Text(
@@ -358,7 +344,7 @@ class GradeSectionCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        notaFmt(promedioRaw),
+                        formatGrade(rawAverage),
                         style: TextStyle(
                           fontSize: AppFont.title,
                           fontWeight: FontWeight.w900,
@@ -370,7 +356,6 @@ class GradeSectionCard extends StatelessWidget {
               ],
             ),
           ),
-          // Filas
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(children: rows),

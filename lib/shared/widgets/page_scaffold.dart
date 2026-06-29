@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 
-/// Encabezado consistente para cada sección.
 class PageHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final List<Widget>? actions;
-
   const PageHeader({
     super.key,
     required this.title,
     this.subtitle,
     this.actions,
   });
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -67,18 +63,14 @@ class PageHeader extends StatelessWidget {
   }
 }
 
-/// Contenedor de página: padding horizontal estándar, maxWidth y center.
 class PageBody extends StatelessWidget {
   final Widget child;
   const PageBody({super.key, required this.child});
-
   @override
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: context.isDesktop ? 1500 : 1240,
-        ),
+        constraints: BoxConstraints(maxWidth: context.isDesktop ? 1500 : 1240),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: context.contentPadding,

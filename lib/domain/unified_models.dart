@@ -14,7 +14,6 @@ class Student {
   final double? gpa;
   final int? creditsApproved;
   final int? creditsTotal;
-
   const Student({
     required this.id,
     required this.fullName,
@@ -30,10 +29,14 @@ class Student {
     this.creditsApproved,
     this.creditsTotal,
   });
-
   static String _s(Object? v) => v?.toString() ?? '';
-  static int? _i(Object? v) =>
-      v is int ? v : v is num ? v.toInt() : v is String ? int.tryParse(v) : null;
+  static int? _i(Object? v) => v is int
+      ? v
+      : v is num
+      ? v.toInt()
+      : v is String
+      ? int.tryParse(v)
+      : null;
   static bool _b(Object? v) {
     if (v is bool) return v;
     if (v is num) return v != 0;
@@ -44,22 +47,19 @@ class Student {
     return false;
   }
 
-  /// SIGMA `Estudiante/MostrarInfoEstudiante` — JSON con keys en español.
   factory Student.fromSigmaJson(Map<String, dynamic> j) => Student(
-        id: _s(j['est_Id']),
-        fullName: _s(j['estudiante']),
-        career: _s(j['carrera']),
-        faculty: _s(j['facultad']),
-        campus: _expandSede(_s(j['sede'])),
-        level: _s(j['nivel']),
-        studyPlan: _s(j['pes_Id']),
-        modality: _s(j['modalidad']),
-        isEnrolled: _b(j['matriculado']),
-        lastEnrollment: j['ultimaMatricula']?.toString(),
-        creditsApproved: _i(j['creditoAprobado']),
-      );
-
-  /// Códigos de sede UPLA → nombre legible.
+    id: _s(j['est_Id']),
+    fullName: _s(j['estudiante']),
+    career: _s(j['carrera']),
+    faculty: _s(j['facultad']),
+    campus: _expandSede(_s(j['sede'])),
+    level: _s(j['nivel']),
+    studyPlan: _s(j['pes_Id']),
+    modality: _s(j['modalidad']),
+    isEnrolled: _b(j['matriculado']),
+    lastEnrollment: j['ultimaMatricula']?.toString(),
+    creditsApproved: _i(j['creditoAprobado']),
+  );
   static const _sedeNames = {
     'HU': 'HUANCAYO',
     'HYO': 'HUANCAYO',
@@ -73,42 +73,35 @@ class Student {
     'TR': 'TARMA',
     'CER': 'CERRO DE PASCO',
   };
-
   static String _expandSede(String code) {
     final t = code.trim().toUpperCase();
     return _sedeNames[t] ?? code;
   }
 
-  /// Intranet PHP — combina `datosEstudianteMatriculado` (row posicional)
-  /// con la cabecera de `consultarConstanciaMatriculaEstudiante` para
-  /// tener nombres legibles de facultad/carrera + nivel/modalidad.
   factory Student.fromIntranetData({
     required List<dynamic> datosBasico,
-    required ConstanciaMatricula constancia,
+    required EnrollmentCertificate certificate,
   }) {
     String at(int i) =>
         (i < datosBasico.length ? datosBasico[i]?.toString() ?? '' : '').trim();
     return Student(
-      id: constancia.codigo,
-      fullName: constancia.estudiante,
-      career: constancia.carrera,
-      faculty: constancia.facultad,
+      id: certificate.code,
+      fullName: certificate.student,
+      career: certificate.career,
+      faculty: certificate.faculty,
       campus: _expandSede(at(6)),
-      level: constancia.nivel,
-      studyPlan: constancia.planEstudios.isNotEmpty
-          ? constancia.planEstudios
+      level: certificate.level,
+      studyPlan: certificate.studyPlan.isNotEmpty
+          ? certificate.studyPlan
           : at(4),
-      modality: constancia.modalidad,
-      isEnrolled: constancia.codigo.isNotEmpty,
-      lastEnrollment:
-          constancia.anio > 0 ? '${constancia.anio}-${constancia.periodo}' : null,
-      // totalCreditos del constancia = créditos matriculados ESTE semestre.
-      // Es la mejor aproximación que tenemos sin record académico completo.
-      creditsApproved: constancia.totalCreditos.toInt(),
+      modality: certificate.modality,
+      isEnrolled: certificate.code.isNotEmpty,
+      lastEnrollment: certificate.year > 0
+          ? '${certificate.year}-${certificate.periodo}'
+          : null,
+      creditsApproved: certificate.totalCredits.toInt(),
     );
   }
-
-  // Merge: prioritizes this student (e.g. SIGMA), fills in missing/nulls from other (e.g. INTRANET)
   Student mergeWith(Student other) {
     return Student(
       id: id.isNotEmpty ? id : other.id,
@@ -128,36 +121,35 @@ class Student {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'fullName': fullName,
-        'career': career,
-        'faculty': faculty,
-        'campus': campus,
-        'level': level,
-        'studyPlan': studyPlan,
-        'modality': modality,
-        'isEnrolled': isEnrolled,
-        'lastEnrollment': lastEnrollment,
-        'gpa': gpa,
-        'creditsApproved': creditsApproved,
-        'creditsTotal': creditsTotal,
-      };
-
+    'id': id,
+    'fullName': fullName,
+    'carrera': career,
+    'facultad': faculty,
+    'campus': campus,
+    'nivel': level,
+    'planEstudios': studyPlan,
+    'modalidad': modality,
+    'isEnrolled': isEnrolled,
+    'lastEnrollment': lastEnrollment,
+    'gpa': gpa,
+    'creditsApproved': creditsApproved,
+    'creditsTotal': creditsTotal,
+  };
   factory Student.fromJson(Map<String, dynamic> json) => Student(
-        id: json['id'] as String? ?? '',
-        fullName: json['fullName'] as String? ?? '',
-        career: json['career'] as String? ?? '',
-        faculty: json['faculty'] as String? ?? '',
-        campus: json['campus'] as String? ?? '',
-        level: json['level'] as String? ?? '',
-        studyPlan: json['studyPlan'] as String? ?? '',
-        modality: json['modality'] as String? ?? '',
-        isEnrolled: json['isEnrolled'] as bool? ?? false,
-        lastEnrollment: json['lastEnrollment'] as String?,
-        gpa: (json['gpa'] as num?)?.toDouble(),
-        creditsApproved: json['creditsApproved'] as int?,
-        creditsTotal: json['creditsTotal'] as int?,
-      );
+    id: json['id'] as String? ?? '',
+    fullName: json['fullName'] as String? ?? '',
+    career: json['carrera'] as String? ?? '',
+    faculty: json['facultad'] as String? ?? '',
+    campus: json['campus'] as String? ?? '',
+    level: json['nivel'] as String? ?? '',
+    studyPlan: json['planEstudios'] as String? ?? '',
+    modality: json['modalidad'] as String? ?? '',
+    isEnrolled: json['isEnrolled'] as bool? ?? false,
+    lastEnrollment: json['lastEnrollment'] as String?,
+    gpa: (json['gpa'] as num?)?.toDouble(),
+    creditsApproved: json['creditsApproved'] as int?,
+    creditsTotal: json['creditsTotal'] as int?,
+  );
 }
 
 class Payment {
@@ -167,9 +159,7 @@ class Payment {
   final double lateFee;
   final double total;
   final String note;
-  /// Fecha cruda como vino del backend ("dd-MM-yyyy" SIGMA, "dd/MM/yyyy" Intranet).
   final String dueDateRaw;
-
   const Payment({
     required this.description,
     required this.currency,
@@ -179,21 +169,15 @@ class Payment {
     required this.note,
     required this.dueDateRaw,
   });
-
-  /// SIGMA `ListarCoutas*` — dict shape.
   factory Payment.fromSigmaJson(Map<String, dynamic> j) => Payment(
-        description: j['descripcion']?.toString() ?? '',
-        currency: j['tipoMoneda']?.toString() ?? '',
-        amount: (j['importe'] as num?)?.toDouble() ?? 0,
-        lateFee: (j['mora'] as num?)?.toDouble() ?? 0,
-        total: (j['subtotal'] as num?)?.toDouble() ?? 0,
-        note: j['observacion']?.toString() ?? '',
-        dueDateRaw: j['fechaVencimiento']?.toString() ?? '',
-      );
-
-  /// Intranet endpoints de estado de deuda (`consultarPensiones`,
-  /// `consultartotalPensiones`) — formato:
-  /// `[descripcion, "dd-MM-yyyy", currency, importe, mora, total, observacion]`.
+    description: j['descripcion']?.toString() ?? '',
+    currency: j['tipoMoneda']?.toString() ?? '',
+    amount: (j['importe'] as num?)?.toDouble() ?? 0,
+    lateFee: (j['mora'] as num?)?.toDouble() ?? 0,
+    total: (j['subtotal'] as num?)?.toDouble() ?? 0,
+    note: j['observacion']?.toString() ?? '',
+    dueDateRaw: j['fechaVencimiento']?.toString() ?? '',
+  );
   factory Payment.fromDebtRow(List<dynamic> r) {
     String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
     final amount = double.tryParse(at(3)) ?? 0;
@@ -210,9 +194,6 @@ class Payment {
       dueDateRaw: at(1),
     );
   }
-
-  /// Intranet `consultarCuotasEstudiante` — row posicional (cronograma teórico)
-  /// `[idPer, totSem, monto, nroCuota, "dd/MM/yyyy", totCuotas, fechaGen]`.
   factory Payment.fromIntranetRow(List<dynamic> r, {String? termLabel}) {
     String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
     final amount = double.tryParse(at(2)) ?? 0;
@@ -235,7 +216,6 @@ class Payment {
       dueDateRaw: at(4),
     );
   }
-
   DateTime? get dueDate {
     final parts = dueDateRaw.split(RegExp(r'[-/]'));
     if (parts.length != 3) return null;
@@ -254,26 +234,24 @@ class Payment {
   }
 
   bool isOverdueAt(DateTime now) => (daysUntilDue(now) ?? 0) < 0;
-
   Map<String, dynamic> toJson() => {
-        'description': description,
-        'currency': currency,
-        'amount': amount,
-        'lateFee': lateFee,
-        'total': total,
-        'note': note,
-        'dueDateRaw': dueDateRaw,
-      };
-
+    'descripcion': description,
+    'currency': currency,
+    'monto': amount,
+    'lateFee': lateFee,
+    'total': total,
+    'note': note,
+    'dueDateRaw': dueDateRaw,
+  };
   factory Payment.fromJson(Map<String, dynamic> j) => Payment(
-        description: j['description'] as String? ?? '',
-        currency: j['currency'] as String? ?? '',
-        amount: (j['amount'] as num?)?.toDouble() ?? 0,
-        lateFee: (j['lateFee'] as num?)?.toDouble() ?? 0,
-        total: (j['total'] as num?)?.toDouble() ?? 0,
-        note: j['note'] as String? ?? '',
-        dueDateRaw: j['dueDateRaw'] as String? ?? '',
-      );
+    description: j['descripcion'] as String? ?? '',
+    currency: j['currency'] as String? ?? '',
+    amount: (j['monto'] as num?)?.toDouble() ?? 0,
+    lateFee: (j['lateFee'] as num?)?.toDouble() ?? 0,
+    total: (j['total'] as num?)?.toDouble() ?? 0,
+    note: j['note'] as String? ?? '',
+    dueDateRaw: j['dueDateRaw'] as String? ?? '',
+  );
 }
 
 class PaymentRecord {
@@ -281,7 +259,6 @@ class PaymentRecord {
   final String number;
   final String operationType;
   final String item;
-  /// `yyyy-MM-dd` (normalizado).
   final String date;
   final String time;
   final String term;
@@ -291,7 +268,6 @@ class PaymentRecord {
   final String note;
   final String voucher;
   final String place;
-
   const PaymentRecord({
     required this.serial,
     required this.number,
@@ -307,31 +283,28 @@ class PaymentRecord {
     required this.voucher,
     required this.place,
   });
-
-  /// SIGMA `ListarHistorico` — dict.
   factory PaymentRecord.fromSigmaJson(Map<String, dynamic> j) => PaymentRecord(
-        serial: j['serieOper']?.toString() ?? '',
-        number: j['numOper']?.toString() ?? '',
-        operationType: j['desOper']?.toString() ?? '',
-        item: j['item']?.toString() ?? '',
-        date: j['fecha']?.toString() ?? '',
-        time: j['hora']?.toString() ?? '',
-        term: j['periodo']?.toString() ?? '',
-        concept: j['concepto']?.toString() ?? '',
-        currency: j['tipoMoneda']?.toString() ?? '',
-        amount: (j['importe'] as num?)?.toDouble() ?? 0,
-        note: j['observacion']?.toString() ?? '',
-        voucher: j['comprobante']?.toString() ?? '',
-        place: j['lugar']?.toString() ?? '',
-      );
-
-  /// Intranet `consultarUltimasOperaciones` — row posicional.
+    serial: j['serieOper']?.toString() ?? '',
+    number: j['numOper']?.toString() ?? '',
+    operationType: j['desOper']?.toString() ?? '',
+    item: j['item']?.toString() ?? '',
+    date: j['fecha']?.toString() ?? '',
+    time: j['hora']?.toString() ?? '',
+    term: j['periodo']?.toString() ?? '',
+    concept: j['concepto']?.toString() ?? '',
+    currency: j['tipoMoneda']?.toString() ?? '',
+    amount: (j['importe'] as num?)?.toDouble() ?? 0,
+    note: j['observacion']?.toString() ?? '',
+    voucher: j['comprobante']?.toString() ?? '',
+    place: j['lugar']?.toString() ?? '',
+  );
   factory PaymentRecord.fromIntranetRow(List<dynamic> r) {
     String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
     String date = at(4);
     final parts = date.split('/');
     if (parts.length == 3) {
-      date = '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
+      date =
+          '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
     }
     return PaymentRecord(
       serial: at(0),
@@ -349,7 +322,6 @@ class PaymentRecord {
       place: at(11),
     );
   }
-
   DateTime? get dateAsDate {
     final p = date.split('-');
     if (p.length != 3) return null;
@@ -370,20 +342,18 @@ class Fee {
   final String currency;
   final double amount;
   final String note;
-
   const Fee({
     required this.description,
     required this.currency,
     required this.amount,
     required this.note,
   });
-
   factory Fee.fromSigmaJson(Map<String, dynamic> j) => Fee(
-        description: j['descripcion']?.toString() ?? '',
-        currency: j['tipoMoneda']?.toString() ?? '',
-        amount: (j['importe'] as num?)?.toDouble() ?? 0,
-        note: j['observacion']?.toString() ?? '',
-      );
+    description: j['descripcion']?.toString() ?? '',
+    currency: j['tipoMoneda']?.toString() ?? '',
+    amount: (j['importe'] as num?)?.toDouble() ?? 0,
+    note: j['observacion']?.toString() ?? '',
+  );
 }
 
 class ScheduleClass {
@@ -396,19 +366,14 @@ class ScheduleClass {
   final String campus;
   final String building;
   final String room;
-  /// Aforo del aula (capacidad). 0 si desconocido.
   final int capacity;
   final String note;
   final String teacher;
-  /// 1=Mon .. 7=Sun (DateTime.weekday).
   final int weekday;
   final String dayName;
-  /// HH:mm.
   final String startTime;
   final String endTime;
-  /// T=Teoría, P=Práctica, L=Lab.
   final String typeCode;
-
   const ScheduleClass({
     required this.id,
     required this.nrc,
@@ -428,11 +393,7 @@ class ScheduleClass {
     required this.endTime,
     required this.typeCode,
   });
-
-  /// Etiqueta corta del aula para chips/listas ("I 302", "LAB-COM 4"…).
   String get roomShort => room.isNotEmpty ? room : '—';
-
-  /// Descripción larga "Pabellón I · I 302" para vistas de detalle.
   String get locationFull {
     final parts = <String>[
       if (building.isNotEmpty) building,
@@ -446,10 +407,10 @@ class ScheduleClass {
     int i(Object? v) => v is int
         ? v
         : v is num
-            ? v.toInt()
-            : v is String
-                ? (int.tryParse(v) ?? 0)
-                : 0;
+        ? v.toInt()
+        : v is String
+        ? (int.tryParse(v) ?? 0)
+        : 0;
     return ScheduleClass(
       id: s(j['id']),
       nrc: s(j['nrc']),
@@ -462,7 +423,7 @@ class ScheduleClass {
       room: s(j['aula']),
       capacity: i(j['capacity']),
       note: s(j['observacion']),
-      teacher: s(j['docente']),
+      teacher: s(j['teacher']),
       weekday: i(j['idDia']),
       dayName: s(j['dia']),
       startTime: s(j['horaInicio']),
@@ -470,10 +431,9 @@ class ScheduleClass {
       typeCode: s(j['idTipo']),
     );
   }
-
-  /// Parsea el string crudo de Intranet "PABELLON I - I 302 - AFORO: 50"
-  /// (o "PABELLON I - LABORA…") en sus componentes.
-  static ({String building, String room, int capacity}) parseLocation(String raw) {
+  static ({String building, String room, int capacity}) parseLocation(
+    String raw,
+  ) {
     if (raw.trim().isEmpty) return (building: '', room: '', capacity: 0);
     final parts = raw.split(RegExp(r'\s*-\s*'));
     String building = '';
@@ -482,12 +442,19 @@ class ScheduleClass {
     for (final p in parts) {
       final t = p.trim();
       if (t.isEmpty) continue;
-      final aforoMatch = RegExp(r'^AFORO\s*:\s*(\d+)$', caseSensitive: false).firstMatch(t);
+      final aforoMatch = RegExp(
+        r'^AFORO\s*:\s*(\d+)$',
+        caseSensitive: false,
+      ).firstMatch(t);
       if (aforoMatch != null) {
         capacity = int.tryParse(aforoMatch.group(1)!) ?? 0;
         continue;
       }
-      if (building.isEmpty && RegExp(r'^(PABELLON|EDIFICIO|TORRE|LABORATORIO)\b', caseSensitive: false).hasMatch(t)) {
+      if (building.isEmpty &&
+          RegExp(
+            r'^(PABELLON|EDIFICIO|TORRE|LABORATORIO)\b',
+            caseSensitive: false,
+          ).hasMatch(t)) {
         building = t;
       } else if (room.isEmpty) {
         room = t;
@@ -497,34 +464,31 @@ class ScheduleClass {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'nrc': nrc,
-        'asignatura': subject,
-        'modalidad': modality,
-        'seccion': section,
-        'nivel': level,
-        'sede': campus,
-        'local': building,
-        'aula': room,
-        'observacion': note,
-        'docente': teacher,
-        'idDia': weekday,
-        'dia': dayName,
-        'horaInicio': startTime,
-        'horaFin': endTime,
-        'idTipo': typeCode,
-      };
-
+    'id': id,
+    'nrc': nrc,
+    'asignatura': subject,
+    'modalidad': modality,
+    'seccion': section,
+    'nivel': level,
+    'sede': campus,
+    'local': building,
+    'aula': room,
+    'observacion': note,
+    'teacher': teacher,
+    'idDia': weekday,
+    'dia': dayName,
+    'horaInicio': startTime,
+    'horaFin': endTime,
+    'idTipo': typeCode,
+  };
   factory ScheduleClass.fromJson(Map<String, dynamic> j) =>
       ScheduleClass.fromSigmaJson(j);
-
   String get typeName => switch (typeCode.toUpperCase()) {
-        'T' => 'Teoría',
-        'P' => 'Práctica',
-        'L' => 'Laboratorio',
-        _ => typeCode,
-      };
-
+    'T' => 'Teoría',
+    'P' => 'Práctica',
+    'L' => 'Laboratorio',
+    _ => typeCode,
+  };
   int get durationMinutes {
     final ini = _hmToMinutes(startTime);
     final fin = _hmToMinutes(endTime);
@@ -545,27 +509,20 @@ int? _hmToMinutes(String hm) {
 class ScheduleClassGroup {
   final String subject;
   final int weekday;
-  /// Sesiones ordenadas por `startTime`.
   final List<ScheduleClass> sessions;
-
   const ScheduleClassGroup({
     required this.subject,
     required this.weekday,
     required this.sessions,
   });
-
   String get startTime => sessions.first.startTime;
   String get endTime => sessions.last.endTime;
   String get room => sessions.first.room;
   String get teacher => sessions
       .map((s) => s.teacher)
       .firstWhere((d) => d.isNotEmpty, orElse: () => '');
-
-  bool get hasPractice =>
-      sessions.any((s) => s.typeCode.toUpperCase() != 'T');
-  bool get hasTheory =>
-      sessions.any((s) => s.typeCode.toUpperCase() == 'T');
-
+  bool get hasPractice => sessions.any((s) => s.typeCode.toUpperCase() != 'T');
+  bool get hasTheory => sessions.any((s) => s.typeCode.toUpperCase() == 'T');
   static List<ScheduleClassGroup> groupBy(List<ScheduleClass> classes) {
     final map = <String, List<ScheduleClass>>{};
     for (final c in classes) {
@@ -579,8 +536,7 @@ class ScheduleClassGroup {
         weekday: list.first.weekday,
         sessions: list,
       );
-    }).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
   }
 }
 
@@ -590,7 +546,6 @@ class Term {
   final int year;
   final int number;
   final bool isActive;
-
   const Term({
     required this.id,
     required this.label,
@@ -598,7 +553,6 @@ class Term {
     required this.number,
     required this.isActive,
   });
-
   factory Term.fromSigmaJson(Map<String, dynamic> j) {
     bool b(Object? v) {
       if (v is bool) return v;
@@ -609,13 +563,14 @@ class Term {
       }
       return false;
     }
+
     int i(Object? v) => v is int
         ? v
         : v is num
-            ? v.toInt()
-            : v is String
-                ? (int.tryParse(v) ?? 0)
-                : 0;
+        ? v.toInt()
+        : v is String
+        ? (int.tryParse(v) ?? 0)
+        : 0;
     return Term(
       id: j['periodoId']?.toString() ?? '',
       label: j['descripcion']?.toString() ?? '',
@@ -624,16 +579,14 @@ class Term {
       isActive: b(j['activo']),
     );
   }
-
-  /// Intranet `consultarPeriodosMatriculados` row: `[year, number]`.
   factory Term.fromIntranetRow(List<dynamic> r) {
     int i(Object? v) => v is int
         ? v
         : v is num
-            ? v.toInt()
-            : v is String
-                ? (int.tryParse(v) ?? 0)
-                : 0;
+        ? v.toInt()
+        : v is String
+        ? (int.tryParse(v) ?? 0)
+        : 0;
     final y = i(r.isNotEmpty ? r[0] : 0);
     final n = i(r.length > 1 ? r[1] : 0);
     return Term(
@@ -644,15 +597,13 @@ class Term {
       isActive: false,
     );
   }
-
   Map<String, dynamic> toJson() => {
-        'periodoId': id,
-        'descripcion': label,
-        'anio': year,
-        'periodo': number,
-        'activo': isActive,
-      };
-
+    'periodoId': id,
+    'descripcion': label,
+    'anio': year,
+    'periodo': number,
+    'activo': isActive,
+  };
   factory Term.fromJson(Map<String, dynamic> j) => Term.fromSigmaJson(j);
 }
 
@@ -660,51 +611,51 @@ class TermAverage {
   final int year;
   final int number;
   final double average;
-
   const TermAverage({
     required this.year,
     required this.number,
     required this.average,
   });
-
   factory TermAverage.fromSigmaJson(Map<String, dynamic> j) {
     int i(Object? v) => v is int
         ? v
         : v is num
-            ? v.toInt()
-            : v is String
-                ? (int.tryParse(v) ?? 0)
-                : 0;
+        ? v.toInt()
+        : v is String
+        ? (int.tryParse(v) ?? 0)
+        : 0;
     double d(Object? v) => v is num
         ? v.toDouble()
         : v is String
-            ? (double.tryParse(v) ?? 0)
-            : 0;
+        ? (double.tryParse(v) ?? 0)
+        : 0;
     return TermAverage(
       year: i(j['anio']),
       number: i(j['periodo']),
       average: d(j['promedio']),
     );
   }
-
   String get label =>
-      '$year - ${number == 1 ? 'I' : number == 2 ? 'II' : number}';
-
-  Map<String, dynamic> toJson() =>
-      {'anio': year, 'periodo': number, 'promedio': average};
-
+      '$year - ${number == 1
+          ? 'I'
+          : number == 2
+          ? 'II'
+          : number}';
+  Map<String, dynamic> toJson() => {
+    'anio': year,
+    'periodo': number,
+    'promedio': average,
+  };
   factory TermAverage.fromJson(Map<String, dynamic> j) =>
       TermAverage.fromSigmaJson(j);
 }
 
-/// Modelo unificado de docente
 class Teacher {
-  final String id;              // SIGMA.idProfesor || INTRANET.cod_docente
+  final String id;
   final String fullName;
   final String? email;
   final String? department;
   final List<TeacherCourse> courses;
-
   const Teacher({
     required this.id,
     required this.fullName,
@@ -712,29 +663,34 @@ class Teacher {
     this.department,
     required this.courses,
   });
-
-  factory Teacher.fromSigmaDocente(DocenteInfo info, List<DocenteAsignatura> cursos) {
+  factory Teacher.fromSigmaDocente(
+    TeacherInfo info,
+    List<TeacherSubject> courses,
+  ) {
     return Teacher(
-      id: info.codigo,
+      id: info.code,
       fullName: info.displayName,
-      department: info.facultad,
-      courses: cursos.map((c) => TeacherCourse.fromDocenteAsignatura(c)).toList(),
+      department: info.faculty,
+      courses: courses
+          .map((c) => TeacherCourse.fromDocenteAsignatura(c))
+          .toList(),
     );
   }
-
   factory Teacher.fromIntranet(Map<String, dynamic> json) {
     final list = json['courses'] as List?;
     return Teacher(
-      id: (json['cod_docente'] ?? json['codigo'] ?? '').toString(),
-      fullName: (json['nombres_completos'] ?? json['displayName'] ?? '').toString(),
+      id: (json['cod_teacher'] ?? json['codigo'] ?? '').toString(),
+      fullName: (json['nombres_completos'] ?? json['displayName'] ?? '')
+          .toString(),
       email: json['email']?.toString(),
       department: json['department']?.toString(),
       courses: list != null
-          ? list.map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>)).toList()
+          ? list
+                .map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>))
+                .toList()
           : const [],
     );
   }
-
   Teacher mergeWith(Teacher other) {
     return Teacher(
       id: id.isNotEmpty ? id : other.id,
@@ -746,13 +702,12 @@ class Teacher {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'fullName': fullName,
-        'email': email,
-        'department': department,
-        'courses': courses.map((c) => c.toJson()).toList(),
-      };
-
+    'id': id,
+    'fullName': fullName,
+    'email': email,
+    'department': department,
+    'courses': courses.map((c) => c.toJson()).toList(),
+  };
   factory Teacher.fromJson(Map<String, dynamic> json) {
     final list = json['courses'] as List?;
     return Teacher(
@@ -761,21 +716,22 @@ class Teacher {
       email: json['email'] as String?,
       department: json['department'] as String?,
       courses: list != null
-          ? list.map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>)).toList()
+          ? list
+                .map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>))
+                .toList()
           : const [],
     );
   }
 }
 
 class TeacherCourse {
-  final String id;              // cleAuto / id del curso
-  final String subjectName;     // Nombre de asignatura
-  final String subjectCode;     // Código
+  final String id;
+  final String subjectName;
+  final String subjectCode;
   final String section;
-  final String period;          // "2026-1"
-  final int? enrolledCount;     // Matriculados
+  final String period;
+  final int? enrolledCount;
   final String? schedule;
-
   const TeacherCourse({
     required this.id,
     required this.subjectName,
@@ -785,35 +741,32 @@ class TeacherCourse {
     this.enrolledCount,
     this.schedule,
   });
-
-  factory TeacherCourse.fromDocenteAsignatura(DocenteAsignatura a) {
+  factory TeacherCourse.fromDocenteAsignatura(TeacherSubject a) {
     return TeacherCourse(
       id: a.id,
-      subjectName: a.asignatura,
-      subjectCode: a.codigo,
-      section: a.seccion,
+      subjectName: a.subject,
+      subjectCode: a.code,
+      section: a.section,
       period: a.periodo,
-      enrolledCount: a.matriculados,
+      enrolledCount: a.enrolledCount,
     );
   }
-
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'subjectName': subjectName,
-        'subjectCode': subjectCode,
-        'section': section,
-        'period': period,
-        'enrolledCount': enrolledCount,
-        'schedule': schedule,
-      };
-
+    'id': id,
+    'subjectName': subjectName,
+    'subjectCode': subjectCode,
+    'seccion': section,
+    'period': period,
+    'matriculados': enrolledCount,
+    'schedule': schedule,
+  };
   factory TeacherCourse.fromJson(Map<String, dynamic> json) => TeacherCourse(
-        id: json['id'] as String? ?? '',
-        subjectName: json['subjectName'] as String? ?? '',
-        subjectCode: json['subjectCode'] as String? ?? '',
-        section: json['section'] as String? ?? '',
-        period: json['period'] as String? ?? '',
-        enrolledCount: json['enrolledCount'] as int?,
-        schedule: json['schedule'] as String?,
-      );
+    id: json['id'] as String? ?? '',
+    subjectName: json['subjectName'] as String? ?? '',
+    subjectCode: json['subjectCode'] as String? ?? '',
+    section: json['seccion'] as String? ?? '',
+    period: json['period'] as String? ?? '',
+    enrolledCount: json['matriculados'] as int?,
+    schedule: json['schedule'] as String?,
+  );
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-/// Escala de espaciado (múltiplos de 4). Úsala en lugar de números mágicos.
 abstract final class AppSpacing {
   static const double xxs = 2;
   static const double xs = 4;
@@ -13,7 +12,6 @@ abstract final class AppSpacing {
   static const double huge = 48;
 }
 
-/// Radios de borde estándar.
 abstract final class AppRadii {
   static const double xs = 8;
   static const double sm = 10;
@@ -22,7 +20,6 @@ abstract final class AppRadii {
   static const double xl = 16;
   static const double xxl = 20;
   static const double pill = 999;
-
   static const BorderRadius rXs = BorderRadius.all(Radius.circular(xs));
   static const BorderRadius rSm = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius rMd = BorderRadius.all(Radius.circular(md));
@@ -32,14 +29,12 @@ abstract final class AppRadii {
   static const BorderRadius rPill = BorderRadius.all(Radius.circular(pill));
 }
 
-/// Duraciones de animación coherentes.
 abstract final class AppDurations {
   static const Duration fast = Duration(milliseconds: 200);
   static const Duration normal = Duration(milliseconds: 250);
   static const Duration slow = Duration(milliseconds: 400);
 }
 
-/// Tamaños de icono.
 abstract final class AppIcon {
   static const double xs = 13;
   static const double sm = 16;
@@ -48,7 +43,6 @@ abstract final class AppIcon {
   static const double xl = 24;
 }
 
-/// Tamaños de fuente.
 abstract final class AppFont {
   static const double caption = 11;
   static const double small = 12;
@@ -61,19 +55,16 @@ abstract final class AppFont {
   static const double display = 48;
 }
 
-/// Ancho máximo del contenido en pantallas grandes.
 const double kMaxContentWidth = 1240;
 
-/// Espaciador con tamaño fijo. Reduce ruido de `SizedBox(height: ...)`.
 class Gap extends StatelessWidget {
   final double size;
   final bool horizontal;
   const Gap(this.size, {super.key}) : horizontal = false;
   const Gap.h(this.size, {super.key}) : horizontal = true;
-
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: horizontal ? size : null,
-        height: horizontal ? null : size,
-      );
+    width: horizontal ? size : null,
+    height: horizontal ? null : size,
+  );
 }

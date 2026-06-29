@@ -6,14 +6,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:ui';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/l10n/quechua_fallback.dart';
 import 'package:nexo/core/win_setup_service.dart';
 import 'package:nexo/features/settings/setup_view.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
 import 'package:nexo/widgets/custom_title_bar.dart';
-
 import 'package:nexo/app/shell.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
@@ -28,7 +26,7 @@ import 'package:nexo/data/notification_service.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/core/shortcuts.dart';
-import 'package:nexo/data/docente_repository.dart';
+import 'package:nexo/data/teacher_repository.dart';
 import 'package:nexo/data/intranet_client.dart';
 import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/data/graph_client.dart';
@@ -40,17 +38,13 @@ import 'package:nexo/features/auth/login_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/onboarding/onboarding_screen.dart';
 
-
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-
   await AppStorage.init();
-
   bool isSetup = false;
   bool isUninstall = false;
   if (!kIsWeb && Platform.isWindows) {
@@ -59,16 +53,15 @@ Future<void> main(List<String> args) async {
     final isInstalled = WinSetupService.isInstalledInstance;
     final isPortable = AppStorage.instance.runPortable;
     isSetup = isUninstall || (!isInstalled && !isPortable);
-
     final themeMode = AppStorage.instance.themeMode ?? 'system';
     bool isDark = false;
     if (themeMode == 'system') {
-      isDark = PlatformDispatcher.instance.platformBrightness == Brightness.dark;
+      isDark =
+          PlatformDispatcher.instance.platformBrightness == Brightness.dark;
     } else {
       isDark = NexoColors.byId(themeMode).isDark;
     }
     final initialBg = isDark ? NexoColors.dark.bg : NexoColors.light.bg;
-
     if (isSetup) {
       final windowOptions = WindowOptions(
         size: const Size(480, 380),
@@ -94,15 +87,12 @@ Future<void> main(List<String> args) async {
       });
     }
   }
-
-  // Atajo de desinstalación: saltar todo el bootstrapping (red, sqlite,
-  // notificaciones, etc.). La vista de uninstall no necesita nada de eso y
-  // cualquier cuelgue en bootstrap dejaba la ventana en blanco.
   if (isUninstall) {
     final mode = AppStorage.instance.themeMode ?? 'system';
     final NexoColors palette;
     if (mode == 'system') {
-      final isDark = !kIsWeb &&
+      final isDark =
+          !kIsWeb &&
           PlatformDispatcher.instance.platformBrightness == Brightness.dark;
       palette = isDark ? NexoColors.dark : NexoColors.light;
     } else {
@@ -111,93 +101,70 @@ Future<void> main(List<String> args) async {
     runApp(_UninstallApp(palette: palette));
     return;
   }
-
-  // Transporte HTTP con root CAs de Mozilla + del sistema.
-  // Arregla CERTIFICATE_VERIFY_FAILED en dispositivos con almacén raíz
-  // desactualizado. En Web es un cliente estándar (el navegador valida).
   final secureHttp = await createSecureClient();
-
   final api = ApiClient(transport: secureHttp);
   final repo = SigmaRepository(api);
   final session = SessionService(apiClient: api, repo: repo);
-
-  // Reutilizamos el transporte con root CAs de Mozilla — sin esto, el
-  // healthcheck de Intranet/SIGMA falla en dispositivos con almacén de
-  // certificados desactualizado y el banner sale rojo aunque la app
-  // funcione bien para todo lo demás.
   final connectivity = ConnectivityService(httpClient: secureHttp);
   final cache = CacheManager();
   await cache.init();
   await connectivity.start();
-
-  final errorHandler = ErrorHandler(connectivity: connectivity, session: session);
-
+  final errorHandler = ErrorHandler(
+    connectivity: connectivity,
+    session: session,
+  );
   final intranet = IntranetRepository(IntranetClient(transport: secureHttp));
   final graph = GraphClient(transport: secureHttp);
   final msAuth = MsAuthService(graph);
   final teams = TeamsRepository(graph);
-  final docente = DocenteRepository(api);
+  final teacher = TeacherRepository(api);
   final store = AppStore(
     repo,
     cache: cache,
     errorHandler: errorHandler,
     intranet: intranet,
     teams: teams,
-    docente: docente,
+    teacher: teacher,
   );
   final theme = ThemeController()..load();
   final widgets = HomeWidgetService();
   await widgets.init();
   ShortcutService.instance.init();
   await NotificationService.instance.init();
-
-  // Autoupdater (Android-only). El bootstrap hace housekeeping rápido
-  // (borra APK ya instalado) y dispara el chequeo a GitHub Releases en
-  // background — sin bloquear el arranque. Cableamos el tap de la notif
-  // de "listo para instalar" para que abra el instalador del sistema.
   final updater = UpdateService(httpClient: secureHttp);
   NotificationService.instance.onInstallUpdateTap = updater.installDownloaded;
   unawaited(updater.bootstrap());
-
-  // Detección de notas nuevas → notificación inmediata.
-  store.onGradeChange = (curso, nota) =>
-      NotificationService.instance.showGradeChanged(curso, nota);
-
-  // Si el token expira, limpiamos el store junto con la sesión.
+  store.onGradeChange = (course, grade) =>
+      NotificationService.instance.showGradeChanged(course, grade);
   session.addListener(() {
     if (!session.isAuthenticated) store.clear();
   });
-
-  // Mantener los widgets y las notificaciones sincronizados.
   store.addListener(() {
-    if (!store.profile.loading && !store.horario.loading) {
+    if (!store.profile.loading && !store.schedule.loading) {
       widgets.sync(store);
       if (NotificationService.instance.prefs.enabled &&
-          !store.cuotasPendientes.loading) {
+          !store.pendingInstallments.loading) {
         NotificationService.instance.reschedule(
-          clases: store.horario.value,
-          cuotas: store.cuotasPendientes.value,
+          clases: store.schedule.value,
+          installments: store.pendingInstallments.value,
         );
       }
     }
   });
-
   await session.bootstrap();
   await msAuth.bootstrap();
   if (session.isAuthenticated) await store.hydrateFromCache();
-
-
-
-  runApp(NexoApp(
-    session: session,
-    store: store,
-    theme: theme,
-    msAuth: msAuth,
-    connectivity: connectivity,
-
-    isSetup: isSetup,
-    isUninstall: isUninstall,
-  ));
+  runApp(
+    NexoApp(
+      session: session,
+      store: store,
+      theme: theme,
+      msAuth: msAuth,
+      connectivity: connectivity,
+      isSetup: isSetup,
+      isUninstall: isUninstall,
+    ),
+  );
 }
 
 class NexoApp extends StatelessWidget {
@@ -208,20 +175,16 @@ class NexoApp extends StatelessWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
-
     required this.isSetup,
     required this.isUninstall,
   });
-
   final SessionService session;
   final AppStore store;
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
-
   final bool isSetup;
   final bool isUninstall;
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -230,12 +193,7 @@ class NexoApp extends StatelessWidget {
         return MaterialApp(
           title: 'Nexo · UPLA',
           debugShowCheckedModeBanner: false,
-          // Internacionalización via flutter_localizations + ARB.
           locale: theme.locale.flutterLocale,
-          // Lista personalizada: delegates oficiales + puentes que sirven
-          // español a los widgets nativos cuando el locale es quechua
-          // (flutter_localizations no trae traducciones de Material/Cupertino
-          // para `qu`, lo que rompía diálogos y date pickers).
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -261,7 +219,6 @@ class NexoApp extends StatelessWidget {
             theme: theme,
             msAuth: msAuth,
             connectivity: connectivity,
-
             isSetup: isSetup,
             isUninstall: isUninstall,
           ),
@@ -278,7 +235,6 @@ class _Gate extends StatefulWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
-
     required this.isSetup,
     required this.isUninstall,
   });
@@ -287,10 +243,8 @@ class _Gate extends StatefulWidget {
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
-
   final bool isSetup;
   final bool isUninstall;
-
   @override
   State<_Gate> createState() => _GateState();
 }
@@ -301,13 +255,11 @@ class _GateState extends State<_Gate> {
   late bool _isSetup = widget.isSetup;
   bool _showInstallView = false;
   InstallOptions? _installOptions;
-
   @override
   Widget build(BuildContext context) {
     if (widget.isUninstall) {
       return const UninstallView();
     }
-
     if (_isSetup) {
       if (_showInstallView && _installOptions != null) {
         return Scaffold(
@@ -320,8 +272,6 @@ class _GateState extends State<_Gate> {
         body: SetupWizard(
           theme: widget.theme,
           onInstall: (options) async {
-            // Persistir antes de instalar para que el exe instalado
-            // salte directo al login
             await AppStorage.instance.setAcceptedTerms(true);
             await AppStorage.instance.setSeenOnboarding(true);
             setState(() {
@@ -349,10 +299,8 @@ class _GateState extends State<_Gate> {
         ),
       );
     }
-
     Widget gated;
     String key;
-
     if (!_accepted) {
       key = 'terms';
       gated = TermsScreen(
@@ -388,7 +336,6 @@ class _GateState extends State<_Gate> {
                 theme: widget.theme,
                 msAuth: widget.msAuth,
                 connectivity: widget.connectivity,
-
               ),
               SessionStatus.unauthenticated => LoginScreen(
                 session: widget.session,
@@ -399,16 +346,14 @@ class _GateState extends State<_Gate> {
             duration: const Duration(milliseconds: 480),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
-            // Fade + slide sutil — evita que el paso de Onboarding a Login
-            // se sienta "seco". El widget entrante baja 8% de la altura
-            // hasta su posición real mientras hace fade-in.
             transitionBuilder: (c, anim) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0, 0.08),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-              );
+              final slide =
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.08),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                  );
               return FadeTransition(
                 opacity: anim,
                 child: SlideTransition(position: slide, child: c),
@@ -420,12 +365,10 @@ class _GateState extends State<_Gate> {
       );
       key = 'app';
     }
-
     return ListenableBuilder(
       listenable: widget.theme,
       builder: (context, _) {
         NexoTheme.apply(widget.theme.resolvedPalette(context));
-
         Widget child = AnimatedSwitcher(
           duration: const Duration(milliseconds: 350),
           switchInCurve: Curves.easeOutCubic,
@@ -434,7 +377,6 @@ class _GateState extends State<_Gate> {
               FadeTransition(opacity: anim, child: c),
           child: KeyedSubtree(key: ValueKey(key), child: gated),
         );
-
         final isTest = Platform.environment.containsKey('FLUTTER_TEST');
         if (!kIsWeb && Platform.isWindows && !isTest) {
           child = Scaffold(
@@ -447,7 +389,6 @@ class _GateState extends State<_Gate> {
             ),
           );
         }
-
         return child;
       },
     );
@@ -466,17 +407,14 @@ class _SplashScreenState extends State<_SplashScreen>
     vsync: this,
     duration: const Duration(milliseconds: 1200),
   )..forward();
-
   late final Animation<double> _logoScale = Tween(
     begin: 0.9,
     end: 1.0,
   ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
-
   late final Animation<double> _textOpacity = CurvedAnimation(
     parent: _c,
     curve: const Interval(0.2, 0.9, curve: Curves.easeOut),
   );
-
   @override
   void dispose() {
     _c.dispose();
@@ -490,12 +428,12 @@ class _SplashScreenState extends State<_SplashScreen>
         ? const Color(0xFF0A0C10)
         : const Color(0xFFFFFFFF);
     final endBg = palette.bg;
-    final bgTween = ColorTween(begin: startBg, end: endBg).animate(
-      CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7)),
-    );
+    final bgTween = ColorTween(
+      begin: startBg,
+      end: endBg,
+    ).animate(CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7)));
     final width = MediaQuery.sizeOf(context).width;
     final fontSize = (width * 0.14).clamp(38.0, 66.0);
-
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {
@@ -525,13 +463,9 @@ class _SplashScreenState extends State<_SplashScreen>
   }
 }
 
-/// App mínima para la ruta de desinstalación. Evita inicializar red, sqlite,
-/// notificaciones, etc. — cualquier cuelgue en esos servicios dejaba la
-/// ventana en blanco al desinstalar.
 class _UninstallApp extends StatelessWidget {
   const _UninstallApp({required this.palette});
   final NexoColors palette;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

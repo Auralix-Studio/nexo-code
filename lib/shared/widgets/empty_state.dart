@@ -1,21 +1,15 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-/// Estado vacío con icono e ilustración minimalista. Opcionalmente muestra un
-/// botón de reintento (para estados de error).
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
   final Color? color;
-
-  /// Si se define, muestra un botón que lo ejecuta (p.ej. recargar tras error).
   final VoidCallback? onRetry;
   final String? retryLabel;
-
   const EmptyState({
     super.key,
     required this.icon,
@@ -25,7 +19,6 @@ class EmptyState extends StatelessWidget {
     this.onRetry,
     this.retryLabel,
   });
-
   @override
   Widget build(BuildContext context) {
     final c = color ?? NexoTheme.textMuted;
@@ -62,10 +55,7 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle!,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: NexoTheme.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: NexoTheme.textSecondary),
             ),
           ],
           if (onRetry != null) ...[
@@ -73,7 +63,9 @@ class EmptyState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(retryLabel ?? AppLocalizations.of(context).actionRetry),
+              label: Text(
+                retryLabel ?? AppLocalizations.of(context).actionRetry,
+              ),
             ),
           ],
         ],

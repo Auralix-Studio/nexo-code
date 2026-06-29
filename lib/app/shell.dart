@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-
 import 'package:nexo/data/connectivity_service.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
@@ -12,16 +10,15 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/ms_auth_service.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/features/festivity/festivity_overlay.dart';
-import 'package:nexo/features/docente/docente_cursos_screen.dart';
-import 'package:nexo/features/docente/docente_horario_screen.dart';
-import 'package:nexo/features/docente/docente_profile_screen.dart';
-import 'package:nexo/features/docente/docente_screen.dart';
+import 'package:nexo/features/teacher/teacher_courses_screen.dart';
+import 'package:nexo/features/teacher/teacher_schedule_screen.dart';
+import 'package:nexo/features/teacher/teacher_profile_screen.dart';
+import 'package:nexo/features/teacher/teacher_screen.dart';
 import 'package:nexo/features/grades/grades_screen.dart';
 import 'package:nexo/features/home/home_screen.dart';
 import 'package:nexo/features/payments/payments_screen.dart';
 import 'package:nexo/features/profile/profile_screen.dart';
 import 'package:nexo/features/schedule/schedule_screen.dart';
-// import 'package:nexo/features/teams/teams_screen.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/update_banner.dart';
 import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
@@ -33,28 +30,31 @@ class _Tab {
   const _Tab(this.label, this.icon, this.iconOutlined);
 }
 
-/// Tabs del alumno (experiencia normal del estudiante).
 List<_Tab> _studentTabs(AppLocalizations l) => [
-      _Tab(l.tabHome, Icons.home_rounded, Icons.home_outlined),
-      _Tab(l.tabSchedule, Icons.calendar_today_rounded,
-          Icons.calendar_today_outlined),
-      _Tab(l.tabGrades, Icons.school_rounded, Icons.school_outlined),
-      _Tab(l.tabPayments, Icons.account_balance_wallet_rounded,
-          Icons.account_balance_wallet_outlined),
-    // _Tab(l.tabTeams, Icons.groups_rounded, Icons.groups_outlined),
-      _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
-    ];
-
-/// Tabs del docente (experiencia completamente distinta — sin pagos, notas
-/// del alumno, ni Teams del estudiante). Cada pestaña es una pantalla
-/// separada con su propio scope, igual que la separación del alumno.
+  _Tab(l.tabHome, Icons.home_rounded, Icons.home_outlined),
+  _Tab(
+    l.tabSchedule,
+    Icons.calendar_today_rounded,
+    Icons.calendar_today_outlined,
+  ),
+  _Tab(l.tabGrades, Icons.school_rounded, Icons.school_outlined),
+  _Tab(
+    l.tabPayments,
+    Icons.account_balance_wallet_rounded,
+    Icons.account_balance_wallet_outlined,
+  ),
+  _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
+];
 List<_Tab> _teacherTabs(AppLocalizations l) => [
-      _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
-      _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
-      _Tab(l.tabSchedule, Icons.calendar_today_rounded,
-          Icons.calendar_today_outlined),
-      _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
-    ];
+  _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
+  _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
+  _Tab(
+    l.tabSchedule,
+    Icons.calendar_today_rounded,
+    Icons.calendar_today_outlined,
+  ),
+  _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
+];
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -64,16 +64,12 @@ class AppShell extends StatefulWidget {
     required this.theme,
     required this.msAuth,
     required this.connectivity,
-
   });
-
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
   final MsAuthService msAuth;
   final ConnectivityService connectivity;
-
-
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -82,31 +78,19 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _index = 0;
   final List<int> _history = [0];
   DateTime? _lastBoletaCheck;
-
-  /// Sidebar colapsado a solo iconos (escritorio).
   bool _railCollapsed = false;
-
-  /// Un Navigator anidado por pestaña: el detalle se abre DENTRO del área de
-  /// contenido (el sidebar nunca se tapa) y cada pestaña conserva su pila.
-  final List<GlobalKey<NavigatorState>> _tabNavKeys =
-      List.generate(7, (_) => GlobalKey<NavigatorState>());
-
-  /// Breadcrumb por pestaña: título del detalle abierto (null = en la raíz).
+  final List<GlobalKey<NavigatorState>> _tabNavKeys = List.generate(
+    7,
+    (_) => GlobalKey<NavigatorState>(),
+  );
   final List<String?> _breadcrumbs = List.filled(7, null);
-
-  /// Pestañas ya visitadas — para montar su contenido de forma lazy en el
-  /// IndexedStack (no cargar datos de pestañas que el usuario no abrió).
   final Set<int> _visitedTabs = {0};
-
   final List<ScrollController> _scrollControllers = List.generate(
     7,
     (_) => ScrollController(),
   );
-
   void _setBreadcrumb(int tab, String? title) {
     if (_breadcrumbs[tab] == title) return;
-    // Diferimos el setState: el observer del Navigator dispara durante la
-    // navegación (potencialmente en fase de build).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _breadcrumbs[tab] != title) {
         setState(() => _breadcrumbs[tab] = title);
@@ -117,19 +101,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    // En modo docente NO cargamos data del alumno (SIGMA/Intranet rechazaría
-    // el token y nos echaría a login).
-    final isDocente = widget.session.user?.isDocente ?? false;
-    if (!isDocente) {
+    final isTeacher = widget.session.user?.isTeacher ?? false;
+    if (!isTeacher) {
       widget.store.loadHomeEssentials();
     }
     _lastBoletaCheck = DateTime.now();
-
     WidgetsBinding.instance.addObserver(this);
-
     ShortcutService.instance.addListener(_handleShortcut);
     _handleShortcut();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) maybeShowWhatsappInvite(context);
     });
@@ -148,8 +127,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    // No chequeamos boleta del alumno en modo docente.
-    if (widget.session.user?.isDocente ?? false) return;
+    if (widget.session.user?.isTeacher ?? false) return;
     final now = DateTime.now();
     if (_lastBoletaCheck != null &&
         now.difference(_lastBoletaCheck!) < const Duration(seconds: 60)) {
@@ -175,56 +153,54 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
-    final isDocente = widget.session.user?.isDocente ?? false;
+    final isTeacher = widget.session.user?.isTeacher ?? false;
     final l = AppLocalizations.of(context);
-
     var idx = 0;
     Widget wrap(Widget page) => PrimaryScrollController(
-        controller: _scrollControllers[idx++], child: page);
-
+      controller: _scrollControllers[idx++],
+      child: page,
+    );
     final List<_Tab> tabs;
     final List<Widget> pages;
-
-    if (isDocente) {
+    if (isTeacher) {
       tabs = _teacherTabs(l);
       pages = <Widget>[
-        wrap(DocenteScreen(store: widget.store)),
-        wrap(DocenteCursosScreen(store: widget.store)),
-        wrap(DocenteHorarioScreen(store: widget.store)),
-        wrap(DocenteProfileScreen(
-          store: widget.store,
-          session: widget.session,
-          theme: widget.theme,
-
-        )),
+        wrap(TeacherScreen(store: widget.store)),
+        wrap(TeacherCoursesScreen(store: widget.store)),
+        wrap(TeacherScheduleScreen(store: widget.store)),
+        wrap(
+          TeacherProfileScreen(
+            store: widget.store,
+            session: widget.session,
+            theme: widget.theme,
+          ),
+        ),
       ];
     } else {
       tabs = _studentTabs(l);
       pages = <Widget>[
-        wrap(HomeScreen(
-          store: widget.store,
-          connectivity: widget.connectivity,
-          onJump: _goTo,
-        )),
+        wrap(
+          HomeScreen(
+            store: widget.store,
+            connectivity: widget.connectivity,
+            onJump: _goTo,
+          ),
+        ),
         wrap(ScheduleScreen(store: widget.store)),
         wrap(GradesScreen(store: widget.store)),
         wrap(PaymentsScreen(store: widget.store)),
-        // wrap(TeamsScreen(store: widget.store, msAuth: widget.msAuth)),
-        wrap(ProfileScreen(
-          store: widget.store,
-          session: widget.session,
-          theme: widget.theme,
-
-        )),
+        wrap(
+          ProfileScreen(
+            store: widget.store,
+            session: widget.session,
+            theme: widget.theme,
+          ),
+        ),
       ];
     }
-
     final safeIndex = _index.clamp(0, pages.length - 1);
-
     Widget child;
     if (isDesktop) {
-      // Cada pestaña vive en su propio Navigator anidado: el detalle se apila
-      // DENTRO de este IndexedStack (área de contenido), nunca sobre el rail.
       final content = IndexedStack(
         index: safeIndex,
         children: [
@@ -239,7 +215,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               const SizedBox.shrink(),
         ],
       );
-
       child = CallbackShortcuts(
         bindings: _tabShortcuts(tabs.length),
         child: Focus(
@@ -263,9 +238,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           breadcrumb: _breadcrumbs[safeIndex],
                         ),
                         const VerticalDivider(width: 1),
-                        Expanded(
-                          child: content,
-                        ),
+                        Expanded(child: content),
                       ],
                     ),
                   ),
@@ -283,24 +256,23 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               const UpdateBanner(),
               Expanded(
                 child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    child: KeyedSubtree(
-                      key: ValueKey(safeIndex),
-                      child: pages[safeIndex],
-                    ),
+                  duration: const Duration(milliseconds: 220),
+                  child: KeyedSubtree(
+                    key: ValueKey(safeIndex),
+                    child: pages[safeIndex],
                   ),
+                ),
               ),
             ],
           ),
         ),
-        bottomNavigationBar:
-            _BottomBar(tabs: tabs, index: safeIndex, onChange: _goTo),
+        bottomNavigationBar: _BottomBar(
+          tabs: tabs,
+          index: safeIndex,
+          onChange: _goTo,
+        ),
       );
     }
-
-    // Usamos PopScope para interceptar el botón "Atrás" en Android
-    // y navegar por el historial de pestañas en lugar de cerrar la app.
-    // FestivityOverlay superpone los adornos de la festividad activa (si hay).
     return FestivityOverlay(
       child: PopScope(
         canPop: _history.length <= 1,
@@ -318,7 +290,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  /// Atajos de escritorio: `Ctrl/⌘ + número` salta directo a la pestaña N.
   Map<ShortcutActivator, VoidCallback> _tabShortcuts(int count) {
     const digits = <LogicalKeyboardKey>[
       LogicalKeyboardKey.digit1,
@@ -337,7 +308,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         SingleActivator(digits[i], control: true): () => _goTo(i),
         SingleActivator(digits[i], meta: true): () => _goTo(i),
       },
-      // Esc cierra el detalle abierto (vuelve a la lista).
       const SingleActivator(LogicalKeyboardKey.escape): _closeDetail,
     };
   }
@@ -355,8 +325,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   void _goTo(int i) {
     if (_index == i) {
-      // Re-tocar la pestaña activa: si hay un detalle abierto (escritorio),
-      // cerrarlo; si no, subir al tope de la lista (gesto esperado en móvil).
       final nav = _tabNavKeys[i].currentState;
       if (nav != null && nav.canPop()) {
         nav.popUntil((r) => r.isFirst);
@@ -386,27 +354,23 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 }
 
-/// Aloja una pestaña en su propio [Navigator] anidado: el detalle se apila en
-/// el área de contenido (sin tapar el rail) y reporta el breadcrumb.
 class _TabContent extends StatefulWidget {
   const _TabContent({
     required this.navigatorKey,
     required this.root,
     required this.onBreadcrumb,
   });
-
   final GlobalKey<NavigatorState> navigatorKey;
   final Widget root;
   final ValueChanged<String?> onBreadcrumb;
-
   @override
   State<_TabContent> createState() => _TabContentState();
 }
 
 class _TabContentState extends State<_TabContent> {
-  late final _BreadcrumbObserver _observer =
-      _BreadcrumbObserver((title) => widget.onBreadcrumb(title));
-
+  late final _BreadcrumbObserver _observer = _BreadcrumbObserver(
+    (title) => widget.onBreadcrumb(title),
+  );
   @override
   Widget build(BuildContext context) {
     return Navigator(
@@ -420,12 +384,9 @@ class _TabContentState extends State<_TabContent> {
   }
 }
 
-/// Reporta el título (`RouteSettings.name`) de la ruta superior del Navigator;
-/// `null` cuando solo queda la raíz. Alimenta el breadcrumb del sidebar.
 class _BreadcrumbObserver extends NavigatorObserver {
   _BreadcrumbObserver(this.onChange);
   final ValueChanged<String?> onChange;
-
   String? _titleOf(Route<dynamic>? route) {
     final name = route?.settings.name;
     if (name == null || name.isEmpty || name == '/') return null;
@@ -455,7 +416,6 @@ class _BottomBar extends StatelessWidget {
     required this.index,
     required this.onChange,
   });
-
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -484,9 +444,7 @@ class _BottomBar extends StatelessWidget {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              i == index
-                                  ? tabs[i].icon
-                                  : tabs[i].iconOutlined,
+                              i == index ? tabs[i].icon : tabs[i].iconOutlined,
                               key: ValueKey(i == index),
                               color: i == index
                                   ? NexoTheme.primary
@@ -537,7 +495,6 @@ class _SideRail extends StatelessWidget {
     required this.onToggleCollapse,
     this.breadcrumb,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -548,20 +505,27 @@ class _SideRail extends StatelessWidget {
       color: NexoTheme.surface,
       child: Column(
         children: [
-          // Encabezado: logo + wordmark (si expandido) + botón de colapso.
           Padding(
-            padding: EdgeInsets.fromLTRB(collapsed ? 0 : 20, 18, collapsed ? 0 : 10, 18),
+            padding: EdgeInsets.fromLTRB(
+              collapsed ? 0 : 20,
+              18,
+              collapsed ? 0 : 10,
+              18,
+            ),
             child: Row(
-              mainAxisAlignment:
-                  collapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+              mainAxisAlignment: collapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 if (!collapsed) ...[
-                  Image.asset('assets/icon.png',
-                      width: 32,
-                      height: 32,
-                      cacheWidth: 96,
-                      cacheHeight: 96,
-                      fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/icon.png',
+                    width: 32,
+                    height: 32,
+                    cacheWidth: 96,
+                    cacheHeight: 96,
+                    fit: BoxFit.contain,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(child: FestivityWordmark()),
                 ],
@@ -593,7 +557,11 @@ class _SideRail extends StatelessWidget {
           const Spacer(),
           Padding(
             padding: EdgeInsets.fromLTRB(
-                collapsed ? 8 : 16, 0, collapsed ? 8 : 16, 16),
+              collapsed ? 8 : 16,
+              0,
+              collapsed ? 8 : 16,
+              16,
+            ),
             child: collapsed
                 ? IconButton(
                     tooltip: l.actionLogout,
@@ -634,13 +602,14 @@ class _RailItem extends StatelessWidget {
     this.collapsed = false,
     this.breadcrumb,
   });
-
   @override
   Widget build(BuildContext context) {
     final color = active ? NexoTheme.primary : NexoTheme.textSecondary;
-    final icon = Icon(active ? tab.icon : tab.iconOutlined, color: color, size: 22);
-
-    // Etiqueta: "Horario" o, si hay detalle abierto, "Horario › Física".
+    final icon = Icon(
+      active ? tab.icon : tab.iconOutlined,
+      color: color,
+      size: 22,
+    );
     final Widget label = breadcrumb == null
         ? Text(
             tab.label,
@@ -653,31 +622,34 @@ class _RailItem extends StatelessWidget {
             ),
           )
         : Text.rich(
-            TextSpan(children: [
-              TextSpan(
-                text: tab.label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: tab.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
-              ),
-              TextSpan(
-                text: '  ›  $breadcrumb',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: NexoTheme.textMuted,
+                TextSpan(
+                  text: '  ›  $breadcrumb',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: NexoTheme.textMuted,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           );
-
     final content = collapsed
         ? Tooltip(
-            message: breadcrumb == null ? tab.label : '${tab.label} › $breadcrumb',
+            message: breadcrumb == null
+                ? tab.label
+                : '${tab.label} › $breadcrumb',
             child: Center(child: icon),
           )
         : Row(
@@ -687,7 +659,6 @@ class _RailItem extends StatelessWidget {
               Expanded(child: label),
             ],
           );
-
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: collapsed ? 10 : 12),
       child: Material(
@@ -700,7 +671,9 @@ class _RailItem extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: collapsed ? 0 : 14, vertical: 12),
+              horizontal: collapsed ? 0 : 14,
+              vertical: 12,
+            ),
             child: content,
           ),
         ),

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-/// Diálogo de confirmación de cierre de sesión. Devuelve `true` si el usuario
-/// confirma. Estilo consistente con el del perfil.
 Future<bool> showLogoutConfirm(BuildContext context) async {
   final l = AppLocalizations.of(context);
   final ok = await showDialog<bool>(
@@ -28,8 +25,11 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
                 color: NexoTheme.danger.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.logout_rounded,
-                  color: NexoTheme.danger, size: 28),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: NexoTheme.danger,
+                size: 28,
+              ),
             ),
             const SizedBox(height: 16),
             Text(

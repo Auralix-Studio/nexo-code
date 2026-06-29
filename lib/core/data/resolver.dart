@@ -1,4 +1,3 @@
-/// Multi-source resource resolver.
 library;
 
 typedef SourceId = String;
@@ -22,7 +21,6 @@ class Resolver<T> {
   final T Function(List<T>) merge;
   final bool Function(T)? isEmpty;
   final void Function(SourceId id, bool ok, Object? err)? onSourceUsed;
-
   Future<T> load() async {
     final results = <T>[];
     Object? lastError;
@@ -32,11 +30,15 @@ class Resolver<T> {
       try {
         av = await s.isAvailable();
       } catch (e, st) {
-        lastError = e; lastStack = st;
+        lastError = e;
+        lastStack = st;
         onSourceUsed?.call(s.id, false, e);
         continue;
       }
-      if (!av) { onSourceUsed?.call(s.id, false, 'unavailable'); continue; }
+      if (!av) {
+        onSourceUsed?.call(s.id, false, 'unavailable');
+        continue;
+      }
       try {
         final v = await s.fetch();
         if (isEmpty?.call(v) ?? false) {
@@ -46,7 +48,8 @@ class Resolver<T> {
         results.add(v);
         onSourceUsed?.call(s.id, true, null);
       } catch (e, st) {
-        lastError = e; lastStack = st;
+        lastError = e;
+        lastStack = st;
         onSourceUsed?.call(s.id, false, e);
       }
     }
@@ -62,7 +65,8 @@ class NoDataAvailableException implements Exception {
   final Object? cause;
   final StackTrace? stackTrace;
   @override
-  String toString() => 'NoDataAvailableException(${cause ?? "ningún backend respondió"})';
+  String toString() =>
+      'NoDataAvailableException(${cause ?? "ningún backend respondió"})';
 }
 
 class MergeStrategies {

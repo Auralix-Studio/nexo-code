@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -11,9 +10,7 @@ import 'package:nexo/shared/widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.session});
-
   final SessionService session;
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -28,12 +25,10 @@ class _LoginScreenState extends State<LoginScreen>
   bool _showPass = false;
   bool _capsLock = false;
   String? _error;
-
   late final AnimationController _intro = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 700),
   )..forward();
-
   @override
   void dispose() {
     _userCtrl.dispose();
@@ -44,8 +39,6 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _onKey(KeyEvent e) {
-    // El estado de bloqueo se actualiza DESPUÉS de despachar el evento;
-    // si lo leemos aquí mismo queda invertido. Diferimos un microtask.
     Future.microtask(() {
       if (!mounted) return;
       final caps = HardwareKeyboard.instance.lockModesEnabled.contains(
@@ -67,10 +60,6 @@ class _LoginScreenState extends State<LoginScreen>
         _userCtrl.text.trim().toUpperCase(),
         _passCtrl.text,
       );
-      // Notifica al sistema que el formulario terminó con éxito. Esto
-      // dispara el prompt nativo de "Guardar contraseña" en Android/iOS,
-      // que es lo que el gestor de credenciales necesita para almacenar
-      // la pareja y luego ofrecer auto-rellenado en logins posteriores.
       if (mounted) TextInput.finishAutofillContext();
     } on UnauthorizedException catch (e) {
       _error = e.message;
@@ -89,7 +78,6 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final isWide = context.isDesktop;
-
     final form = _AnimatedIntro(
       controller: _intro,
       child: _FormCard(
@@ -108,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen>
         onSubmit: _submit,
       ),
     );
-
     return Scaffold(
       body: KeyboardListener(
         focusNode: FocusNode(skipTraversal: true),
@@ -154,12 +141,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-/// Entrada con fade + slide escalonado.
 class _AnimatedIntro extends StatelessWidget {
   final AnimationController controller;
   final Widget child;
   const _AnimatedIntro({required this.controller, required this.child});
-
   @override
   Widget build(BuildContext context) {
     final fade = CurvedAnimation(parent: controller, curve: Curves.easeOut);
@@ -188,7 +173,6 @@ class _FormCard extends StatelessWidget {
   final VoidCallback onToggleShow;
   final ValueChanged<KeyEvent> onKey;
   final Future<void> Function() onSubmit;
-
   const _FormCard({
     required this.isWide,
     required this.l,
@@ -204,7 +188,6 @@ class _FormCard extends StatelessWidget {
     required this.onKey,
     required this.onSubmit,
   });
-
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -235,10 +218,6 @@ class _FormCard extends StatelessWidget {
             ),
           ),
           const Gap(AppSpacing.xxxl),
-          // AutofillGroup explícito — sin esto, los gestores de
-          // contraseñas (Google/Samsung Pass, 1Password, iOS Keychain) no
-          // siempre asocian usuario+contraseña como un solo formulario y
-          // el auto-rellenado de la contraseña falla.
           AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -247,10 +226,6 @@ class _FormCard extends StatelessWidget {
                   controller: userCtrl,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
-                  // Teclado alfanumérico unificado: letras + fila de números
-                  // siempre visible, SIN auto-switch a modo letras al teclear
-                  // dígitos. Imprescindible para códigos tipo `U01025B` y
-                  // DNIs de 8 dígitos puros.
                   keyboardType: TextInputType.visiblePassword,
                   autocorrect: false,
                   enableSuggestions: false,
@@ -296,9 +271,8 @@ class _FormCard extends StatelessWidget {
                       onPressed: onToggleShow,
                     ),
                   ),
-                  validator: (v) => (v == null || v.isEmpty)
-                      ? l.loginPasswordRequired
-                      : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? l.loginPasswordRequired : null,
                 ),
               ],
             ),
@@ -398,10 +372,7 @@ class _FormCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.lock_outline,
-                color: NexoTheme.textMuted,
-              ),
+              Icon(Icons.lock_outline, color: NexoTheme.textMuted),
               const Gap.h(AppSpacing.xs),
               Flexible(
                 child: Text(
@@ -436,7 +407,6 @@ class _UpperCaseFormatter extends TextInputFormatter {
 
 class _MobileBackdrop extends StatelessWidget {
   const _MobileBackdrop();
-
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
@@ -466,7 +436,6 @@ class _MobileBackdrop extends StatelessWidget {
 
 class _BrandPanel extends StatelessWidget {
   const _BrandPanel();
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -543,7 +512,6 @@ class _BrandPanel extends StatelessWidget {
     height: s,
     decoration: BoxDecoration(shape: BoxShape.circle, color: c),
   );
-
   Widget _feature(IconData icon, String text) => Row(
     children: [
       Container(
