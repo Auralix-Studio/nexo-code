@@ -2,6 +2,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(nexo LANGUAGES CXX)
 
+# Silenciar error de MSVC 2026 (VS 18) contra <experimental/coroutine>, que
+# todavía usa flutter_local_notifications_windows. Sin esto el build rompe
+# con C2338 STL1011. Quitar cuando el plugin migre a C++20 <coroutine>.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "nexo")

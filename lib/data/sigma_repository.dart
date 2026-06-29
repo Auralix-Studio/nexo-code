@@ -4,6 +4,7 @@ import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/data/api_client.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 
 /// Repositorio que mapea endpoints SIGMA → modelos de dominio.
 class SigmaRepository {
@@ -37,13 +38,13 @@ class SigmaRepository {
 
   // ===== Perfil =====
 
-  Future<StudentProfile> infoEstudiante() async {
-    final res = await _api.get<StudentProfile>(
+  Future<Student> infoEstudiante() async {
+    final res = await _api.get<Student>(
       'Estudiante/MostrarInfoEstudiante',
       decode: (raw) => _safeDecode(
         raw: raw,
-        modelName: 'StudentProfile',
-        fromJson: StudentProfile.fromJson,
+        modelName: 'Student',
+        fromJson: Student.fromSigmaJson,
       ),
     );
     return res.data!;
@@ -63,13 +64,13 @@ class SigmaRepository {
 
   // ===== Periodos =====
 
-  Future<List<Periodo>> periodosEstudiante() async {
-    final res = await _api.get<List<Periodo>>(
+  Future<List<Term>> periodosEstudiante() async {
+    final res = await _api.get<List<Term>>(
       'Recursos/ListarPeriodosEstudiante',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Periodo',
-        fromJson: Periodo.fromJson,
+        modelName: 'Term',
+        fromJson: Term.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -78,16 +79,16 @@ class SigmaRepository {
   // ===== Horario =====
 
   /// `*/*` = periodo activo según el bundle de SIGMA.
-  Future<List<ClaseHorario>> horario({
+  Future<List<ScheduleClass>> horario({
     String anio = '*',
     String periodo = '*',
   }) async {
-    final res = await _api.get<List<ClaseHorario>>(
+    final res = await _api.get<List<ScheduleClass>>(
       'Intranet/ListarHorariosEstudianteIntranet/$anio/$periodo',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'ClaseHorario',
-        fromJson: ClaseHorario.fromJson,
+        modelName: 'ScheduleClass',
+        fromJson: ScheduleClass.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -119,13 +120,13 @@ class SigmaRepository {
     return res.data;
   }
 
-  Future<List<PromedioPeriodo>> promediosResumen() async {
-    final res = await _api.get<List<PromedioPeriodo>>(
+  Future<List<TermAverage>> promediosResumen() async {
+    final res = await _api.get<List<TermAverage>>(
       'Estudiante/ListarPromediosResumen',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'PromedioPeriodo',
-        fromJson: PromedioPeriodo.fromJson,
+        modelName: 'TermAverage',
+        fromJson: TermAverage.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -133,42 +134,41 @@ class SigmaRepository {
 
   // ===== Pagos =====
 
-  Future<List<Cuota>> cuotasPendientes(
+  Future<List<Payment>> cuotasPendientes(
       {String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Cuota>>(
+    final res = await _api.get<List<Payment>>(
       'Estudiante/ListarCoutasNoVencidas',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Cuota',
-        fromJson: Cuota.fromJson,
+        modelName: 'Payment',
+        fromJson: Payment.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  /// Cuotas registradas en intranet (incluye vencidas con mora).
-  Future<List<Cuota>> cuotasIntranet({String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Cuota>>(
+  Future<List<Payment>> cuotasIntranet({String tipDI = AppConfig.tipDI}) async {
+    final res = await _api.get<List<Payment>>(
       'Estudiante/ListarCoutasIntranet',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Cuota',
-        fromJson: Cuota.fromJson,
+        modelName: 'Payment',
+        fromJson: Payment.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  Future<List<Tasa>> tasas({String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Tasa>>(
+  Future<List<Fee>> tasas({String tipDI = AppConfig.tipDI}) async {
+    final res = await _api.get<List<Fee>>(
       'Estudiante/ListarTasaTotal',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Tasa',
-        fromJson: Tasa.fromJson,
+        modelName: 'Fee',
+        fromJson: Fee.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -252,15 +252,15 @@ class SigmaRepository {
     return true;
   }
 
-  Future<List<PagoHistorico>> historicoPagos(
+  Future<List<PaymentRecord>> historicoPagos(
       {String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<PagoHistorico>>(
+    final res = await _api.get<List<PaymentRecord>>(
       'Estudiante/ListarHistorico',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'PagoHistorico',
-        fromJson: PagoHistorico.fromJson,
+        modelName: 'PaymentRecord',
+        fromJson: PaymentRecord.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -278,8 +278,30 @@ class SigmaRepository {
         innerError: 'data nulo',
       );
     }
+    // SIGMA a veces cambia el contrato: un endpoint que devolvía `{...}`
+    // ahora devuelve `[{...}]` (envuelto en lista de un solo elemento) —
+    // visto en `MostrarNotasResumen`. Aceptamos ambas formas para no
+    // depender de actualizaciones del backend.
+    Object? unwrapped = raw;
+    if (unwrapped is List) {
+      if (unwrapped.isEmpty) {
+        throw DataParsingException(
+          model: modelName,
+          rawData: raw,
+          innerError: 'data lista vacía',
+        );
+      }
+      unwrapped = unwrapped.first;
+      if (unwrapped == null) {
+        throw DataParsingException(
+          model: modelName,
+          rawData: raw,
+          innerError: 'primer elemento de la lista es null',
+        );
+      }
+    }
     try {
-      final jsonMap = (raw as Map).cast<String, dynamic>();
+      final jsonMap = (unwrapped as Map).cast<String, dynamic>();
       return fromJson(jsonMap);
     } catch (e) {
       throw DataParsingException(

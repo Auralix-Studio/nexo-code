@@ -1786,6 +1786,18 @@ abstract class AppLocalizations {
   /// **'Promedio'**
   String get homeMetricPromedio;
 
+  /// No description provided for @homeMetricPromedioCiclo.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom. ciclo'**
+  String get homeMetricPromedioCiclo;
+
+  /// No description provided for @homeMetricPromedioAcumulado.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom. acum.'**
+  String get homeMetricPromedioAcumulado;
+
   /// No description provided for @homeMetricCreditos.
   ///
   /// In es, this message translates to:
@@ -2505,6 +2517,120 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Instalar'**
   String get setupBtnInstallNow;
+
+  /// No description provided for @updTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizaciones'**
+  String get updTitle;
+
+  /// No description provided for @updInstalledVersion.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión instalada'**
+  String get updInstalledVersion;
+
+  /// No description provided for @updStatusChecking.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando…'**
+  String get updStatusChecking;
+
+  /// No description provided for @updStatusAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible'**
+  String get updStatusAvailable;
+
+  /// No description provided for @updStatusUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Al día'**
+  String get updStatusUpToDate;
+
+  /// No description provided for @updStatusUnknown.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin verificar'**
+  String get updStatusUnknown;
+
+  /// No description provided for @updCheck.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar actualizaciones'**
+  String get updCheck;
+
+  /// No description provided for @updInstallNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Instalar ahora'**
+  String get updInstallNow;
+
+  /// No description provided for @updDownloadInstall.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargar e instalar'**
+  String get updDownloadInstall;
+
+  /// No description provided for @updAvailableLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Nexo {version} está disponible.'**
+  String updAvailableLine(String version);
+
+  /// No description provided for @updSnackUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tienes la última versión.'**
+  String get updSnackUpToDate;
+
+  /// No description provided for @updSnackAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva versión {version} disponible.'**
+  String updSnackAvailable(String version);
+
+  /// No description provided for @updSnackCheckFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo verificar. Revisa tu conexión.'**
+  String get updSnackCheckFailed;
+
+  /// No description provided for @updSnackInstallFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo iniciar la instalación.'**
+  String get updSnackInstallFailed;
+
+  /// No description provided for @updBannerReadyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualización lista para instalar'**
+  String get updBannerReadyTitle;
+
+  /// No description provided for @updBannerAvailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualización disponible'**
+  String get updBannerAvailableTitle;
+
+  /// No description provided for @updBannerReadyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para instalar Nexo {version}.'**
+  String updBannerReadyBody(String version);
+
+  /// No description provided for @updBannerAvailableBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para descargar Nexo {version}.'**
+  String updBannerAvailableBody(String version);
+
+  /// No description provided for @updDismiss.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar'**
+  String get updDismiss;
 }
 
 class _AppLocalizationsDelegate

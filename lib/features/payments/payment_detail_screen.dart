@@ -3,7 +3,7 @@ import 'package:nexo/l10n/app_localizations.dart';
 
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
 enum PaymentType { cuota, tasa, historico }
@@ -12,36 +12,39 @@ class PaymentDetailScreen extends StatelessWidget {
   final Object payment;
   final PaymentType type;
 
-  const PaymentDetailScreen.cuota({super.key, required Cuota cuota})
+  const PaymentDetailScreen.cuota({super.key, required Payment cuota})
       : payment = cuota,
         type = PaymentType.cuota;
 
-  const PaymentDetailScreen.tasa({super.key, required Tasa tasa})
+  const PaymentDetailScreen.tasa({super.key, required Fee tasa})
       : payment = tasa,
         type = PaymentType.tasa;
 
-  const PaymentDetailScreen.historico({super.key, required PagoHistorico pago})
+  const PaymentDetailScreen.historico({super.key, required PaymentRecord pago})
       : payment = pago,
         type = PaymentType.historico;
 
-  static Future<void> openCuota(BuildContext context, Cuota cuota) =>
+  static Future<void> openCuota(BuildContext context, Payment cuota) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.cuota(cuota: cuota),
+          settings: RouteSettings(name: cuota.description),
         ),
       );
 
-  static Future<void> openTasa(BuildContext context, Tasa tasa) =>
+  static Future<void> openTasa(BuildContext context, Fee tasa) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.tasa(tasa: tasa),
+          settings: RouteSettings(name: tasa.description),
         ),
       );
 
-  static Future<void> openHistorico(BuildContext context, PagoHistorico pago) =>
+  static Future<void> openHistorico(BuildContext context, PaymentRecord pago) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PaymentDetailScreen.historico(pago: pago),
+          settings: RouteSettings(name: pago.concept),
         ),
       );
 
@@ -60,18 +63,31 @@ class PaymentDetailScreen extends StatelessWidget {
         title: Text(title),
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              children: [
-                _Hero(payment: payment, type: type),
-                const Gap(AppSpacing.lg),
-                _DetailsCard(payment: payment, type: type),
-              ],
-            ),
-          ),
+        child: PaymentDetailBody(payment: payment, type: type),
+      ),
+    );
+  }
+}
+
+/// Cuerpo del detalle de pago, sin Scaffold/AppBar — embebible en la ruta
+/// móvil y en el panel de detalle de escritorio (master-detail).
+class PaymentDetailBody extends StatelessWidget {
+  const PaymentDetailBody({super.key, required this.payment, required this.type});
+  final Object payment;
+  final PaymentType type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          children: [
+            _Hero(payment: payment, type: type),
+            const Gap(AppSpacing.lg),
+            _DetailsCard(payment: payment, type: type),
+          ],
         ),
       ),
     );
@@ -94,9 +110,9 @@ class _Hero extends StatelessWidget {
     String statusLabel = '';
 
     if (type == PaymentType.cuota) {
-      final cuota = payment as Cuota;
-      title = cuota.descripcion;
-      amountText = '${cuota.tipoMoneda} ${cuota.subtotal.toStringAsFixed(2)}';
+      final cuota = payment as Payment;
+      title = cuota.description;
+      amountText = '${cuota.currency} ${cuota.total.toStringAsFixed(2)}';
       final days = cuota.daysUntilDue();
       final isOverdue = days != null && days < 0;
       final isSoon = days != null && days >= 0 && days <= 3;
@@ -112,21 +128,21 @@ class _Hero extends StatelessWidget {
               : days == 1
                   ? l.paymentVenceMananaCaps
                   : l.paymentsTabPending.toUpperCase();
-      subtitle = l.paymentVenceEl(cuota.fechaVencimiento);
+      subtitle = l.paymentVenceEl(cuota.dueDateRaw);
     } else if (type == PaymentType.tasa) {
-      final tasa = payment as Tasa;
-      title = tasa.descripcion;
-      amountText = '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}';
+      final tasa = payment as Fee;
+      title = tasa.description;
+      amountText = '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}';
       statusColor = NexoTheme.info;
       statusLabel = l.paymentsTabFees.toUpperCase();
       subtitle = l.paymentDetailTasaAdministrativa;
     } else if (type == PaymentType.historico) {
-      final hist = payment as PagoHistorico;
-      title = hist.concepto;
-      amountText = '${hist.tipoMoneda} ${hist.importe.toStringAsFixed(2)}';
+      final hist = payment as PaymentRecord;
+      title = hist.concept;
+      amountText = '${hist.currency} ${hist.amount.toStringAsFixed(2)}';
       statusColor = NexoTheme.success;
       statusLabel = l.paymentStatusPaid;
-      subtitle = l.paymentDateOfPayment(hist.fecha);
+      subtitle = l.paymentDateOfPayment(hist.date);
     }
 
     return Container(
@@ -154,7 +170,7 @@ class _Hero extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm + 2, vertical: 3),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: AppRadii.rPill,
                 ),
@@ -221,47 +237,47 @@ class _DetailsCard extends StatelessWidget {
     final fields = <_DetailField>[];
 
     if (type == PaymentType.cuota) {
-      final cuota = payment as Cuota;
-      fields.add(_DetailField(l.paymentDetailImporteBase, '${cuota.tipoMoneda} ${cuota.importe.toStringAsFixed(2)}', Icons.payments_outlined));
-      if (cuota.mora > 0) {
-        fields.add(_DetailField(l.paymentMoraLabel, '${cuota.tipoMoneda} ${cuota.mora.toStringAsFixed(2)}', Icons.warning_amber_rounded, isWarning: true));
+      final cuota = payment as Payment;
+      fields.add(_DetailField(l.paymentDetailImporteBase, '${cuota.currency} ${cuota.amount.toStringAsFixed(2)}', Icons.payments_outlined));
+      if (cuota.lateFee > 0) {
+        fields.add(_DetailField(l.paymentMoraLabel, '${cuota.currency} ${cuota.lateFee.toStringAsFixed(2)}', Icons.warning_amber_rounded, isWarning: true));
       }
-      fields.add(_DetailField(l.paymentDetailFechaVencimiento, cuota.fechaVencimiento, Icons.event_outlined));
-      if (cuota.observacion.trim().isNotEmpty && cuota.observacion.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, cuota.observacion, Icons.info_outline));
+      fields.add(_DetailField(l.paymentDetailFechaVencimiento, cuota.dueDateRaw, Icons.event_outlined));
+      if (cuota.note.trim().isNotEmpty && cuota.note.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, cuota.note, Icons.info_outline));
       }
     } else if (type == PaymentType.tasa) {
-      final tasa = payment as Tasa;
-      fields.add(_DetailField(l.paymentDetailConcepto, tasa.descripcion, Icons.receipt_long_rounded));
-      fields.add(_DetailField(l.paymentDetailImporte, '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}', Icons.payments_outlined));
-      if (tasa.observacion.trim().isNotEmpty && tasa.observacion.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, tasa.observacion, Icons.info_outline));
+      final tasa = payment as Fee;
+      fields.add(_DetailField(l.paymentDetailConcepto, tasa.description, Icons.receipt_long_rounded));
+      fields.add(_DetailField(l.paymentDetailImporte, '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}', Icons.payments_outlined));
+      if (tasa.note.trim().isNotEmpty && tasa.note.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, tasa.note, Icons.info_outline));
       }
     } else if (type == PaymentType.historico) {
-      final hist = payment as PagoHistorico;
-      fields.add(_DetailField(l.paymentDetailConcepto, hist.concepto, Icons.receipt_long_rounded));
-      fields.add(_DetailField(l.paymentDetailImportePagado, '${hist.tipoMoneda} ${hist.importe.toStringAsFixed(2)}', Icons.payments_outlined));
-      fields.add(_DetailField(l.paymentDetailFechaPago, hist.fecha, Icons.event_outlined));
-      if (hist.hora.trim().isNotEmpty && hist.hora.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailHoraPago, hist.hora, Icons.schedule_rounded));
+      final hist = payment as PaymentRecord;
+      fields.add(_DetailField(l.paymentDetailConcepto, hist.concept, Icons.receipt_long_rounded));
+      fields.add(_DetailField(l.paymentDetailImportePagado, '${hist.currency} ${hist.amount.toStringAsFixed(2)}', Icons.payments_outlined));
+      fields.add(_DetailField(l.paymentDetailFechaPago, hist.date, Icons.event_outlined));
+      if (hist.time.trim().isNotEmpty && hist.time.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailHoraPago, hist.time, Icons.schedule_rounded));
       }
-      if (hist.periodo.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailPeriodoAcademico, hist.periodo, Icons.school_outlined));
+      if (hist.term.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailPeriodoAcademico, hist.term, Icons.school_outlined));
       }
-      if (hist.comprobante.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailComprobante, hist.comprobante, Icons.assignment_outlined));
+      if (hist.voucher.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailComprobante, hist.voucher, Icons.assignment_outlined));
       }
-      if (hist.lugar.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailLugarPago, hist.lugar, Icons.storefront_outlined));
+      if (hist.place.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailLugarPago, hist.place, Icons.storefront_outlined));
       }
-      if (hist.serieOper.trim().isNotEmpty || hist.numOper.trim().isNotEmpty) {
-        fields.add(_DetailField(l.paymentDetailOperacion, '${hist.serieOper} - ${hist.numOper}', Icons.vpn_key_outlined));
+      if (hist.serial.trim().isNotEmpty || hist.number.trim().isNotEmpty) {
+        fields.add(_DetailField(l.paymentDetailOperacion, '${hist.serial} - ${hist.number}', Icons.vpn_key_outlined));
       }
-      if (hist.desOper.trim().isNotEmpty && hist.desOper.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailDescripcionOperacion, hist.desOper, Icons.description_outlined));
+      if (hist.operationType.trim().isNotEmpty && hist.operationType.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailDescripcionOperacion, hist.operationType, Icons.description_outlined));
       }
-      if (hist.observacion.trim().isNotEmpty && hist.observacion.trim() != '--') {
-        fields.add(_DetailField(l.paymentDetailObservacion, hist.observacion, Icons.info_outline));
+      if (hist.note.trim().isNotEmpty && hist.note.trim() != '--') {
+        fields.add(_DetailField(l.paymentDetailObservacion, hist.note, Icons.info_outline));
       }
     }
 

@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
+  flutter_gemma
   flutter_timezone
   printing
   screen_retriever_windows

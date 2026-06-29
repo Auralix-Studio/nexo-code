@@ -361,25 +361,9 @@ extension NexoColorsContext on BuildContext {
       Theme.of(this).extension<NexoColors>() ?? NexoColors.light;
 }
 
-/// Breakpoints estilo Tailwind.
-class Responsive {
-  static const double sm = 640;
-  static const double md = 768;
-  static const double lg = 1024;
-  static const double xl = 1280;
-
-  static bool isMobile(BuildContext c) => MediaQuery.sizeOf(c).width < md;
-  static bool isTablet(BuildContext c) {
-    final w = MediaQuery.sizeOf(c).width;
-    return w >= md && w < lg;
-  }
-
-  static bool isDesktop(BuildContext c) => MediaQuery.sizeOf(c).width >= lg;
-
-  static double hPad(BuildContext c) {
-    final w = MediaQuery.sizeOf(c).width;
-    if (w >= lg) return 40;
-    if (w >= md) return 28;
-    return 18;
-  }
-}
+// Los breakpoints y helpers responsive viven en un solo sitio:
+// `core/design/breakpoints.dart` (clase `Breakpoints` + extensión
+// `ResponsiveX` sobre BuildContext: context.isMobile/isDesktop,
+// context.contentPadding, context.responsive<T>()). Antes había una clase
+// `Responsive` duplicada aquí con la MISMA lógica; se eliminó para no tener
+// dos fuentes de verdad.

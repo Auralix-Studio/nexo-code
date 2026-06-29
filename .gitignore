@@ -49,3 +49,6 @@ installer/Output/
 installer/vc_redist.x64.exe
 installer/wizard.png
 installer/wizard-small.png
+
+# Artefactos de release nombrados (los produce scripts/build_release.ps1).
+dist/

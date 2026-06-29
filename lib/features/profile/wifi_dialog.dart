@@ -71,7 +71,7 @@ class _WifiDialogState extends State<_WifiDialog>
       builder: (context, _) {
         final state = widget.store.wifi;
         final codigo =
-            widget.store.profile.value?.estId ?? state.value?.usuario ?? '';
+            widget.store.profile.value?.id ?? state.value?.usuario ?? '';
         final pwd = _soloDni(state.value?.contrasena ?? '');
 
         return Center(
@@ -138,7 +138,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: NexoTheme.card,
         borderRadius: AppRadii.rXxl,

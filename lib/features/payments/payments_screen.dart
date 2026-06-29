@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/reports/pdf_export.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
@@ -55,7 +56,7 @@ class _PagosScreenState extends State<PaymentsScreen>
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        return RefreshIndicator(
+        final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
               widget.store.loadCuotasPendientes(),
@@ -85,7 +86,7 @@ class _PagosScreenState extends State<PaymentsScreen>
               SliverToBoxAdapter(
                 child: Reveal(index: 0, child: _SummaryCards(store: widget.store)),
               ),
-              SliverToBoxAdapter(child: SizedBox(height: 12)),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverToBoxAdapter(
                 child: PageBody(
                   child: _TabBar(controller: _tab),
@@ -96,15 +97,31 @@ class _PagosScreenState extends State<PaymentsScreen>
               child: TabBarView(
                 controller: _tab,
                 children: [
-                  _PendientesTab(state: widget.store.cuotasPendientes),
-                  _VencidasTab(state: widget.store.cuotasIntranet),
-                  _TasasTab(state: widget.store.tasas),
-                  _HistorialTab(state: widget.store.historico),
+                  // Cada tab tiene su propia fuente — Intranet ya pre-filtra
+                  // pendientes vs vencidas server-side. No hace falta filtrar
+                  // por fecha en cliente.
+                  _PendientesTab(
+                    state: widget.store.cuotasPendientes,
+                    onRetry: () => widget.store.loadCuotasPendientes(),
+                  ),
+                  _VencidasTab(
+                    state: widget.store.cuotasIntranet,
+                    onRetry: () => widget.store.loadCuotasIntranet(),
+                  ),
+                  _TasasTab(
+                    state: widget.store.tasas,
+                    onRetry: () => widget.store.loadTasas(),
+                  ),
+                  _HistorialTab(
+                    state: widget.store.historico,
+                    onRetry: () => widget.store.loadHistorico(),
+                  ),
                 ],
               ),
             ),
           ),
         );
+        return list;
       },
     );
   }
@@ -117,18 +134,15 @@ class _SummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final pendientes = store.cuotasPendientes.value ?? const <Cuota>[];
-    final vencidas =
-        (store.cuotasIntranet.value ?? const <Cuota>[]).where((c) {
-      final d = c.daysUntilDue();
-      return d != null && d < 0;
-    }).toList();
-    final tasas = store.tasas.value ?? const <Tasa>[];
+    // Cada source viene pre-filtrado del servidor (consultarPensiones =
+    // pendientes; consultartotalPensiones + tasas + matricula = vencidas).
+    final pendientes = store.cuotasPendientes.value ?? const <Payment>[];
+    final vencidas = store.cuotasIntranet.value ?? const <Payment>[];
+    final tasas = store.tasas.value ?? const <Fee>[];
 
-    final totalPend =
-        pendientes.fold<double>(0, (a, c) => a + c.subtotal);
-    final totalVenc = vencidas.fold<double>(0, (a, c) => a + c.subtotal);
-    final totalTasas = tasas.fold<double>(0, (a, t) => a + t.importe);
+    final totalPend = pendientes.fold<double>(0, (a, c) => a + c.total);
+    final totalVenc = vencidas.fold<double>(0, (a, c) => a + c.total);
+    final totalTasas = tasas.fold<double>(0, (a, t) => a + t.amount);
 
     return PageBody(
       child: Row(
@@ -284,55 +298,86 @@ class _TabBar extends StatelessWidget {
 
 // ============== Tabs ==============
 
+/// Lista de tarjetas en 1 columna (móvil) o 2 (escritorio), agrupando en
+/// pares y preservando el scroll de la pestaña.
+Widget _cardList(BuildContext context, List<Widget> cards) {
+  if (!context.isDesktop) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      itemBuilder: (_, i) => cards[i],
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemCount: cards.length,
+    );
+  }
+  final rows = <Widget>[];
+  for (var i = 0; i < cards.length; i += 2) {
+    rows.add(Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: cards[i]),
+        const SizedBox(width: 12),
+        Expanded(
+          child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
+        ),
+      ],
+    ));
+  }
+  return ListView.separated(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    itemBuilder: (_, i) => rows[i],
+    separatorBuilder: (_, _) => const SizedBox(height: 12),
+    itemCount: rows.length,
+  );
+}
+
 class _PendientesTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  const _PendientesTab({required this.state});
+  final AsyncValue<List<Payment>> state;
+  final VoidCallback? onRetry;
+  const _PendientesTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
-      filter: (c) {
-        final d = c.daysUntilDue();
-        return d == null || d >= 0;
-      },
+      filter: (_) => true, // Intranet ya filtra server-side
       emptyTitle: l.paymentsUpToDateTitle,
       emptySubtitle: l.paymentsUpToDateSubtitle,
       emptyIcon: Icons.verified_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
 
 class _VencidasTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  const _VencidasTab({required this.state});
+  final AsyncValue<List<Payment>> state;
+  final VoidCallback? onRetry;
+  const _VencidasTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
-      filter: (c) {
-        final d = c.daysUntilDue();
-        return d != null && d < 0;
-      },
+      filter: (_) => true, // Intranet ya filtra server-side
       emptyTitle: l.paymentsNoOverdueTitle,
       emptySubtitle: l.paymentsNoOverdueSubtitle,
       emptyIcon: Icons.celebration_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
 
 class _CuotaListTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  final bool Function(Cuota) filter;
+  final AsyncValue<List<Payment>> state;
+  final bool Function(Payment) filter;
   final String emptyTitle;
   final String emptySubtitle;
   final IconData emptyIcon;
   final Color emptyColor;
+  final VoidCallback? onRetry;
 
   const _CuotaListTab({
     required this.state,
@@ -341,6 +386,7 @@ class _CuotaListTab extends StatelessWidget {
     required this.emptySubtitle,
     required this.emptyIcon,
     required this.emptyColor,
+    this.onRetry,
   });
 
   @override
@@ -353,12 +399,13 @@ class _CuotaListTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
-    final items = (state.value ?? const <Cuota>[]).where(filter).toList()
+    final items = (state.value ?? const <Payment>[]).where(filter).toList()
       ..sort((a, b) {
-        final da = a.vencimientoDate;
-        final db = b.vencimientoDate;
+        final da = a.dueDate;
+        final db = b.dueDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
@@ -372,17 +419,12 @@ class _CuotaListTab extends StatelessWidget {
         color: emptyColor,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _CuotaCard(cuota: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final c in items) _CuotaCard(cuota: c)]);
   }
 }
 
 class _CuotaCard extends StatelessWidget {
-  final Cuota cuota;
+  final Payment cuota;
   const _CuotaCard({required this.cuota});
 
   @override
@@ -429,7 +471,7 @@ class _CuotaCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  cuota.descripcion,
+                  cuota.description,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -441,7 +483,7 @@ class _CuotaCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '${cuota.tipoMoneda} ${cuota.subtotal.toStringAsFixed(2)}',
+                '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -464,7 +506,7 @@ class _CuotaCard extends StatelessWidget {
                       size: 14, color: NexoTheme.textSecondary),
                   const SizedBox(width: 4),
                   Text(
-                    cuota.fechaVencimiento,
+                    cuota.dueDateRaw,
                     style: TextStyle(
                       fontSize: 12,
                       color: NexoTheme.textSecondary,
@@ -473,16 +515,16 @@ class _CuotaCard extends StatelessWidget {
                 ],
               ),
               StatusChip(text: tagText, color: tagColor),
-              if (cuota.mora > 0)
+              if (cuota.lateFee > 0)
                 StatusChip(
-                  text: l.paymentMora(cuota.tipoMoneda, cuota.mora.toStringAsFixed(2)),
+                  text: l.paymentMora(cuota.currency, cuota.lateFee.toStringAsFixed(2)),
                   color: NexoTheme.danger,
                   icon: Icons.warning_amber_rounded,
                 ),
             ],
           ),
-          if (cuota.observacion.trim().isNotEmpty &&
-              cuota.observacion.trim() != '--') ...[
+          if (cuota.note.trim().isNotEmpty &&
+              cuota.note.trim() != '--') ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(10),
@@ -497,7 +539,7 @@ class _CuotaCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      cuota.observacion,
+                      cuota.note,
                       style: TextStyle(
                         fontSize: 11,
                         color: NexoTheme.textSecondary,
@@ -517,8 +559,9 @@ class _CuotaCard extends StatelessWidget {
 }
 
 class _TasasTab extends StatelessWidget {
-  final AsyncValue<List<Tasa>> state;
-  const _TasasTab({required this.state});
+  final AsyncValue<List<Fee>> state;
+  final VoidCallback? onRetry;
+  const _TasasTab({required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -530,26 +573,22 @@ class _TasasTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
-    final items = state.value ?? const <Tasa>[];
+    final items = state.value ?? const <Fee>[];
     if (items.isEmpty) {
       return EmptyState(
         icon: Icons.receipt_long_outlined,
         title: l.paymentsNoFeesRegistered,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _TasaCard(tasa: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final t in items) _TasaCard(tasa: t)]);
   }
 }
 
 class _TasaCard extends StatelessWidget {
-  final Tasa tasa;
+  final Fee tasa;
   const _TasaCard({required this.tasa});
 
   @override
@@ -584,17 +623,17 @@ class _TasaCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tasa.descripcion,
+                  tasa.description,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: NexoTheme.textPrimary,
                   ),
                 ),
-                if (tasa.observacion.trim().isNotEmpty &&
-                    tasa.observacion.trim() != '--')
+                if (tasa.note.trim().isNotEmpty &&
+                    tasa.note.trim() != '--')
                   Text(
-                    tasa.observacion,
+                    tasa.note,
                     style: TextStyle(
                       fontSize: 12,
                       color: NexoTheme.textSecondary,
@@ -604,7 +643,7 @@ class _TasaCard extends StatelessWidget {
             ),
           ),
           Text(
-            '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}',
+            '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
@@ -619,13 +658,22 @@ class _TasaCard extends StatelessWidget {
   }
 }
 
-class _HistorialTab extends StatelessWidget {
-  final AsyncValue<List<PagoHistorico>> state;
-  const _HistorialTab({required this.state});
+class _HistorialTab extends StatefulWidget {
+  final AsyncValue<List<PaymentRecord>> state;
+  final VoidCallback? onRetry;
+  const _HistorialTab({required this.state, this.onRetry});
+
+  @override
+  State<_HistorialTab> createState() => _HistorialTabState();
+}
+
+class _HistorialTabState extends State<_HistorialTab> {
+  String? _termFilter; // null = todos
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final state = widget.state;
     if (state.loading && !state.hasValue) return const _LoadingList();
     if (state.error != null && !state.hasValue) {
       return EmptyState(
@@ -633,73 +681,156 @@ class _HistorialTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: widget.onRetry,
       );
     }
-    final items = state.value ?? const <PagoHistorico>[];
+    final items = state.value ?? const <PaymentRecord>[];
     if (items.isEmpty) {
       return EmptyState(
         icon: Icons.history_rounded,
         title: l.paymentsNoHistoryRegistered,
       );
     }
-    // Ordenar por fecha descendente.
-    final sorted = [...items]..sort((a, b) {
-        final da = a.fechaDate;
-        final db = b.fechaDate;
+    // Periodos únicos (los que vienen en la data del usuario, no fijos)
+    final terms = items.map((p) => p.term).where((t) => t.isNotEmpty).toSet().toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    // Aplicar filtro
+    final filtered = _termFilter == null
+        ? items
+        : items.where((p) => p.term == _termFilter).toList();
+
+    // Ordenar por fecha descendente
+    final sorted = [...filtered]..sort((a, b) {
+        final da = a.dateAsDate;
+        final db = b.dateAsDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
         return db.compareTo(da);
       });
 
-    // Agrupar por fecha.
-    final byDate = <String, List<PagoHistorico>>{};
+    final byDate = <String, List<PaymentRecord>>{};
     for (final p in sorted) {
-      byDate.putIfAbsent(p.fecha, () => []).add(p);
+      byDate.putIfAbsent(p.date, () => []).add(p);
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemCount: byDate.length,
-      itemBuilder: (_, i) {
-        final date = byDate.keys.elementAt(i);
-        final list = byDate[date]!;
-        final dt = list.first.fechaDate;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                child: Text(
-                  dt == null ? date : Fmt.fullDate(dt),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textSecondary,
+    return Column(
+      children: [
+        if (terms.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _TermChip(
+                    label: 'Todos',
+                    selected: _termFilter == null,
+                    onTap: () => setState(() => _termFilter = null),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  for (final t in terms) ...[
+                    _TermChip(
+                      label: t,
+                      selected: _termFilter == t,
+                      onTap: () => setState(() => _termFilter = t),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                ],
               ),
-              for (var j = 0; j < list.length; j++) ...[
-                _HistTile(item: list[j]),
-                if (j < list.length - 1) const SizedBox(height: 8),
-              ],
-            ],
+            ),
           ),
-        );
-      },
+        Expanded(
+          child: byDate.isEmpty
+              ? const EmptyState(
+                  icon: Icons.filter_alt_off_outlined,
+                  title: 'Sin pagos en este periodo',
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: byDate.length,
+                  itemBuilder: (_, i) {
+                    final date = byDate.keys.elementAt(i);
+                    final list = byDate[date]!;
+                    final dt = list.first.dateAsDate;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                            child: Text(
+                              dt == null ? date : Fmt.fullDate(dt),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: NexoTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                          for (var j = 0; j < list.length; j++) ...[
+                            _HistTile(item: list[j]),
+                            if (j < list.length - 1) const SizedBox(height: 8),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TermChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _TermChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? NexoTheme.primary : NexoTheme.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? NexoTheme.primary : NexoTheme.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : NexoTheme.textPrimary,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _HistTile extends StatelessWidget {
-  final PagoHistorico item;
+  final PaymentRecord item;
   const _HistTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final esDesc = item.esDescuento;
+    final esDesc = item.isDiscount;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -734,7 +865,7 @@ class _HistTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.concepto,
+                  item.concept,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -749,24 +880,24 @@ class _HistTile extends StatelessWidget {
                   runSpacing: 2,
                   children: [
                     Text(
-                      item.periodo,
+                      item.term,
                       style: TextStyle(
                         fontSize: 11,
                         color: NexoTheme.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (item.lugar.trim().isNotEmpty)
+                    if (item.place.trim().isNotEmpty)
                       Text(
-                        '· ${item.lugar}',
+                        '· ${item.place}',
                         style: TextStyle(
                           fontSize: 11,
                           color: NexoTheme.textMuted,
                         ),
                       ),
-                    if (item.comprobante.trim().isNotEmpty)
+                    if (item.voucher.trim().isNotEmpty)
                       Text(
-                        '· ${item.comprobante}',
+                        '· ${item.voucher}',
                         style: TextStyle(
                           fontSize: 11,
                           color: NexoTheme.textMuted,
@@ -779,7 +910,7 @@ class _HistTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${item.tipoMoneda} ${item.importe.toStringAsFixed(2)}',
+            '${item.currency} ${item.amount.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,

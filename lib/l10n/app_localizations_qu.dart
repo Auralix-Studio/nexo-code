@@ -975,6 +975,12 @@ class AppLocalizationsQu extends AppLocalizations {
   String get homeMetricPromedio => 'Promedio';
 
   @override
+  String get homeMetricPromedioCiclo => 'Prom. ciclo';
+
+  @override
+  String get homeMetricPromedioAcumulado => 'Prom. acum.';
+
+  @override
   String get homeMetricCreditos => 'Créditos';
 
   @override
@@ -1365,4 +1371,70 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get setupBtnInstallNow => 'Churay';
+
+  @override
+  String get updTitle => 'Musuqyachiykuna';
+
+  @override
+  String get updInstalledVersion => 'Churasqa versión';
+
+  @override
+  String get updStatusChecking => 'Maskaspa…';
+
+  @override
+  String get updStatusAvailable => 'Kanmi';
+
+  @override
+  String get updStatusUpToDate => 'Musuqmi';
+
+  @override
+  String get updStatusUnknown => 'Mana qhawasqa';
+
+  @override
+  String get updCheck => 'Musuqyachiykuna maskay';
+
+  @override
+  String get updInstallNow => 'Kunan churay';
+
+  @override
+  String get updDownloadInstall => 'Uraqachiy hinaspa churay';
+
+  @override
+  String updAvailableLine(String version) {
+    return 'Nexo $version kanmi.';
+  }
+
+  @override
+  String get updSnackUpToDate => 'Qhipa versionniykiña kanmi.';
+
+  @override
+  String updSnackAvailable(String version) {
+    return 'Musuq versión $version kanmi.';
+  }
+
+  @override
+  String get updSnackCheckFailed =>
+      'Mana qhawayta atikunchu. Tinkiyniykita qhaway.';
+
+  @override
+  String get updSnackInstallFailed => 'Mana churayta qallariyta atikunchu.';
+
+  @override
+  String get updBannerReadyTitle => 'Musuqyachiy churanapaq allinña';
+
+  @override
+  String get updBannerAvailableTitle => 'Musuqyachiy kanmi';
+
+  @override
+  String updBannerReadyBody(String version) {
+    return 'Nexo $version churanaykipaq llamiy.';
+  }
+
+  @override
+  String updBannerAvailableBody(String version) {
+    return 'Nexo $version uraqachinaykipaq llamiy.';
+  }
+
+  @override
+  String get updDismiss => 'Wikuy';
 }

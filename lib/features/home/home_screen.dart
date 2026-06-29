@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
+import 'package:nexo/core/festivity/festivity.dart';
+import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -14,6 +19,7 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
+import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 
@@ -23,11 +29,13 @@ class HomeScreen extends StatelessWidget {
     super.key,
     required this.store,
     required this.connectivity,
+    required this.lumen,
     required this.onJump,
   });
 
   final AppStore store;
   final ConnectivityService connectivity;
+  final LumenServices lumen;
   final ValueChanged<int> onJump;
 
   @override
@@ -39,37 +47,42 @@ class HomeScreen extends StatelessWidget {
           onRefresh: () => store.loadHomeEssentials(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
-              SliverToBoxAdapter(child: _Header(store: store, connectivity: connectivity)),
+              SliverToBoxAdapter(
+                child: _Header(store: store, connectivity: connectivity),
+              ),
               SliverPadding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: Responsive.hPad(context),
+                  horizontal: context.contentPadding,
                   vertical: 4,
                 ),
                 sliver: SliverToBoxAdapter(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1240),
+                      // En escritorio usamos más ancho para que el dashboard no
+                      // quede como una columna angosta centrada (look móvil).
+                      constraints: BoxConstraints(
+                        maxWidth: context.isDesktop ? 1600 : 1240,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if ((store.horario.value ?? const []).isNotEmpty) ...[
-                            Reveal(
-                              index: 0,
-                              child: NextClassWidget(
-                                all: store.horario.value ?? const [],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          Reveal(index: 1, child: _StatsGrid(store: store)),
+                          // KPIs siempre arriba como franja.
+                          Reveal(index: 0, child: _StatsGrid(store: store)),
                           const SizedBox(height: 16),
                           Reveal(
-                            index: 2,
-                            child: _MainGrid(store: store, onJump: onJump),
+                            index: 1,
+                            child: context.isWide
+                                ? _DashboardArea(store: store, onJump: onJump)
+                                : _MobileStack(store: store, onJump: onJump),
                           ),
-                          const SizedBox(height: 32),
+                          // El FAB de Lumen vive en el shell (overlay
+                          // scroll-aware), por eso aquí solo dejamos el
+                          // padding inferior extra para que el último
+                          // contenido no quede tapado por el FAB.
+                          const SizedBox(height: 96),
                         ],
                       ),
                     ),
@@ -93,13 +106,18 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final profile = store.profile.value;
-    final now = DateTime.now();
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          Responsive.hPad(context), 24, Responsive.hPad(context), 16),
+        context.contentPadding,
+        24,
+        context.contentPadding,
+        16,
+      ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1240),
+          constraints: BoxConstraints(
+            maxWidth: context.isDesktop ? 1600 : 1240,
+          ),
           child: Row(
             children: [
               DecoratedBox(
@@ -114,8 +132,8 @@ class _Header extends StatelessWidget {
                   ],
                 ),
                 child: StudentAvatar(
-                  codigo: profile?.estId,
-                  nombre: profile?.estudiante ?? '',
+                  codigo: profile?.id,
+                  nombre: profile?.fullName ?? '',
                   size: 56,
                   radius: 18,
                 ),
@@ -125,17 +143,9 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const _HomeGreeting(),
                     Text(
-                      '${Fmt.greeting(now)},',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: NexoTheme.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      profile == null
-                          ? '...'
-                          : Fmt.firstName(profile.estudiante),
+                      profile == null ? '...' : Fmt.firstName(profile.fullName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -147,7 +157,7 @@ class _Header extends StatelessWidget {
                     ),
                     if (profile != null)
                       Text(
-                        '${profile.carrera} · Nivel ${profile.nivel}',
+                        profile.career,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -162,11 +172,16 @@ class _Header extends StatelessWidget {
                 listenable: connectivity,
                 builder: (context, _) {
                   final isOnline = connectivity.hasInternet;
-                  final sigmaOnline = connectivity.sigmaStatus == ServerStatus.online;
-                  final intranetOnline = connectivity.intranetStatus == ServerStatus.online;
-                  final isFullyOnline = isOnline && sigmaOnline && intranetOnline;
+                  final sigmaOnline =
+                      connectivity.sigmaStatus == ServerStatus.online;
+                  final intranetOnline =
+                      connectivity.intranetStatus == ServerStatus.online;
+                  final isFullyOnline =
+                      isOnline && sigmaOnline && intranetOnline;
 
-                  final color = isFullyOnline ? NexoTheme.success : NexoTheme.danger;
+                  final color = isFullyOnline
+                      ? NexoTheme.success
+                      : NexoTheme.danger;
 
                   return Tooltip(
                     message: l.homeVerifyConnectivity,
@@ -227,7 +242,11 @@ class _Header extends StatelessWidget {
               final sigma = connectivity.sigmaStatus;
               final intranet = connectivity.intranetStatus;
 
-              Widget buildStatusTile(String title, bool active, ServerStatus? status) {
+              Widget buildStatusTile(
+                String title,
+                bool active,
+                ServerStatus? status,
+              ) {
                 final Color color;
                 final String label;
                 final IconData icon;
@@ -252,13 +271,18 @@ class _Header extends StatelessWidget {
                   }
                 } else {
                   color = active ? NexoTheme.success : NexoTheme.danger;
-                  label = active ? l.connectivityConnected : l.connectivityDisconnected;
+                  label = active
+                      ? l.connectivityConnected
+                      : l.connectivityDisconnected;
                   icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
                 }
 
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: NexoTheme.bg,
                     borderRadius: BorderRadius.circular(14),
@@ -358,7 +382,11 @@ class _Header extends StatelessWidget {
                         Navigator.of(context).pop();
                         SupportScreen.open(context);
                       },
-                      icon: Icon(Icons.help_outline_rounded, size: 16, color: NexoTheme.success),
+                      icon: const Icon(
+                        Icons.help_outline_rounded,
+                        size: 16,
+                        color: NexoTheme.success,
+                      ),
                       label: Text(
                         l.supportContactButton,
                         style: const TextStyle(
@@ -414,6 +442,94 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// Saludo del home: rota entre el saludo por hora ("Buenas tardes,") y, si hay
+/// festividad activa, su saludo ("¡Feliz aniversario UPLA!"). Sin festividad
+/// rota con una frase cálida para que no sea una sola línea fija. Respeta el
+/// flag de adornos y reduce-motion.
+class _HomeGreeting extends StatefulWidget {
+  const _HomeGreeting();
+
+  @override
+  State<_HomeGreeting> createState() => _HomeGreetingState();
+}
+
+class _HomeGreetingState extends State<_HomeGreeting> {
+  late final Timer _timer;
+  int _i = 0;
+
+  /// Frases cálidas que rotan cuando NO hay festividad (además del saludo por
+  /// hora). Neutras y sin emojis. Editables a gusto.
+  static const _idlePhrases = <String>[
+    'Nos alegra verte',
+    'Qué bueno tenerte por aquí',
+    'Tu UPLA en un solo lugar',
+    'Al día con tu vida académica',
+    'Todo tu campus, a la mano',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) setState(() => _i++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base = TextStyle(fontSize: 14, color: NexoTheme.textSecondary);
+    final festive = base.copyWith(
+        color: NexoTheme.primary, fontWeight: FontWeight.w700);
+    final time = '${Fmt.greeting(DateTime.now())},';
+    final active = AppStorage.instance.festivityDecor
+        ? FestivityService.active(DateTime.now())
+        : null;
+
+    // reduce-motion → sin rotación: saludo de la festividad (si hay) o el de la
+    // hora, fijo.
+    if (MediaQuery.of(context).disableAnimations) {
+      final txt = active?.greeting ?? time;
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(txt,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: active != null ? festive : base),
+      );
+    }
+
+    // Con festividad: rota entre el saludo por hora y las frases DEL evento
+    // (resaltadas). Sin festividad: el saludo por hora + las frases cálidas.
+    final phrases = active != null
+        ? <String>[time, ...active.greetings]
+        : <String>[time, ..._idlePhrases];
+    final idx = _i % phrases.length;
+    final isFest = active != null && idx != 0; // las frases del evento van en color
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.centerLeft,
+        children: [...previous, ?current],
+      ),
+      transitionBuilder: (child, anim) =>
+          FadeTransition(opacity: anim, child: child),
+      child: Text(
+        phrases[idx],
+        key: ValueKey(phrases[idx]),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: isFest ? festive : base,
+      ),
+    );
+  }
+}
+
 class _StatsGrid extends StatelessWidget {
   final AppStore store;
   const _StatsGrid({required this.store});
@@ -422,29 +538,29 @@ class _StatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final p = store.profile.value;
-    final cuotas = store.cuotasPendientes.value ?? const <Cuota>[];
-    final horario = store.horario.value ?? const <ClaseHorario>[];
+    final cuotas = store.cuotasPendientes.value ?? const <Payment>[];
+    final horario = store.horario.value ?? const <ScheduleClass>[];
 
     final today = DateTime.now().weekday;
-    final clasesHoy = horario.where((c) => c.idDia == today).length;
-    final montoPendiente =
-        cuotas.fold<double>(0, (acc, c) => acc + c.subtotal);
+    final clasesHoy = horario.where((c) => c.weekday == today).length;
+    final montoPendiente = cuotas.fold<double>(0, (acc, c) => acc + c.total);
 
-    // Promedio acumulado (de periodos completados, no el actual)
-    final promedio = store.promedioAcumulado;
-    final creditosAprob = store.creditosAprobados ?? p?.creditoAprobado;
+    // Promedio acumulado (periodos cerrados). El promedio del ciclo en curso
+    // NO va aquí: vive en Notas → evolución por notas.
+    final promedioAcum = store.promedioAcumulado;
+    final creditosAprob = store.creditosAprobados ?? p?.creditsApproved;
     final creditosTotal = store.creditosTotales;
 
     final creditosLabel = creditosAprob == null
         ? '—'
         : creditosTotal != null && creditosTotal > 0
-            ? '$creditosAprob/$creditosTotal'
-            : '$creditosAprob';
+        ? '$creditosAprob/$creditosTotal'
+        : '$creditosAprob';
 
     final stats = <_StatData>[
       _StatData(
         label: l.homeMetricPromedio,
-        value: promedio == null ? '—' : promedio.toStringAsFixed(2),
+        value: promedioAcum == null ? '—' : promedioAcum.toStringAsFixed(2),
         icon: Icons.trending_up_rounded,
         color: NexoTheme.primary,
         loading: store.promedios.loading && !store.promedios.hasValue,
@@ -468,12 +584,12 @@ class _StatsGrid extends StatelessWidget {
         value: cuotas.isEmpty ? 'S/ 0' : Fmt.currency(montoPendiente),
         icon: Icons.account_balance_wallet_rounded,
         color: NexoTheme.warning,
-        loading: store.cuotasPendientes.loading &&
-            !store.cuotasPendientes.hasValue,
+        loading:
+            store.cuotasPendientes.loading && !store.cuotasPendientes.hasValue,
       ),
     ];
 
-    final isMobile = Responsive.isMobile(context);
+    final isMobile = context.isMobile;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -570,40 +686,90 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _MainGrid extends StatelessWidget {
+/// Dashboard de escritorio/tablet: cada bloque en su columna.
+///   - Izquierda (más ancha): próxima clase + clases de hoy.
+///   - Derecha: cuotas pendientes.
+class _DashboardArea extends StatelessWidget {
   final AppStore store;
   final ValueChanged<int> onJump;
-  const _MainGrid({required this.store, required this.onJump});
+  const _DashboardArea({required this.store, required this.onJump});
 
   @override
   Widget build(BuildContext context) {
-    final horario = store.horario;
-    final cuotas = store.cuotasPendientes;
-    final isWide = Responsive.isDesktop(context) || Responsive.isTablet(context);
-
-    final claseW = _ClasesHoyBlock(state: horario, onSeeAll: () => onJump(1));
-    final pagoW = _PagosBlock(state: cuotas, onSeeAll: () => onJump(3));
-
-    if (isWide) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 3, child: claseW),
-          const SizedBox(width: 16),
-          Expanded(flex: 2, child: pagoW),
+    final horario = store.horario.value ?? const <ScheduleClass>[];
+    final leftCol = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (horario.isNotEmpty) ...[
+          NextClassWidget(all: horario),
+          const SizedBox(height: 16),
         ],
-      );
-    }
+        _ClasesHoyBlock(
+          state: store.horario,
+          onSeeAll: () => onJump(1),
+          onRetry: () => store.loadHorarioActual(),
+        ),
+      ],
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 3, child: leftCol),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 2,
+          child: _PagosBlock(
+            state: store.cuotasPendientes,
+            onSeeAll: () => onJump(3),
+            onRetry: () => store.loadCuotasPendientes(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Apilado vertical para móvil: próxima clase, clases de hoy, pagos.
+class _MobileStack extends StatelessWidget {
+  final AppStore store;
+  final ValueChanged<int> onJump;
+  const _MobileStack({required this.store, required this.onJump});
+
+  @override
+  Widget build(BuildContext context) {
+    final horario = store.horario.value ?? const <ScheduleClass>[];
     return Column(
-      children: [claseW, const SizedBox(height: 16), pagoW],
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (horario.isNotEmpty) ...[
+          NextClassWidget(all: horario),
+          const SizedBox(height: 16),
+        ],
+        _ClasesHoyBlock(
+          state: store.horario,
+          onSeeAll: () => onJump(1),
+          onRetry: () => store.loadHorarioActual(),
+        ),
+        const SizedBox(height: 16),
+        _PagosBlock(
+          state: store.cuotasPendientes,
+          onSeeAll: () => onJump(3),
+          onRetry: () => store.loadCuotasPendientes(),
+        ),
+      ],
     );
   }
 }
 
 class _ClasesHoyBlock extends StatelessWidget {
-  final AsyncValue<List<ClaseHorario>> state;
+  final AsyncValue<List<ScheduleClass>> state;
   final VoidCallback onSeeAll;
-  const _ClasesHoyBlock({required this.state, required this.onSeeAll});
+  final VoidCallback? onRetry;
+  const _ClasesHoyBlock({
+    required this.state,
+    required this.onSeeAll,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -612,7 +778,7 @@ class _ClasesHoyBlock extends StatelessWidget {
       return SectionCard(
         title: l.homeTodayTitle,
         icon: Icons.today_outlined,
-        child: Column(
+        child: const Column(
           children: [
             Skeleton(height: 64, radius: 14),
             SizedBox(height: 10),
@@ -630,6 +796,7 @@ class _ClasesHoyBlock extends StatelessWidget {
           title: l.homeScheduleLoadError,
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
+          onRetry: onRetry,
         ),
       );
     }
@@ -651,9 +818,14 @@ class _ClasesHoyBlock extends StatelessWidget {
 }
 
 class _PagosBlock extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
+  final AsyncValue<List<Payment>> state;
   final VoidCallback onSeeAll;
-  const _PagosBlock({required this.state, required this.onSeeAll});
+  final VoidCallback? onRetry;
+  const _PagosBlock({
+    required this.state,
+    required this.onSeeAll,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -662,7 +834,7 @@ class _PagosBlock extends StatelessWidget {
       return SectionCard(
         title: l.homePendingPaymentsTitle,
         icon: Icons.account_balance_wallet_outlined,
-        child: Column(
+        child: const Column(
           children: [
             Skeleton(height: 60, radius: 14),
             SizedBox(height: 10),
@@ -680,6 +852,7 @@ class _PagosBlock extends StatelessWidget {
           title: l.homePaymentsLoadError,
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
+          onRetry: onRetry,
         ),
       );
     }

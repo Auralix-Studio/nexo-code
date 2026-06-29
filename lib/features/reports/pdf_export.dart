@@ -60,10 +60,10 @@ abstract final class PdfExport {
       student: store.profile.value,
       periodo: store.periodoActivo,
     );
-    final codigo = store.profile.value?.estId ?? '';
+    final codigo = store.profile.value?.id ?? '';
     final periodoLabel = store.periodoActivo == null
         ? ''
-        : '${store.periodoActivo!.anio}-${store.periodoActivo!.periodo}';
+        : '${store.periodoActivo!.year}-${store.periodoActivo!.number}';
     await Printing.layoutPdf(
       name: 'Cronograma_${codigo}_$periodoLabel.pdf',
       onLayout: (_) => doc.save(),

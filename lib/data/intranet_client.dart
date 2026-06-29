@@ -23,8 +23,41 @@ class IntranetClient {
   final http.Client _http;
   final Map<String, String> _cookies = {};
   bool _loggedIn = false;
+  Future<bool>? _reauthInFlight;
 
   bool get isLoggedIn => _loggedIn;
+
+  /// Hook para re-login transparente cuando el server marca la sesión como
+  /// caducada (responde HTML en vez de JSON). Lo setea el repositorio
+  /// con las credenciales guardadas. Simétrico a `ApiClient.reauthenticate`.
+  Future<bool> Function()? reauthenticate;
+
+  /// Cookies actuales serializadas — para persistir entre cold starts y
+  /// evitar tener que rehacer el login (1 request menos = ~500ms más rápido
+  /// al arrancar la app).
+  String? exportCookies() {
+    if (_cookies.isEmpty) return null;
+    return _cookies.entries.map((e) => '${e.key}=${e.value}').join(';');
+  }
+
+  /// Restaura cookies de una sesión previa. Marca como logueado para que
+  /// las llamadas no reintenten el login a menos que reciban una respuesta
+  /// HTML (sesión caducada del lado del server).
+  void importCookies(String raw) {
+    _cookies.clear();
+    for (final part in raw.split(';')) {
+      final i = part.indexOf('=');
+      if (i > 0) _cookies[part.substring(0, i).trim()] = part.substring(i + 1).trim();
+    }
+    _loggedIn = _cookies.containsKey('PHPSESSID');
+  }
+
+  /// Invalida la sesión actual (cuando el server responde HTML / sesión
+  /// caducada). El siguiente `login()` re-establece la cookie.
+  void invalidateSession() {
+    _loggedIn = false;
+    _cookies.clear();
+  }
 
   void _storeCookies(http.BaseResponse res) {
     final raw = res.headers['set-cookie'];
@@ -113,12 +146,32 @@ class IntranetClient {
     return _loggedIn;
   }
 
+  /// Detecta la firma real de sesión caducada de Intranet: un **302 que
+  /// redirige a la página de login (`sesion`)**. Con `followRedirects=false`
+  /// el server NO devuelve HTML como suponíamos: responde `302 Location: sesion`
+  /// con cuerpo vacío en TODOS los endpoints de datos cuando el `PHPSESSID`
+  /// caducó server-side. Verificado con `probe_session_expiry` (2026-06-11):
+  /// la respuesta válida es `200 + JSON`, la caducada es `302 → sesion`.
+  ///
+  /// Sin esta detección, el cuerpo vacío se interpretaba como "sin datos"
+  /// (lista vacía) y nunca se disparaba el re-login → la app mostraba datos
+  /// vacíos y exigía login manual constante.
+  void _checkSession(http.Response res) {
+    if (res.statusCode == 302 &&
+        (res.headers['location'] ?? '').contains('sesion')) {
+      invalidateSession();
+      throw const SessionExpiredException('Sesión de Intranet expirada.');
+    }
+  }
+
   /// Decodifica el cuerpo (a veces con espacios/newline iniciales) a JSON.
   dynamic _decode(String body) {
     final t = body.trim();
     if (t.isEmpty) return null;
     if (t.startsWith('<')) {
-      // Página anti-bot / sesión perdida.
+      // Página anti-bot / login HTML — defensivo: si en vez del 302 el
+      // server alguna vez sirve el HTML de login, también re-logueamos.
+      invalidateSession();
       throw const SessionExpiredException('Sesión de Intranet expirada.');
     }
     try {
@@ -129,22 +182,70 @@ class IntranetClient {
     }
   }
 
-  /// GET que devuelve JSON (array de arrays posicionales).
-  Future<List<dynamic>> getJsonList(String path, {String? referer}) async {
-    final res = await _get(path, referer: referer);
-    final data = _decode(res.body);
-    return data is List ? data : const [];
+  /// Re-autentica una sola vez aunque varios requests caigan en paralelo
+  /// con HTML (sesión caducada). Sin esto, N requests dispararían N logins
+  /// que se pisarían cookies entre sí.
+  Future<bool> _reauthOnce() {
+    return _reauthInFlight ??= () async {
+      try {
+        final cb = reauthenticate;
+        if (cb == null) return false;
+        return await cb();
+      } finally {
+        _reauthInFlight = null;
+      }
+    }();
   }
 
-  /// POST que devuelve JSON.
+  /// GET que devuelve JSON (array de arrays posicionales).
+  /// Si el server responde HTML (sesión caducada), invalida cookies,
+  /// re-loguea con las credenciales del repo y reintenta UNA vez.
+  Future<List<dynamic>> getJsonList(String path, {String? referer}) =>
+      _jsonListGet(path, referer: referer, isRetry: false);
+
+  Future<List<dynamic>> _jsonListGet(
+    String path, {
+    String? referer,
+    required bool isRetry,
+  }) async {
+    final res = await _get(path, referer: referer);
+    try {
+      _checkSession(res);
+      final data = _decode(res.body);
+      return data is List ? data : const [];
+    } on SessionExpiredException {
+      if (isRetry || reauthenticate == null) rethrow;
+      final ok = await _reauthOnce();
+      if (!ok) rethrow;
+      return _jsonListGet(path, referer: referer, isRetry: true);
+    }
+  }
+
+  /// POST que devuelve JSON. Mismo retry-on-HTML que [getJsonList].
   Future<List<dynamic>> postJsonList(
     String path,
     Map<String, String> body, {
     String? referer,
+  }) =>
+      _jsonListPost(path, body, referer: referer, isRetry: false);
+
+  Future<List<dynamic>> _jsonListPost(
+    String path,
+    Map<String, String> body, {
+    String? referer,
+    required bool isRetry,
   }) async {
     final res = await _post(path, body, referer: referer);
-    final data = _decode(res.body);
-    return data is List ? data : const [];
+    try {
+      _checkSession(res);
+      final data = _decode(res.body);
+      return data is List ? data : const [];
+    } on SessionExpiredException {
+      if (isRetry || reauthenticate == null) rethrow;
+      final ok = await _reauthOnce();
+      if (!ok) rethrow;
+      return _jsonListPost(path, body, referer: referer, isRetry: true);
+    }
   }
 
   void close() => _http.close();

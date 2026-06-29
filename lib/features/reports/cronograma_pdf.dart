@@ -2,13 +2,14 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/reports/pdf_theme.dart';
 
 /// PDF del Cronograma de Pagos con el estilo formal de Intranet.
 Future<pw.Document> buildCronogramaPdf(
   CronogramaPagos data, {
-  StudentProfile? student,
-  Periodo? periodo,
+  Student? student,
+  Term? periodo,
 }) async {
   final doc = pw.Document(
     title: 'Cronograma de Pagos',
@@ -17,7 +18,7 @@ Future<pw.Document> buildCronogramaPdf(
 
   final periodoLabel = periodo == null
       ? ''
-      : '${periodo.anio}-${periodo.periodo == 1 ? 'I' : 'II'}';
+      : '${periodo.year}-${periodo.number == 1 ? 'I' : 'II'}';
 
   doc.addPage(
     pw.MultiPage(
@@ -43,7 +44,7 @@ Future<pw.Document> buildCronogramaPdf(
 }
 
 class _DatosEstudiante extends pw.StatelessWidget {
-  final StudentProfile student;
+  final Student student;
   _DatosEstudiante({required this.student});
 
   @override
@@ -51,11 +52,11 @@ class _DatosEstudiante extends pw.StatelessWidget {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pdfDataRow('Facultad', student.facultad),
-        pdfDataRow('Carrera', student.carrera),
-        pdfDataRow('Código', student.estId),
-        pdfDataRow('Alumno', student.estudiante),
-        pdfDataRow('Modalidad', student.modalidad),
+        pdfDataRow('Facultad', student.faculty),
+        pdfDataRow('Carrera', student.career),
+        pdfDataRow('Código', student.id),
+        pdfDataRow('Alumno', student.fullName),
+        pdfDataRow('Modalidad', student.modality),
       ],
     );
   }

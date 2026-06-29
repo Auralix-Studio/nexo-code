@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
+import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/auth/change_password_screen.dart';
 import 'package:nexo/features/legal/about_screen.dart';
 import 'package:nexo/features/legal/developer_screen.dart';
@@ -26,11 +27,13 @@ class ProfileScreen extends StatelessWidget {
     required this.store,
     required this.session,
     required this.theme,
+    required this.lumen,
   });
 
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
+  final LumenServices lumen;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +88,7 @@ class ProfileScreen extends StatelessWidget {
                           onLogout: session.logout,
                           store: store,
                           theme: theme,
+                          lumen: lumen,
                         ),
                       ),
                     ],
@@ -101,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _HeroCard extends StatelessWidget {
-  final StudentProfile? profile;
+  final Student? profile;
   final double? promedio;
   final int? creditosAprob;
   final int? creditosTotal;
@@ -138,8 +142,8 @@ class _HeroCard extends StatelessWidget {
           Row(
             children: [
               StudentAvatar(
-                codigo: profile?.estId,
-                nombre: profile?.estudiante ?? '',
+                codigo: profile?.id,
+                nombre: profile?.fullName ?? '',
                 size: 72,
                 radius: 22,
                 gradient: LinearGradient(
@@ -158,7 +162,7 @@ class _HeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile == null ? '...' : profile!.estudiante,
+                      profile == null ? '...' : profile!.fullName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -171,10 +175,10 @@ class _HeroCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: () {
-                        if (profile?.estId != null) {
+                        if (profile?.id != null) {
                           ClipboardHelper.copyAndShow(
                             context,
-                            profile!.estId,
+                            profile!.id,
                             label: l.profileStudentCode,
                           );
                         }
@@ -183,7 +187,7 @@ class _HeroCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            profile?.estId ?? '',
+                            profile?.id ?? '',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 13,
@@ -224,7 +228,7 @@ class _HeroCard extends StatelessWidget {
                         : '$creditosAprob',
               ),
               _heroDivider(),
-              _heroStat(context, l.detailLevel.toUpperCase(), profile?.nivel ?? '—'),
+              _heroStat(context, l.detailLevel.toUpperCase(), profile?.level ?? '—'),
             ],
           ),
         ],
@@ -275,7 +279,7 @@ class _HeroCard extends StatelessWidget {
 }
 
 class _AcademicCard extends StatelessWidget {
-  final StudentProfile? profile;
+  final Student? profile;
   const _AcademicCard({required this.profile});
 
   @override
@@ -286,49 +290,49 @@ class _AcademicCard extends StatelessWidget {
       _InfoItem(
         icon: Icons.menu_book_outlined,
         label: l.profileCareer,
-        value: p?.carrera ?? '—',
+        value: p?.career ?? '—',
         wide: true,
         color: NexoTheme.primary,
       ),
       _InfoItem(
         icon: Icons.account_balance_outlined,
         label: l.profileFaculty,
-        value: p?.facultad ?? '—',
+        value: p?.faculty ?? '—',
         wide: true,
       ),
       _InfoItem(
         icon: Icons.location_city_outlined,
         label: l.profileCampus,
-        value: p?.sede ?? '—',
+        value: p?.campus ?? '—',
       ),
       _InfoItem(
         icon: Icons.video_camera_back_outlined,
         label: l.profileMode,
-        value: p?.modalidad ?? '—',
+        value: p?.modality ?? '—',
       ),
       _InfoItem(
         icon: Icons.bookmark_outline,
         label: l.profileStudyPlan,
-        value: p?.pesId ?? '—',
+        value: p?.studyPlan ?? '—',
       ),
       _InfoItem(
         icon: Icons.layers_outlined,
         label: l.profileLevel,
-        value: p?.nivel ?? '—',
+        value: p?.level ?? '—',
       ),
       _InfoItem(
         icon: Icons.event_available_outlined,
         label: l.profileLastEnrollment,
-        value: p?.ultimaMatricula ?? '—',
+        value: p?.lastEnrollment ?? '—',
       ),
       _InfoItem(
-        icon: p?.matriculado == true
+        icon: p?.isEnrolled == true
             ? Icons.check_circle_outline
             : Icons.cancel_outlined,
         label: l.profileStatus,
-        value: p?.matriculado == true ? l.profileStatusEnrolled : l.profileStatusNotEnrolled,
+        value: p?.isEnrolled == true ? l.profileStatusEnrolled : l.profileStatusNotEnrolled,
         color:
-            p?.matriculado == true ? NexoTheme.success : NexoTheme.danger,
+            p?.isEnrolled == true ? NexoTheme.success : NexoTheme.danger,
       ),
     ];
 
@@ -478,10 +482,12 @@ class _ActionsCard extends StatelessWidget {
   final Future<void> Function() onLogout;
   final AppStore store;
   final ThemeController theme;
+  final LumenServices lumen;
   const _ActionsCard({
     required this.onLogout,
     required this.store,
     required this.theme,
+    required this.lumen,
   });
 
   @override

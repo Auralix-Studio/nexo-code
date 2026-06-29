@@ -4,6 +4,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/grades/grade_widgets.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -21,7 +22,7 @@ Color _grade(num? n) {
 /// Notas de periodos ≤2025 (modelo de 2 parciales, diseño anterior).
 class LegacyNotasList extends StatelessWidget {
   final AsyncValue<List<NotaAsignatura>> state;
-  final Periodo periodo;
+  final Term periodo;
   final AppStore store;
   const LegacyNotasList({
     super.key,
@@ -34,11 +35,11 @@ class LegacyNotasList extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           child: Column(
-            children: const [
+            children: [
               Skeleton(height: 18, width: 160),
               SizedBox(height: 16),
               Skeleton(height: 64, radius: 14),
@@ -66,7 +67,7 @@ class LegacyNotasList extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () =>
-                  store.loadBoletaLegacy(periodo.anio, periodo.periodo),
+                  store.loadBoletaLegacy(periodo.year, periodo.number),
               child: Text(l.actionRetry),
             ),
           ],
@@ -85,21 +86,16 @@ class LegacyNotasList extends StatelessWidget {
       );
     }
     return SectionCard(
-      title: l.gradesSubjectsWithPeriod(periodo.descripcion),
+      title: l.gradesSubjectsWithPeriod(periodo.label),
       icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
       trailing: StatusChip(
         text: l.gradesCoursesCount(notas.length),
         color: NexoTheme.primary,
       ),
-      child: Column(
-        children: [
-          for (var i = 0; i < notas.length; i++) ...[
-            _Tile(nota: notas[i]),
-            if (i < notas.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      ),
+      child: gradeTileGrid(context, [
+        for (final n in notas) _Tile(nota: n),
+      ]),
     );
   }
 }
@@ -291,16 +287,15 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (_, controller) => Container(
+      builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -315,52 +310,65 @@ class _Sheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                children: [
-                  GradeHeader(
-                    titulo: nota.asignatura,
-                    subtitulo:
-                        '${nota.codigo} · ${l.detailSection} ${nota.seccion}'
-                        '${nota.puesto.isNotEmpty && nota.puesto != '0/0' ? l.gradesRank(nota.puesto) : ''}',
-                    notaFinalText: nota.notaActualText,
-                    enProceso: nota.notaActualNum == null,
-                  ),
-                  const SizedBox(height: 16),
-                  // Resumen de parciales como tarjeta de sección.
-                  GradeSectionCard(
-                    titulo: l.gradesSummary,
-                    rows: [
-                      GradeRow(label: l.gradesPromedioParcial1, valueRaw: nota.pF1),
-                      GradeRow(label: l.gradesPromedioParcial2, valueRaw: nota.pF2),
-                      GradeRow(
-                        label: l.gradesPromedioFinal,
-                        valueRaw: nota.pf,
-                        strong: true,
-                        last: true,
-                      ),
-                    ],
-                  ),
-                  if (!nota.primer.vacio) ...[
-                    const SizedBox(height: 12),
-                    _parcialCard(l.gradesPrimerParcial, nota.primer, l),
-                  ],
-                  if (!nota.segundo.vacio) ...[
-                    const SizedBox(height: 12),
-                    _parcialCard(l.gradesSegundoParcial, nota.segundo, l),
-                  ],
-                  if (nota.complementario.isNotEmpty &&
-                      nota.complementario != '--') ...[
-                    const SizedBox(height: 12),
-                    _ComplementarioBanner(value: nota.complementario),
-                  ],
-                ],
-              ),
+              child: LegacyNotaDetalleBody(nota: nota, controller: controller),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Cuerpo del detalle de una nota legacy (2 parciales), sin el envoltorio del
+/// bottom-sheet — reusado en la ruta móvil (dentro del sheet) y en el panel de
+/// detalle de escritorio (master-detail).
+class LegacyNotaDetalleBody extends StatelessWidget {
+  const LegacyNotaDetalleBody({super.key, required this.nota, this.controller});
+  final NotaAsignatura nota;
+  final ScrollController? controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return ListView(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+      children: [
+        GradeHeader(
+          titulo: nota.asignatura,
+          subtitulo: '${nota.codigo} · ${l.detailSection} ${nota.seccion}'
+              '${nota.puesto.isNotEmpty && nota.puesto != '0/0' ? l.gradesRank(nota.puesto) : ''}',
+          notaFinalText: nota.notaActualText,
+          enProceso: nota.notaActualNum == null,
+        ),
+        const SizedBox(height: 16),
+        // Resumen de parciales como tarjeta de sección.
+        GradeSectionCard(
+          titulo: l.gradesSummary,
+          rows: [
+            GradeRow(label: l.gradesPromedioParcial1, valueRaw: nota.pF1),
+            GradeRow(label: l.gradesPromedioParcial2, valueRaw: nota.pF2),
+            GradeRow(
+              label: l.gradesPromedioFinal,
+              valueRaw: nota.pf,
+              strong: true,
+              last: true,
+            ),
+          ],
+        ),
+        if (!nota.primer.vacio) ...[
+          const SizedBox(height: 12),
+          _parcialCard(l.gradesPrimerParcial, nota.primer, l),
+        ],
+        if (!nota.segundo.vacio) ...[
+          const SizedBox(height: 12),
+          _parcialCard(l.gradesSegundoParcial, nota.segundo, l),
+        ],
+        if (nota.complementario.isNotEmpty && nota.complementario != '--') ...[
+          const SizedBox(height: 12),
+          _ComplementarioBanner(value: nota.complementario),
+        ],
+      ],
     );
   }
 

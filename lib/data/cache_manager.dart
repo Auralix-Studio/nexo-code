@@ -141,30 +141,6 @@ class CacheManager {
     return d;
   }
 
-  // === StudentProfile ===
-  Future<void> saveProfile(StudentProfile profile) async {
-    await db.insert(
-      'student_profile',
-      {
-        'id': profile.estId,
-        'json_data': jsonEncode(profile.toJson()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<StudentProfile?> getProfile() async {
-    final List<Map<String, dynamic>> maps = await db.query('student_profile', limit: 1);
-    if (maps.isEmpty) return null;
-    try {
-      final rawJson = maps.first['json_data'] as String;
-      return StudentProfile.fromJson(jsonDecode(rawJson) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
   // === BoletaCurso (New Boleta) ===
   Future<void> saveBoleta(String anio, String periodo, List<BoletaCurso> cursos) async {
     await db.insert(
@@ -172,43 +148,7 @@ class CacheManager {
       {
         'anio': anio,
         'periodo': periodo,
-        'json_data': jsonEncode(cursos.map((c) => c.promedioRaw.isEmpty ? {
-          // If BoletaCurso row serialization was simple, let's look at how it maps to Json
-          // BoletaCurso has no toJson/fromJson by default?
-          // Let's verify: BoletaCurso.fromRow is the only constructor.
-          // Wait! Let's write manual map representation for BoletaCurso if there is no toJson.
-          // Let's check models.dart to see if BoletaCurso has a toJson.
-          // From models.dart lines 759-798:
-          // class BoletaCurso {
-          //   final String matriculaAsignaturaId;
-          //   final String plan;
-          //   final String codigo;
-          //   final String nombre;
-          //   final String seccion;
-          //   final String asistenciaRaw;
-          //   final String promedioRaw;
-          //   final String estado;
-          //   ...
-          // }
-          // Ah, BoletaCurso has no toJson/fromJson. Let's serialize manually, or map it.
-          'matriculaAsignaturaId': c.matriculaAsignaturaId,
-          'plan': c.plan,
-          'codigo': c.codigo,
-          'nombre': c.nombre,
-          'seccion': c.seccion,
-          'asistenciaRaw': c.asistenciaRaw,
-          'promedioRaw': c.promedioRaw,
-          'estado': c.estado,
-        } : {
-          'matriculaAsignaturaId': c.matriculaAsignaturaId,
-          'plan': c.plan,
-          'codigo': c.codigo,
-          'nombre': c.nombre,
-          'seccion': c.seccion,
-          'asistenciaRaw': c.asistenciaRaw,
-          'promedioRaw': c.promedioRaw,
-          'estado': c.estado,
-        }).toList()),
+        'json_data': jsonEncode(cursos.map((c) => c.toJson()).toList()),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -224,36 +164,18 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) {
-        final m = e as Map<String, dynamic>;
-        // Map back using a constructor or manual fields
-        return BoletaCurso(
-          matriculaAsignaturaId: m['matriculaAsignaturaId'] as String? ?? '',
-          plan: m['plan'] as String? ?? '',
-          codigo: m['codigo'] as String? ?? '',
-          nombre: m['nombre'] as String? ?? '',
-          seccion: m['seccion'] as String? ?? '',
-          asistenciaRaw: m['asistenciaRaw'] as String? ?? '',
-          promedioRaw: m['promedioRaw'] as String? ?? '',
-          estado: m['estado'] as String? ?? '',
-        );
-      }).toList();
+      return list
+          .map((e) => BoletaCurso.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
   // === NotaAsignatura (Legacy Boleta) ===
+  // NotaAsignatura no tiene toJson propio: se serializa al esquema posicional
+  // legacy (mismas claves que su `fromJson` espera) para round-trip exacto.
   Future<void> saveBoletaLegacy(String anio, String periodo, List<NotaAsignatura> notas) async {
-    // Wait, let's check if NotaAsignatura has a toJson or if we can serialize it.
-    // Wait, does NotaAsignatura have a toJson? It has fromJson and fromLegacyRow.
-    // Let's check models.dart to see if it has a toJson.
-    // No, it doesn't seem to have a toJson. Let's serialize it manually or add a toJson helper.
-    // Let's inspect NotaAsignatura's fields:
-    // String codigo, asignatura, seccion, ciclo, credito (double), asistencia (String?),
-    // tipoAsignatura, mtr_Anio, mtr_Periodo, pf, pfp, complementario, cc, puesto, pF1, pF2,
-    // primer (NotasParcial), segundo (NotasParcial).
-    // Let's write helper serialization function for it here.
     final list = notas.map((n) => {
       'codigo': n.codigo,
       'asignatura': n.asignatura,
@@ -320,7 +242,7 @@ class CacheManager {
   }
 
   // === Horario ===
-  Future<void> saveHorario(List<ClaseHorario> clases) async {
+  Future<void> saveHorario(List<ScheduleClass> clases) async {
     await db.insert(
       'horario',
       {
@@ -332,7 +254,7 @@ class CacheManager {
     );
   }
 
-  Future<List<ClaseHorario>?> getHorario() async {
+  Future<List<ScheduleClass>?> getHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'horario',
       where: 'id = ?',
@@ -341,14 +263,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Docente Horario ===
-  Future<void> saveDocenteHorario(List<ClaseHorario> clases) async {
+  Future<void> saveDocenteHorario(List<ScheduleClass> clases) async {
     await db.insert(
       'horario',
       {
@@ -360,7 +282,7 @@ class CacheManager {
     );
   }
 
-  Future<List<ClaseHorario>?> getDocenteHorario() async {
+  Future<List<ScheduleClass>?> getDocenteHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'horario',
       where: 'id = ?',
@@ -369,14 +291,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Periodos ===
-  Future<void> savePeriodos(List<Periodo> periodos) async {
+  Future<void> savePeriodos(List<Term> periodos) async {
     await db.insert(
       'periodos',
       {
@@ -388,7 +310,7 @@ class CacheManager {
     );
   }
 
-  Future<List<Periodo>?> getPeriodos() async {
+  Future<List<Term>?> getPeriodos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'periodos',
       where: 'id = ?',
@@ -397,14 +319,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Periodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => Term.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Promedios ===
-  Future<void> savePromedios(List<PromedioPeriodo> promedios) async {
+  Future<void> savePromedios(List<TermAverage> promedios) async {
     await db.insert(
       'promedios',
       {
@@ -416,7 +338,7 @@ class CacheManager {
     );
   }
 
-  Future<List<PromedioPeriodo>?> getPromedios() async {
+  Future<List<TermAverage>?> getPromedios() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'promedios',
       where: 'id = ?',
@@ -425,14 +347,14 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => PromedioPeriodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => TermAverage.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
   // === Pagos ===
-  Future<void> savePagos(List<Cuota> pagos) async {
+  Future<void> savePagos(List<Payment> pagos) async {
     await db.insert(
       'pagos',
       {
@@ -444,7 +366,7 @@ class CacheManager {
     );
   }
 
-  Future<List<Cuota>?> getPagos() async {
+  Future<List<Payment>?> getPagos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'pagos',
       where: 'id = ?',
@@ -453,7 +375,7 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Cuota.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => Payment.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
@@ -461,10 +383,6 @@ class CacheManager {
 
   // === DocenteInfo ===
   Future<void> saveDocenteInfo(DocenteInfo info) async {
-    // Let's verify if DocenteInfo has a toJson.
-    // Yes: Map<String, dynamic> toJson() => ... wait, let's see if it has toJson in models.dart:
-    // It has: factory DocenteInfo.fromJson(Map<String, dynamic> j)
-    // But does not seem to have a toJson. Let's serialize manually.
     final data = {
       'codigo': info.codigo,
       'nombres': info.nombres,
@@ -495,7 +413,6 @@ class CacheManager {
 
   // === DocenteCursos ===
   Future<void> saveDocenteCursos(List<DocenteAsignatura> cursos) async {
-    // DocenteAsignatura doesn't seem to have a toJson, let's serialize it manually.
     final list = cursos.map((c) => {
       'cleAuto': c.id,
       'codigo': c.codigo,
@@ -533,7 +450,6 @@ class CacheManager {
 
   // === DocenteAlumnos ===
   Future<void> saveDocenteAlumnos(String cursoId, List<DocenteAlumno> alumnos) async {
-    // DocenteAlumno doesn't seem to have a toJson. Let's serialize manually.
     final list = alumnos.map((a) => {
       'codigo': a.codigo,
       'nombres': a.nombres,

@@ -12,6 +12,7 @@ import 'package:nexo/features/legal/developer_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/settings/settings_screen.dart';
+import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -26,10 +27,12 @@ class DocenteProfileScreen extends StatefulWidget {
     required this.store,
     required this.session,
     required this.theme,
+    required this.lumen,
   });
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
+  final LumenServices lumen;
 
   @override
   State<DocenteProfileScreen> createState() => _DocenteProfileScreenState();
@@ -80,6 +83,7 @@ class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
                       child: _ActionsCard(
                         store: widget.store,
                         theme: widget.theme,
+                        lumen: widget.lumen,
                         onLogout: widget.session.logout,
                       ),
                     ),
@@ -334,10 +338,12 @@ class _InfoRow extends StatelessWidget {
 class _ActionsCard extends StatelessWidget {
   final AppStore store;
   final ThemeController theme;
+  final LumenServices lumen;
   final Future<void> Function() onLogout;
   const _ActionsCard({
     required this.store,
     required this.theme,
+    required this.lumen,
     required this.onLogout,
   });
 

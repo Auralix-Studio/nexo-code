@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:nexo/core/app_locale.dart';
+import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
+import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/data/update_service.dart';
 import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
@@ -11,7 +14,11 @@ import 'package:nexo/shared/widgets/section_card.dart';
 /// Pantalla de Configuración común a estudiante y docente.
 /// Centraliza Apariencia, Idioma, Formato de hora y Notificaciones.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.store, required this.theme});
+  const SettingsScreen({
+    super.key,
+    required this.store,
+    required this.theme,
+  });
   final AppStore store;
   final ThemeController theme;
 
@@ -32,6 +39,8 @@ class SettingsScreen extends StatelessWidget {
                 _PreferencesCard(theme: theme),
                 const SizedBox(height: 14),
                 _NotificationsCard(store: store),
+                const SizedBox(height: 14),
+                const UpdateCard(),
                 const SizedBox(height: 24),
               ],
             ),
@@ -373,10 +382,67 @@ class _PreferencesCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 18),
+              const _FestivityToggle(),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Toggle de adornos de festividades. Autocontenido: lee/escribe el flag en
+/// [AppStorage] y se reconstruye solo (no depende del ThemeController).
+class _FestivityToggle extends StatefulWidget {
+  const _FestivityToggle();
+
+  @override
+  State<_FestivityToggle> createState() => _FestivityToggleState();
+}
+
+class _FestivityToggleState extends State<_FestivityToggle> {
+  Future<void> _set(bool v) async {
+    await AppStorage.instance.setFestivityDecor(v);
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = AppStorage.instance.festivityDecor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'ADORNOS DE FESTIVIDADES',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: NexoTheme.textMuted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _PrefChip(
+                label: 'Activado',
+                selected: on,
+                onTap: () => _set(true),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _PrefChip(
+                label: 'Desactivado',
+                selected: !on,
+                onTap: () => _set(false),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -461,3 +527,207 @@ class _NotificationsCard extends StatelessWidget {
     );
   }
 }
+
+// ===== Actualizaciones (Android) =====
+
+/// Tarjeta de actualización: muestra la versión actual, permite buscar
+/// actualizaciones manualmente y descargar/instalar la nueva versión.
+/// Se oculta en plataformas sin autoupdater (todo lo que no es Android).
+class UpdateCard extends StatelessWidget {
+  const UpdateCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final updater = UpdateService.instance;
+    if (updater == null || !updater.isSupported) {
+      return const SizedBox.shrink();
+    }
+    return ListenableBuilder(
+      listenable: updater,
+      builder: (context, _) {
+        final l = AppLocalizations.of(context);
+        final status = updater.currentStatus();
+        final busy = updater.isBusy;
+        return SectionCard(
+          title: l.updTitle,
+          icon: Icons.system_update_alt_rounded,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.updInstalledVersion,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: NexoTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Nexo ${AppConfig.appVersion}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: NexoTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _StatusPill(status: status, busy: busy),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _UpdateAction(updater: updater, status: status, busy: busy),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final UpdateStatus status;
+  final bool busy;
+  const _StatusPill({required this.status, required this.busy});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    late final String label;
+    late final Color color;
+    late final IconData icon;
+    if (busy) {
+      label = l.updStatusChecking;
+      color = NexoTheme.textSecondary;
+      icon = Icons.sync_rounded;
+    } else {
+      switch (status.state) {
+        case UpdateState.ready:
+        case UpdateState.available:
+          label = l.updStatusAvailable;
+          color = NexoTheme.primary;
+          icon = Icons.new_releases_rounded;
+        case UpdateState.upToDate:
+          label = l.updStatusUpToDate;
+          color = NexoTheme.success;
+          icon = Icons.verified_rounded;
+        case UpdateState.unknown:
+        case UpdateState.unsupported:
+          label = l.updStatusUnknown;
+          color = NexoTheme.textMuted;
+          icon = Icons.help_outline_rounded;
+      }
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdateAction extends StatelessWidget {
+  final UpdateService updater;
+  final UpdateStatus status;
+  final bool busy;
+  const _UpdateAction({
+    required this.updater,
+    required this.status,
+    required this.busy,
+  });
+
+  Future<void> _check(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final s = await updater.checkNow();
+    if (!context.mounted) return;
+    final msg = switch (s.state) {
+      UpdateState.upToDate => l.updSnackUpToDate,
+      UpdateState.available ||
+      UpdateState.ready =>
+        l.updSnackAvailable(s.latestVersion ?? ''),
+      _ => l.updSnackCheckFailed,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _install(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final ok = await updater.installDownloaded();
+    if (!context.mounted || ok) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l.updSnackInstallFailed)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final hasUpdate = status.state == UpdateState.available ||
+        status.state == UpdateState.ready;
+
+    if (hasUpdate) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.updAvailableLine(status.latestVersion ?? ''),
+            style: TextStyle(fontSize: 13, color: NexoTheme.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: busy ? null : () => _install(context),
+            icon: busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_rounded, size: 18),
+            label: Text(status.state == UpdateState.ready
+                ? l.updInstallNow
+                : l.updDownloadInstall),
+          ),
+        ],
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: busy ? null : () => _check(context),
+      icon: busy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.refresh_rounded, size: 18),
+      label: Text(l.updCheck),
+    );
+  }
+}
+
