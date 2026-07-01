@@ -55,15 +55,37 @@ class WinSetupService {
   static Future<void> registerUninstall({required String version}) async {
     final uninstallString = '"$officialExePath" --uninstall';
     final iconPath = '$officialExePath,0';
+
+    int estimatedSizeKB = 0;
+    try {
+      final binDir = Directory(p.join(officialInstallDir, 'bin'));
+      if (await binDir.exists()) {
+        int totalBytes = 0;
+        await for (final entity in binDir.list(recursive: true)) {
+          if (entity is File) {
+            totalBytes += await entity.length();
+          }
+        }
+        estimatedSizeKB = (totalBytes / 1024).ceil();
+      }
+    } catch (_) {
+      estimatedSizeKB = 0;
+    }
+
     final script =
         '''
       \$regPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Nexo"
       New-Item -Path \$regPath -Force | Out-Null
       New-ItemProperty -Path \$regPath -Name "DisplayName" -Value "Nexo UPLA" -PropertyType String -Force | Out-Null
       New-ItemProperty -Path \$regPath -Name "UninstallString" -Value '$uninstallString' -PropertyType String -Force | Out-Null
+      New-ItemProperty -Path \$regPath -Name "QuietUninstallString" -Value '$uninstallString' -PropertyType String -Force | Out-Null
       New-ItemProperty -Path \$regPath -Name "DisplayIcon" -Value "$iconPath" -PropertyType String -Force | Out-Null
       New-ItemProperty -Path \$regPath -Name "DisplayVersion" -Value "$version" -PropertyType String -Force | Out-Null
       New-ItemProperty -Path \$regPath -Name "Publisher" -Value "Nexo Team" -PropertyType String -Force | Out-Null
+      New-ItemProperty -Path \$regPath -Name "InstallLocation" -Value "$officialInstallDir" -PropertyType String -Force | Out-Null
+      New-ItemProperty -Path \$regPath -Name "NoModify" -Value 1 -PropertyType DWord -Force | Out-Null
+      New-ItemProperty -Path \$regPath -Name "NoRepair" -Value 1 -PropertyType DWord -Force | Out-Null
+      New-ItemProperty -Path \$regPath -Name "EstimatedSize" -Value $estimatedSizeKB -PropertyType DWord -Force | Out-Null
     ''';
     await Process.run('powershell', ['-Command', script]);
   }
@@ -135,11 +157,23 @@ class WinSetupService {
     required bool purgeData,
     required void Function(String message) onStepProgress,
   }) async {
+    onStepProgress("Cerrando la aplicación...");
+    final currentPid = pid;
+    await Process.run('powershell', [
+      '-Command',
+      'Get-Process -Name "nexo" -ErrorAction SilentlyContinue | Where-Object { \$_.Id -ne $currentPid } | Stop-Process -Force -ErrorAction SilentlyContinue',
+    ]);
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    onStepProgress("Removiendo inicio automático...");
+    await removeAutoStart();
+
     onStepProgress("Removiendo del Registro de Windows...");
     await Process.run('powershell', [
       '-Command',
       'Remove-Item -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Nexo" -Recurse -ErrorAction SilentlyContinue',
     ]);
+
     onStepProgress("Eliminando accesos directos...");
     const script = '''
       \$DesktopPath = [System.Environment]::GetFolderPath('Desktop')
@@ -149,17 +183,29 @@ class WinSetupService {
       Remove-Item -Path (Join-Path \$ProgramsPath "Nexo UPLA.lnk") -Force -ErrorAction SilentlyContinue
     ''';
     await Process.run('powershell', ['-Command', script]);
+
     if (purgeData) {
       onStepProgress("Purgando base de datos y configuraciones locales...");
       final dbFile = File(p.join(localAppData, 'nexo_cache.db'));
       if (await dbFile.exists()) {
-        await dbFile.delete();
+        try {
+          await dbFile.delete();
+        } catch (_) {}
       }
-      final roamingDir = Directory(p.join(appData, 'Nexo'));
-      if (await roamingDir.exists()) {
-        await roamingDir.delete(recursive: true);
+      final roamingLegacy = Directory(p.join(appData, 'Nexo'));
+      if (await roamingLegacy.exists()) {
+        try {
+          await roamingLegacy.delete(recursive: true);
+        } catch (_) {}
+      }
+      final roamingActual = Directory(p.join(appData, 'pe.upla.nexo'));
+      if (await roamingActual.exists()) {
+        try {
+          await roamingActual.delete(recursive: true);
+        } catch (_) {}
       }
     }
+
     onStepProgress("Removiendo archivos de programa...");
     final binDir = Directory(p.join(officialInstallDir, 'bin'));
     if (await binDir.exists()) {
@@ -180,11 +226,11 @@ class WinSetupService {
   }
 
   static Future<void> triggerSelfDestruct() async {
-    final cmdScript =
-        'timeout /t 1 /nobreak && rmdir /s /q "$officialInstallDir"';
+    final cleanupScript =
+        'ping -n 3 127.0.0.1 >nul && rmdir /s /q "$officialInstallDir"';
     await Process.start('cmd.exe', [
       '/c',
-      cmdScript,
+      cleanupScript,
     ], mode: ProcessStartMode.detached);
     exit(0);
   }

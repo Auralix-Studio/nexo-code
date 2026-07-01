@@ -46,9 +46,9 @@ $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $repo = 'Auralix-Studio/nexo'
 $scriptsDir = $PSScriptRoot
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 0: Leer versión de pubspec.yaml
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 $verLine = ([System.IO.File]::ReadAllLines((Join-Path $root 'pubspec.yaml'), [System.Text.Encoding]::UTF8) | Where-Object { $_ -match '^\s*version:\s*(.+)$' })
 $rawVer = (($verLine -replace '^\s*version:\s*', '').Split('+')[0]).Trim()
 if (-not $rawVer) { throw 'No se pudo leer la version de pubspec.yaml' }
@@ -57,18 +57,18 @@ $tag = "v$rawVer"
 $title = "Nexo $rawVer"
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "╔==========================================╗" -ForegroundColor Cyan
 Write-Host "  NEXO RELEASE PIPELINE - $tag             " -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "╚==========================================╝" -ForegroundColor Cyan
 Write-Host ""
 
 if ($DryRun) {
   Write-Host "[DRY RUN] No se ejecutaran cambios reales.`n" -ForegroundColor Yellow
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 1: Validaciones previas
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host "[1/8] Validaciones previas..." -ForegroundColor Yellow
 
 # Verificar que Git no tiene cambios sin commitear (excepto dist/)
@@ -98,9 +98,9 @@ try {
   Pop-Location
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 2: Sincronizar config.dart
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host "`n[2/8] Sincronizando config.dart..." -ForegroundColor Yellow
 
 if (-not $DryRun) {
@@ -109,9 +109,9 @@ if (-not $DryRun) {
   Write-Host "  (dry run) Se sincronizaría config.dart con versión $rawVer" -ForegroundColor DarkGray
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 3: Preparar directorio dist/
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 $dist = Join-Path $root 'dist'
 if (-not $SkipBuild) {
   if (Test-Path $dist) { Remove-Item "$dist\*" -Force -Recurse -ErrorAction SilentlyContinue }
@@ -129,9 +129,9 @@ function Copy-Artifact($src, $name) {
   }
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 4: Compilar artefactos
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 if (-not $SkipBuild) {
   Push-Location $root
   try {
@@ -175,7 +175,53 @@ if (-not $SkipBuild) {
           $zip = Join-Path $dist "nexo-$tag-windows-x64.zip"
           Compress-Archive -Path "$winDir/*" -DestinationPath $zip -Force
           $sizeMB = [math]::Round((Get-Item $zip).Length / 1MB, 1)
-          Write-Host "  + nexo-$tag-windows-x64.zip ($sizeMB MB)" -ForegroundColor Green
+          Write-Host "  + nexo-`$tag-windows-x64.zip (`$sizeMB MB)" -ForegroundColor Green
+
+          # 2. Generar ejecutable auto-contenido (estilo Discord) usando Warp
+          #    Esto empaqueta todo en un solo .exe que extrae en memoria/temp sin NINGUNA UI.
+          $warpUrl = 'https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe'
+          $warpExe = Join-Path $scriptsDir 'warp-packer.exe'
+          if (-not (Test-Path $warpExe)) {
+            Write-Host "  Descargando warp-packer (herramienta de empaquetado invisible)..." -ForegroundColor DarkGray
+            try {
+              Invoke-WebRequest -Uri $warpUrl -OutFile $warpExe -UseBasicParsing
+            } catch {
+              Write-Host "  (Fallo al descargar warp-packer: $_)" -ForegroundColor DarkYellow
+            }
+          }
+
+          if (Test-Path $warpExe) {
+            Write-Host "  Empaquetando app en un solo ejecutable invisible..." -ForegroundColor DarkGray
+            $setupExe = Join-Path $dist "nexo-$tag-setup-x64.exe"
+            
+            # Ejecutar warp-packer
+            & $warpExe --arch windows-x64 --input_dir $winDir --exec nexo.exe --output $setupExe | Out-Null
+            
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $setupExe)) {
+              # Modificar cabecera PE para cambiar el Subsistema de Consola (3) a Windows GUI (2)
+              # Esto evita que aparezca la ventana negra de CMD al ejecutar el instalador auto-contenido
+              try {
+                $bytes = [System.IO.File]::ReadAllBytes($setupExe)
+                $peHeaderOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+                $subsystemOffset = $peHeaderOffset + 0x5C # 0x5C for PE32+ (64-bit)
+                if ($bytes[$subsystemOffset] -eq 3) {
+                  $bytes[$subsystemOffset] = 2
+                  [System.IO.File]::WriteAllBytes($setupExe, $bytes)
+                }
+              } catch {
+                Write-Host "  (Advertencia: No se pudo parchear el subsistema PE)" -ForegroundColor DarkYellow
+              }
+
+              $setupMB = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
+              Write-Host "  + nexo-$tag-setup-x64.exe ($setupMB MB) - Instalador silencioso" -ForegroundColor Green
+            } else {
+              Write-Host "  (Fallo al empaquetar con warp-packer)" -ForegroundColor DarkYellow
+            }
+            # Limpiar warp-packer para no dejar basura
+            Remove-Item $warpExe -Force -ErrorAction SilentlyContinue
+          } else {
+            Write-Host "  (warp-packer no encontrado - omitido instalador de un solo archivo)" -ForegroundColor DarkYellow
+          }
         } else {
           Write-Host '  (no se encontró el build de Windows)' -ForegroundColor DarkGray
         }
@@ -192,9 +238,9 @@ if (-not $SkipBuild) {
   Write-Host "`n[3-5/8] Build omitido (-SkipBuild). Usando artefactos existentes en dist/." -ForegroundColor DarkGray
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 5: Generar SHA256SUMS.txt
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host "`n[6/8] Generando SHA256SUMS.txt..." -ForegroundColor Yellow
 
 if (-not $DryRun) {
@@ -208,9 +254,9 @@ if (-not $DryRun) {
   Write-Host "  (dry run) Se calcularían hashes SHA-256" -ForegroundColor DarkGray
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 6: Generar release notes
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host "`n[7/8] Generando release notes..." -ForegroundColor Yellow
 
 if (-not $DryRun) {
@@ -219,9 +265,9 @@ if (-not $DryRun) {
   Write-Host "  (dry run) Se generaría RELEASE_NOTES.md desde CHANGELOG.md" -ForegroundColor DarkGray
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # Resumen de artefactos
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host "`nArtefactos en dist/:" -ForegroundColor Green
 if (-not $DryRun) {
   Get-ChildItem $dist -File |
@@ -229,9 +275,9 @@ if (-not $DryRun) {
     Format-Table -AutoSize
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # PASO 7: Publicar release en GitHub
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 if ($Publish) {
   Write-Host "[8/8] Publicando release $tag en $repo..." -ForegroundColor Yellow
 
@@ -308,11 +354,11 @@ if ($Publish) {
   Write-Host "  (usa -SkipBuild para reusar los artefactos de dist/)" -ForegroundColor DarkGray
 }
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 # Resumen final
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 Write-Host ""
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host "  Release pipeline completado: $tag" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host ""

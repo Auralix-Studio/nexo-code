@@ -264,12 +264,21 @@ class _GateState extends State<_Gate> {
       if (_showInstallView && _installOptions != null) {
         return Scaffold(
           backgroundColor: NexoTheme.bg,
-          body: InstallView(options: _installOptions!),
+          body: Column(
+            children: [
+              const CustomTitleBar(),
+              Expanded(child: InstallView(options: _installOptions!)),
+            ],
+          ),
         );
       }
       return Scaffold(
         backgroundColor: NexoTheme.bg,
-        body: SetupWizard(
+        body: Column(
+          children: [
+            const CustomTitleBar(),
+            Expanded(
+              child: SetupWizard(
           theme: widget.theme,
           onInstall: (options) async {
             await AppStorage.instance.setAcceptedTerms(true);
@@ -297,7 +306,10 @@ class _GateState extends State<_Gate> {
             });
           },
         ),
-      );
+      ),
+    ],
+  ),
+);
     }
     Widget gated;
     String key;
@@ -468,6 +480,7 @@ class _UninstallApp extends StatelessWidget {
   final NexoColors palette;
   @override
   Widget build(BuildContext context) {
+    NexoTheme.apply(palette);
     return MaterialApp(
       title: 'Desinstalar Nexo',
       debugShowCheckedModeBanner: false,
@@ -479,7 +492,15 @@ class _UninstallApp extends StatelessWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       theme: NexoTheme.themeFor(palette),
-      home: const UninstallView(),
+      home: Scaffold(
+        backgroundColor: palette.bg,
+        body: const Column(
+          children: [
+            CustomTitleBar(),
+            Expanded(child: UninstallView()),
+          ],
+        ),
+      ),
     );
   }
 }
