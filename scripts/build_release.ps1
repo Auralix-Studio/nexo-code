@@ -1,4 +1,4 @@
-﻿# build_release.ps1 — Pipeline completo de release de Nexo
+# build_release.ps1 — Pipeline completo de release de Nexo
 #
 # Flujo automatizado:
 #   1. Lee versión de pubspec.yaml (fuente de verdad)
@@ -43,7 +43,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$repo = 'Auralix-Studio/nexo'
+$repo = 'Alexito-Hub/nexo'
 $scriptsDir = $PSScriptRoot
 
 # ===============================================================
