@@ -8,10 +8,12 @@ import 'package:nexo/l10n/app_localizations.dart';
 class PendingPaymentsWidget extends StatelessWidget {
   final List<Payment> installments;
   final DateTime? nowOverride;
+  final bool isCompact;
   const PendingPaymentsWidget({
     super.key,
     required this.installments,
     this.nowOverride,
+    this.isCompact = false,
   });
   DateTime get now => nowOverride ?? DateTime.now();
   @override
@@ -58,16 +60,16 @@ class PendingPaymentsWidget extends StatelessWidget {
           ? _empty(context)
           : Column(
               children: [
-                for (var i = 0; i < sorted.length.clamp(0, 4); i++) ...[
+                for (var i = 0; i < sorted.length.clamp(0, isCompact ? 2 : 4); i++) ...[
                   _CuotaRow(cuota: sorted[i], now: now),
-                  if (i < sorted.length.clamp(0, 4) - 1)
+                  if (i < sorted.length.clamp(0, isCompact ? 2 : 4) - 1)
                     const SizedBox(height: 10),
                 ],
-                if (sorted.length > 4) ...[
+                if (sorted.length > (isCompact ? 2 : 4)) ...[
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      AppLocalizations.of(context).homePendingPaymentsMore(sorted.length - 4),
+                      AppLocalizations.of(context).homePendingPaymentsMore(sorted.length - (isCompact ? 2 : 4)),
                       style: TextStyle(
                         color: NexoTheme.textSecondary,
                         fontSize: 13,

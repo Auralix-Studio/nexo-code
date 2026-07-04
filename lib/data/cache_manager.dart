@@ -10,7 +10,31 @@ class CacheManager {
   Future<void> init() async {
     if (_db != null) return;
     final path = join(await getDatabasesPath(), 'nexo_cache.db');
-    _db = await openDatabase(path, version: 1, onCreate: _createTables);
+    _db = await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createTables,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        final tables = [
+          'student_profile',
+          'boleta_cursos',
+          'boleta_legacy',
+          'schedule',
+          'periodos',
+          'promedios',
+          'pagos',
+          'docente_info',
+          'docente_cursos',
+          'docente_alumnos',
+          'unified_student',
+          'unified_teacher'
+        ];
+        for (final t in tables) {
+          await db.execute('DROP TABLE IF EXISTS $t');
+        }
+        await _createTables(db, newVersion);
+      },
+    );
   }
 
   Future<void> _createTables(Database db, int version) async {

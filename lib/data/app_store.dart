@@ -14,6 +14,7 @@ import 'package:nexo/data/teams_repository.dart';
 import 'package:nexo/domain/grade_calculator.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
+import 'package:nexo/domain/dashboard_widget_config.dart';
 
 class AsyncValue<T> {
   final T? value;
@@ -289,8 +290,97 @@ class AppStore extends ChangeNotifier {
   static const _ckCuotasPend = 'cuotasPend';
   void _setStorageCache(String key, Object data) =>
       AppStorage.instance.setCache(key, data);
+      
+  List<DashboardWidgetConfig> dashboardLayout = [
+    const DashboardWidgetConfig(id: 'stats_promedio', span: 1),
+    const DashboardWidgetConfig(id: 'stats_creditos', span: 1),
+    const DashboardWidgetConfig(id: 'stats_clases_hoy', span: 1),
+    const DashboardWidgetConfig(id: 'stats_pagos', span: 1),
+    const DashboardWidgetConfig(id: 'next_class', span: 2),
+    const DashboardWidgetConfig(id: 'today_classes', span: 2),
+    const DashboardWidgetConfig(id: 'pending_payments', span: 2),
+  ];
+
+  void _loadDashboardLayout() {
+    final s = AppStorage.instance.dashboardConfigJson;
+    if (s != null) {
+      try {
+        final list = (jsonDecode(s) as List)
+            .map((e) => DashboardWidgetConfig.fromJson(e as Map<String, dynamic>))
+            .toList();
+        if (list.isNotEmpty) {
+          // Migración automática si existe stats_grid
+          final i = list.indexWhere((e) => e.id == 'stats_grid');
+          if (i >= 0) {
+            list.removeAt(i);
+            list.insertAll(i, [
+              const DashboardWidgetConfig(id: 'stats_promedio', span: 1),
+              const DashboardWidgetConfig(id: 'stats_creditos', span: 1),
+              const DashboardWidgetConfig(id: 'stats_clases_hoy', span: 1),
+              const DashboardWidgetConfig(id: 'stats_pagos', span: 1),
+            ]);
+          }
+          // Validar que existan
+          final defaults = [
+            'stats_promedio', 'stats_creditos', 'stats_clases_hoy', 'stats_pagos',
+            'next_class', 'today_classes', 'pending_payments'
+          ];
+          for (final d in defaults) {
+            if (!list.any((e) => e.id == d)) {
+              list.add(DashboardWidgetConfig(id: d, span: d.startsWith('stats_') ? 1 : 2));
+            }
+          }
+          dashboardLayout = list;
+          return;
+        }
+      } catch (_) {}
+    }
+    dashboardLayout = [
+      const DashboardWidgetConfig(id: 'stats_promedio', span: 1),
+      const DashboardWidgetConfig(id: 'stats_creditos', span: 1),
+      const DashboardWidgetConfig(id: 'stats_clases_hoy', span: 1),
+      const DashboardWidgetConfig(id: 'stats_pagos', span: 1),
+      const DashboardWidgetConfig(id: 'next_class', span: 2),
+      const DashboardWidgetConfig(id: 'today_classes', span: 2),
+      const DashboardWidgetConfig(id: 'pending_payments', span: 2),
+    ];
+  }
+
+  void saveDashboardLayout() {
+    final s = jsonEncode(dashboardLayout.map((e) => e.toJson()).toList());
+    AppStorage.instance.setDashboardConfigJson(s);
+    _notify();
+  }
+
+  void reorderDashboard(String dragId, String targetId) {
+    final oldIndex = dashboardLayout.indexWhere((e) => e.id == dragId);
+    int newIndex = dashboardLayout.indexWhere((e) => e.id == targetId);
+    if (oldIndex < 0 || newIndex < 0 || oldIndex == newIndex) return;
+    
+    final item = dashboardLayout.removeAt(oldIndex);
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    dashboardLayout.insert(newIndex, item);
+    saveDashboardLayout();
+  }
+
+  void toggleDashboardWidgetSpan(String id) {
+    final i = dashboardLayout.indexWhere((e) => e.id == id);
+    if (i >= 0) {
+      final currentSpan = dashboardLayout[i].span;
+      final isCompact = dashboardLayout[i].size == 'compact';
+      // Toggle both span (1 or 2) and visual compact state for big cards
+      dashboardLayout[i] = dashboardLayout[i].copyWith(
+        span: currentSpan == 1 ? 2 : 1,
+        size: isCompact ? 'normal' : 'compact',
+      );
+      saveDashboardLayout();
+    }
+  }
   Future<void> hydrateFromCache() async {
     final s = AppStorage.instance;
+    _loadDashboardLayout();
     try {
       final cached = await _cache.getStudent();
       if (cached != null) {

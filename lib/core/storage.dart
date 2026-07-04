@@ -42,12 +42,16 @@ class AppStorage {
   static const _kUpdApkSize = 'nexo.upd.apkSize';
   static const _kUpdDownloadedVer = 'nexo.upd.downloadedVer';
   static const _kUpdApkPath = 'nexo.upd.apkPath';
+  static const _kDashboardConfig = 'nexo.dashboardConfig';
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
   Future<void> setNotifPrefsJson(String value) =>
       _prefs.setString(_kNotifPrefs, value);
   String? get gradeSnapshot => _prefs.getString(_kGradeSnap);
   Future<void> setGradeSnapshot(String value) =>
       _prefs.setString(_kGradeSnap, value);
+  String? get dashboardConfigJson => _prefs.getString(_kDashboardConfig);
+  Future<void> setDashboardConfigJson(String value) =>
+      _prefs.setString(_kDashboardConfig, value);
   String? get msSessionJson => _prefs.getString(_kMsSession);
   Future<void> setMsSessionJson(String? value) async {
     if (value == null) {

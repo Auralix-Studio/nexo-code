@@ -11,7 +11,8 @@ import 'package:nexo/l10n/app_localizations.dart';
 class TodayClassesWidget extends StatelessWidget {
   final List<ScheduleClass> all;
   final DateTime? nowOverride;
-  const TodayClassesWidget({super.key, required this.all, this.nowOverride});
+  final bool isCompact;
+  const TodayClassesWidget({super.key, required this.all, this.nowOverride, this.isCompact = false});
   DateTime get now => nowOverride ?? DateTime.now();
   @override
   Widget build(BuildContext context) {
@@ -49,9 +50,22 @@ class TodayClassesWidget extends StatelessWidget {
           ? const _Empty()
           : Column(
               children: [
-                for (var i = 0; i < groups.length; i++) ...[
+                for (var i = 0; i < (isCompact ? 1 : groups.length); i++) ...[
                   _CourseTile(group: groups[i], nowHM: nowHM),
-                  if (i < groups.length - 1) const Gap(AppSpacing.sm + 2),
+                  if (i < (isCompact ? 1 : groups.length) - 1) const Gap(AppSpacing.sm + 2),
+                ],
+                if (isCompact && groups.length > 1) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      '+ ${groups.length - 1} clases más hoy',
+                      style: TextStyle(
+                        color: NexoTheme.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
