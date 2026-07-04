@@ -793,8 +793,8 @@ class AppStore extends ChangeNotifier {
       final v = await _errorHandler.withFallback<List<CourseGrade>>(
         remote: () => Resolver<List<CourseGrade>>(
           sources: [
-            _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
             ..._intra((r) => r.boletaLegacy(year, periodo)),
+            _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
           ],
           merge: MergeStrategies.firstWins,
           isEmpty: _emptyList,

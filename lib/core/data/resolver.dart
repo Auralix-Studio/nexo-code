@@ -65,8 +65,14 @@ class NoDataAvailableException implements Exception {
   final Object? cause;
   final StackTrace? stackTrace;
   @override
-  String toString() =>
-      'NoDataAvailableException(${cause ?? "ningún backend respondió"})';
+  String toString() {
+    if (cause != null) {
+      final c = cause.toString();
+      if (c.startsWith('Exception: ')) return c.substring(11);
+      return c;
+    }
+    return 'No hay datos disponibles (los servidores no respondieron).';
+  }
 }
 
 class MergeStrategies {

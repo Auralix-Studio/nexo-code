@@ -1,4 +1,4 @@
-# build_release.ps1 — Pipeline completo de release de Nexo
+﻿# build_release.ps1 — Pipeline completo de release de Nexo
 #
 # Flujo automatizado:
 #   1. Lee versión de pubspec.yaml (fuente de verdad)
@@ -43,12 +43,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$repo = 'Alexito-Hub/nexo'
+$repo = 'Auralix-Studio/nexo'
 $scriptsDir = $PSScriptRoot
 
 # ===============================================================
 # PASO 0: Leer versión de pubspec.yaml
-# ===============================================================
+# ===============================================================s
 $verLine = ([System.IO.File]::ReadAllLines((Join-Path $root 'pubspec.yaml'), [System.Text.Encoding]::UTF8) | Where-Object { $_ -match '^\s*version:\s*(.+)$' })
 $rawVer = (($verLine -replace '^\s*version:\s*', '').Split('+')[0]).Trim()
 if (-not $rawVer) { throw 'No se pudo leer la version de pubspec.yaml' }
@@ -354,9 +354,6 @@ if ($Publish) {
   Write-Host "  (usa -SkipBuild para reusar los artefactos de dist/)" -ForegroundColor DarkGray
 }
 
-# ===============================================================
-# Resumen final
-# ===============================================================
 Write-Host ""
 Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host "  Release pipeline completado: $tag" -ForegroundColor Cyan

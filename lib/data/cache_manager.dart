@@ -118,7 +118,7 @@ class CacheManager {
     List<ReportCardCourse> courses,
   ) async {
     await db.insert('boleta_cursos', {
-      'anio': year,
+      'year': year,
       'periodo': periodo,
       'json_data': jsonEncode(courses.map((c) => c.toJson()).toList()),
       'updated_at': DateTime.now().millisecondsSinceEpoch,
@@ -204,7 +204,7 @@ class CacheManager {
         )
         .toList();
     await db.insert('boleta_legacy', {
-      'anio': year,
+      'year': year,
       'periodo': periodo,
       'json_data': jsonEncode(list),
       'updated_at': DateTime.now().millisecondsSinceEpoch,

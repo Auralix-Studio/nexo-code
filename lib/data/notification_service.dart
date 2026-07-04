@@ -164,23 +164,28 @@ class NotificationService extends ChangeNotifier {
         linux: const LinuxNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       );
+  Timer? _rescheduleDebounce;
+
   Future<void> reschedule({
     List<ScheduleClass>? clases,
     List<Payment>? installments,
   }) async {
     if (!_supported || !_ready) return;
-    if (_supportsScheduling) {
-      await _plugin.cancelAll();
-    }
-    if (!_prefs.enabled) return;
-    if (!_supportsScheduling) return;
-    await _ensureExactAlarms();
-    if (_prefs.classesEnabled && clases != null) {
-      await _scheduleClasses(clases);
-    }
-    if (_prefs.paymentsEnabled && installments != null) {
-      await _schedulePayments(installments);
-    }
+    _rescheduleDebounce?.cancel();
+    _rescheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_supportsScheduling) {
+        await _plugin.cancelAll();
+      }
+      if (!_prefs.enabled) return;
+      if (!_supportsScheduling) return;
+      await _ensureExactAlarms();
+      if (_prefs.classesEnabled && clases != null) {
+        await _scheduleClasses(clases);
+      }
+      if (_prefs.paymentsEnabled && installments != null) {
+        await _schedulePayments(installments);
+      }
+    });
   }
 
   Future<void> _scheduleClasses(List<ScheduleClass> clases) async {

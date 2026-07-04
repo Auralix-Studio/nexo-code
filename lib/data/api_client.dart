@@ -123,7 +123,7 @@ class ApiClient {
         }
       }
       throw ServerException(
-        'Endpoint movido o no disponible (SIGMA respondió con HTML del SPA): $path',
+        'El servicio no está disponible temporalmente.',
         status: res.statusCode,
       );
     }
