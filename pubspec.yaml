@@ -1,4 +1,4 @@
-﻿name: nexo
+name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
 version: 1.5.0+8
@@ -47,6 +47,7 @@ dependencies:
   # En Android usa ACTION_VIEW + FileProvider (el plugin lo configura por
   # nosotros, sin tocar AndroidManifest manualmente). Ver lib/data/update_service.dart.
   open_filex: ^4.5.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:

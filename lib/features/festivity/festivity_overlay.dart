@@ -6,6 +6,7 @@ import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/core/storage.dart';
+import 'package:nexo/features/festivity/widgets/fiestas_patrias_effects.dart';
 
 bool _decorEnabled(BuildContext context) =>
     AppStorage.instance.festivityDecor &&
@@ -18,20 +19,64 @@ class FestivityOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        Container(color: NexoTheme.bg),
+        const Positioned.fill(child: _BackgroundLayer()),
         child,
-        const Positioned.fill(child: _DecorLayer()),
+        const Positioned.fill(child: _ForegroundLayer()),
       ],
     );
   }
 }
 
-class _DecorLayer extends StatefulWidget {
-  const _DecorLayer();
+class _BackgroundLayer extends StatefulWidget {
+  const _BackgroundLayer();
   @override
-  State<_DecorLayer> createState() => _DecorLayerState();
+  State<_BackgroundLayer> createState() => _BackgroundLayerState();
 }
 
-class _DecorLayerState extends State<_DecorLayer> {
+class _BackgroundLayerState extends State<_BackgroundLayer> {
+  late final Timer _timer;
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = FestivityService.active(DateTime.now());
+    if (active == null || !_decorEnabled(context)) {
+      return const SizedBox.shrink();
+    }
+    if (active.festivity.id == 'fiestas_patrias') {
+      return const IgnorePointer(
+        child: Opacity(
+          opacity: 0.1, // 10% de opacidad para que sea marca de agua
+          child: Center(
+            child: MarcaPeruEffect(),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+class _ForegroundLayer extends StatefulWidget {
+  const _ForegroundLayer();
+  @override
+  State<_ForegroundLayer> createState() => _ForegroundLayerState();
+}
+
+class _ForegroundLayerState extends State<_ForegroundLayer> {
   late final Timer _timer;
   @override
   void initState() {
@@ -56,7 +101,7 @@ class _DecorLayerState extends State<_DecorLayer> {
     return Stack(
       children: [
         Positioned.fill(
-          child: IgnorePointer(child: _Particles(decor: active.decor)),
+          child: IgnorePointer(child: _Particles(activeFestivity: active)),
         ),
         if (active.number != null && context.isDesktop)
           Positioned(
@@ -278,8 +323,8 @@ class _Particle {
 }
 
 class _Particles extends StatefulWidget {
-  const _Particles({required this.decor});
-  final FestivityDecor decor;
+  const _Particles({required this.activeFestivity});
+  final ActiveFestivity activeFestivity;
   @override
   State<_Particles> createState() => _ParticlesState();
 }
@@ -297,15 +342,16 @@ class _ParticlesState extends State<_Particles>
   }
 
   void _build() {
-    final r = math.Random(widget.decor.index + 7);
-    final palette = _palette(widget.decor);
+    final decor = widget.activeFestivity.decor;
+    final r = math.Random(decor.index + 7);
+    final palette = widget.activeFestivity.festivity.decorColors ?? _palette(decor);
     _particles = List.generate(34, (_) => _Particle(r, palette));
   }
 
   @override
   void didUpdateWidget(covariant _Particles old) {
     super.didUpdateWidget(old);
-    if (old.decor != widget.decor) _build();
+    if (old.activeFestivity.festivity.id != widget.activeFestivity.festivity.id) _build();
   }
 
   @override
@@ -322,7 +368,7 @@ class _ParticlesState extends State<_Particles>
         painter: _ParticlePainter(
           t: _t,
           particles: _particles,
-          isSnow: widget.decor == FestivityDecor.snow,
+          isSnow: widget.activeFestivity.decor == FestivityDecor.snow,
         ),
         size: Size.infinite,
       ),

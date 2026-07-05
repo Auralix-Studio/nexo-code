@@ -220,6 +220,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         child: Focus(
           autofocus: true,
           child: Scaffold(
+            backgroundColor: Colors.transparent,
             body: SafeArea(
               child: Column(
                 children: [
@@ -250,6 +251,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       );
     } else {
       child = Scaffold(
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Column(
             children: [

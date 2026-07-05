@@ -8,6 +8,8 @@ import 'dart:ui';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/l10n/quechua_fallback.dart';
+import 'package:nexo/core/festivity/festivity.dart';
+import 'package:nexo/features/festivity/widgets/fiestas_patrias_effects.dart';
 import 'package:nexo/core/win_setup_service.dart';
 import 'package:nexo/features/settings/setup_view.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
@@ -255,6 +257,24 @@ class _GateState extends State<_Gate> {
   late bool _isSetup = widget.isSetup;
   bool _showInstallView = false;
   InstallOptions? _installOptions;
+  bool _minSplashDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final active = FestivityService.active(DateTime.now());
+    final isFiestasPatrias = AppStorage.instance.festivityDecor && 
+                             active?.festivity.id == 'fiestas_patrias';
+    
+    if (isFiestasPatrias) {
+      Future.delayed(const Duration(milliseconds: 3500), () {
+        if (mounted) setState(() => _minSplashDone = true);
+      });
+    } else {
+      _minSplashDone = true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.isUninstall) {
@@ -325,12 +345,16 @@ class _GateState extends State<_Gate> {
       gated = ListenableBuilder(
         listenable: widget.session,
         builder: (context, _) {
+          final isWaiting = widget.session.status == SessionStatus.unknown || !_minSplashDone;
           final showOnboarding =
               !_seenOnboarding &&
               widget.session.status == SessionStatus.unauthenticated;
           final Widget child;
           final String k;
-          if (showOnboarding) {
+          if (isWaiting) {
+            k = 'splash_delay';
+            child = const _SplashScreen();
+          } else if (showOnboarding) {
             k = 'onboarding';
             child = OnboardingScreen(
               onDone: () async {
@@ -444,30 +468,69 @@ class _SplashScreenState extends State<_SplashScreen>
       begin: startBg,
       end: endBg,
     ).animate(CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7)));
+    final active = FestivityService.active(DateTime.now());
+    final isFiestasPatrias = AppStorage.instance.festivityDecor && active?.festivity.id == 'fiestas_patrias';
     final width = MediaQuery.sizeOf(context).width;
-    final fontSize = (width * 0.14).clamp(38.0, 66.0);
+    final fontSize = (width * 0.22).clamp(60.0, 120.0);
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {
         return Scaffold(
           backgroundColor: bgTween.value ?? endBg,
-          body: Center(
-            child: FadeTransition(
-              opacity: _textOpacity,
-              child: ScaleTransition(
-                scale: _logoScale,
-                child: Text(
-                  'NEXO',
-                  style: TextStyle(
-                    fontFamily: 'SuperMindset',
-                    fontSize: fontSize,
-                    height: 0.9,
-                    letterSpacing: 1.6,
-                    color: palette.textPrimary,
+          body: Stack(
+            children: [
+              // Logo de NEXO estrictamente centrado en la pantalla (como siempre ha estado)
+              Center(
+                child: FadeTransition(
+                  opacity: _textOpacity,
+                  child: ScaleTransition(
+                    scale: _logoScale,
+                    child: Text(
+                      'NEXO',
+                      style: TextStyle(
+                        fontFamily: 'SuperMindset',
+                        fontSize: fontSize,
+                        height: 0.9,
+                        letterSpacing: 1.6,
+                        color: palette.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // Decoración festiva colgada debajo
+              if (isFiestasPatrias)
+                Center(
+                  child: FadeTransition(
+                    opacity: _textOpacity,
+                    child: ScaleTransition(
+                      scale: _logoScale,
+                      child: Transform.translate(
+                        offset: Offset(0, fontSize + 120), // Desplaza los elementos hacia abajo libremente
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '¡Felices Fiestas Patrias!',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFE2432A), // Rojo patrio
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const SizedBox(
+                              width: 160,
+                              height: 80,
+                              child: MarcaPeruEffect(color: Color(0xFFE2432A)), // Rojo patrio
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },

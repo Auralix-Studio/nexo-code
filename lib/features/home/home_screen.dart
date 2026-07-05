@@ -20,6 +20,7 @@ import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
 import 'package:nexo/data/connectivity_service.dart';
 import 'package:nexo/features/legal/support_screen.dart';
+import 'package:nexo/features/festivity/widgets/escarapela_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -127,16 +128,28 @@ class _Header extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _HomeGreeting(),
-                    Text(
-                      profile == null ? '...' : Fmt.firstName(profile.fullName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: NexoTheme.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            profile == null ? '...' : Fmt.firstName(profile.fullName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: NexoTheme.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        if (AppStorage.instance.festivityDecor &&
+                            FestivityService.active(DateTime.now())?.festivity.id == 'fiestas_patrias') ...[
+                          const SizedBox(width: 8),
+                          const EscarapelaWidget(),
+                        ],
+                      ],
                     ),
                     if (profile != null)
                       Text(
@@ -747,16 +760,14 @@ class _DashboardWidgetWrapper extends StatelessWidget {
                 child: Center(
                   child: StatefulBuilder(
                     builder: (context, setState) {
-                      double dragOffset = 0;
                       return GestureDetector(
-                        onPanUpdate: (details) {
-                          dragOffset += details.delta.dx;
-                          if (dragOffset < -20 && config.span == 4) {
+                        onTap: () {
+                          if (config.span == 1) {
                             store.setDashboardWidgetSpan(config.id, 2);
-                            dragOffset = 0;
-                          } else if (dragOffset > 20 && config.span == 2) {
+                          } else if (config.span == 2) {
                             store.setDashboardWidgetSpan(config.id, 4);
-                            dragOffset = 0;
+                          } else {
+                            store.setDashboardWidgetSpan(config.id, 1);
                           }
                         },
                         child: Container(

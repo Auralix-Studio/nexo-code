@@ -343,9 +343,6 @@ class AppStore extends ChangeNotifier {
             }
           }
           for (var i = 0; i < list.length; i++) {
-            if (list[i].span < 2) {
-              list[i] = list[i].copyWith(span: 2);
-            }
             if (!list[i].id.startsWith('stats_') && list[i].span < 4) {
               list[i] = list[i].copyWith(span: 4);
             }

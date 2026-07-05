@@ -13,9 +13,13 @@ class Festivity {
     required this.wordmarkFor,
     this.numberFor,
     this.tailDays = 0,
+    this.enabled = true,
+    this.decorColors,
   });
   final String id;
+  final bool enabled;
   final FestivityDecor decor;
+  final List<Color>? decorColors;
   final int priority;
   final int leadDays;
   final int tailDays;
@@ -52,10 +56,11 @@ abstract final class FestivityCalendar {
     ),
     Festivity(
       id: 'fiestas_patrias',
-      decor: FestivityDecor.flagsPeru,
+      decor: FestivityDecor.confetti,
+      decorColors: const [Color(0xFFD91023), Color(0xFFFFFFFF)],
       priority: 90,
-      leadDays: 6,
-      tailDays: 2,
+      leadDays: 27,
+      tailDays: 3,
       dateFor: (y) => DateTime(y, 7, 28),
       greetingsFor: (y) => [
         '¡Felices Fiestas Patrias!',
@@ -63,6 +68,21 @@ abstract final class FestivityCalendar {
         'Orgullo peruano',
       ],
       wordmarkFor: (y) => ['Fiestas', 'Patrias'],
+    ),
+    Festivity(
+      id: 'dia_del_maestro',
+      enabled: false,
+      decor: FestivityDecor.confetti,
+      decorColors: const [Color(0xFF42A5F5), Color(0xFF66BB6A), Color(0xFFFFFFFF)],
+      priority: 85,
+      leadDays: 1,
+      tailDays: 1,
+      dateFor: (y) => DateTime(y, 7, 6),
+      greetingsFor: (y) => [
+        '¡Feliz Día del Maestro!',
+        'Gracias por tus enseñanzas',
+      ],
+      wordmarkFor: (y) => ['Día del', 'Maestro'],
     ),
     Festivity(
       id: 'navidad',
@@ -156,6 +176,7 @@ abstract final class FestivityService {
     ActiveFestivity? best;
     int bestScore = -1;
     for (final f in cal) {
+      if (!f.enabled) continue;
       for (final y in [now.year - 1, now.year, now.year + 1]) {
         final date = f.dateFor(y);
         final start = date.subtract(Duration(days: f.leadDays));
