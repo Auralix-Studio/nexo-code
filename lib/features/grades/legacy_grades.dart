@@ -381,7 +381,7 @@ class LegacyNotaDetalleBody extends StatelessWidget {
     for (var i = 0; i < p.practices.length; i++) {
       add(l.gradesPractice((i + 1).toString()), p.practices[i]);
     }
-    add(l.gradesPromedioPracticas, p.practicesAverage);
+    add(l.gradesPromedioPracticas, p.displayPracticesAverage);
     add(l.gradesTrabajoInvestigacion, p.researchWork);
     add(l.gradesProyecto, p.project);
     add(l.gradesPromedioTiPy, p.researchProjectAverage);

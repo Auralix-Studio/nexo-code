@@ -49,7 +49,6 @@ bool isNewModel(int year, int periodo) =>
 String formatGrade(String? raw) {
   final n = parseGrade(raw);
   if (n == null) return '—';
-  if (n == n.roundToDouble()) return n.toStringAsFixed(0);
   return n.toStringAsFixed(2);
 }
 
@@ -303,6 +302,24 @@ class TermGrades {
       exam: f('${ntaPrefix}Parcial1'),
     );
   }
+
+  double? get predictedPracticesAverage {
+    final valid = practices
+        .map((p) => parseGrade(p))
+        .where((g) => g != null && g > 0)
+        .toList();
+    if (valid.isEmpty) return parseGrade(practicesAverage);
+    
+    final sum = valid.fold<double>(0, (a, b) => a + b!);
+    return sum / valid.length;
+  }
+  
+  String get displayPracticesAverage {
+    final p = predictedPracticesAverage;
+    if (p != null) return formatGrade(p.toStringAsFixed(2));
+    return formatGrade(practicesAverage);
+  }
+
   bool get isEmpty =>
       practices.every((p) => p.isEmpty) &&
       practicesAverage.isEmpty &&
@@ -440,8 +457,24 @@ class UnitGrades {
     required this.rawAverage,
   });
   double? get weight => parseGrade(rawWeight);
-  double? get average => parseGrade(rawAverage);
-  String get promedioText => formatGrade(rawAverage);
+  
+  double? get predictedAverage {
+    final validGrades = evidences
+        .map((e) => e.grade)
+        .where((g) => g != null && g > 0)
+        .toList();
+    if (validGrades.isEmpty) return parseGrade(rawAverage);
+    final sum = validGrades.fold<double>(0, (a, b) => a + b!);
+    return sum / validGrades.length;
+  }
+
+  double? get average => predictedAverage ?? parseGrade(rawAverage);
+  
+  String get promedioText {
+    final p = predictedAverage;
+    if (p != null) return formatGrade(p.toStringAsFixed(2));
+    return formatGrade(rawAverage);
+  }
 }
 
 class CourseGradeDetail {
