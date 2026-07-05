@@ -352,17 +352,19 @@ class AppStore extends ChangeNotifier {
     _notify();
   }
 
-  void reorderDashboard(String dragId, String targetId) {
-    final oldIndex = dashboardLayout.indexWhere((e) => e.id == dragId);
-    int newIndex = dashboardLayout.indexWhere((e) => e.id == targetId);
-    if (oldIndex < 0 || newIndex < 0 || oldIndex == newIndex) return;
-    
+  void reorderDashboard(String oldId, String newId, {bool save = true}) {
+    final oldIndex = dashboardLayout.indexWhere((w) => w.id == oldId);
+    int newIndex = dashboardLayout.indexWhere((w) => w.id == newId);
+    if (oldIndex == -1 || newIndex == -1 || oldIndex == newIndex) return;
+
     final item = dashboardLayout.removeAt(oldIndex);
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
     dashboardLayout.insert(newIndex, item);
-    saveDashboardLayout();
+
+    if (save) saveDashboardLayout();
+    _notify();
   }
 
   void toggleDashboardWidgetSpan(String id) {

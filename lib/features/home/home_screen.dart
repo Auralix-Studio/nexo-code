@@ -639,7 +639,6 @@ class _DashboardWidgetWrapper extends StatefulWidget {
 
 class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
   bool _isEditing = false;
-  bool _isHovered = false;
 
   Widget _buildChild() {
     final store = widget.store;
@@ -727,95 +726,125 @@ class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
         ? availableWidth 
         : (availableWidth - totalSpacing) / 2;
 
-    final content = SizedBox(
-      width: itemWidth,
-      child: Stack(
-        children: [
-          child,
-          if (_isEditing)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: NexoTheme.bg.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: NexoTheme.primary, width: 2),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        widget.store.toggleDashboardWidgetSpan(widget.config.id);
-                        setState(() { _isEditing = false; });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: NexoTheme.surface, shape: BoxShape.circle),
-                        child: Icon(
-                          widget.config.span == 1 ? Icons.unfold_more_rounded : Icons.unfold_less_rounded,
-                          size: 28, color: NexoTheme.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () {
-                        setState(() { _isEditing = false; });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: NexoTheme.surface, shape: BoxShape.circle),
-                        child: Icon(Icons.check_rounded, size: 28, color: NexoTheme.success),
-                      ),
-                    ),
-                  ],
+    final content = GestureDetector(
+      onLongPress: () {
+        if (!_isEditing) setState(() => _isEditing = true);
+      },
+      child: SizedBox(
+        width: itemWidth,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            child,
+            if (_isEditing)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: NexoTheme.primary, width: 3),
+                  ),
                 ),
               ),
-            ),
-        ],
+            if (_isEditing)
+              Positioned(
+                right: -8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => widget.store.toggleDashboardWidgetSpan(widget.config.id),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: NexoTheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.code_rounded, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_isEditing)
+              Positioned(
+                left: -8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => widget.store.toggleDashboardWidgetSpan(widget.config.id),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: NexoTheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.code_rounded, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_isEditing)
+              Positioned(
+                top: -8,
+                right: -8,
+                child: GestureDetector(
+                  onTap: () => setState(() => _isEditing = false),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: NexoTheme.success,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
 
     return DragTarget<String>(
       onWillAcceptWithDetails: (details) {
         if (details.data != widget.config.id) {
-          setState(() => _isHovered = true);
+          widget.store.reorderDashboard(details.data, widget.config.id, save: false);
           return true;
         }
         return false;
       },
-      onLeave: (_) {
-        setState(() => _isHovered = false);
-      },
       onAcceptWithDetails: (details) {
-        setState(() => _isHovered = false);
-        widget.store.reorderDashboard(details.data, widget.config.id);
+        widget.store.saveDashboardLayout();
       },
       builder: (context, candidateData, rejectedData) {
         return Container(
           width: itemWidth,
-          margin: const EdgeInsets.only(bottom: 0),
-          decoration: _isHovered ? BoxDecoration(
-            border: Border.all(color: NexoTheme.primary, width: 2),
-            borderRadius: BorderRadius.circular(24),
-          ) : null,
-          child: LongPressDraggable<String>(
-            data: widget.config.id,
-            delay: const Duration(milliseconds: 300),
-            onDragStarted: () => setState(() => _isEditing = true),
-            onDragEnd: (details) => setState(() => _isEditing = false),
-            feedback: Material(
-              color: Colors.transparent,
-              elevation: 12,
-              borderRadius: BorderRadius.circular(24),
-              child: Opacity(
-                opacity: 0.8,
-                child: SizedBox(width: itemWidth, child: content),
-              ),
-            ),
-            childWhenDragging: Opacity(opacity: 0.3, child: content),
-            child: content,
-          ),
+          margin: EdgeInsets.zero,
+          child: _isEditing
+              ? Draggable<String>(
+                  data: widget.config.id,
+                  onDragEnd: (_) => widget.store.saveDashboardLayout(),
+                  feedback: Material(
+                    color: Colors.transparent,
+                    elevation: 12,
+                    borderRadius: BorderRadius.circular(24),
+                    child: Opacity(
+                      opacity: 0.8,
+                      child: SizedBox(width: itemWidth, child: content),
+                    ),
+                  ),
+                  childWhenDragging: Opacity(opacity: 0.2, child: content),
+                  child: content,
+                )
+              : content,
         );
       },
     );
