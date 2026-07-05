@@ -4,23 +4,18 @@ import 'package:nexo/core/design/theme.dart';
 
 class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomTitleBar({super.key});
-
   @override
   Size get preferredSize => const Size.fromHeight(40);
-
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 40,
       decoration: BoxDecoration(
         color: NexoTheme.bg,
-        border: Border(
-          bottom: BorderSide(color: NexoTheme.border),
-        ),
+        border: Border(bottom: BorderSide(color: NexoTheme.border)),
       ),
       child: Row(
         children: [
-          // Icono y Título
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
@@ -39,7 +34,6 @@ class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
           ),
-          // Área de Arrastre
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -55,7 +49,6 @@ class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
               child: const SizedBox.expand(),
             ),
           ),
-          // Botones de Control
           const _WindowButtons(),
         ],
       ),
@@ -65,7 +58,6 @@ class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _WindowButtons extends StatelessWidget {
   const _WindowButtons();
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -101,28 +93,25 @@ class _ControlButton extends StatefulWidget {
   final VoidCallback onTap;
   final Color? hoverColor;
   final Color? iconHoverColor;
-
   const _ControlButton({
     required this.icon,
     required this.onTap,
     this.hoverColor,
     this.iconHoverColor,
   });
-
   @override
   State<_ControlButton> createState() => _ControlButtonState();
 }
 
 class _ControlButtonState extends State<_ControlButton> {
   bool _isHovered = false;
-
   @override
   Widget build(BuildContext context) {
-    final themeHoverColor = widget.hoverColor ?? NexoTheme.primary.withValues(alpha: 0.08);
+    final themeHoverColor =
+        widget.hoverColor ?? NexoTheme.primary.withValues(alpha: 0.08);
     final themeIconColor = _isHovered
         ? (widget.iconHoverColor ?? NexoTheme.primary)
         : NexoTheme.textSecondary;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/grades/grade_widgets.dart';
-import 'package:nexo/features/grades/legacy_notas.dart';
+import 'package:nexo/features/grades/legacy_grades.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -25,14 +25,12 @@ Color _gradeColor(num? n) {
 class GradesScreen extends StatefulWidget {
   const GradesScreen({super.key, required this.store});
   final AppStore store;
-
   @override
   State<GradesScreen> createState() => _GradesScreenState();
 }
 
 class _GradesScreenState extends State<GradesScreen> {
   String? _selectedId;
-
   @override
   void initState() {
     super.initState();
@@ -40,33 +38,33 @@ class _GradesScreenState extends State<GradesScreen> {
     if (!widget.store.promedios.hasValue) widget.store.loadPromedios();
   }
 
-  Periodo? _currentPeriodo(List<Periodo> periodos) {
+  Term? _currentTerm(List<Term> periodos) {
     if (periodos.isEmpty) return null;
     if (_selectedId != null) {
       try {
-        return periodos.firstWhere((p) => p.periodoId == _selectedId);
+        return periodos.firstWhere((p) => p.id == _selectedId);
       } catch (_) {}
     }
     try {
-      return periodos.firstWhere((p) => p.activo);
+      return periodos.firstWhere((p) => p.isActive);
     } catch (_) {}
     return periodos.first;
   }
 
-  void _load(Periodo p) {
-    if (esModeloNuevo(p.anio, p.periodo)) {
-      if (!widget.store.boletaOf(p.anio, p.periodo).hasValue) {
-        widget.store.loadBoleta(p.anio, p.periodo);
+  void _load(Term p) {
+    if (isNewModel(p.year, p.number)) {
+      if (!widget.store.boletaOf(p.year, p.number).hasValue) {
+        widget.store.loadBoleta(p.year, p.number);
       }
     } else {
-      if (!widget.store.boletaLegacyOf(p.anio, p.periodo).hasValue) {
-        widget.store.loadBoletaLegacy(p.anio, p.periodo);
+      if (!widget.store.boletaLegacyOf(p.year, p.number).hasValue) {
+        widget.store.loadBoletaLegacy(p.year, p.number);
       }
     }
   }
 
-  void _select(Periodo p) {
-    setState(() => _selectedId = p.periodoId);
+  void _select(Term p) {
+    setState(() => _selectedId = p.id);
     _load(p);
   }
 
@@ -76,35 +74,27 @@ class _GradesScreenState extends State<GradesScreen> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final periodos = widget.store.periodos.value ?? const <Periodo>[];
-        final current = _currentPeriodo(periodos);
-
+        final periodos = widget.store.periodos.value ?? const <Term>[];
+        final current = _currentTerm(periodos);
         final nuevo =
-            current != null && esModeloNuevo(current.anio, current.periodo);
-
+            current != null && isNewModel(current.year, current.number);
         if (current != null) {
           final st = nuevo
-              ? widget.store.boletaOf(current.anio, current.periodo)
-              : widget.store.boletaLegacyOf(current.anio, current.periodo);
-          // Auto-carga solo en estado idle inicial. Si ya falló (error != null)
-          // NO se reintenta automáticamente: el usuario usa pull-to-refresh o
-          // el botón "Reintentar" — si no, entramos en bucle infinito al
-          // re-disparar `_load` en cada `_notify()` del store.
+              ? widget.store.boletaOf(current.year, current.number)
+              : widget.store.boletaLegacyOf(current.year, current.number);
           if (!st.hasValue && !st.loading && st.error == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _load(current);
             });
           }
         }
-
         final boleta = current == null
-            ? const AsyncValue<List<BoletaCurso>>.idle()
-            : widget.store.boletaOf(current.anio, current.periodo);
+            ? const AsyncValue<List<ReportCardCourse>>.idle()
+            : widget.store.boletaOf(current.year, current.number);
         final legacy = current == null
-            ? const AsyncValue<List<NotaAsignatura>>.idle()
-            : widget.store.boletaLegacyOf(current.anio, current.periodo);
-
-        return RefreshIndicator(
+            ? const AsyncValue<List<CourseGrade>>.idle()
+            : widget.store.boletaLegacyOf(current.year, current.number);
+        final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
               widget.store.loadPromedios(),
@@ -123,8 +113,8 @@ class _GradesScreenState extends State<GradesScreen> {
                   subtitle: current == null
                       ? l.gradesSubtitleNoPeriod
                       : nuevo
-                      ? l.gradesSubtitleUnits(current.descripcion)
-                      : l.gradesSubtitlePartials(current.descripcion),
+                      ? l.gradesSubtitleUnits(current.label)
+                      : l.gradesSubtitlePartials(current.label),
                 ),
               ),
               SliverToBoxAdapter(
@@ -172,7 +162,7 @@ class _GradesScreenState extends State<GradesScreen> {
                       else
                         Reveal(
                           index: 2,
-                          child: LegacyNotasList(
+                          child: LegacyGradesList(
                             state: legacy,
                             periodo: current,
                             store: widget.store,
@@ -186,23 +176,21 @@ class _GradesScreenState extends State<GradesScreen> {
             ],
           ),
         );
+        return list;
       },
     );
   }
 }
 
-// ===================== Lista de cursos (boleta) =====================
-
 class _BoletaList extends StatelessWidget {
-  final AsyncValue<List<BoletaCurso>> state;
-  final Periodo? periodo;
+  final AsyncValue<List<ReportCardCourse>> state;
+  final Term? periodo;
   final AppStore store;
   const _BoletaList({
     required this.state,
     required this.periodo,
     required this.store,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -217,11 +205,11 @@ class _BoletaList extends StatelessWidget {
       );
     }
     if (state.loading && !state.hasValue) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           child: Column(
-            children: const [
+            children: [
               Skeleton(height: 18, width: 160),
               SizedBox(height: 16),
               Skeleton(height: 64, radius: 14),
@@ -250,16 +238,15 @@ class _BoletaList extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: () =>
-                  store.loadBoleta(periodo!.anio, periodo!.periodo),
+              onPressed: () => store.loadBoleta(periodo!.year, periodo!.number),
               child: Text(l.actionRetry),
             ),
           ],
         ),
       );
     }
-    final cursos = state.value ?? const <BoletaCurso>[];
-    if (cursos.isEmpty) {
+    final courses = state.value ?? const <ReportCardCourse>[];
+    if (courses.isEmpty) {
       return SectionCard(
         title: l.gradesSubjects,
         icon: Icons.menu_book_rounded,
@@ -270,41 +257,35 @@ class _BoletaList extends StatelessWidget {
         ),
       );
     }
-
     return SectionCard(
-      title: l.gradesSubjectsWithPeriod(periodo!.descripcion),
+      title: l.gradesSubjectsWithPeriod(periodo!.label),
       icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
       trailing: StatusChip(
-        text: l.gradesCoursesCount(cursos.length),
+        text: l.gradesCoursesCount(courses.length),
         color: NexoTheme.primary,
       ),
-      child: Column(
-        children: [
-          for (var i = 0; i < cursos.length; i++) ...[
-            _CursoTile(curso: cursos[i], periodo: periodo!, store: store),
-            if (i < cursos.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      ),
+      child: gradeTileGrid(context, [
+        for (final c in courses)
+          _CursoTile(course: c, periodo: periodo!, store: store),
+      ]),
     );
   }
 }
 
 class _CursoTile extends StatelessWidget {
-  final BoletaCurso curso;
-  final Periodo periodo;
+  final ReportCardCourse course;
+  final Term periodo;
   final AppStore store;
   const _CursoTile({
-    required this.curso,
+    required this.course,
     required this.periodo,
     required this.store,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = _gradeColor(curso.promedio);
+    final color = _gradeColor(course.average);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
@@ -312,15 +293,15 @@ class _CursoTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: () {
           store.loadDetalle(
-            periodo.anio,
-            periodo.periodo,
-            curso.matriculaAsignaturaId,
+            periodo.year,
+            periodo.number,
+            course.enrollmentSubjectId,
           );
           showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (_) => _DetalleSheet(curso: curso, store: store),
+            builder: (_) => _DetalleSheet(course: course, store: store),
           );
         },
         child: Container(
@@ -342,7 +323,7 @@ class _CursoTile extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    curso.promedioText,
+                    course.promedioText,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
@@ -357,7 +338,7 @@ class _CursoTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      curso.nombre,
+                      course.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -373,13 +354,16 @@ class _CursoTile extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _meta(Icons.tag_rounded, '${l.detailSection} ${curso.seccion}'),
-                        if (curso.asistencia != null)
+                        _meta(
+                          Icons.tag_rounded,
+                          '${l.detailSection} ${course.section}',
+                        ),
+                        if (course.attendance != null)
                           _meta(
                             Icons.fact_check_outlined,
-                            l.docenteAsisPercent(curso.asistencia.toString()),
+                            l.docenteAsisPercent(course.attendance.toString()),
                           ),
-                        if (curso.enProceso)
+                        if (course.inProgress)
                           StatusChip(
                             text: l.statusInProcess,
                             color: NexoTheme.warning,
@@ -414,25 +398,21 @@ class _CursoTile extends StatelessWidget {
   );
 }
 
-// ===================== Detalle por unidad/evidencia =====================
-
 class _DetalleSheet extends StatelessWidget {
-  final BoletaCurso curso;
+  final ReportCardCourse course;
   final AppStore store;
-  const _DetalleSheet({required this.curso, required this.store});
-
+  const _DetalleSheet({required this.course, required this.store});
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (_, controller) => Container(
+      builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -447,74 +427,10 @@ class _DetalleSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListenableBuilder(
-                listenable: store,
-                builder: (context, _) {
-                  final st = store.detalleOf(curso.matriculaAsignaturaId);
-                  final det = st.value;
-                  return ListView(
-                    controller: controller,
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                    children: [
-                      GradeHeader(
-                        titulo: curso.nombre,
-                        subtitulo: '${curso.codigo} · ${l.detailSection} ${curso.seccion}',
-                        notaFinalText:
-                            det?.promedioFinalText ?? curso.promedioText,
-                        enProceso: curso.enProceso,
-                      ),
-                      const SizedBox(height: 16),
-                      if (st.loading && det == null)
-                        const Column(
-                          children: [
-                            Skeleton(height: 90, radius: 16),
-                            SizedBox(height: 12),
-                            Skeleton(height: 90, radius: 16),
-                          ],
-                        )
-                      else if (st.error != null && det == null)
-                        EmptyState(
-                          icon: Icons.cloud_off_outlined,
-                          title: l.gradesDetailLoadError,
-                          subtitle: humanizeError(st.error),
-                          color: NexoTheme.danger,
-                        )
-                      else if (det != null) ...[
-                        for (final u in det.unidades) ...[
-                          GradeSectionCard(
-                            titulo: u.nombre,
-                            pesoText: u.peso != null
-                                ? '${u.peso!.toStringAsFixed(0)}%'
-                                : null,
-                            promedioRaw: u.promedioRaw,
-                            rows: [
-                              for (var i = 0; i < u.evidencias.length; i++)
-                                GradeRow(
-                                  label: _tipoCorto(u.evidencias[i].tipo, l),
-                                  valueRaw: u.evidencias[i].notaRaw,
-                                  last: i == u.evidencias.length - 1,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (det.tieneSustitutorio)
-                          _Banner(
-                            icon: Icons.replay_rounded,
-                            label: l.gradesSustitutorio,
-                            valueRaw: det.sustitutorioRaw,
-                            color: NexoTheme.warning,
-                          ),
-                        if (det.unidades.isEmpty)
-                          EmptyState(
-                            icon: Icons.hourglass_empty_rounded,
-                            title: l.gradesNoUnitsYetTitle,
-                            subtitle: l.gradesNoUnitsYetSubtitle,
-                          ),
-                      ],
-                    ],
-                  );
-                },
+              child: BoletaDetalleBody(
+                course: course,
+                store: store,
+                controller: controller,
               ),
             ),
           ],
@@ -522,8 +438,93 @@ class _DetalleSheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _tipoCorto(String t, AppLocalizations l) {
+class BoletaDetalleBody extends StatelessWidget {
+  const BoletaDetalleBody({
+    super.key,
+    required this.course,
+    required this.store,
+    this.controller,
+  });
+  final ReportCardCourse course;
+  final AppStore store;
+  final ScrollController? controller;
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final st = store.detalleOf(course.enrollmentSubjectId);
+        final det = st.value;
+        return ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          children: [
+            GradeHeader(
+              titulo: course.name,
+              subtitulo:
+                  '${course.code} · ${l.detailSection} ${course.section}',
+              notaFinalText: det?.finalAverageText ?? course.promedioText,
+              inProgress: course.inProgress,
+            ),
+            const SizedBox(height: 16),
+            if (st.loading && det == null)
+              const Column(
+                children: [
+                  Skeleton(height: 90, radius: 16),
+                  SizedBox(height: 12),
+                  Skeleton(height: 90, radius: 16),
+                ],
+              )
+            else if (st.error != null && det == null)
+              EmptyState(
+                icon: Icons.cloud_off_outlined,
+                title: l.gradesDetailLoadError,
+                subtitle: humanizeError(st.error),
+                color: NexoTheme.danger,
+              )
+            else if (det != null) ...[
+              for (final u in det.units) ...[
+                GradeSectionCard(
+                  titulo: u.name,
+                  pesoText: u.weight != null
+                      ? '${u.weight!.toStringAsFixed(0)}%'
+                      : null,
+                  rawAverage: u.rawAverage,
+                  rows: [
+                    for (var i = 0; i < u.evidences.length; i++)
+                      GradeRow(
+                        label: _tipoCorto(u.evidences[i].type, l),
+                        valueRaw: u.evidences[i].rawGrade,
+                        last: i == u.evidences.length - 1,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (det.hasSubstitute)
+                _Banner(
+                  icon: Icons.replay_rounded,
+                  label: l.gradesSustitutorio,
+                  valueRaw: det.rawSubstitute,
+                  color: NexoTheme.warning,
+                ),
+              if (det.units.isEmpty)
+                EmptyState(
+                  icon: Icons.hourglass_empty_rounded,
+                  title: l.gradesNoUnitsYetTitle,
+                  subtitle: l.gradesNoUnitsYetSubtitle,
+                ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  static String _tipoCorto(String t, AppLocalizations l) {
     final u = t.toUpperCase();
     if (u.contains('CONOCIMIENTO')) return l.gradesEvidenciaConocimiento;
     if (u.contains('DESEMPE')) return l.gradesEvidenciaDesempeno;
@@ -532,7 +533,6 @@ class _DetalleSheet extends StatelessWidget {
   }
 }
 
-/// Banner resaltado (sustitutorio, complementario…).
 class _Banner extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -544,7 +544,6 @@ class _Banner extends StatelessWidget {
     required this.valueRaw,
     required this.color,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -569,7 +568,7 @@ class _Banner extends StatelessWidget {
             ),
           ),
           Text(
-            notaFmt(valueRaw),
+            formatGrade(valueRaw),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -582,34 +581,34 @@ class _Banner extends StatelessWidget {
   }
 }
 
-// ===================== Resumen reutilizable =====================
-
 class _ResumenCard extends StatelessWidget {
   final AppStore store;
   const _ResumenCard({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final promedios = store.promedios.value ?? const <PromedioPeriodo>[];
+    final promedios = store.promedios.value ?? const <TermAverage>[];
     final acumulado = store.promedioAcumulado;
-    final creditosAprob = store.creditosAprobados;
-    final creditosTotal = store.creditosTotales;
-
+    final creditosAprob = store.approvedCredits;
+    final creditosTotal = store.totalCredits;
     final isWide = MediaQuery.sizeOf(context).width >= 720;
-
     final metric = _BigMetric(
       label: l.gradesPromedioAcumulado,
       value: acumulado == null ? '—' : acumulado.toStringAsFixed(2),
       hint: creditosAprob == null
           ? l.gradesNoCreditsData
           : creditosTotal != null && creditosTotal > 0
-          ? l.gradesCreditsSummary(creditosAprob.toString(), creditosTotal.toString())
+          ? l.gradesCreditsSummary(
+              creditosAprob.toString(),
+              creditosTotal.toString(),
+            )
           : l.gradesCreditsApprovedCount(creditosAprob),
     );
-
-    final chart = _PromediosChart(items: promedios);
-
+    final chart = _PromediosChart(
+      items: promedios,
+      cicloActual: store.promedioCicloActual,
+      periodoActivo: store.periodoActivo,
+    );
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -642,7 +641,6 @@ class _BigMetric extends StatelessWidget {
     required this.value,
     required this.hint,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -681,7 +679,7 @@ class _BigMetric extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 48,
                   fontWeight: FontWeight.w900,
@@ -707,13 +705,36 @@ class _BigMetric extends StatelessWidget {
 }
 
 class _PromediosChart extends StatelessWidget {
-  final List<PromedioPeriodo> items;
-  const _PromediosChart({required this.items});
-
+  final List<TermAverage> items;
+  final double? cicloActual;
+  final Term? periodoActivo;
+  const _PromediosChart({
+    required this.items,
+    this.cicloActual,
+    this.periodoActivo,
+  });
+  bool _esActivo(TermAverage t) =>
+      periodoActivo != null &&
+      t.year == periodoActivo!.year &&
+      t.number == periodoActivo!.number;
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (items.isEmpty) {
+    final data = [...items];
+    if (cicloActual != null && periodoActivo != null) {
+      final entry = TermAverage(
+        year: periodoActivo!.year,
+        number: periodoActivo!.number,
+        average: cicloActual!,
+      );
+      final idx = data.indexWhere(_esActivo);
+      if (idx >= 0) {
+        data[idx] = entry;
+      } else {
+        data.add(entry);
+      }
+    }
+    if (data.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -728,12 +749,11 @@ class _PromediosChart extends StatelessWidget {
         ),
       );
     }
-    final sorted = [...items]
+    final sorted = [...data]
       ..sort((a, b) {
-        final byYear = a.anio.compareTo(b.anio);
-        return byYear != 0 ? byYear : a.periodo.compareTo(b.periodo);
+        final byYear = a.year.compareTo(b.year);
+        return byYear != 0 ? byYear : a.number.compareTo(b.number);
       });
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -760,7 +780,10 @@ class _PromediosChart extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                for (final p in sorted) Expanded(child: _BarColumn(p: p)),
+                for (final p in sorted)
+                  Expanded(
+                    child: _BarColumn(p: p, inProgress: _esActivo(p)),
+                  ),
               ],
             ),
           ),
@@ -771,23 +794,32 @@ class _PromediosChart extends StatelessWidget {
 }
 
 class _BarColumn extends StatelessWidget {
-  final PromedioPeriodo p;
-  const _BarColumn({required this.p});
-
+  final TermAverage p;
+  final bool inProgress;
+  const _BarColumn({required this.p, this.inProgress = false});
   @override
   Widget build(BuildContext context) {
-    final ok = p.promedio >= 11;
+    final ok = p.average >= 11;
+    final List<Color> barColors = p.average == 0
+        ? [NexoTheme.border, NexoTheme.border]
+        : inProgress
+        ? [NexoTheme.primary, NexoTheme.primaryDark]
+        : ok
+        ? [NexoTheme.success, NexoTheme.accent]
+        : const [NexoTheme.warning, NexoTheme.danger];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            p.promedio == 0 ? '—' : p.promedio.toStringAsFixed(1),
+            p.average == 0 ? '—' : p.average.toStringAsFixed(1),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: NexoTheme.textPrimary,
+              color: inProgress && p.average != 0
+                  ? NexoTheme.primary
+                  : NexoTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -795,7 +827,7 @@ class _BarColumn extends StatelessWidget {
             child: LayoutBuilder(
               builder: (ctx, c) {
                 final h = c.maxHeight;
-                final value = p.promedio == 0 ? 4.0 : (p.promedio / 20.0) * h;
+                final value = p.average == 0 ? 4.0 : (p.average / 20.0) * h;
                 return Align(
                   alignment: Alignment.bottomCenter,
                   child: AnimatedContainer(
@@ -805,11 +837,7 @@ class _BarColumn extends StatelessWidget {
                     height: value.clamp(4.0, h),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: p.promedio == 0
-                            ? [NexoTheme.border, NexoTheme.border]
-                            : ok
-                            ? [NexoTheme.success, NexoTheme.accent]
-                            : const [NexoTheme.warning, NexoTheme.danger],
+                        colors: barColors,
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -827,8 +855,8 @@ class _BarColumn extends StatelessWidget {
             p.label,
             style: TextStyle(
               fontSize: 10,
-              color: NexoTheme.textMuted,
-              fontWeight: FontWeight.w600,
+              color: inProgress ? NexoTheme.primary : NexoTheme.textMuted,
+              fontWeight: inProgress ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ],
@@ -838,16 +866,14 @@ class _BarColumn extends StatelessWidget {
 }
 
 class _PeriodChips extends StatelessWidget {
-  final List<Periodo> periodos;
-  final Periodo? selected;
-  final ValueChanged<Periodo> onSelect;
-
+  final List<Term> periodos;
+  final Term? selected;
+  final ValueChanged<Term> onSelect;
   const _PeriodChips({
     required this.periodos,
     required this.selected,
     required this.onSelect,
   });
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -856,10 +882,10 @@ class _PeriodChips extends StatelessWidget {
         children: [
           for (final p in periodos) ...[
             _Chip(
-              text: p.descripcion,
-              active: p.periodoId == selected?.periodoId,
+              text: p.label,
+              active: p.id == selected?.id,
               onTap: () => onSelect(p),
-              activo: p.activo,
+              activo: p.isActive,
             ),
             const SizedBox(width: 8),
           ],
@@ -880,7 +906,6 @@ class _Chip extends StatelessWidget {
     required this.activo,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 
-/// Tarjeta-contenedor base, con título, subtítulo opcional, icono y trailing.
 class SectionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -11,7 +9,6 @@ class SectionCard extends StatelessWidget {
   final Widget child;
   final Widget? trailing;
   final EdgeInsets padding;
-
   const SectionCard({
     super.key,
     required this.title,
@@ -22,7 +19,6 @@ class SectionCard extends StatelessWidget {
     this.trailing,
     this.padding = const EdgeInsets.fromLTRB(20, 18, 20, 20),
   });
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -38,12 +34,16 @@ class SectionCard extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: (iconColor ?? NexoTheme.primary)
-                          .withValues(alpha: 0.12),
+                      color: (iconColor ?? NexoTheme.primary).withValues(
+                        alpha: 0.12,
+                      ),
                       borderRadius: BorderRadius.circular(11),
                     ),
-                    child: Icon(icon,
-                        size: 20, color: iconColor ?? NexoTheme.primary),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: iconColor ?? NexoTheme.primary,
+                    ),
                   ),
                   const SizedBox(width: 12),
                 ],

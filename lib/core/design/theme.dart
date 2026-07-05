@@ -1,27 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Sistema de diseño con soporte para múltiples paletas (claro, oscuro,
-/// medianoche, atardecer, bosque, rosa).
-///
-/// **Doble vía de acceso a los colores neutros**:
-///   1. `NexoTheme.textPrimary`, `.bg`, `.surface`, ... — `static` mutables
-///      que se reasignan al cambiar de paleta. Mantienen compatibilidad con
-///      todo el código existente.
-///   2. `context.nx.textPrimary`, etc. — vía `Theme.of(context).extension`
-///      ([NexoColors] como `ThemeExtension`). Propaga rebuilds vía
-///      InheritedWidget, ideal para widgets nuevos y rutas modales.
 class NexoTheme {
-  // ===== Colores semánticos (constantes en todas las paletas) =====
-  // Estos significan lo mismo en cualquier tema: éxito = verde, error = rojo,
-  // etc. Por consistencia perceptual NO cambian por paleta.
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color danger = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-
   static Color softOf(Color c) => c.withValues(alpha: 0.10);
-
-  // ===== Brand + neutros (mutables — reflejan la paleta activa) =====
   static Color primary = NexoColors.light.primary;
   static Color primaryDark = NexoColors.light.primaryDark;
   static Color accent = NexoColors.light.accent;
@@ -33,12 +17,8 @@ class NexoTheme {
   static Color textPrimary = NexoColors.light.textPrimary;
   static Color textSecondary = NexoColors.light.textSecondary;
   static Color textMuted = NexoColors.light.textMuted;
-
   static bool _isDark = false;
   static bool get isDark => _isDark;
-
-  /// Reasigna la paleta completa (brand + neutros). Llamar antes de
-  /// construir el ThemeData.
   static void apply(NexoColors p) {
     _isDark = p.isDark;
     primary = p.primary;
@@ -72,7 +52,6 @@ class NexoTheme {
       fontFamily: 'Roboto',
       extensions: <ThemeExtension<dynamic>>[p],
     );
-
     return base.copyWith(
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -99,8 +78,10 @@ class NexoTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: p.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: p.border),
@@ -123,23 +104,19 @@ class NexoTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle:
-              const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-      dividerTheme: DividerThemeData(
-        color: p.divider,
-        thickness: 1,
-        space: 1,
-      ),
+      dividerTheme: DividerThemeData(color: p.divider, thickness: 1, space: 1),
       tabBarTheme: TabBarThemeData(
         labelColor: p.primary,
         unselectedLabelColor: p.textSecondary,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle:
-            const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       textTheme: base.textTheme.apply(
         bodyColor: p.textPrimary,
@@ -163,20 +140,14 @@ class NexoTheme {
   static ThemeData dark() => themeFor(NexoColors.dark);
 }
 
-/// `ThemeExtension` con la paleta de neutros activa. Permite que cualquier
-/// widget la lea vía `Theme.of(context).extension<NexoColors>()` y se
-/// reconstruya correctamente cuando la paleta cambia.
 @immutable
 class NexoColors extends ThemeExtension<NexoColors> {
-  final String id;     // 'light', 'dark', 'midnight', ...
-  final String label;  // 'Claro', 'Oscuro', 'Medianoche', ...
+  final String id;
+  final String label;
   final bool isDark;
-  // Brand armónico de la paleta.
   final Color primary, primaryDark, accent;
-  // Neutros.
   final Color bg, surface, card, border, divider;
   final Color textPrimary, textSecondary, textMuted;
-
   const NexoColors({
     required this.id,
     required this.label,
@@ -193,7 +164,6 @@ class NexoColors extends ThemeExtension<NexoColors> {
     required this.textSecondary,
     required this.textMuted,
   });
-
   @override
   NexoColors copyWith({
     String? id,
@@ -210,41 +180,35 @@ class NexoColors extends ThemeExtension<NexoColors> {
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
-  }) =>
-      NexoColors(
-        id: id ?? this.id,
-        label: label ?? this.label,
-        isDark: isDark ?? this.isDark,
-        primary: primary ?? this.primary,
-        primaryDark: primaryDark ?? this.primaryDark,
-        accent: accent ?? this.accent,
-        bg: bg ?? this.bg,
-        surface: surface ?? this.surface,
-        card: card ?? this.card,
-        border: border ?? this.border,
-        divider: divider ?? this.divider,
-        textPrimary: textPrimary ?? this.textPrimary,
-        textSecondary: textSecondary ?? this.textSecondary,
-        textMuted: textMuted ?? this.textMuted,
-      );
-
+  }) => NexoColors(
+    id: id ?? this.id,
+    label: label ?? this.label,
+    isDark: isDark ?? this.isDark,
+    primary: primary ?? this.primary,
+    primaryDark: primaryDark ?? this.primaryDark,
+    accent: accent ?? this.accent,
+    bg: bg ?? this.bg,
+    surface: surface ?? this.surface,
+    card: card ?? this.card,
+    border: border ?? this.border,
+    divider: divider ?? this.divider,
+    textPrimary: textPrimary ?? this.textPrimary,
+    textSecondary: textSecondary ?? this.textSecondary,
+    textMuted: textMuted ?? this.textMuted,
+  );
   @override
   NexoColors lerp(ThemeExtension<NexoColors>? other, double t) {
     if (other is! NexoColors) return this;
-    // Saltamos a la otra paleta a mitad de animación: las paletas son
-    // discretas (no tiene mucho sentido interpolar el color de texto).
     return t < 0.5 ? this : other;
   }
-
-  // ===== Paletas predefinidas =====
 
   static const light = NexoColors(
     id: 'light',
     label: 'Claro',
     isDark: false,
-    primary: Color(0xFF6366F1),     // Indigo 500
-    primaryDark: Color(0xFF4338CA), // Indigo 700
-    accent: Color(0xFF22D3EE),      // Cyan 400
+    primary: Color(0xFF6366F1),
+    primaryDark: Color(0xFF4338CA),
+    accent: Color(0xFF22D3EE),
     bg: Color(0xFFF6F7FB),
     surface: Color(0xFFFFFFFF),
     card: Color(0xFFFFFFFF),
@@ -254,13 +218,12 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFF5B6678),
     textMuted: Color(0xFF8A93A6),
   );
-
   static const dark = NexoColors(
     id: 'dark',
     label: 'Oscuro',
     isDark: true,
-    primary: Color(0xFF818CF8),     // Indigo 400 (más brillante en oscuro)
-    primaryDark: Color(0xFF6366F1), // Indigo 500
+    primary: Color(0xFF818CF8),
+    primaryDark: Color(0xFF6366F1),
     accent: Color(0xFF22D3EE),
     bg: Color(0xFF0A0C10),
     surface: Color(0xFF12151C),
@@ -271,14 +234,13 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFFA3ADBE),
     textMuted: Color(0xFF6B7385),
   );
-
   static const midnight = NexoColors(
     id: 'midnight',
     label: 'Medianoche',
     isDark: true,
-    primary: Color(0xFF60A5FA),     // Blue 400 (cielo nocturno)
-    primaryDark: Color(0xFF3B82F6), // Blue 500
-    accent: Color(0xFF67E8F9),      // Cyan 300
+    primary: Color(0xFF60A5FA),
+    primaryDark: Color(0xFF3B82F6),
+    accent: Color(0xFF67E8F9),
     bg: Color(0xFF050B1F),
     surface: Color(0xFF0B1430),
     card: Color(0xFF111C40),
@@ -288,14 +250,13 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFF9CA8C4),
     textMuted: Color(0xFF6A7796),
   );
-
   static const sunset = NexoColors(
     id: 'sunset',
     label: 'Atardecer',
     isDark: false,
-    primary: Color(0xFFEA580C),     // Orange 600
-    primaryDark: Color(0xFFC2410C), // Orange 700
-    accent: Color(0xFFF59E0B),      // Amber 500
+    primary: Color(0xFFEA580C),
+    primaryDark: Color(0xFFC2410C),
+    accent: Color(0xFFF59E0B),
     bg: Color(0xFFFFF3E6),
     surface: Color(0xFFFFFAF4),
     card: Color(0xFFFFFFFF),
@@ -305,14 +266,13 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFF7A5A3B),
     textMuted: Color(0xFFA08672),
   );
-
   static const forest = NexoColors(
     id: 'forest',
     label: 'Bosque',
     isDark: true,
-    primary: Color(0xFF22C55E),     // Green 500
-    primaryDark: Color(0xFF16A34A), // Green 600
-    accent: Color(0xFFA3E635),      // Lime 400
+    primary: Color(0xFF22C55E),
+    primaryDark: Color(0xFF16A34A),
+    accent: Color(0xFFA3E635),
     bg: Color(0xFF08130E),
     surface: Color(0xFF0D1D15),
     card: Color(0xFF13261C),
@@ -322,14 +282,13 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFFA6BFB1),
     textMuted: Color(0xFF738B7E),
   );
-
   static const rose = NexoColors(
     id: 'rose',
     label: 'Rosa',
     isDark: false,
-    primary: Color(0xFFE11D48),     // Rose 600
-    primaryDark: Color(0xFFBE123C), // Rose 700
-    accent: Color(0xFFEC4899),      // Pink 500
+    primary: Color(0xFFE11D48),
+    primaryDark: Color(0xFFBE123C),
+    accent: Color(0xFFEC4899),
     bg: Color(0xFFFFF1F6),
     surface: Color(0xFFFFFAFC),
     card: Color(0xFFFFFFFF),
@@ -339,8 +298,6 @@ class NexoColors extends ThemeExtension<NexoColors> {
     textSecondary: Color(0xFF7A4153),
     textMuted: Color(0xFFA08291),
   );
-
-  /// Todas las paletas disponibles (ordenadas para la UI).
   static const List<NexoColors> all = [
     light,
     dark,
@@ -349,37 +306,11 @@ class NexoColors extends ThemeExtension<NexoColors> {
     forest,
     rose,
   ];
-
   static NexoColors byId(String id) =>
       all.firstWhere((p) => p.id == id, orElse: () => light);
 }
 
-/// Acceso ergonómico a la paleta activa desde un BuildContext.
-/// Disparará rebuilds cuando la paleta cambie.
 extension NexoColorsContext on BuildContext {
   NexoColors get nx =>
       Theme.of(this).extension<NexoColors>() ?? NexoColors.light;
-}
-
-/// Breakpoints estilo Tailwind.
-class Responsive {
-  static const double sm = 640;
-  static const double md = 768;
-  static const double lg = 1024;
-  static const double xl = 1280;
-
-  static bool isMobile(BuildContext c) => MediaQuery.sizeOf(c).width < md;
-  static bool isTablet(BuildContext c) {
-    final w = MediaQuery.sizeOf(c).width;
-    return w >= md && w < lg;
-  }
-
-  static bool isDesktop(BuildContext c) => MediaQuery.sizeOf(c).width >= lg;
-
-  static double hPad(BuildContext c) {
-    final w = MediaQuery.sizeOf(c).width;
-    if (w >= lg) return 40;
-    if (w >= md) return 28;
-    return 18;
-  }
 }

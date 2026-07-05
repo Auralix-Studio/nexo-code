@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/data_mappers.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/data/session.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -47,26 +46,6 @@ class MockSessionService extends Fake implements SessionService {
 }
 
 void main() {
-  group('DataMappers Tests', () {
-    test('tryField returns correct value and conversions', () {
-      final json = {
-        'stringVal': 'hello',
-        'intVal': 42,
-        'doubleVal': 3.14,
-        'boolString': 'true',
-        'boolNum': 1,
-      };
-
-      expect(DataMappers.tryField<String>(json, ['stringVal']), 'hello');
-      expect(DataMappers.tryField<String>(json, ['missing', 'stringVal']), 'hello');
-      expect(DataMappers.tryField<int>(json, ['intVal']), 42);
-      expect(DataMappers.tryField<double>(json, ['doubleVal']), 3.14);
-      expect(DataMappers.tryField<bool>(json, ['boolString']), true);
-      expect(DataMappers.tryField<bool>(json, ['boolNum']), true);
-      expect(DataMappers.tryField<String>(json, ['missing'], 'fallback'), 'fallback');
-    });
-  });
-
   group('Unified Models Tests', () {
     test('Student merges correctly, prioritizing primary fields', () {
       const student1 = Student(

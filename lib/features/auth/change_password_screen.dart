@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -7,11 +6,9 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 
-/// Pantalla "Cambiar contraseña" — consume `Login/ChangePassword`.
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key, required this.store});
   final AppStore store;
-
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
@@ -25,7 +22,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _showActual = false;
   bool _showNueva = false;
   String? _error;
-
   @override
   void dispose() {
     _actualCtrl.dispose();

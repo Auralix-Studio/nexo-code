@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/auth/change_password_screen.dart';
 import 'package:nexo/features/legal/about_screen.dart';
 import 'package:nexo/features/legal/developer_screen.dart';
@@ -27,11 +26,9 @@ class ProfileScreen extends StatelessWidget {
     required this.session,
     required this.theme,
   });
-
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -43,7 +40,8 @@ class ProfileScreen extends StatelessWidget {
           onRefresh: () => store.loadProfile().then((_) {}),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverToBoxAdapter(
                 child: PageHeader(
@@ -57,7 +55,7 @@ class ProfileScreen extends StatelessWidget {
                     IconButton(
                       tooltip: l.profileDownloadEnrollmentPdf,
                       icon: const Icon(Icons.file_download_outlined),
-                      onPressed: () => PdfExport.constancia(context, store),
+                      onPressed: () => PdfExport.certificate(context, store),
                     ),
                   ],
                 ),
@@ -71,9 +69,9 @@ class ProfileScreen extends StatelessWidget {
                         index: 0,
                         child: _HeroCard(
                           profile: p,
-                          promedio: store.promedioAcumulado,
-                          creditosAprob: store.creditosAprobados,
-                          creditosTotal: store.creditosTotales,
+                          average: store.promedioAcumulado,
+                          creditsApprov: store.approvedCredits,
+                          creditsTotal: store.totalCredits,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -101,17 +99,16 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _HeroCard extends StatelessWidget {
-  final StudentProfile? profile;
-  final double? promedio;
-  final int? creditosAprob;
-  final int? creditosTotal;
+  final Student? profile;
+  final double? average;
+  final int? creditsApprov;
+  final int? creditsTotal;
   const _HeroCard({
     required this.profile,
-    required this.promedio,
-    required this.creditosAprob,
-    required this.creditosTotal,
+    required this.average,
+    required this.creditsApprov,
+    required this.creditsTotal,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -138,8 +135,8 @@ class _HeroCard extends StatelessWidget {
           Row(
             children: [
               StudentAvatar(
-                codigo: profile?.estId,
-                nombre: profile?.estudiante ?? '',
+                code: profile?.id,
+                name: profile?.fullName ?? '',
                 size: 72,
                 radius: 22,
                 gradient: LinearGradient(
@@ -158,7 +155,7 @@ class _HeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile == null ? '...' : profile!.estudiante,
+                      profile == null ? '...' : profile!.fullName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -171,10 +168,10 @@ class _HeroCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: () {
-                        if (profile?.estId != null) {
+                        if (profile?.id != null) {
                           ClipboardHelper.copyAndShow(
                             context,
-                            profile!.estId,
+                            profile!.id,
                             label: l.profileStudentCode,
                           );
                         }
@@ -183,7 +180,7 @@ class _HeroCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            profile?.estId ?? '',
+                            profile?.id ?? '',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 13,
@@ -211,20 +208,24 @@ class _HeroCard extends StatelessWidget {
               _heroStat(
                 context,
                 l.homeMetricPromedio.toUpperCase(),
-                promedio == null ? '—' : promedio!.toStringAsFixed(2),
+                average == null ? '—' : average!.toStringAsFixed(2),
               ),
               _heroDivider(),
               _heroStat(
                 context,
                 l.homeMetricCreditos.toUpperCase(),
-                creditosAprob == null
+                creditsApprov == null
                     ? '—'
-                    : creditosTotal != null && creditosTotal! > 0
-                        ? '$creditosAprob/$creditosTotal'
-                        : '$creditosAprob',
+                    : creditsTotal != null && creditsTotal! > 0
+                    ? '$creditsApprov/$creditsTotal'
+                    : '$creditsApprov',
               ),
               _heroDivider(),
-              _heroStat(context, l.detailLevel.toUpperCase(), profile?.nivel ?? '—'),
+              _heroStat(
+                context,
+                l.detailLevel.toUpperCase(),
+                profile?.level ?? '—',
+              ),
             ],
           ),
         ],
@@ -232,7 +233,8 @@ class _HeroCard extends StatelessWidget {
     );
   }
 
-  Widget _heroStat(BuildContext context, String label, String value) => Expanded(
+  Widget _heroStat(BuildContext context, String label, String value) =>
+      Expanded(
         child: GestureDetector(
           onTap: () {
             if (value != '—') {
@@ -265,19 +267,17 @@ class _HeroCard extends StatelessWidget {
           ),
         ),
       );
-
   Widget _heroDivider() => Container(
-        width: 1,
-        height: 36,
-        color: Colors.white.withValues(alpha: 0.18),
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-      );
+    width: 1,
+    height: 36,
+    color: Colors.white.withValues(alpha: 0.18),
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+  );
 }
 
 class _AcademicCard extends StatelessWidget {
-  final StudentProfile? profile;
+  final Student? profile;
   const _AcademicCard({required this.profile});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -286,108 +286,111 @@ class _AcademicCard extends StatelessWidget {
       _InfoItem(
         icon: Icons.menu_book_outlined,
         label: l.profileCareer,
-        value: p?.carrera ?? '—',
+        value: p?.career ?? '—',
         wide: true,
         color: NexoTheme.primary,
       ),
       _InfoItem(
         icon: Icons.account_balance_outlined,
         label: l.profileFaculty,
-        value: p?.facultad ?? '—',
+        value: p?.faculty ?? '—',
         wide: true,
       ),
       _InfoItem(
         icon: Icons.location_city_outlined,
         label: l.profileCampus,
-        value: p?.sede ?? '—',
+        value: p?.campus ?? '—',
       ),
       _InfoItem(
         icon: Icons.video_camera_back_outlined,
         label: l.profileMode,
-        value: p?.modalidad ?? '—',
+        value: p?.modality ?? '—',
       ),
       _InfoItem(
         icon: Icons.bookmark_outline,
         label: l.profileStudyPlan,
-        value: p?.pesId ?? '—',
+        value: p?.studyPlan ?? '—',
       ),
       _InfoItem(
         icon: Icons.layers_outlined,
         label: l.profileLevel,
-        value: p?.nivel ?? '—',
+        value: p?.level ?? '—',
       ),
       _InfoItem(
         icon: Icons.event_available_outlined,
         label: l.profileLastEnrollment,
-        value: p?.ultimaMatricula ?? '—',
+        value: p?.lastEnrollment ?? '—',
       ),
       _InfoItem(
-        icon: p?.matriculado == true
+        icon: p?.isEnrolled == true
             ? Icons.check_circle_outline
             : Icons.cancel_outlined,
         label: l.profileStatus,
-        value: p?.matriculado == true ? l.profileStatusEnrolled : l.profileStatusNotEnrolled,
-        color:
-            p?.matriculado == true ? NexoTheme.success : NexoTheme.danger,
+        value: p?.isEnrolled == true
+            ? l.profileStatusEnrolled
+            : l.profileStatusNotEnrolled,
+        color: p?.isEnrolled == true ? NexoTheme.success : NexoTheme.danger,
       ),
     ];
-
     return SectionCard(
       title: l.profileAcademicInfo,
       icon: Icons.school_outlined,
-      child: LayoutBuilder(builder: (ctx, c) {
-        final twoCols = c.maxWidth >= 540;
-        final tiles = <Widget>[];
-        for (var i = 0; i < items.length; i++) {
-          final item = items[i];
-          tiles.add(_InfoTile(item: item));
-        }
-        if (!twoCols) {
+      child: LayoutBuilder(
+        builder: (ctx, c) {
+          final twoCols = c.maxWidth >= 540;
+          final tiles = <Widget>[];
+          for (var i = 0; i < items.length; i++) {
+            final item = items[i];
+            tiles.add(_InfoTile(item: item));
+          }
+          if (!twoCols) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < tiles.length; i++) ...[
+                  tiles[i],
+                  if (i < tiles.length - 1) const SizedBox(height: 8),
+                ],
+              ],
+            );
+          }
+          final rows = <Widget>[];
+          var i = 0;
+          while (i < items.length) {
+            final current = items[i];
+            if (current.wide) {
+              rows.add(_InfoTile(item: current));
+              i++;
+            } else if (i + 1 < items.length && !items[i + 1].wide) {
+              rows.add(
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _InfoTile(item: items[i])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _InfoTile(item: items[i + 1])),
+                    ],
+                  ),
+                ),
+              );
+              i += 2;
+            } else {
+              rows.add(_InfoTile(item: items[i]));
+              i++;
+            }
+          }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < tiles.length; i++) ...[
-                tiles[i],
-                if (i < tiles.length - 1) const SizedBox(height: 8),
+              for (var k = 0; k < rows.length; k++) ...[
+                rows[k],
+                if (k < rows.length - 1) const SizedBox(height: 8),
               ],
             ],
           );
-        }
-        // Dos columnas: los items con wide:true ocupan toda la fila.
-        final rows = <Widget>[];
-        var i = 0;
-        while (i < items.length) {
-          final current = items[i];
-          if (current.wide) {
-            rows.add(_InfoTile(item: current));
-            i++;
-          } else if (i + 1 < items.length && !items[i + 1].wide) {
-            rows.add(IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: _InfoTile(item: items[i])),
-                  const SizedBox(width: 8),
-                  Expanded(child: _InfoTile(item: items[i + 1])),
-                ],
-              ),
-            ));
-            i += 2;
-          } else {
-            rows.add(_InfoTile(item: items[i]));
-            i++;
-          }
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var k = 0; k < rows.length; k++) ...[
-              rows[k],
-              if (k < rows.length - 1) const SizedBox(height: 8),
-            ],
-          ],
-        );
-      }),
+        },
+      ),
     );
   }
 }
@@ -410,14 +413,14 @@ class _InfoItem {
 class _InfoTile extends StatelessWidget {
   final _InfoItem item;
   const _InfoTile({required this.item});
-
   @override
   Widget build(BuildContext context) {
     final color = item.color ?? NexoTheme.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => ClipboardHelper.copyAndShow(context, item.value, label: item.label),
+        onTap: () =>
+            ClipboardHelper.copyAndShow(context, item.value, label: item.label),
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -483,7 +486,6 @@ class _ActionsCard extends StatelessWidget {
     required this.store,
     required this.theme,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -498,15 +500,17 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.settings_outlined,
-                  color: NexoTheme.primary, size: 20),
+              child: Icon(
+                Icons.settings_outlined,
+                color: NexoTheme.primary,
+                size: 20,
+              ),
             ),
             title: Text(
               l.settingsTitle,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing:
-                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => SettingsScreen(store: store, theme: theme),
@@ -522,15 +526,17 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.warning.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.lock_reset_rounded,
-                  color: NexoTheme.warning, size: 20),
+              child: const Icon(
+                Icons.lock_reset_rounded,
+                color: NexoTheme.warning,
+                size: 20,
+              ),
             ),
             title: Text(
               l.titleChangePassword,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing:
-                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => ChangePasswordScreen(store: store),
@@ -546,15 +552,17 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.success.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.help_outline_rounded,
-                  color: NexoTheme.success, size: 20),
+              child: const Icon(
+                Icons.help_outline_rounded,
+                color: NexoTheme.success,
+                size: 20,
+              ),
             ),
             title: Text(
               l.supportTitle,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing: Icon(Icons.chevron_right,
-                color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => SupportScreen.open(context),
           ),
           const Divider(height: 1, indent: 70),
@@ -566,19 +574,19 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.info.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child:
-                  const Icon(Icons.info_outline, color: NexoTheme.info, size: 20),
+              child: const Icon(
+                Icons.info_outline,
+                color: NexoTheme.info,
+                size: 20,
+              ),
             ),
             title: Text(
               l.titleAbout,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing: Icon(Icons.chevron_right,
-                color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const AboutScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const AboutScreen()),
             ),
           ),
           const Divider(height: 1, indent: 70),
@@ -590,19 +598,19 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.info.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.privacy_tip_outlined,
-                  color: NexoTheme.info, size: 20),
+              child: const Icon(
+                Icons.privacy_tip_outlined,
+                color: NexoTheme.info,
+                size: 20,
+              ),
             ),
             title: Text(
               l.titleTerms,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing:
-                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const TermsScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const TermsScreen()),
             ),
           ),
           const Divider(height: 1, indent: 70),
@@ -614,19 +622,19 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.code_rounded,
-                  color: NexoTheme.primary, size: 20),
+              child: Icon(
+                Icons.code_rounded,
+                color: NexoTheme.primary,
+                size: 20,
+              ),
             ),
             title: Text(
               l.titleDeveloper,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            trailing:
-                Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const DeveloperScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const DeveloperScreen()),
             ),
           ),
           const Divider(height: 1, indent: 70),
@@ -638,8 +646,11 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded,
-                  color: NexoTheme.danger, size: 20),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: NexoTheme.danger,
+                size: 20,
+              ),
             ),
             title: Text(
               l.actionLogout,
@@ -704,7 +715,9 @@ class _ActionsCard extends StatelessWidget {
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx, false),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -726,7 +739,9 @@ class _ActionsCard extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: NexoTheme.danger,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -755,5 +770,3 @@ class _ActionsCard extends StatelessWidget {
     );
   }
 }
-
-/// Preferencias generales: idioma y formato de hora.

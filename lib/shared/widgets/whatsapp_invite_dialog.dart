@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/storage.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
 const whatsappChannelUrl =
     'https://whatsapp.com/channel/0029VbDh4pf2ZjCfpiccSj3Y';
 const whatsappGreen = Color(0xFF25D366);
-
 Future<void> openWhatsappChannel() => launchUrl(
-      Uri.parse(whatsappChannelUrl),
-      mode: LaunchMode.externalApplication,
-    );
-
-/// Muestra el invite del canal de WhatsApp si el usuario no lo ha visto.
-/// Se marca como visto en cuanto se cierra el diálogo (no importa el botón).
+  Uri.parse(whatsappChannelUrl),
+  mode: LaunchMode.externalApplication,
+);
 Future<void> maybeShowWhatsappInvite(BuildContext context) async {
   if (AppStorage.instance.seenWhatsappInvite) return;
   await AppStorage.instance.setSeenWhatsappInvite(true);
@@ -27,7 +24,6 @@ Future<void> maybeShowWhatsappInvite(BuildContext context) async {
 
 class _WhatsappInviteDialog extends StatelessWidget {
   const _WhatsappInviteDialog();
-
   Future<void> _open(BuildContext context) async {
     await openWhatsappChannel();
     if (context.mounted) Navigator.of(context).pop();
@@ -51,8 +47,9 @@ class _WhatsappInviteDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: whatsappGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border:
-                      Border.all(color: whatsappGreen.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: whatsappGreen.withValues(alpha: 0.3),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: whatsappGreen.withValues(alpha: 0.12),
@@ -60,12 +57,15 @@ class _WhatsappInviteDialog extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.campaign_rounded,
-                    size: 28, color: whatsappGreen),
+                child: const Icon(
+                  Icons.campaign_rounded,
+                  size: 28,
+                  color: whatsappGreen,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Únete al canal de Nexo',
+                AppLocalizations.of(context).whatsappBannerTitle,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
@@ -76,12 +76,12 @@ class _WhatsappInviteDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Sigue el canal de WhatsApp para enterarte de novedades, '
-                'mejoras y avisos importantes sobre Nexo.',
+                AppLocalizations.of(context).whatsappBannerDesc,
                 style: TextStyle(
                   fontSize: 12,
                   color: NexoTheme.textSecondary,
                   height: 1.45,
+                  letterSpacing: -0.2,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -91,15 +91,18 @@ class _WhatsappInviteDialog extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _open(context),
                   icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: const Text('Seguir canal'),
+                  label: Text(AppLocalizations.of(context).whatsappBannerFollow),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: whatsappGreen,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w800),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -113,9 +116,11 @@ class _WhatsappInviteDialog extends StatelessWidget {
                     foregroundColor: NexoTheme.textMuted,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     textStyle: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  child: const Text('Ahora no'),
+                  child: Text(AppLocalizations.of(context).whatsappBannerLater),
                 ),
               ),
             ],

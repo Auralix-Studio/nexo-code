@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nexo/data/connectivity_service.dart';
 
 class ConnectivityBanner extends StatelessWidget {
-  const ConnectivityBanner({
-    super.key,
-    required this.connectivity,
-  });
-
+  const ConnectivityBanner({super.key, required this.connectivity});
   final ConnectivityService connectivity;
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -17,41 +12,38 @@ class ConnectivityBanner extends StatelessWidget {
         final isOnline = connectivity.hasInternet;
         final sigma = connectivity.sigmaStatus;
         final intranet = connectivity.intranetStatus;
-
-        final isFullyOnline = isOnline &&
+        final isFullyOnline =
+            isOnline &&
             sigma == ServerStatus.online &&
             intranet == ServerStatus.online;
-
         if (isFullyOnline) {
           return const SizedBox.shrink();
         }
-
-        // Determine message and color theme based on connectivity state
         final Color backgroundColor;
         final Color textColor;
         final IconData icon;
         final String message;
-
         if (!isOnline) {
-          backgroundColor = const Color(0xFFFEE2E2); // soft red
-          textColor = const Color(0xFF991B1B); // dark red
+          backgroundColor = const Color(0xFFFEE2E2);
+          textColor = const Color(0xFF991B1B);
           icon = Icons.cloud_off_rounded;
           message = 'Sin conexión a internet. Mostrando datos locales.';
-        } else if (sigma == ServerStatus.offline || intranet == ServerStatus.offline) {
-          backgroundColor = const Color(0xFFFEF3C7); // soft amber
-          textColor = const Color(0xFF92400E); // dark amber
+        } else if (sigma == ServerStatus.offline ||
+            intranet == ServerStatus.offline) {
+          backgroundColor = const Color(0xFFFEF3C7);
+          textColor = const Color(0xFF92400E);
           icon = Icons.dns_rounded;
           final servers = <String>[];
           if (sigma == ServerStatus.offline) servers.add('SIGMA');
           if (intranet == ServerStatus.offline) servers.add('INTRANET');
-          message = 'Servidor ${servers.join(' y ')} fuera de línea. Copia local activa.';
+          message =
+              'Servidor ${servers.join(' y ')} fuera de línea. Copia local activa.';
         } else {
-          backgroundColor = const Color(0xFFE0F2FE); // soft blue/cyan
-          textColor = const Color(0xFF075985); // dark blue
+          backgroundColor = const Color(0xFFE0F2FE);
+          textColor = const Color(0xFF075985);
           icon = Icons.wifi_tethering_error_rounded;
           message = 'Conexión degradada. La carga de datos puede tardar.';
         }
-
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -88,7 +80,6 @@ class ConnectivityBanner extends StatelessWidget {
                   constraints: const BoxConstraints(),
                   splashRadius: 16,
                   onPressed: () {
-                    // Force a retry check now
                     connectivity.checkNow();
                   },
                 ),

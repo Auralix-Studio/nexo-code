@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/reports/pdf_export.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
@@ -17,7 +17,6 @@ import 'package:nexo/shared/widgets/status_chip.dart';
 class PaymentsScreen extends StatefulWidget {
   const PaymentsScreen({super.key, required this.store});
   final AppStore store;
-
   @override
   State<PaymentsScreen> createState() => _PagosScreenState();
 }
@@ -25,7 +24,6 @@ class PaymentsScreen extends StatefulWidget {
 class _PagosScreenState extends State<PaymentsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
-
   @override
   void initState() {
     super.initState();
@@ -35,9 +33,9 @@ class _PagosScreenState extends State<PaymentsScreen>
 
   Future<void> _loadAll() async {
     await Future.wait([
-      if (!widget.store.cuotasPendientes.hasValue)
+      if (!widget.store.pendingInstallments.hasValue)
         widget.store.loadCuotasPendientes(),
-      if (!widget.store.cuotasIntranet.hasValue)
+      if (!widget.store.intranetInstallments.hasValue)
         widget.store.loadCuotasIntranet(),
       if (!widget.store.tasas.hasValue) widget.store.loadTasas(),
       if (!widget.store.historico.hasValue) widget.store.loadHistorico(),
@@ -55,7 +53,7 @@ class _PagosScreenState extends State<PaymentsScreen>
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        return RefreshIndicator(
+        final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
               widget.store.loadCuotasPendientes(),
@@ -66,7 +64,8 @@ class _PagosScreenState extends State<PaymentsScreen>
           },
           child: NestedScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             headerSliverBuilder: (_, _) => [
               SliverToBoxAdapter(
                 child: PageHeader(
@@ -74,37 +73,53 @@ class _PagosScreenState extends State<PaymentsScreen>
                   subtitle: AppLocalizations.of(context).subtitlePayments,
                   actions: [
                     IconButton(
-                      tooltip: AppLocalizations.of(context).paymentsDownloadSchedulePdf,
+                      tooltip: AppLocalizations.of(
+                        context,
+                      ).paymentsDownloadSchedulePdf,
                       icon: const Icon(Icons.download_rounded),
                       onPressed: () =>
-                          PdfExport.cronograma(context, widget.store),
+                          PdfExport.schedule(context, widget.store),
                     ),
                   ],
                 ),
               ),
               SliverToBoxAdapter(
-                child: Reveal(index: 0, child: _SummaryCards(store: widget.store)),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 12)),
-              SliverToBoxAdapter(
-                child: PageBody(
-                  child: _TabBar(controller: _tab),
+                child: Reveal(
+                  index: 0,
+                  child: _SummaryCards(store: widget.store),
                 ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              SliverToBoxAdapter(
+                child: PageBody(child: _TabBar(controller: _tab)),
               ),
             ],
             body: PageBody(
               child: TabBarView(
                 controller: _tab,
                 children: [
-                  _PendientesTab(state: widget.store.cuotasPendientes),
-                  _VencidasTab(state: widget.store.cuotasIntranet),
-                  _TasasTab(state: widget.store.tasas),
-                  _HistorialTab(state: widget.store.historico),
+                  _PendientesTab(
+                    state: widget.store.pendingInstallments,
+                    onRetry: () => widget.store.loadCuotasPendientes(),
+                  ),
+                  _VencidasTab(
+                    state: widget.store.intranetInstallments,
+                    onRetry: () => widget.store.loadCuotasIntranet(),
+                  ),
+                  _TasasTab(
+                    state: widget.store.tasas,
+                    onRetry: () => widget.store.loadTasas(),
+                  ),
+                  _HistorialTab(
+                    state: widget.store.historico,
+                    onRetry: () => widget.store.loadHistorico(),
+                  ),
                 ],
               ),
             ),
           ),
         );
+        return list;
       },
     );
   }
@@ -113,23 +128,15 @@ class _PagosScreenState extends State<PaymentsScreen>
 class _SummaryCards extends StatelessWidget {
   final AppStore store;
   const _SummaryCards({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final pendientes = store.cuotasPendientes.value ?? const <Cuota>[];
-    final vencidas =
-        (store.cuotasIntranet.value ?? const <Cuota>[]).where((c) {
-      final d = c.daysUntilDue();
-      return d != null && d < 0;
-    }).toList();
-    final tasas = store.tasas.value ?? const <Tasa>[];
-
-    final totalPend =
-        pendientes.fold<double>(0, (a, c) => a + c.subtotal);
-    final totalVenc = vencidas.fold<double>(0, (a, c) => a + c.subtotal);
-    final totalTasas = tasas.fold<double>(0, (a, t) => a + t.importe);
-
+    final pending = store.pendingInstallments.value ?? const <Payment>[];
+    final vencidas = store.intranetInstallments.value ?? const <Payment>[];
+    final tasas = store.tasas.value ?? const <Fee>[];
+    final totalPend = pending.fold<double>(0, (a, c) => a + c.total);
+    final totalVenc = vencidas.fold<double>(0, (a, c) => a + c.total);
+    final totalTasas = tasas.fold<double>(0, (a, t) => a + t.amount);
     return PageBody(
       child: Row(
         children: [
@@ -137,7 +144,7 @@ class _SummaryCards extends StatelessWidget {
             child: _SummaryCard(
               title: l.paymentsTabPending,
               total: totalPend,
-              count: pendientes.length,
+              count: pending.length,
               icon: Icons.schedule_rounded,
               color: NexoTheme.warning,
             ),
@@ -174,7 +181,6 @@ class _SummaryCard extends StatelessWidget {
   final int count;
   final IconData icon;
   final Color color;
-
   const _SummaryCard({
     required this.title,
     required this.total,
@@ -182,7 +188,6 @@ class _SummaryCard extends StatelessWidget {
     required this.icon,
     required this.color,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -244,7 +249,6 @@ class _SummaryCard extends StatelessWidget {
 class _TabBar extends StatelessWidget {
   final TabController controller;
   const _TabBar({required this.controller});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -265,10 +269,11 @@ class _TabBar extends StatelessWidget {
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: Colors.white,
         unselectedLabelColor: NexoTheme.textSecondary,
-        labelStyle:
-            const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
         splashFactory: NoSplash.splashFactory,
         dividerHeight: 0,
         tabs: [
@@ -282,58 +287,84 @@ class _TabBar extends StatelessWidget {
   }
 }
 
-// ============== Tabs ==============
+Widget _cardList(BuildContext context, List<Widget> cards) {
+  if (!context.isDesktop) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      itemBuilder: (_, i) => cards[i],
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemCount: cards.length,
+    );
+  }
+  final rows = <Widget>[];
+  for (var i = 0; i < cards.length; i += 2) {
+    rows.add(
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: cards[i]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
+          ),
+        ],
+      ),
+    );
+  }
+  return ListView.separated(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    itemBuilder: (_, i) => rows[i],
+    separatorBuilder: (_, _) => const SizedBox(height: 12),
+    itemCount: rows.length,
+  );
+}
 
 class _PendientesTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  const _PendientesTab({required this.state});
-
+  final AsyncValue<List<Payment>> state;
+  final VoidCallback? onRetry;
+  const _PendientesTab({required this.state, this.onRetry});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
-      filter: (c) {
-        final d = c.daysUntilDue();
-        return d == null || d >= 0;
-      },
+      filter: (_) => true,
       emptyTitle: l.paymentsUpToDateTitle,
       emptySubtitle: l.paymentsUpToDateSubtitle,
       emptyIcon: Icons.verified_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
 
 class _VencidasTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  const _VencidasTab({required this.state});
-
+  final AsyncValue<List<Payment>> state;
+  final VoidCallback? onRetry;
+  const _VencidasTab({required this.state, this.onRetry});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return _CuotaListTab(
       state: state,
-      filter: (c) {
-        final d = c.daysUntilDue();
-        return d != null && d < 0;
-      },
+      filter: (_) => true,
       emptyTitle: l.paymentsNoOverdueTitle,
       emptySubtitle: l.paymentsNoOverdueSubtitle,
       emptyIcon: Icons.celebration_outlined,
       emptyColor: NexoTheme.success,
+      onRetry: onRetry,
     );
   }
 }
 
 class _CuotaListTab extends StatelessWidget {
-  final AsyncValue<List<Cuota>> state;
-  final bool Function(Cuota) filter;
+  final AsyncValue<List<Payment>> state;
+  final bool Function(Payment) filter;
   final String emptyTitle;
   final String emptySubtitle;
   final IconData emptyIcon;
   final Color emptyColor;
-
+  final VoidCallback? onRetry;
   const _CuotaListTab({
     required this.state,
     required this.filter,
@@ -341,8 +372,8 @@ class _CuotaListTab extends StatelessWidget {
     required this.emptySubtitle,
     required this.emptyIcon,
     required this.emptyColor,
+    this.onRetry,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -353,12 +384,13 @@ class _CuotaListTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
-    final items = (state.value ?? const <Cuota>[]).where(filter).toList()
+    final items = (state.value ?? const <Payment>[]).where(filter).toList()
       ..sort((a, b) {
-        final da = a.vencimientoDate;
-        final db = b.vencimientoDate;
+        final da = a.dueDate;
+        final db = b.dueDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
@@ -372,19 +404,13 @@ class _CuotaListTab extends StatelessWidget {
         color: emptyColor,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _CuotaCard(cuota: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final c in items) _CuotaCard(cuota: c)]);
   }
 }
 
 class _CuotaCard extends StatelessWidget {
-  final Cuota cuota;
+  final Payment cuota;
   const _CuotaCard({required this.cuota});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -394,18 +420,17 @@ class _CuotaCard extends StatelessWidget {
     final tagColor = isOverdue
         ? NexoTheme.danger
         : isSoon
-            ? NexoTheme.warning
-            : NexoTheme.textSecondary;
+        ? NexoTheme.warning
+        : NexoTheme.textSecondary;
     final tagText = isOverdue
         ? l.paymentDaysOverdue((-days).toString())
         : days == 0
-            ? l.paymentVenceHoy
-            : days == 1
-                ? l.paymentVenceManana
-                : days == null
-                    ? '—'
-                    : l.paymentDaysLeft(days.toString());
-
+        ? l.paymentVenceHoy
+        : days == 1
+        ? l.paymentVenceManana
+        : days == null
+        ? '—'
+        : l.paymentDaysLeft(days.toString());
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -425,101 +450,110 @@ class _CuotaCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  cuota.descripcion,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${cuota.tipoMoneda} ${cuota.subtotal.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: NexoTheme.textPrimary,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.event_outlined,
-                      size: 14, color: NexoTheme.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(
-                    cuota.fechaVencimiento,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: NexoTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              StatusChip(text: tagText, color: tagColor),
-              if (cuota.mora > 0)
-                StatusChip(
-                  text: l.paymentMora(cuota.tipoMoneda, cuota.mora.toStringAsFixed(2)),
-                  color: NexoTheme.danger,
-                  icon: Icons.warning_amber_rounded,
-                ),
-            ],
-          ),
-          if (cuota.observacion.trim().isNotEmpty &&
-              cuota.observacion.trim() != '--') ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: NexoTheme.bg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      size: 14, color: NexoTheme.textMuted),
-                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      cuota.observacion,
+                      cuota.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: NexoTheme.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.textPrimary,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: NexoTheme.textPrimary,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 10,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event_outlined,
+                        size: 14,
+                        color: NexoTheme.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        cuota.dueDateRaw,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: NexoTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  StatusChip(text: tagText, color: tagColor),
+                  if (cuota.lateFee > 0)
+                    StatusChip(
+                      text: l.paymentMora(
+                        cuota.currency,
+                        cuota.lateFee.toStringAsFixed(2),
+                      ),
+                      color: NexoTheme.danger,
+                      icon: Icons.warning_amber_rounded,
+                    ),
+                ],
+              ),
+              if (cuota.note.trim().isNotEmpty &&
+                  cuota.note.trim() != '--') ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: NexoTheme.bg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: NexoTheme.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          cuota.note,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: NexoTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 
 class _TasasTab extends StatelessWidget {
-  final AsyncValue<List<Tasa>> state;
-  const _TasasTab({required this.state});
-
+  final AsyncValue<List<Fee>> state;
+  final VoidCallback? onRetry;
+  const _TasasTab({required this.state, this.onRetry});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -530,28 +564,23 @@ class _TasasTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: onRetry,
       );
     }
-    final items = state.value ?? const <Tasa>[];
+    final items = state.value ?? const <Fee>[];
     if (items.isEmpty) {
       return EmptyState(
         icon: Icons.receipt_long_outlined,
         title: l.paymentsNoFeesRegistered,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => _TasaCard(tasa: items[i]),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: items.length,
-    );
+    return _cardList(context, [for (final t in items) _TasaCard(tasa: t)]);
   }
 }
 
 class _TasaCard extends StatelessWidget {
-  final Tasa tasa;
+  final Fee tasa;
   const _TasaCard({required this.tasa});
-
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -568,49 +597,51 @@ class _TasaCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: NexoTheme.info.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: const Icon(Icons.receipt_long_rounded,
-                color: NexoTheme.info, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tasa.descripcion,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textPrimary,
-                  ),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: NexoTheme.info.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                if (tasa.observacion.trim().isNotEmpty &&
-                    tasa.observacion.trim() != '--')
-                  Text(
-                    tasa.observacion,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: NexoTheme.textSecondary,
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  color: NexoTheme.info,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tasa.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.textPrimary,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          Text(
-            '${tasa.tipoMoneda} ${tasa.importe.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: NexoTheme.textPrimary,
-            ),
-          ),
+                    if (tasa.note.trim().isNotEmpty && tasa.note.trim() != '--')
+                      Text(
+                        tasa.note,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: NexoTheme.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Text(
+                '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: NexoTheme.textPrimary,
+                ),
+              ),
             ],
           ),
         ),
@@ -619,13 +650,20 @@ class _TasaCard extends StatelessWidget {
   }
 }
 
-class _HistorialTab extends StatelessWidget {
-  final AsyncValue<List<PagoHistorico>> state;
-  const _HistorialTab({required this.state});
+class _HistorialTab extends StatefulWidget {
+  final AsyncValue<List<PaymentRecord>> state;
+  final VoidCallback? onRetry;
+  const _HistorialTab({required this.state, this.onRetry});
+  @override
+  State<_HistorialTab> createState() => _HistorialTabState();
+}
 
+class _HistorialTabState extends State<_HistorialTab> {
+  String? _termFilter;
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final state = widget.state;
     if (state.loading && !state.hasValue) return const _LoadingList();
     if (state.error != null && !state.hasValue) {
       return EmptyState(
@@ -633,73 +671,149 @@ class _HistorialTab extends StatelessWidget {
         title: l.paymentsLoadError,
         subtitle: humanizeError(state.error),
         color: NexoTheme.danger,
+        onRetry: widget.onRetry,
       );
     }
-    final items = state.value ?? const <PagoHistorico>[];
+    final items = state.value ?? const <PaymentRecord>[];
     if (items.isEmpty) {
       return EmptyState(
         icon: Icons.history_rounded,
         title: l.paymentsNoHistoryRegistered,
       );
     }
-    // Ordenar por fecha descendente.
-    final sorted = [...items]..sort((a, b) {
-        final da = a.fechaDate;
-        final db = b.fechaDate;
+    final terms =
+        items.map((p) => p.term).where((t) => t.isNotEmpty).toSet().toList()
+          ..sort((a, b) => b.compareTo(a));
+    final filtered = _termFilter == null
+        ? items
+        : items.where((p) => p.term == _termFilter).toList();
+    final sorted = [...filtered]
+      ..sort((a, b) {
+        final da = a.dateAsDate;
+        final db = b.dateAsDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
         return db.compareTo(da);
       });
-
-    // Agrupar por fecha.
-    final byDate = <String, List<PagoHistorico>>{};
+    final byDate = <String, List<PaymentRecord>>{};
     for (final p in sorted) {
-      byDate.putIfAbsent(p.fecha, () => []).add(p);
+      byDate.putIfAbsent(p.date, () => []).add(p);
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemCount: byDate.length,
-      itemBuilder: (_, i) {
-        final date = byDate.keys.elementAt(i);
-        final list = byDate[date]!;
-        final dt = list.first.fechaDate;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                child: Text(
-                  dt == null ? date : Fmt.fullDate(dt),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textSecondary,
+    return Column(
+      children: [
+        if (terms.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _TermChip(
+                    label: 'Todos',
+                    selected: _termFilter == null,
+                    onTap: () => setState(() => _termFilter = null),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  for (final t in terms) ...[
+                    _TermChip(
+                      label: t,
+                      selected: _termFilter == t,
+                      onTap: () => setState(() => _termFilter = t),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                ],
               ),
-              for (var j = 0; j < list.length; j++) ...[
-                _HistTile(item: list[j]),
-                if (j < list.length - 1) const SizedBox(height: 8),
-              ],
-            ],
+            ),
           ),
-        );
-      },
+        Expanded(
+          child: byDate.isEmpty
+              ? const EmptyState(
+                  icon: Icons.filter_alt_off_outlined,
+                  title: 'Sin pagos en este periodo',
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: byDate.length,
+                  itemBuilder: (_, i) {
+                    final date = byDate.keys.elementAt(i);
+                    final list = byDate[date]!;
+                    final dt = list.first.dateAsDate;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                            child: Text(
+                              dt == null ? date : Fmt.fullDate(dt),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: NexoTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                          for (var j = 0; j < list.length; j++) ...[
+                            _HistTile(item: list[j]),
+                            if (j < list.length - 1) const SizedBox(height: 8),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TermChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _TermChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? NexoTheme.primary : NexoTheme.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? NexoTheme.primary : NexoTheme.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : NexoTheme.textPrimary,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _HistTile extends StatelessWidget {
-  final PagoHistorico item;
+  final PaymentRecord item;
   const _HistTile({required this.item});
-
   @override
   Widget build(BuildContext context) {
-    final esDesc = item.esDescuento;
+    final esDesc = item.isDiscount;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -714,78 +828,78 @@ class _HistTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: (esDesc ? NexoTheme.warning : NexoTheme.success)
-                  .withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              esDesc ? Icons.discount_outlined : Icons.check_circle_outline,
-              size: 18,
-              color: esDesc ? NexoTheme.warning : NexoTheme.success,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.concepto,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textPrimary,
-                  ),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: (esDesc ? NexoTheme.warning : NexoTheme.success)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 2),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 2,
+                child: Icon(
+                  esDesc ? Icons.discount_outlined : Icons.check_circle_outline,
+                  size: 18,
+                  color: esDesc ? NexoTheme.warning : NexoTheme.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.periodo,
+                      item.concept,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: NexoTheme.textMuted,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.textPrimary,
                       ),
                     ),
-                    if (item.lugar.trim().isNotEmpty)
-                      Text(
-                        '· ${item.lugar}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: NexoTheme.textMuted,
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      children: [
+                        Text(
+                          item.term,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: NexoTheme.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    if (item.comprobante.trim().isNotEmpty)
-                      Text(
-                        '· ${item.comprobante}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: NexoTheme.textMuted,
-                        ),
-                      ),
+                        if (item.place.trim().isNotEmpty)
+                          Text(
+                            '· ${item.place}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: NexoTheme.textMuted,
+                            ),
+                          ),
+                        if (item.voucher.trim().isNotEmpty)
+                          Text(
+                            '· ${item.voucher}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: NexoTheme.textMuted,
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${item.tipoMoneda} ${item.importe.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: esDesc ? NexoTheme.warning : NexoTheme.textPrimary,
-            ),
-          ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${item.currency} ${item.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: esDesc ? NexoTheme.warning : NexoTheme.textPrimary,
+                ),
+              ),
             ],
           ),
         ),
@@ -796,7 +910,6 @@ class _HistTile extends StatelessWidget {
 
 class _LoadingList extends StatelessWidget {
   const _LoadingList();
-
   @override
   Widget build(BuildContext context) {
     return ListView.separated(

@@ -462,6 +462,8 @@
   "connectivityDisconnected": "Desconectado",
   "homeVerifyConnectivity": "Verificar Estado de Conexión",
   "homeMetricPromedio": "Promedio",
+  "homeMetricPromedioCiclo": "Prom. ciclo",
+  "homeMetricPromedioAcumulado": "Prom. acum.",
   "homeMetricCreditos": "Créditos",
   "homeMetricClasesHoy": "Clases hoy",
   "homeMetricPorPagar": "Por pagar",
@@ -538,27 +540,37 @@
   "gradesCreditsSummary": "{aprobados} de {total} créditos",
   "@gradesCreditsSummary": {
     "placeholders": {
-      "aprobados": { "type": "String" },
-      "total": { "type": "String" }
+      "aprobados": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
     }
   },
   "gradesCreditsApprovedCount": "{count, plural, =1{1 crédito aprobado} other{{count} créditos aprobados}}",
   "@gradesCreditsApprovedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "gradesRank": " · Puesto {rank}",
   "@gradesRank": {
     "placeholders": {
-      "rank": { "type": "String" }
+      "rank": {
+        "type": "String"
+      }
     }
   },
   "gradesSummary": "Resumen",
   "gradesPractice": "Práctica {index}",
   "@gradesPractice": {
     "placeholders": {
-      "index": { "type": "String" }
+      "index": {
+        "type": "String"
+      }
     }
   },
   "gradesProyecto": "Proyecto",
@@ -568,33 +580,45 @@
   "paymentDaysOverdue": "VENCIDA hace {days} d.",
   "@paymentDaysOverdue": {
     "placeholders": {
-      "days": { "type": "String" }
+      "days": {
+        "type": "String"
+      }
     }
   },
   "paymentDaysLeft": "En {days} días",
   "@paymentDaysLeft": {
     "placeholders": {
-      "days": { "type": "String" }
+      "days": {
+        "type": "String"
+      }
     }
   },
   "paymentMora": "Mora {currency} {amount}",
   "@paymentMora": {
     "placeholders": {
-      "currency": { "type": "String" },
-      "amount": { "type": "String" }
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "paymentVenceEl": "Vence el {date}",
   "@paymentVenceEl": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "paymentStatusPaid": "PAGADO",
   "paymentDateOfPayment": "Fecha de Pago: {date}",
   "@paymentDateOfPayment": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "paymentMoraLabel": "Mora",
@@ -628,5 +652,199 @@
   "setupProgressAutoStart": "Configurando inicio automático...",
   "setupBtnBack": "Atrás",
   "setupBtnNext": "Siguiente",
-  "setupBtnInstallNow": "Instalar"
+  "setupBtnInstallNow": "Instalar",
+  "updTitle": "Actualizaciones",
+  "updInstalledVersion": "Versión instalada",
+  "updStatusChecking": "Buscando…",
+  "updStatusAvailable": "Disponible",
+  "updStatusUpToDate": "Al día",
+  "updStatusUnknown": "Sin verificar",
+  "updCheck": "Buscar actualizaciones",
+  "updInstallNow": "Instalar ahora",
+  "updDownloadInstall": "Descargar e instalar",
+  "updAvailableLine": "Nexo {version} está disponible.",
+  "@updAvailableLine": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updSnackUpToDate": "Ya tienes la última versión.",
+  "updSnackAvailable": "Nueva versión {version} disponible.",
+  "@updSnackAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updSnackCheckFailed": "No se pudo verificar. Revisa tu conexión.",
+  "updSnackInstallFailed": "No se pudo iniciar la instalación.",
+  "updBannerReadyTitle": "Actualización lista para instalar",
+  "updBannerAvailableTitle": "Actualización disponible",
+  "updBannerReadyBody": "Toca para instalar Nexo {version}.",
+  "@updBannerReadyBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updBannerAvailableBody": "Toca para descargar Nexo {version}.",
+  "@updBannerAvailableBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updDismiss": "Descartar",
+  "assignmentNoDate": "Sin fecha de entrega",
+  "assignmentOverdue": "Venció",
+  "assignmentDueToday": "Vence hoy",
+  "assignmentDueTomorrow": "Vence mañana",
+  "assignmentDueInDays": "En {days} días",
+  "@assignmentDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "assignmentEmpty": "No tienes asignaciones pendientes.",
+  "widgetNoPendingDebts": "Sin deudas pendientes",
+  "widgetUpToDate": "✓ Al día",
+  "widgetOverdue": "Vencida hace {d} d",
+  "@widgetOverdue": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetDueToday": "Vence hoy",
+  "widgetDueIn": "Vence en {d} d ({date})",
+  "@widgetDueIn": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "notifStartsIn": "Empieza en {minutes} minutos",
+  "@notifStartsIn": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notifDueToday": "vence hoy",
+  "notifDueTomorrow": "vence mañana",
+  "notifDueInDays": "vence en {days} días",
+  "@notifDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notifClassesReminder": "Recordatorio de clases",
+  "notifPendingPayment": "Pago pendiente — {when}",
+  "@notifPendingPayment": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "notifPaymentsReminder": "Recordatorio de pagos",
+  "prefSameDay": "El mismo día",
+  "prefOneDayBefore": "1 día antes",
+  "prefDaysBefore": "{d} días antes",
+  "@prefDaysBefore": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "prefOneHourBefore": "1 hora antes",
+  "prefTwoHoursBefore": "2 horas antes",
+  "prefMinBefore": "{m} min antes",
+  "@prefMinBefore": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "classOngoing": "EN CURSO",
+  "homeNoClassesToday": "Sin clases hoy",
+  "homeNextClassTitle": "PRÓXIMA CLASE",
+  "homeNextClassTomorrowDay": "Mañana · {day}",
+  "@homeNextClassTomorrowDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNextClassNow": "Ahora",
+  "homeNextClassInMin": "En {m} min",
+  "@homeNextClassInMin": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextClassInHours": "En {h}h",
+  "@homeNextClassInHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextClassInHoursMin": "En {h}h {m}min",
+  "@homeNextClassInHoursMin": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "homePendingPaymentsOverdueCount": "{count, plural, =1{{count} vencida} other{{count} vencidas}}",
+  "@homePendingPaymentsOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetTeamsTitle": "Mis asignaturas",
+  "widgetTeamsSubtitle": "Grupos de Teams",
+  "widgetTeamsEmpty": "No hay asignaturas en Teams",
+  "widgetAssignmentsTitle": "Tareas",
+  "widgetAssignmentsSubtitle": "Próximas a vencer",
+  "whatsappBannerTitle": "Únete al canal de Nexo",
+  "whatsappBannerDesc": "Sigue el canal de WhatsApp para enterarte de novedades, mejoras y avisos importantes sobre Nexo.",
+  "whatsappBannerFollow": "Seguir canal",
+  "whatsappBannerLater": "Ahora no",
+  "homePendingPaymentsMore": "+ {count} cuotas más",
+  "@homePendingPaymentsMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

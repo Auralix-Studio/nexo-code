@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/features/docente/docente_curso_detail.dart' show gradeColor;
+import 'package:nexo/features/teacher/teacher_course_detail.dart'
+    show gradeColor;
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 
-/// Abre el sheet de detalle de un alumno con dos tabs: Notas y Asistencia.
-Future<void> showDocenteAlumnoSheet({
+Future<void> showTeacherStudentSheet({
   required BuildContext context,
   required AppStore store,
-  required DocenteAsignatura curso,
-  required DocenteAlumno alumno,
+  required TeacherSubject course,
+  required TeacherStudent student,
   int initialTab = 0,
 }) {
   return showModalBottomSheet<void>(
@@ -24,8 +23,8 @@ Future<void> showDocenteAlumnoSheet({
     backgroundColor: Colors.transparent,
     builder: (_) => _AlumnoSheet(
       store: store,
-      curso: curso,
-      alumno: alumno,
+      course: course,
+      student: student,
       initialTab: initialTab,
     ),
   );
@@ -33,16 +32,15 @@ Future<void> showDocenteAlumnoSheet({
 
 class _AlumnoSheet extends StatefulWidget {
   final AppStore store;
-  final DocenteAsignatura curso;
-  final DocenteAlumno alumno;
+  final TeacherSubject course;
+  final TeacherStudent student;
   final int initialTab;
   const _AlumnoSheet({
     required this.store,
-    required this.curso,
-    required this.alumno,
+    required this.course,
+    required this.student,
     required this.initialTab,
   });
-
   @override
   State<_AlumnoSheet> createState() => _AlumnoSheetState();
 }
@@ -50,9 +48,8 @@ class _AlumnoSheet extends StatefulWidget {
 class _AlumnoSheetState extends State<_AlumnoSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
-  late Future<List<NotaEvaluacion>> _futNotas;
-  late Future<List<AsistenciaDia>> _futAsis;
-
+  late Future<List<EvaluationGrade>> _futNotas;
+  late Future<List<DailyAttendance>> _futAsis;
   @override
   void initState() {
     super.initState();
@@ -66,12 +63,12 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
 
   void _loadAll() {
     _futNotas = widget.store.docenteNotasDetalle(
-      cleAuto: widget.curso.id,
-      codigoAlumno: widget.alumno.codigo,
+      cleAuto: widget.course.id,
+      codigoAlumno: widget.student.code,
     );
     _futAsis = widget.store.docenteAsistenciaAlumno(
-      cleAuto: widget.curso.id,
-      codigoAlumno: widget.alumno.codigo,
+      cleAuto: widget.course.id,
+      codigoAlumno: widget.student.code,
     );
   }
 
@@ -89,7 +86,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (_, controller) => Container(
+      builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -106,8 +103,8 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
               ),
             ),
             const SizedBox(height: 8),
-            _Header(alumno: widget.alumno),
-            Container(
+            _Header(student: widget.student),
+            ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
                 controller: _tabs,
@@ -139,8 +136,8 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     );
   }
 
-  Future<void> _editEval(NotaEvaluacion eval) async {
-    final ctrl = TextEditingController(text: eval.nota ?? '');
+  Future<void> _editEval(EvaluationGrade eval) async {
+    final ctrl = TextEditingController(text: eval.grade ?? '');
     final formKey = GlobalKey<FormState>();
     final result = await showDialog<String>(
       context: context,
@@ -177,7 +174,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        eval.descripcion,
+                        eval.description,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -193,29 +190,39 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                   key: formKey,
                   child: TextFormField(
                     controller: ctrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     autofocus: true,
                     style: TextStyle(color: NexoTheme.textPrimary),
                     decoration: InputDecoration(
                       labelText: l.docenteGradeLabel,
                       labelStyle: TextStyle(color: NexoTheme.textSecondary),
-                      prefixIcon: Icon(Icons.grade_rounded, color: NexoTheme.textSecondary),
+                      prefixIcon: Icon(
+                        Icons.grade_rounded,
+                        color: NexoTheme.textSecondary,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: NexoTheme.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: NexoTheme.primary, width: 2),
+                        borderSide: BorderSide(
+                          color: NexoTheme.primary,
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: NexoTheme.danger),
+                        borderSide: const BorderSide(color: NexoTheme.danger),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: NexoTheme.danger, width: 2),
+                        borderSide: const BorderSide(
+                          color: NexoTheme.danger,
+                          width: 2,
+                        ),
                       ),
                     ),
                     validator: (v) {
@@ -269,9 +276,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                         ),
                         child: Text(
                           l.actionSave,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -285,15 +290,15 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     );
     if (result == null) return;
     final err = await widget.store.updateDocenteEvaluacion(
-      cleAuto: widget.curso.id,
-      codigoAlumno: widget.alumno.codigo,
-      codigoEvaluacion: eval.codigo,
-      nota: result,
+      cleAuto: widget.course.id,
+      codigoAlumno: widget.student.code,
+      codigoEvaluacion: eval.code,
+      grade: result,
     );
     if (!mounted) return;
     if (err == null) {
       setState(_loadAll);
-      ClipboardHelper.showSuccess(context, '${eval.descripcion}: $result');
+      ClipboardHelper.showSuccess(context, '${eval.description}: $result');
     } else {
       ClipboardHelper.showError(context, err);
     }
@@ -301,22 +306,25 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
 }
 
 class _Header extends StatelessWidget {
-  final DocenteAlumno alumno;
-  const _Header({required this.alumno});
-
+  final TeacherStudent student;
+  const _Header({required this.student});
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.lg),
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        AppSpacing.lg,
+      ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
             backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
             child: Text(
-              _initials(alumno),
+              _initials(student),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -330,7 +338,7 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  alumno.displayName,
+                  student.displayName,
                   style: TextStyle(
                     fontSize: AppFont.h3,
                     fontWeight: FontWeight.w800,
@@ -341,7 +349,7 @@ class _Header extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      alumno.codigo,
+                      student.code,
                       style: TextStyle(
                         fontSize: AppFont.small,
                         color: NexoTheme.textMuted,
@@ -354,12 +362,14 @@ class _Header extends StatelessWidget {
                       onPressed: () {
                         ClipboardHelper.copyAndShow(
                           context,
-                          alumno.codigo,
+                          student.code,
                           label: AppLocalizations.of(context).actionCodeCopied,
                         );
                       },
-                      icon: Icon(Icons.copy_rounded,
-                          color: NexoTheme.textMuted),
+                      icon: Icon(
+                        Icons.copy_rounded,
+                        color: NexoTheme.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -371,10 +381,9 @@ class _Header extends StatelessWidget {
     );
   }
 
-  String _initials(DocenteAlumno a) {
-    String pick(String s) =>
-        s.trim().isEmpty ? '' : s.trim()[0].toUpperCase();
-    return (pick(a.nombres) + pick(a.apellidos)).ifEmpty('?');
+  String _initials(TeacherStudent a) {
+    String pick(String s) => s.trim().isEmpty ? '' : s.trim()[0].toUpperCase();
+    return (pick(a.firstName) + pick(a.lastName)).ifEmpty('?');
   }
 }
 
@@ -382,44 +391,39 @@ extension on String {
   String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
-// ===== Notas tab del sheet =====
-
 class _NotasTab extends StatelessWidget {
-  final Future<List<NotaEvaluacion>> future;
-  final ValueChanged<NotaEvaluacion> onEdit;
+  final Future<List<EvaluationGrade>> future;
+  final ValueChanged<EvaluationGrade> onEdit;
   final ScrollController scrollController;
   const _NotasTab({
     required this.future,
     required this.onEdit,
     required this.scrollController,
   });
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<NotaEvaluacion>>(
+    return FutureBuilder<List<EvaluationGrade>>(
       future: future,
       builder: (_, snap) {
         if (!snap.hasData) {
           return const _SkeletonList();
         }
         final evals = snap.data!;
-        // Suma ponderada con lo registrado.
         var sum = 0.0;
         var pesoTotal = 0.0;
         for (final e in evals) {
-          final n = e.notaNum;
+          final n = e.gradeNum;
           if (n != null) {
-            sum += n * e.peso / 100;
-            pesoTotal += e.peso;
+            sum += n * e.weight / 100;
+            pesoTotal += e.weight;
           }
         }
         final prom = pesoTotal > 0 ? sum * 100 / pesoTotal : null;
-
         return ListView(
           controller: scrollController,
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            if (prom != null) _PromedioCard(promedio: prom, peso: pesoTotal),
+            if (prom != null) _PromedioCard(average: prom, weight: pesoTotal),
             const SizedBox(height: 12),
             for (final e in evals)
               Padding(
@@ -434,14 +438,13 @@ class _NotasTab extends StatelessWidget {
 }
 
 class _PromedioCard extends StatelessWidget {
-  final double promedio;
-  final double peso;
-  const _PromedioCard({required this.promedio, required this.peso});
-
+  final double average;
+  final double weight;
+  const _PromedioCard({required this.average, required this.weight});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = gradeColor(promedio.toStringAsFixed(1));
+    final color = gradeColor(average.toStringAsFixed(1));
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -466,7 +469,7 @@ class _PromedioCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  promedio.toStringAsFixed(2),
+                  average.toStringAsFixed(2),
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
@@ -478,7 +481,7 @@ class _PromedioCard extends StatelessWidget {
             ),
           ),
           Text(
-            l.docenteCoursePercentGraded(peso.toStringAsFixed(0)),
+            l.docenteCoursePercentGraded(weight.toStringAsFixed(0)),
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: AppFont.small,
@@ -494,14 +497,13 @@ class _PromedioCard extends StatelessWidget {
 }
 
 class _EvalRow extends StatelessWidget {
-  final NotaEvaluacion eval;
+  final EvaluationGrade eval;
   final VoidCallback onEdit;
   const _EvalRow({required this.eval, required this.onEdit});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final pending = eval.nota == null || eval.nota!.trim().isEmpty;
+    final pending = eval.grade == null || eval.grade!.trim().isEmpty;
     return InkWell(
       borderRadius: AppRadii.rLg,
       onTap: onEdit,
@@ -519,7 +521,7 @@ class _EvalRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    eval.descripcion,
+                    eval.description,
                     style: TextStyle(
                       fontSize: AppFont.body,
                       fontWeight: FontWeight.w700,
@@ -528,7 +530,7 @@ class _EvalRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Peso ${eval.peso.toStringAsFixed(0)}% · ${eval.codigo}',
+                    'Peso ${eval.weight.toStringAsFixed(0)}% · ${eval.code}',
                     style: TextStyle(
                       fontSize: AppFont.small,
                       color: NexoTheme.textMuted,
@@ -540,14 +542,16 @@ class _EvalRow extends StatelessWidget {
             if (pending)
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: NexoTheme.warning.withValues(alpha: 0.14),
                   borderRadius: AppRadii.rPill,
                 ),
                 child: Text(
                   l.docenteEvalPending,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: NexoTheme.warning,
@@ -557,16 +561,15 @@ class _EvalRow extends StatelessWidget {
               )
             else
               Text(
-                eval.nota!,
+                eval.grade!,
                 style: TextStyle(
                   fontSize: AppFont.h3,
                   fontWeight: FontWeight.w900,
-                  color: gradeColor(eval.nota),
+                  color: gradeColor(eval.grade),
                 ),
               ),
             const SizedBox(width: 4),
-            Icon(Icons.edit_outlined,
-                size: 16, color: NexoTheme.textMuted),
+            Icon(Icons.edit_outlined, size: 16, color: NexoTheme.textMuted),
           ],
         ),
       ),
@@ -574,20 +577,14 @@ class _EvalRow extends StatelessWidget {
   }
 }
 
-// ===== Asistencia tab del sheet =====
-
 class _AsistenciaTab extends StatelessWidget {
-  final Future<List<AsistenciaDia>> future;
+  final Future<List<DailyAttendance>> future;
   final ScrollController scrollController;
-  const _AsistenciaTab({
-    required this.future,
-    required this.scrollController,
-  });
-
+  const _AsistenciaTab({required this.future, required this.scrollController});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return FutureBuilder<List<AsistenciaDia>>(
+    return FutureBuilder<List<DailyAttendance>>(
       future: future,
       builder: (_, snap) {
         if (!snap.hasData) return const _SkeletonList();
@@ -600,14 +597,17 @@ class _AsistenciaTab extends StatelessWidget {
             ),
           );
         }
-        final presentes = list.where((r) => r.presente).length;
+        final presentes = list.where((r) => r.isPresent).length;
         final pct = (presentes / list.length * 100).round();
-
         return ListView(
           controller: scrollController,
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            _AsistenciaResumen(total: list.length, presentes: presentes, pct: pct),
+            _AsistenciaResumen(
+              total: list.length,
+              presentes: presentes,
+              pct: pct,
+            ),
             const SizedBox(height: 12),
             for (final r in list) _DiaRow(reg: r),
           ],
@@ -629,8 +629,11 @@ class _AsistenciaResumen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color =
-        pct >= 80 ? NexoTheme.success : pct >= 65 ? NexoTheme.warning : NexoTheme.danger;
+    final color = pct >= 80
+        ? NexoTheme.success
+        : pct >= 65
+        ? NexoTheme.warning
+        : NexoTheme.danger;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -667,7 +670,10 @@ class _AsistenciaResumen extends StatelessWidget {
             ),
           ),
           Text(
-            l.docenteSessionsRegisteredCount(presentes.toString(), total.toString()),
+            l.docenteSessionsRegisteredCount(
+              presentes.toString(),
+              total.toString(),
+            ),
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: AppFont.small,
@@ -683,17 +689,28 @@ class _AsistenciaResumen extends StatelessWidget {
 }
 
 class _DiaRow extends StatelessWidget {
-  final AsistenciaDia reg;
+  final DailyAttendance reg;
   const _DiaRow({required this.reg});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final (label, color, icon) = switch (reg.estado) {
-      'P' => (l.docenteAttendancePresent, NexoTheme.success, Icons.check_circle_rounded),
-      'T' => (l.docenteAttendanceTardanza, NexoTheme.warning, Icons.schedule_rounded),
+    final (label, color, icon) = switch (reg.state) {
+      'P' => (
+        l.docenteAttendancePresent,
+        NexoTheme.success,
+        Icons.check_circle_rounded,
+      ),
+      'T' => (
+        l.docenteAttendanceTardanza,
+        NexoTheme.warning,
+        Icons.schedule_rounded,
+      ),
       'F' => (l.docenteAttendanceFalta, NexoTheme.danger, Icons.cancel_rounded),
-      _ => (l.docenteAttendanceJustificada, NexoTheme.info, Icons.assignment_turned_in_rounded),
+      _ => (
+        l.docenteAttendanceJustificada,
+        NexoTheme.info,
+        Icons.assignment_turned_in_rounded,
+      ),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -703,7 +720,7 @@ class _DiaRow extends StatelessWidget {
           const Gap.h(AppSpacing.md),
           Expanded(
             child: Text(
-              Fmt.shortDate(reg.fecha),
+              Fmt.shortDate(reg.date),
               style: TextStyle(
                 fontSize: AppFont.body,
                 color: NexoTheme.textPrimary,

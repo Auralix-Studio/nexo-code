@@ -1786,6 +1786,18 @@ abstract class AppLocalizations {
   /// **'Promedio'**
   String get homeMetricPromedio;
 
+  /// No description provided for @homeMetricPromedioCiclo.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom. ciclo'**
+  String get homeMetricPromedioCiclo;
+
+  /// No description provided for @homeMetricPromedioAcumulado.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom. acum.'**
+  String get homeMetricPromedioAcumulado;
+
   /// No description provided for @homeMetricCreditos.
   ///
   /// In es, this message translates to:
@@ -2505,6 +2517,378 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Instalar'**
   String get setupBtnInstallNow;
+
+  /// No description provided for @updTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizaciones'**
+  String get updTitle;
+
+  /// No description provided for @updInstalledVersion.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión instalada'**
+  String get updInstalledVersion;
+
+  /// No description provided for @updStatusChecking.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando…'**
+  String get updStatusChecking;
+
+  /// No description provided for @updStatusAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible'**
+  String get updStatusAvailable;
+
+  /// No description provided for @updStatusUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Al día'**
+  String get updStatusUpToDate;
+
+  /// No description provided for @updStatusUnknown.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin verificar'**
+  String get updStatusUnknown;
+
+  /// No description provided for @updCheck.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar actualizaciones'**
+  String get updCheck;
+
+  /// No description provided for @updInstallNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Instalar ahora'**
+  String get updInstallNow;
+
+  /// No description provided for @updDownloadInstall.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargar e instalar'**
+  String get updDownloadInstall;
+
+  /// No description provided for @updAvailableLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Nexo {version} está disponible.'**
+  String updAvailableLine(String version);
+
+  /// No description provided for @updSnackUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tienes la última versión.'**
+  String get updSnackUpToDate;
+
+  /// No description provided for @updSnackAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva versión {version} disponible.'**
+  String updSnackAvailable(String version);
+
+  /// No description provided for @updSnackCheckFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo verificar. Revisa tu conexión.'**
+  String get updSnackCheckFailed;
+
+  /// No description provided for @updSnackInstallFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo iniciar la instalación.'**
+  String get updSnackInstallFailed;
+
+  /// No description provided for @updBannerReadyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualización lista para instalar'**
+  String get updBannerReadyTitle;
+
+  /// No description provided for @updBannerAvailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualización disponible'**
+  String get updBannerAvailableTitle;
+
+  /// No description provided for @updBannerReadyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para instalar Nexo {version}.'**
+  String updBannerReadyBody(String version);
+
+  /// No description provided for @updBannerAvailableBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para descargar Nexo {version}.'**
+  String updBannerAvailableBody(String version);
+
+  /// No description provided for @updDismiss.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar'**
+  String get updDismiss;
+
+  /// No description provided for @assignmentNoDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin fecha de entrega'**
+  String get assignmentNoDate;
+
+  /// No description provided for @assignmentOverdue.
+  ///
+  /// In es, this message translates to:
+  /// **'Venció'**
+  String get assignmentOverdue;
+
+  /// No description provided for @assignmentDueToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Vence hoy'**
+  String get assignmentDueToday;
+
+  /// No description provided for @assignmentDueTomorrow.
+  ///
+  /// In es, this message translates to:
+  /// **'Vence mañana'**
+  String get assignmentDueTomorrow;
+
+  /// No description provided for @assignmentDueInDays.
+  ///
+  /// In es, this message translates to:
+  /// **'En {days} días'**
+  String assignmentDueInDays(int days);
+
+  /// No description provided for @assignmentEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes asignaciones pendientes.'**
+  String get assignmentEmpty;
+
+  /// No description provided for @widgetNoPendingDebts.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin deudas pendientes'**
+  String get widgetNoPendingDebts;
+
+  /// No description provided for @widgetUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'✓ Al día'**
+  String get widgetUpToDate;
+
+  /// No description provided for @widgetOverdue.
+  ///
+  /// In es, this message translates to:
+  /// **'Vencida hace {d} d'**
+  String widgetOverdue(int d);
+
+  /// No description provided for @widgetDueToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Vence hoy'**
+  String get widgetDueToday;
+
+  /// No description provided for @widgetDueIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Vence en {d} d ({date})'**
+  String widgetDueIn(int d, String date);
+
+  /// No description provided for @notifStartsIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Empieza en {minutes} minutos'**
+  String notifStartsIn(int minutes);
+
+  /// No description provided for @notifDueToday.
+  ///
+  /// In es, this message translates to:
+  /// **'vence hoy'**
+  String get notifDueToday;
+
+  /// No description provided for @notifDueTomorrow.
+  ///
+  /// In es, this message translates to:
+  /// **'vence mañana'**
+  String get notifDueTomorrow;
+
+  /// No description provided for @notifDueInDays.
+  ///
+  /// In es, this message translates to:
+  /// **'vence en {days} días'**
+  String notifDueInDays(int days);
+
+  /// No description provided for @notifClassesReminder.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio de clases'**
+  String get notifClassesReminder;
+
+  /// No description provided for @notifPendingPayment.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago pendiente — {when}'**
+  String notifPendingPayment(String when);
+
+  /// No description provided for @notifPaymentsReminder.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio de pagos'**
+  String get notifPaymentsReminder;
+
+  /// No description provided for @prefSameDay.
+  ///
+  /// In es, this message translates to:
+  /// **'El mismo día'**
+  String get prefSameDay;
+
+  /// No description provided for @prefOneDayBefore.
+  ///
+  /// In es, this message translates to:
+  /// **'1 día antes'**
+  String get prefOneDayBefore;
+
+  /// No description provided for @prefDaysBefore.
+  ///
+  /// In es, this message translates to:
+  /// **'{d} días antes'**
+  String prefDaysBefore(int d);
+
+  /// No description provided for @prefOneHourBefore.
+  ///
+  /// In es, this message translates to:
+  /// **'1 hora antes'**
+  String get prefOneHourBefore;
+
+  /// No description provided for @prefTwoHoursBefore.
+  ///
+  /// In es, this message translates to:
+  /// **'2 horas antes'**
+  String get prefTwoHoursBefore;
+
+  /// No description provided for @prefMinBefore.
+  ///
+  /// In es, this message translates to:
+  /// **'{m} min antes'**
+  String prefMinBefore(int m);
+
+  /// No description provided for @classOngoing.
+  ///
+  /// In es, this message translates to:
+  /// **'EN CURSO'**
+  String get classOngoing;
+
+  /// No description provided for @homeNoClassesToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin clases hoy'**
+  String get homeNoClassesToday;
+
+  /// No description provided for @homeNextClassTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'PRÓXIMA CLASE'**
+  String get homeNextClassTitle;
+
+  /// No description provided for @homeNextClassTomorrowDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Mañana · {day}'**
+  String homeNextClassTomorrowDay(String day);
+
+  /// No description provided for @homeNextClassNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora'**
+  String get homeNextClassNow;
+
+  /// No description provided for @homeNextClassInMin.
+  ///
+  /// In es, this message translates to:
+  /// **'En {m} min'**
+  String homeNextClassInMin(int m);
+
+  /// No description provided for @homeNextClassInHours.
+  ///
+  /// In es, this message translates to:
+  /// **'En {h}h'**
+  String homeNextClassInHours(int h);
+
+  /// No description provided for @homeNextClassInHoursMin.
+  ///
+  /// In es, this message translates to:
+  /// **'En {h}h {m}min'**
+  String homeNextClassInHoursMin(int h, int m);
+
+  /// No description provided for @homePendingPaymentsOverdueCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{{count} vencida} other{{count} vencidas}}'**
+  String homePendingPaymentsOverdueCount(int count);
+
+  /// No description provided for @widgetTeamsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis asignaturas'**
+  String get widgetTeamsTitle;
+
+  /// No description provided for @widgetTeamsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupos de Teams'**
+  String get widgetTeamsSubtitle;
+
+  /// No description provided for @widgetTeamsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay asignaturas en Teams'**
+  String get widgetTeamsEmpty;
+
+  /// No description provided for @widgetAssignmentsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tareas'**
+  String get widgetAssignmentsTitle;
+
+  /// No description provided for @widgetAssignmentsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximas a vencer'**
+  String get widgetAssignmentsSubtitle;
+
+  /// No description provided for @whatsappBannerTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Únete al canal de Nexo'**
+  String get whatsappBannerTitle;
+
+  /// No description provided for @whatsappBannerDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue el canal de WhatsApp para enterarte de novedades, mejoras y avisos importantes sobre Nexo.'**
+  String get whatsappBannerDesc;
+
+  /// No description provided for @whatsappBannerFollow.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguir canal'**
+  String get whatsappBannerFollow;
+
+  /// No description provided for @whatsappBannerLater.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get whatsappBannerLater;
+
+  /// No description provided for @homePendingPaymentsMore.
+  ///
+  /// In es, this message translates to:
+  /// **'+ {count} cuotas más'**
+  String homePendingPaymentsMore(int count);
 }
 
 class _AppLocalizationsDelegate

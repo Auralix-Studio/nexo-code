@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/models.dart';
 
-/// Carrusel horizontal con los anuncios/banners institucionales de SIGMA.
-class PublicacionesWidget extends StatefulWidget {
-  final List<Publicacion> items;
-  const PublicacionesWidget({super.key, required this.items});
-
+class PublicationsWidget extends StatefulWidget {
+  final List<Publication> items;
+  const PublicationsWidget({super.key, required this.items});
   @override
-  State<PublicacionesWidget> createState() => _PublicacionesWidgetState();
+  State<PublicationsWidget> createState() => _PublicationsWidgetState();
 }
 
-class _PublicacionesWidgetState extends State<PublicacionesWidget> {
+class _PublicationsWidgetState extends State<PublicationsWidget> {
   final _controller = PageController(viewportFraction: 0.92);
   int _idx = 0;
-
   @override
   void dispose() {
     _controller.dispose();
@@ -46,14 +42,14 @@ class _PublicacionesWidgetState extends State<PublicacionesWidget> {
               for (var i = 0; i < widget.items.length; i++)
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 3,
+                    vertical: 0,
+                  ),
                   width: i == _idx ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == _idx
-                        ? NexoTheme.primary
-                        : NexoTheme.border,
+                    color: i == _idx ? NexoTheme.primary : NexoTheme.border,
                     borderRadius: AppRadii.rPill,
                   ),
                 ),
@@ -65,24 +61,23 @@ class _PublicacionesWidgetState extends State<PublicacionesWidget> {
 }
 
 class _Slide extends StatelessWidget {
-  final Publicacion p;
+  final Publication p;
   const _Slide({required this.p});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: ClipRRect(
         borderRadius: AppRadii.rXl,
-        child: p.esImagen && p.urlPrincipal.isNotEmpty
+        child: p.isImage && p.mainUrl.isNotEmpty
             ? Image.network(
-                p.urlPrincipal,
+                p.mainUrl,
                 fit: BoxFit.cover,
                 loadingBuilder: (_, child, prog) =>
-                    prog == null ? child : _Placeholder(loading: true),
-                errorBuilder: (_, _, _) => _Placeholder(loading: false),
+                    prog == null ? child : const _Placeholder(loading: true),
+                errorBuilder: (_, _, _) => const _Placeholder(loading: false),
               )
-            : _Placeholder(loading: false),
+            : const _Placeholder(loading: false),
       ),
     );
   }
@@ -91,7 +86,6 @@ class _Slide extends StatelessWidget {
 class _Placeholder extends StatelessWidget {
   final bool loading;
   const _Placeholder({required this.loading});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -99,11 +93,7 @@ class _Placeholder extends StatelessWidget {
       alignment: Alignment.center,
       child: loading
           ? const CircularProgressIndicator(strokeWidth: 2)
-          : Icon(
-              Icons.image_outlined,
-              size: 36,
-              color: NexoTheme.textMuted,
-            ),
+          : Icon(Icons.image_outlined, size: 36, color: NexoTheme.textMuted),
     );
   }
 }

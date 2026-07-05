@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -17,36 +16,34 @@ class _Feature {
 }
 
 List<_Feature> _features(AppLocalizations l) => <_Feature>[
-      _Feature(
-        Icons.dashboard_rounded,
-        l.aboutFeatureAllInOneTitle,
-        l.aboutFeatureAllInOneBody,
-        NexoTheme.primary,
-      ),
-      _Feature(
-        Icons.devices_rounded,
-        l.aboutFeatureMultiplatformTitle,
-        l.aboutFeatureMultiplatformBody,
-        NexoTheme.accent,
-      ),
-      _Feature(
-        Icons.lock_outline,
-        l.aboutFeaturePrivacyTitle,
-        l.aboutFeaturePrivacyBody,
-        NexoTheme.info,
-      ),
-      _Feature(
-        Icons.bolt_rounded,
-        l.aboutFeatureNoSdkTitle,
-        l.aboutFeatureNoSdkBody,
-        NexoTheme.success,
-      ),
-    ];
+  _Feature(
+    Icons.dashboard_rounded,
+    l.aboutFeatureAllInOneTitle,
+    l.aboutFeatureAllInOneBody,
+    NexoTheme.primary,
+  ),
+  _Feature(
+    Icons.devices_rounded,
+    l.aboutFeatureMultiplatformTitle,
+    l.aboutFeatureMultiplatformBody,
+    NexoTheme.accent,
+  ),
+  _Feature(
+    Icons.lock_outline,
+    l.aboutFeaturePrivacyTitle,
+    l.aboutFeaturePrivacyBody,
+    NexoTheme.info,
+  ),
+  _Feature(
+    Icons.bolt_rounded,
+    l.aboutFeatureNoSdkTitle,
+    l.aboutFeatureNoSdkBody,
+    NexoTheme.success,
+  ),
+];
 
-/// Pantalla "Acerca de Nexo": qué es la app, versión, créditos.
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -90,7 +87,6 @@ class AboutScreen extends StatelessWidget {
 
 class _Hero extends StatelessWidget {
   const _Hero();
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -150,7 +146,6 @@ class _Hero extends StatelessWidget {
 class _FeatureCard extends StatelessWidget {
   final _Feature feature;
   const _FeatureCard({required this.feature});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -213,10 +208,22 @@ class _MetaCard extends StatelessWidget {
       iconColor: NexoTheme.info,
       child: Column(
         children: [
-          _MetaRow(label: l.aboutDetailsVersionLabel, value: AppConfig.appVersion),
-          _MetaRow(label: l.aboutDetailsBuildLabel, value: '${AppConfig.appBuild}'),
-          _MetaRow(label: l.aboutDetailsPlatformsLabel, value: l.aboutDetailsPlatformsValue),
-          _MetaRow(label: l.aboutDetailsTechLabel, value: l.aboutDetailsTechValue),
+          _MetaRow(
+            label: l.aboutDetailsVersionLabel,
+            value: AppConfig.appVersion,
+          ),
+          _MetaRow(
+            label: l.aboutDetailsBuildLabel,
+            value: '${AppConfig.appBuild}',
+          ),
+          _MetaRow(
+            label: l.aboutDetailsPlatformsLabel,
+            value: l.aboutDetailsPlatformsValue,
+          ),
+          _MetaRow(
+            label: l.aboutDetailsTechLabel,
+            value: l.aboutDetailsTechValue,
+          ),
         ],
       ),
     );
@@ -225,7 +232,6 @@ class _MetaCard extends StatelessWidget {
 
 class _WhatsappRow extends StatelessWidget {
   const _WhatsappRow();
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -233,7 +239,9 @@ class _WhatsappRow extends StatelessWidget {
       borderRadius: AppRadii.rXl,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: NexoTheme.surface,
           borderRadius: AppRadii.rXl,
@@ -248,8 +256,11 @@ class _WhatsappRow extends StatelessWidget {
                 color: whatsappGreen.withValues(alpha: 0.12),
                 borderRadius: AppRadii.rMd,
               ),
-              child: const Icon(Icons.campaign_rounded,
-                  size: 18, color: whatsappGreen),
+              child: const Icon(
+                Icons.campaign_rounded,
+                size: 18,
+                color: whatsappGreen,
+              ),
             ),
             const Gap.h(AppSpacing.md),
             Expanded(
@@ -274,8 +285,11 @@ class _WhatsappRow extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.open_in_new_rounded,
-                size: 16, color: NexoTheme.textMuted),
+            Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+              color: NexoTheme.textMuted,
+            ),
           ],
         ),
       ),
@@ -287,7 +301,6 @@ class _MetaRow extends StatelessWidget {
   final String label;
   final String value;
   const _MetaRow({required this.label, required this.value});
-
   @override
   Widget build(BuildContext context) {
     return Padding(

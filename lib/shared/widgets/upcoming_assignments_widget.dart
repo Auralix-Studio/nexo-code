@@ -1,42 +1,35 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
-
-/// Lista las tareas del alumno ordenadas por fecha de entrega (`dueDateTime`).
-/// Resuelve el nombre de la asignatura a partir de [classNames] (classId →
-/// displayName). Muestra los datos tal como llegan, para validar el flujo.
+import 'package:nexo/l10n/app_localizations.dart';
 class UpcomingAssignmentsWidget extends StatelessWidget {
   final List<TeamsAssignment> assignments;
   final Map<String, String> classNames;
   final DateTime? nowOverride;
-
   const UpcomingAssignmentsWidget({
     super.key,
     required this.assignments,
     this.classNames = const {},
     this.nowOverride,
   });
-
   DateTime get _now => nowOverride ?? DateTime.now();
-
   @override
   Widget build(BuildContext context) {
-    // Orden: primero las que tienen fecha (más próximas arriba), luego sin fecha.
-    final sorted = [...assignments]..sort((a, b) {
+    final sorted = [...assignments]
+      ..sort((a, b) {
         final da = a.dueDateTime, db = b.dueDateTime;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
         return da.compareTo(db);
       });
-
+    final l10n = AppLocalizations.of(context);
     return SectionCard(
-      title: 'Tareas',
-      subtitle: 'Próximas a vencer',
+      title: l10n.widgetAssignmentsTitle,
+      subtitle: l10n.widgetAssignmentsSubtitle,
       icon: Icons.assignment_outlined,
       iconColor: NexoTheme.primary,
       child: sorted.isEmpty
@@ -66,12 +59,10 @@ class _AssignmentTile extends StatelessWidget {
     required this.className,
     required this.now,
   });
-
   @override
   Widget build(BuildContext context) {
     final overdue = a.isOverdue(now);
     final accent = overdue ? NexoTheme.danger : NexoTheme.primary;
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg - 2),
       decoration: BoxDecoration(
@@ -130,7 +121,7 @@ class _AssignmentTile extends StatelessWidget {
                     ),
                     const Gap.h(AppSpacing.xs),
                     Text(
-                      _dueLabel(),
+                      _dueLabel(context),
                       style: TextStyle(
                         fontSize: AppFont.small,
                         fontWeight: FontWeight.w600,
@@ -147,16 +138,17 @@ class _AssignmentTile extends StatelessWidget {
     );
   }
 
-  String _dueLabel() {
+  String _dueLabel(BuildContext context) {
     final due = a.dueDateTime;
-    if (due == null) return 'Sin fecha de entrega';
+    final l10n = AppLocalizations.of(context);
+    if (due == null) return l10n.assignmentNoDate;
     final days = a.daysUntilDue(now);
-    final fecha = Fmt.shortDate(due);
-    if (days == null) return fecha;
-    if (days < 0) return 'Venció · $fecha';
-    if (days == 0) return 'Vence hoy · $fecha';
-    if (days == 1) return 'Vence mañana · $fecha';
-    return 'En $days días · $fecha';
+    final date = Fmt.shortDate(due);
+    if (days == null) return date;
+    if (days < 0) return '${l10n.assignmentOverdue} · $date';
+    if (days == 0) return '${l10n.assignmentDueToday} · $date';
+    if (days == 1) return '${l10n.assignmentDueTomorrow} · $date';
+    return '${l10n.assignmentDueInDays(days)} · $date';
   }
 }
 
@@ -164,22 +156,21 @@ class _Empty extends StatelessWidget {
   const _Empty();
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            Icon(Icons.task_alt_outlined,
-                size: 36, color: NexoTheme.textSecondary),
-            const Gap(AppSpacing.sm),
-            Text(
-              'No tienes tareas asignadas',
-              style: TextStyle(
-                fontSize: AppFont.body,
-                color: NexoTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
+    alignment: Alignment.center,
+    child: Column(
+      children: [
+        Icon(Icons.task_alt_outlined, size: 36, color: NexoTheme.textSecondary),
+        const Gap(AppSpacing.sm),
+        Text(
+          AppLocalizations.of(context).assignmentEmpty,
+          style: TextStyle(
+            fontSize: AppFont.body,
+            color: NexoTheme.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }

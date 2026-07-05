@@ -970,6 +970,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeMetricPromedio => 'Promedio';
 
   @override
+  String get homeMetricPromedioCiclo => 'Prom. ciclo';
+
+  @override
+  String get homeMetricPromedioAcumulado => 'Prom. acum.';
+
+  @override
   String get homeMetricCreditos => 'Créditos';
 
   @override
@@ -1358,4 +1364,233 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setupBtnInstallNow => 'Instalar';
+
+  @override
+  String get updTitle => 'Actualizaciones';
+
+  @override
+  String get updInstalledVersion => 'Versión instalada';
+
+  @override
+  String get updStatusChecking => 'Buscando…';
+
+  @override
+  String get updStatusAvailable => 'Disponible';
+
+  @override
+  String get updStatusUpToDate => 'Al día';
+
+  @override
+  String get updStatusUnknown => 'Sin verificar';
+
+  @override
+  String get updCheck => 'Buscar actualizaciones';
+
+  @override
+  String get updInstallNow => 'Instalar ahora';
+
+  @override
+  String get updDownloadInstall => 'Descargar e instalar';
+
+  @override
+  String updAvailableLine(String version) {
+    return 'Nexo $version está disponible.';
+  }
+
+  @override
+  String get updSnackUpToDate => 'Ya tienes la última versión.';
+
+  @override
+  String updSnackAvailable(String version) {
+    return 'Nueva versión $version disponible.';
+  }
+
+  @override
+  String get updSnackCheckFailed => 'No se pudo verificar. Revisa tu conexión.';
+
+  @override
+  String get updSnackInstallFailed => 'No se pudo iniciar la instalación.';
+
+  @override
+  String get updBannerReadyTitle => 'Actualización lista para instalar';
+
+  @override
+  String get updBannerAvailableTitle => 'Actualización disponible';
+
+  @override
+  String updBannerReadyBody(String version) {
+    return 'Toca para instalar Nexo $version.';
+  }
+
+  @override
+  String updBannerAvailableBody(String version) {
+    return 'Toca para descargar Nexo $version.';
+  }
+
+  @override
+  String get updDismiss => 'Descartar';
+
+  @override
+  String get assignmentNoDate => 'Sin fecha de entrega';
+
+  @override
+  String get assignmentOverdue => 'Venció';
+
+  @override
+  String get assignmentDueToday => 'Vence hoy';
+
+  @override
+  String get assignmentDueTomorrow => 'Vence mañana';
+
+  @override
+  String assignmentDueInDays(int days) {
+    return 'En $days días';
+  }
+
+  @override
+  String get assignmentEmpty => 'No tienes asignaciones pendientes.';
+
+  @override
+  String get widgetNoPendingDebts => 'Sin deudas pendientes';
+
+  @override
+  String get widgetUpToDate => '✓ Al día';
+
+  @override
+  String widgetOverdue(int d) {
+    return 'Vencida hace $d d';
+  }
+
+  @override
+  String get widgetDueToday => 'Vence hoy';
+
+  @override
+  String widgetDueIn(int d, String date) {
+    return 'Vence en $d d ($date)';
+  }
+
+  @override
+  String notifStartsIn(int minutes) {
+    return 'Empieza en $minutes minutos';
+  }
+
+  @override
+  String get notifDueToday => 'vence hoy';
+
+  @override
+  String get notifDueTomorrow => 'vence mañana';
+
+  @override
+  String notifDueInDays(int days) {
+    return 'vence en $days días';
+  }
+
+  @override
+  String get notifClassesReminder => 'Recordatorio de clases';
+
+  @override
+  String notifPendingPayment(String when) {
+    return 'Pago pendiente — $when';
+  }
+
+  @override
+  String get notifPaymentsReminder => 'Recordatorio de pagos';
+
+  @override
+  String get prefSameDay => 'El mismo día';
+
+  @override
+  String get prefOneDayBefore => '1 día antes';
+
+  @override
+  String prefDaysBefore(int d) {
+    return '$d días antes';
+  }
+
+  @override
+  String get prefOneHourBefore => '1 hora antes';
+
+  @override
+  String get prefTwoHoursBefore => '2 horas antes';
+
+  @override
+  String prefMinBefore(int m) {
+    return '$m min antes';
+  }
+
+  @override
+  String get classOngoing => 'EN CURSO';
+
+  @override
+  String get homeNoClassesToday => 'Sin clases hoy';
+
+  @override
+  String get homeNextClassTitle => 'PRÓXIMA CLASE';
+
+  @override
+  String homeNextClassTomorrowDay(String day) {
+    return 'Mañana · $day';
+  }
+
+  @override
+  String get homeNextClassNow => 'Ahora';
+
+  @override
+  String homeNextClassInMin(int m) {
+    return 'En $m min';
+  }
+
+  @override
+  String homeNextClassInHours(int h) {
+    return 'En ${h}h';
+  }
+
+  @override
+  String homeNextClassInHoursMin(int h, int m) {
+    return 'En ${h}h ${m}min';
+  }
+
+  @override
+  String homePendingPaymentsOverdueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vencidas',
+      one: '$count vencida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get widgetTeamsTitle => 'Mis asignaturas';
+
+  @override
+  String get widgetTeamsSubtitle => 'Grupos de Teams';
+
+  @override
+  String get widgetTeamsEmpty => 'No hay asignaturas en Teams';
+
+  @override
+  String get widgetAssignmentsTitle => 'Tareas';
+
+  @override
+  String get widgetAssignmentsSubtitle => 'Próximas a vencer';
+
+  @override
+  String get whatsappBannerTitle => 'Únete al canal de Nexo';
+
+  @override
+  String get whatsappBannerDesc =>
+      'Sigue el canal de WhatsApp para enterarte de novedades, mejoras y avisos importantes sobre Nexo.';
+
+  @override
+  String get whatsappBannerFollow => 'Seguir canal';
+
+  @override
+  String get whatsappBannerLater => 'Ahora no';
+
+  @override
+  String homePendingPaymentsMore(int count) {
+    return '+ $count cuotas más';
+  }
 }

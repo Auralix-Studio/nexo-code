@@ -1,17 +1,13 @@
 import 'dart:convert';
-
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/data/api_client.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 
-/// Repositorio que mapea endpoints SIGMA → modelos de dominio.
 class SigmaRepository {
   SigmaRepository(this._api);
   final ApiClient _api;
-
-  // ===== Auth =====
-
   Future<LoginResult> login(String usuarioId, String password) async {
     final clave = base64.encode(utf8.encode(password));
     final res = await _api.post<LoginResult>(
@@ -35,173 +31,160 @@ class SigmaRepository {
     return res.data!;
   }
 
-  // ===== Perfil =====
-
-  Future<StudentProfile> infoEstudiante() async {
-    final res = await _api.get<StudentProfile>(
+  Future<Student> infoEstudiante() async {
+    final res = await _api.get<Student>(
       'Estudiante/MostrarInfoEstudiante',
       decode: (raw) => _safeDecode(
         raw: raw,
-        modelName: 'StudentProfile',
-        fromJson: StudentProfile.fromJson,
+        modelName: 'Student',
+        fromJson: Student.fromSigmaJson,
       ),
     );
     return res.data!;
   }
 
-  Future<UserInfo?> datosEntidad() async {
-    final res = await _api.get<UserInfo>(
+  Future<UserProfile?> datosEntidad() async {
+    final res = await _api.get<UserProfile>(
       'Login/GetDatosEntidad',
       decode: (raw) => _safeDecode(
         raw: raw,
-        modelName: 'UserInfo',
-        fromJson: UserInfo.fromJson,
+        modelName: 'UserProfile',
+        fromJson: UserProfile.fromJson,
       ),
     );
     return res.data;
   }
 
-  // ===== Periodos =====
-
-  Future<List<Periodo>> periodosEstudiante() async {
-    final res = await _api.get<List<Periodo>>(
+  Future<List<Term>> periodosEstudiante() async {
+    final res = await _api.get<List<Term>>(
       'Recursos/ListarPeriodosEstudiante',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Periodo',
-        fromJson: Periodo.fromJson,
+        modelName: 'Term',
+        fromJson: Term.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  // ===== Horario =====
-
-  /// `*/*` = periodo activo según el bundle de SIGMA.
-  Future<List<ClaseHorario>> horario({
-    String anio = '*',
+  Future<List<ScheduleClass>> schedule({
+    String year = '*',
     String periodo = '*',
   }) async {
-    final res = await _api.get<List<ClaseHorario>>(
-      'Intranet/ListarHorariosEstudianteIntranet/$anio/$periodo',
+    final res = await _api.get<List<ScheduleClass>>(
+      'Intranet/ListarHorariosEstudianteIntranet/$year/$periodo',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'ClaseHorario',
-        fromJson: ClaseHorario.fromJson,
+        modelName: 'ScheduleClass',
+        fromJson: ScheduleClass.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  // ===== Notas =====
-
-  Future<List<NotaAsignatura>> notasPeriodo(int anio, int periodo) async {
-    final res = await _api.get<List<NotaAsignatura>>(
-      'Intranet/ListarNotasEstudianteIntranet/$anio/$periodo',
+  Future<List<CourseGrade>> notasPeriodo(int year, int periodo) async {
+    final res = await _api.get<List<CourseGrade>>(
+      'Intranet/ListarNotasEstudianteIntranet/$year/$periodo',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'NotaAsignatura',
-        fromJson: NotaAsignatura.fromJson,
+        modelName: 'CourseGrade',
+        fromJson: CourseGrade.fromJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  Future<NotasResumen?> notasResumen(String pesId, String nivel) async {
-    final res = await _api.get<NotasResumen>(
-      'Estudiante/MostrarNotasResumen/$pesId/$nivel',
+  Future<GradesSummary?> notasResumen(String pesId, String level) async {
+    final res = await _api.get<GradesSummary>(
+      'Estudiante/MostrarNotasResumen/$pesId/$level',
       decode: (raw) => _safeDecode(
         raw: raw,
-        modelName: 'NotasResumen',
-        fromJson: NotasResumen.fromJson,
+        modelName: 'GradesSummary',
+        fromJson: GradesSummary.fromJson,
       ),
     );
     return res.data;
   }
 
-  Future<List<PromedioPeriodo>> promediosResumen() async {
-    final res = await _api.get<List<PromedioPeriodo>>(
+  Future<List<TermAverage>> promediosResumen() async {
+    final res = await _api.get<List<TermAverage>>(
       'Estudiante/ListarPromediosResumen',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'PromedioPeriodo',
-        fromJson: PromedioPeriodo.fromJson,
+        modelName: 'TermAverage',
+        fromJson: TermAverage.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  // ===== Pagos =====
-
-  Future<List<Cuota>> cuotasPendientes(
-      {String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Cuota>>(
+  Future<List<Payment>> pendingInstallments({
+    String tipDI = AppConfig.tipDI,
+  }) async {
+    final res = await _api.get<List<Payment>>(
       'Estudiante/ListarCoutasNoVencidas',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Cuota',
-        fromJson: Cuota.fromJson,
+        modelName: 'Payment',
+        fromJson: Payment.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  /// Cuotas registradas en intranet (incluye vencidas con mora).
-  Future<List<Cuota>> cuotasIntranet({String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Cuota>>(
+  Future<List<Payment>> intranetInstallments({
+    String tipDI = AppConfig.tipDI,
+  }) async {
+    final res = await _api.get<List<Payment>>(
       'Estudiante/ListarCoutasIntranet',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Cuota',
-        fromJson: Cuota.fromJson,
+        modelName: 'Payment',
+        fromJson: Payment.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  Future<List<Tasa>> tasas({String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<Tasa>>(
+  Future<List<Fee>> tasas({String tipDI = AppConfig.tipDI}) async {
+    final res = await _api.get<List<Fee>>(
       'Estudiante/ListarTasaTotal',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Tasa',
-        fromJson: Tasa.fromJson,
+        modelName: 'Fee',
+        fromJson: Fee.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  // ===== Recursos institucionales =====
-
-  /// Banners / anuncios institucionales (carrusel del Home oficial).
-  Future<List<Publicacion>> publicaciones() async {
-    final res = await _api.get<List<Publicacion>>(
+  Future<List<Publication>> publications() async {
+    final res = await _api.get<List<Publication>>(
       'Recursos/ListarPublicaciones',
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'Publicacion',
-        fromJson: Publicacion.fromJson,
+        modelName: 'Publication',
+        fromJson: Publication.fromJson,
       ),
     );
     return res.data ?? const [];
   }
 
-  /// Credencial Wi-Fi institucional del alumno.
-  Future<WifiCredencial?> wifiCredencial() async {
-    final res = await _api.get<WifiCredencial>(
+  Future<WifiCredential?> wifiCredencial() async {
+    final res = await _api.get<WifiCredential>(
       'Recursos/ObtenerWifiUsuario',
       decode: (raw) {
         try {
           if (raw is Map) {
-            return WifiCredencial.fromJson(raw.cast<String, dynamic>());
+            return WifiCredential.fromJson(raw.cast<String, dynamic>());
           }
-          return const WifiCredencial(usuario: '', contrasena: '');
+          return const WifiCredential(username: '', password: '');
         } catch (e) {
           throw DataParsingException(
-            model: 'WifiCredencial',
+            model: 'WifiCredential',
             rawData: raw,
             innerError: e,
           );
@@ -211,20 +194,23 @@ class SigmaRepository {
     return res.data;
   }
 
-  /// Conteo de notas (aprobados/desaprobados/pendientes) del periodo.
-  Future<ConteoNotas?> conteoNotas(int anio, int periodo) async {
-    final res = await _api.get<ConteoNotas>(
-      'Estudiante/MostrarConteoNotas/$anio/$periodo',
+  Future<GradesCount?> gradesCount(int year, int periodo) async {
+    final res = await _api.get<GradesCount>(
+      'Estudiante/MostrarConteoNotas/$year/$periodo',
       decode: (raw) {
         try {
           if (raw is Map) {
-            return ConteoNotas.fromJson(raw.cast<String, dynamic>());
+            return GradesCount.fromJson(raw.cast<String, dynamic>());
           }
-          return const ConteoNotas(
-              aprobados: 0, desaprobados: 0, pendientes: 0, total: 0);
+          return const GradesCount(
+            approved: 0,
+            disapproved: 0,
+            pending: 0,
+            total: 0,
+          );
         } catch (e) {
           throw DataParsingException(
-            model: 'ConteoNotas',
+            model: 'GradesCount',
             rawData: raw,
             innerError: e,
           );
@@ -234,8 +220,6 @@ class SigmaRepository {
     return res.data;
   }
 
-  /// Cambiar contraseña del usuario autenticado (`Login/ChangePassword`).
-  /// Body shape best-effort — verificar con captura real al primer uso.
   Future<bool> changePassword(String actual, String nueva) async {
     final res = await _api.post<bool>(
       'Login/ChangePassword',
@@ -252,15 +236,16 @@ class SigmaRepository {
     return true;
   }
 
-  Future<List<PagoHistorico>> historicoPagos(
-      {String tipDI = AppConfig.tipDI}) async {
-    final res = await _api.get<List<PagoHistorico>>(
+  Future<List<PaymentRecord>> historicoPagos({
+    String tipDI = AppConfig.tipDI,
+  }) async {
+    final res = await _api.get<List<PaymentRecord>>(
       'Estudiante/ListarHistorico',
       query: {'TipDI': tipDI},
       decode: (raw) => _safeDecodeList(
         raw: raw,
-        modelName: 'PagoHistorico',
-        fromJson: PagoHistorico.fromJson,
+        modelName: 'PaymentRecord',
+        fromJson: PaymentRecord.fromSigmaJson,
       ),
     );
     return res.data ?? const [];
@@ -278,15 +263,29 @@ class SigmaRepository {
         innerError: 'data nulo',
       );
     }
+    Object? unwrapped = raw;
+    if (unwrapped is List) {
+      if (unwrapped.isEmpty) {
+        throw DataParsingException(
+          model: modelName,
+          rawData: raw,
+          innerError: 'data lista vacía',
+        );
+      }
+      unwrapped = unwrapped.first;
+      if (unwrapped == null) {
+        throw DataParsingException(
+          model: modelName,
+          rawData: raw,
+          innerError: 'firstTerm elemento de la lista es null',
+        );
+      }
+    }
     try {
-      final jsonMap = (raw as Map).cast<String, dynamic>();
+      final jsonMap = (unwrapped as Map).cast<String, dynamic>();
       return fromJson(jsonMap);
     } catch (e) {
-      throw DataParsingException(
-        model: modelName,
-        rawData: raw,
-        innerError: e,
-      );
+      throw DataParsingException(model: modelName, rawData: raw, innerError: e);
     }
   }
 
@@ -295,10 +294,6 @@ class SigmaRepository {
     required String modelName,
     required T Function(Map<String, dynamic> json) fromJson,
   }) {
-    // SIGMA suele responder `data: null` cuando el alumno no tiene registros
-    // del recurso (p. ej. sin cuotas pendientes). No es un error, es "lista
-    // vacía". Antes esto cascaba como DataParsingException y pintaba la
-    // pantalla en rojo. También aceptamos `data: ""` (algunos endpoints).
     if (raw == null) return const [];
     if (raw is String && raw.trim().isEmpty) return const [];
     try {

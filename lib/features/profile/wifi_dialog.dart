@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 
-/// Abre un dialog flotante con las credenciales Wi-Fi institucionales.
-/// Carga datos vía [AppStore.loadWifi] si aún no están disponibles.
 Future<void> showWifiDialog(BuildContext context, AppStore store) {
   if (!store.wifi.hasValue && !store.wifi.loading) {
     store.loadWifi();
@@ -23,7 +20,6 @@ Future<void> showWifiDialog(BuildContext context, AppStore store) {
 class _WifiDialog extends StatefulWidget {
   final AppStore store;
   const _WifiDialog({required this.store});
-
   @override
   State<_WifiDialog> createState() => _WifiDialogState();
 }
@@ -32,14 +28,11 @@ class _WifiDialogState extends State<_WifiDialog>
     with SingleTickerProviderStateMixin {
   bool _show = false;
   late final AnimationController _intro;
-
   @override
   void initState() {
     super.initState();
-    _intro = AnimationController(
-      vsync: this,
-      duration: AppDurations.normal,
-    )..forward();
+    _intro = AnimationController(vsync: this, duration: AppDurations.normal)
+      ..forward();
   }
 
   @override
@@ -48,10 +41,8 @@ class _WifiDialogState extends State<_WifiDialog>
     super.dispose();
   }
 
-  /// La contraseña Wi-Fi es **solo el DNI**. Si el backend la entrega con
-  /// prefijo "U", se quita para mostrar el valor real.
-  String _soloDni(String contrasena) {
-    final t = contrasena.trim();
+  String _onlyId(String password) {
+    final t = password.trim();
     if (t.length > 1 &&
         (t.startsWith('U') || t.startsWith('u')) &&
         RegExp(r'^\d+$').hasMatch(t.substring(1))) {
@@ -70,10 +61,9 @@ class _WifiDialogState extends State<_WifiDialog>
       listenable: widget.store,
       builder: (context, _) {
         final state = widget.store.wifi;
-        final codigo =
-            widget.store.profile.value?.estId ?? state.value?.usuario ?? '';
-        final pwd = _soloDni(state.value?.contrasena ?? '');
-
+        final code =
+            widget.store.profile.value?.id ?? state.value?.username ?? '';
+        final pwd = _onlyId(state.value?.password ?? '');
         return Center(
           child: FadeTransition(
             opacity: CurvedAnimation(parent: _intro, curve: Curves.easeOut),
@@ -89,13 +79,13 @@ class _WifiDialogState extends State<_WifiDialog>
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: _Card(
                       loading: state.loading && !state.hasValue,
-                      codigo: codigo,
-                      contrasena: pwd,
+                      code: code,
+                      password: pwd,
                       show: _show,
                       onToggle: () => setState(() => _show = !_show),
                       onClose: () => Navigator.of(context).pop(),
                       onCopyUser: () => _copy(
-                        codigo,
+                        code,
                         AppLocalizations.of(context).wifiUserCopied,
                       ),
                       onCopyPwd: () => _copy(
@@ -116,29 +106,27 @@ class _WifiDialogState extends State<_WifiDialog>
 
 class _Card extends StatelessWidget {
   final bool loading;
-  final String codigo;
-  final String contrasena;
+  final String code;
+  final String password;
   final bool show;
   final VoidCallback onToggle;
   final VoidCallback onClose;
   final VoidCallback onCopyUser;
   final VoidCallback onCopyPwd;
-
   const _Card({
     required this.loading,
-    required this.codigo,
-    required this.contrasena,
+    required this.code,
+    required this.password,
     required this.show,
     required this.onToggle,
     required this.onClose,
     required this.onCopyUser,
     required this.onCopyPwd,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: NexoTheme.card,
         borderRadius: AppRadii.rXxl,
@@ -154,7 +142,6 @@ class _Card extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Cabecera con gradient.
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(
@@ -182,8 +169,11 @@ class _Card extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: AppRadii.rMd,
                   ),
-                  child: const Icon(Icons.wifi_rounded,
-                      color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.wifi_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
                 const Gap.h(AppSpacing.md),
                 Expanded(
@@ -219,7 +209,6 @@ class _Card extends StatelessWidget {
               ],
             ),
           ),
-          // Contenido.
           Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: loading
@@ -234,14 +223,14 @@ class _Card extends StatelessWidget {
                     children: [
                       _CredentialRow(
                         label: l.wifiUserLabel,
-                        value: codigo,
+                        value: code,
                         masked: false,
                         onCopy: onCopyUser,
                       ),
                       const Gap(AppSpacing.md),
                       _CredentialRow(
                         label: l.wifiPasswordLabel,
-                        value: contrasena,
+                        value: password,
                         masked: !show,
                         toggleable: true,
                         showToggleActive: show,
@@ -265,7 +254,6 @@ class _CredentialRow extends StatelessWidget {
   final bool showToggleActive;
   final VoidCallback? onToggle;
   final VoidCallback onCopy;
-
   const _CredentialRow({
     required this.label,
     required this.value,
@@ -275,7 +263,6 @@ class _CredentialRow extends StatelessWidget {
     this.showToggleActive = false,
     this.onToggle,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -336,8 +323,11 @@ class _CredentialRow extends StatelessWidget {
             ),
           IconButton(
             tooltip: l.actionCopy,
-            icon: Icon(Icons.copy_rounded,
-                color: NexoTheme.textSecondary, size: 20),
+            icon: Icon(
+              Icons.copy_rounded,
+              color: NexoTheme.textSecondary,
+              size: 20,
+            ),
             onPressed: onCopy,
           ),
         ],

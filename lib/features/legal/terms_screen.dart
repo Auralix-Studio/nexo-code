@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -15,53 +14,48 @@ class _Item {
 }
 
 List<_Item> _items(AppLocalizations l) => <_Item>[
-      _Item(
-        Icons.info_outline,
-        l.termsItemWhatTitle,
-        l.termsItemWhatBody,
-        NexoTheme.primary,
-      ),
-      _Item(
-        Icons.lock_outline,
-        l.termsItemPrivacyTitle,
-        l.termsItemPrivacyBody,
-        NexoTheme.accent,
-      ),
-      _Item(
-        Icons.shield_outlined,
-        l.termsItemSecurityTitle,
-        l.termsItemSecurityBody,
-        NexoTheme.info,
-      ),
-      _Item(
-        Icons.gavel_outlined,
-        l.termsItemResponsibleTitle,
-        l.termsItemResponsibleBody,
-        NexoTheme.success,
-      ),
-      _Item(
-        Icons.warning_amber_outlined,
-        l.termsItemDisclaimerTitle,
-        l.termsItemDisclaimerBody,
-        NexoTheme.warning,
-      ),
-    ];
+  _Item(
+    Icons.info_outline,
+    l.termsItemWhatTitle,
+    l.termsItemWhatBody,
+    NexoTheme.primary,
+  ),
+  _Item(
+    Icons.lock_outline,
+    l.termsItemPrivacyTitle,
+    l.termsItemPrivacyBody,
+    NexoTheme.accent,
+  ),
+  _Item(
+    Icons.shield_outlined,
+    l.termsItemSecurityTitle,
+    l.termsItemSecurityBody,
+    NexoTheme.info,
+  ),
+  _Item(
+    Icons.gavel_outlined,
+    l.termsItemResponsibleTitle,
+    l.termsItemResponsibleBody,
+    NexoTheme.success,
+  ),
+  _Item(
+    Icons.warning_amber_outlined,
+    l.termsItemDisclaimerTitle,
+    l.termsItemDisclaimerBody,
+    NexoTheme.warning,
+  ),
+];
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key, this.onAccept});
-
   final VoidCallback? onAccept;
   bool get _isGate => onAccept != null;
-
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
     final l = AppLocalizations.of(context);
-
     final content = _Content(isGate: _isGate, onAccept: onAccept);
-
     if (isDesktop && _isGate) {
-      // Escritorio (gate): dos paneles.
       return Scaffold(
         body: Row(
           children: [
@@ -81,11 +75,8 @@ class TermsScreen extends StatelessWidget {
         ),
       );
     }
-
     return Scaffold(
-      appBar: _isGate
-          ? null
-          : AppBar(title: Text(l.titleTerms)),
+      appBar: _isGate ? null : AppBar(title: Text(l.titleTerms)),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -102,7 +93,6 @@ class _Content extends StatelessWidget {
   final bool isGate;
   final VoidCallback? onAccept;
   const _Content({required this.isGate, required this.onAccept});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -172,7 +162,12 @@ class _Content extends StatelessWidget {
         ),
         if (isGate)
           Container(
-            padding: EdgeInsets.all(context.responsive(mobile: AppSpacing.lg, desktop: AppSpacing.xxl)),
+            padding: EdgeInsets.all(
+              context.responsive(
+                mobile: AppSpacing.lg,
+                desktop: AppSpacing.xxl,
+              ),
+            ),
             decoration: BoxDecoration(
               color: NexoTheme.surface,
               border: Border(top: BorderSide(color: NexoTheme.border)),
@@ -180,8 +175,11 @@ class _Content extends StatelessWidget {
             child: context.isWide
                 ? Row(
                     children: [
-                      Icon(Icons.verified_user_outlined,
-                          size: AppIcon.lg, color: NexoTheme.textSecondary),
+                      Icon(
+                        Icons.verified_user_outlined,
+                        size: AppIcon.lg,
+                        color: NexoTheme.textSecondary,
+                      ),
                       const Gap.h(AppSpacing.md),
                       Expanded(
                         child: Text(
@@ -197,7 +195,9 @@ class _Content extends StatelessWidget {
                         onPressed: onAccept,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(0, 50),
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                          ),
                         ),
                         child: Text(l.termsAcceptButton),
                       ),
@@ -208,8 +208,11 @@ class _Content extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.verified_user_outlined,
-                              size: AppIcon.md, color: NexoTheme.textSecondary),
+                          Icon(
+                            Icons.verified_user_outlined,
+                            size: AppIcon.md,
+                            color: NexoTheme.textSecondary,
+                          ),
                           const Gap.h(AppSpacing.sm),
                           Expanded(
                             child: Text(
@@ -242,7 +245,6 @@ class _Content extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final _Item item;
   const _SectionCard({required this.item});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -297,7 +299,6 @@ class _SectionCard extends StatelessWidget {
 
 class _BrandPane extends StatelessWidget {
   const _BrandPane();
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -357,8 +358,8 @@ class _BrandPane extends StatelessWidget {
   }
 
   Widget _c(double s, Color c) => Container(
-        width: s,
-        height: s,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: c),
-      );
+    width: s,
+    height: s,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: c),
+  );
 }

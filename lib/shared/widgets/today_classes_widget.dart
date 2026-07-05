@@ -1,35 +1,30 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/schedule/schedule_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
-/// Widget de "Asignaturas de hoy" — fusiona teoría + práctica del mismo curso.
 class TodayClassesWidget extends StatelessWidget {
-  final List<ClaseHorario> all;
+  final List<ScheduleClass> all;
   final DateTime? nowOverride;
-
-  const TodayClassesWidget({
-    super.key,
-    required this.all,
-    this.nowOverride,
-  });
-
+  final bool isCompact;
+  const TodayClassesWidget({super.key, required this.all, this.nowOverride, this.isCompact = false});
   DateTime get now => nowOverride ?? DateTime.now();
-
   @override
   Widget build(BuildContext context) {
-    final today = now.weekday; // 1=Lun..7=Dom (igual que SIGMA)
-    final hoy = all.where((c) => c.idDia == today).toList(growable: false);
-    final grupos = ClaseAgrupada.agrupar(hoy);
+    final today = now.weekday;
+    final todayClasses = all
+        .where((c) => c.weekday == today)
+        .toList(growable: false);
+    final groups = ScheduleClassGroup.groupBy(todayClasses);
     final nowHM = _hm(now);
-
+    final l = AppLocalizations.of(context);
     return SectionCard(
-      title: 'Hoy',
+      title: l.homeTodayTitle,
       subtitle: Fmt.dayLabel(today),
       icon: Icons.today_outlined,
       iconColor: NexoTheme.primary,
@@ -43,7 +38,7 @@ class TodayClassesWidget extends StatelessWidget {
           borderRadius: AppRadii.rPill,
         ),
         child: Text(
-          '${grupos.length} ${grupos.length == 1 ? 'curso' : 'cursos'}',
+          l.gradesCoursesCount(groups.length),
           style: TextStyle(
             fontSize: AppFont.small,
             fontWeight: FontWeight.w600,
@@ -51,13 +46,26 @@ class TodayClassesWidget extends StatelessWidget {
           ),
         ),
       ),
-      child: grupos.isEmpty
+      child: groups.isEmpty
           ? const _Empty()
           : Column(
               children: [
-                for (var i = 0; i < grupos.length; i++) ...[
-                  _CourseTile(grupo: grupos[i], nowHM: nowHM),
-                  if (i < grupos.length - 1) const Gap(AppSpacing.sm + 2),
+                for (var i = 0; i < (isCompact ? 1 : groups.length); i++) ...[
+                  _CourseTile(group: groups[i], nowHM: nowHM),
+                  if (i < (isCompact ? 1 : groups.length) - 1) const Gap(AppSpacing.sm + 2),
+                ],
+                if (isCompact && groups.length > 1) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      '+ ${groups.length - 1} clases más hoy',
+                      style: TextStyle(
+                        color: NexoTheme.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -72,49 +80,49 @@ class _Empty extends StatelessWidget {
   const _Empty();
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            Icon(Icons.celebration_outlined,
-                size: 36, color: NexoTheme.textSecondary),
-            const Gap(AppSpacing.sm),
-            Text(
-              'Sin clases hoy',
-              style: TextStyle(
-                fontSize: AppFont.body,
-                color: NexoTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
+    alignment: Alignment.center,
+    child: Column(
+      children: [
+        Icon(
+          Icons.celebration_outlined,
+          size: 36,
+          color: NexoTheme.textSecondary,
         ),
-      );
+        const Gap(AppSpacing.sm),
+        Text(
+          AppLocalizations.of(context).homeNoClassesToday,
+          style: TextStyle(
+            fontSize: AppFont.body,
+            color: NexoTheme.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _CourseTile extends StatelessWidget {
-  final ClaseAgrupada grupo;
+  final ScheduleClassGroup group;
   final String nowHM;
-  const _CourseTile({required this.grupo, required this.nowHM});
-
-  bool _isOngoing(ClaseHorario c) =>
-      c.horaInicio.compareTo(nowHM) <= 0 && nowHM.compareTo(c.horaFin) < 0;
-  bool _isPast(String horaFin) => horaFin.compareTo(nowHM) <= 0;
-
+  const _CourseTile({required this.group, required this.nowHM});
+  bool _isOngoing(ScheduleClass c) =>
+      c.startTime.compareTo(nowHM) <= 0 && nowHM.compareTo(c.endTime) < 0;
+  bool _isPast(String endTime) => endTime.compareTo(nowHM) <= 0;
   @override
   Widget build(BuildContext context) {
-    final anyOngoing = grupo.sesiones.any(_isOngoing);
-    final allPast = grupo.sesiones.every((s) => _isPast(s.horaFin));
+    final anyOngoing = group.sessions.any(_isOngoing);
+    final allPast = group.sessions.every((s) => _isPast(s.endTime));
     final accent = anyOngoing
         ? NexoTheme.success
         : allPast
-            ? NexoTheme.textSecondary
-            : NexoTheme.primary;
-
+        ? NexoTheme.textSecondary
+        : NexoTheme.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => ScheduleDetailScreen.open(context, grupo),
+        onTap: () => ScheduleDetailScreen.open(context, group),
         borderRadius: AppRadii.rLg,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg - 2),
@@ -143,111 +151,113 @@ class _CourseTile extends StatelessWidget {
                     ),
                   ),
                   const Gap.h(AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            grupo.asignatura,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: AppFont.subtitle,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                              color: allPast
-                                  ? NexoTheme.textSecondary
-                                  : NexoTheme.textPrimary,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                group.subject,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: AppFont.subtitle,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                  color: allPast
+                                      ? NexoTheme.textSecondary
+                                      : NexoTheme.textPrimary,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (anyOngoing) ...[
+                              const Gap.h(AppSpacing.sm),
+                              _badge(AppLocalizations.of(context).classOngoing, NexoTheme.success),
+                            ],
+                          ],
                         ),
-                        if (anyOngoing) ...[
-                          const Gap.h(AppSpacing.sm),
-                          _badge('EN CURSO', NexoTheme.success),
+                        if (group.room.isNotEmpty) ...[
+                          const Gap(AppSpacing.xs),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: AppIcon.xs,
+                                color: NexoTheme.textSecondary,
+                              ),
+                              const Gap.h(AppSpacing.xs),
+                              Text(
+                                Fmt.formatAula(group.room),
+                                style: TextStyle(
+                                  fontSize: AppFont.small,
+                                  color: NexoTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ],
                     ),
-                    if (grupo.aula.isNotEmpty) ...[
-                      const Gap(AppSpacing.xs),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              size: AppIcon.xs,
-                              color: NexoTheme.textSecondary),
-                          const Gap.h(AppSpacing.xs),
-                          Text(
-                            Fmt.formatAula(grupo.aula),
-                            style: TextStyle(
-                              fontSize: AppFont.small,
-                              color: NexoTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+                  ),
+                ],
+              ),
+              const Gap(AppSpacing.md),
+              ...group.sessions.map(
+                (s) => _SessionRow(
+                  session: s,
+                  ongoing: _isOngoing(s),
+                  past: _isPast(s.endTime),
                 ),
               ),
             ],
           ),
-          const Gap(AppSpacing.md),
-          // Lista de sesiones (teoría/práctica) fusionadas.
-          ...grupo.sesiones.map((s) => _SessionRow(
-                sesion: s,
-                ongoing: _isOngoing(s),
-                past: _isPast(s.horaFin),
-              )),
-        ],
-      ),
         ),
       ),
     );
   }
 
   Widget _badge(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xxs,
-        ),
-        decoration: BoxDecoration(color: color, borderRadius: AppRadii.rPill),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xxs,
+    ),
+    decoration: BoxDecoration(color: color, borderRadius: AppRadii.rPill),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+        letterSpacing: 0.5,
+      ),
+    ),
+  );
 }
 
 class _SessionRow extends StatelessWidget {
-  final ClaseHorario sesion;
+  final ScheduleClass session;
   final bool ongoing;
   final bool past;
   const _SessionRow({
-    required this.sesion,
+    required this.session,
     required this.ongoing,
     required this.past,
   });
-
   @override
   Widget build(BuildContext context) {
     final c = ongoing
         ? NexoTheme.success
         : past
-            ? NexoTheme.textMuted
-            : NexoTheme.textSecondary;
+        ? NexoTheme.textMuted
+        : NexoTheme.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xs, left: AppSpacing.lg),
       child: Row(
         children: [
           Icon(
-            sesion.idTipo.toUpperCase() == 'T'
+            session.typeCode.toUpperCase() == 'T'
                 ? Icons.menu_book_outlined
                 : Icons.science_outlined,
             size: AppIcon.xs,
@@ -255,7 +265,7 @@ class _SessionRow extends StatelessWidget {
           ),
           const Gap.h(AppSpacing.sm - 2),
           Text(
-            sesion.tipoLargo,
+            session.typeName,
             style: TextStyle(
               fontSize: AppFont.small,
               fontWeight: FontWeight.w600,
@@ -263,19 +273,22 @@ class _SessionRow extends StatelessWidget {
             ),
           ),
           const Gap.h(AppSpacing.sm),
-          Builder(builder: (_) {
-            final h24 = AppStorage.instance.use24h;
-            return Text(
-              '${Fmt.time(sesion.horaInicio, h24: h24)} – '
-              '${Fmt.time(sesion.horaFin, h24: h24)}',
-              style: TextStyle(
-                fontSize: AppFont.small,
-                color: c,
-                decoration:
-                    past ? TextDecoration.lineThrough : TextDecoration.none,
-              ),
-            );
-          }),
+          Builder(
+            builder: (_) {
+              final h24 = AppStorage.instance.use24h;
+              return Text(
+                '${Fmt.time(session.startTime, h24: h24)} – '
+                '${Fmt.time(session.endTime, h24: h24)}',
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  color: c,
+                  decoration: past
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

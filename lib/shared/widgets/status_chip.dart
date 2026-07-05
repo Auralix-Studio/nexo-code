@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/tokens.dart';
 
-/// Etiqueta pequeña con color de fondo suave.
 class StatusChip extends StatelessWidget {
   final String text;
   final Color color;
   final IconData? icon;
-
   const StatusChip({
     super.key,
     required this.text,
     required this.color,
     this.icon,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(

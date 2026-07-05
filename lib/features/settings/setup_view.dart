@@ -2,12 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/win_setup_service.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-
-// ==================== VISTA DE INSTALACIÓN ====================
 
 enum InstallProgressStep {
   preparing,
@@ -16,15 +15,12 @@ enum InstallProgressStep {
   registering,
   autoStart,
   done,
-  error
+  error,
 }
 
 class InstallView extends StatefulWidget {
-  /// Opciones seleccionadas por el usuario en el wizard.
   final InstallOptions options;
-
   const InstallView({super.key, required this.options});
-
   @override
   State<InstallView> createState() => _InstallViewState();
 }
@@ -33,7 +29,6 @@ class _InstallViewState extends State<InstallView> {
   InstallProgressStep _step = InstallProgressStep.preparing;
   double _progress = 0.0;
   String _errorMessage = "";
-
   @override
   void initState() {
     super.initState();
@@ -42,17 +37,14 @@ class _InstallViewState extends State<InstallView> {
 
   Future<void> _startInstallation() async {
     try {
-      // 1. Copiar ejecutables y dlls
       await WinSetupService.copyApplicationFiles(
         onProgress: (p) {
           setState(() {
             _step = InstallProgressStep.copying;
-            _progress = p * 0.70; // 70% del proceso
+            _progress = p * 0.70;
           });
         },
       );
-
-      // 2. Crear accesos directos (solo los que el usuario seleccionó)
       if (widget.options.desktopShortcut || widget.options.startMenuShortcut) {
         setState(() {
           _step = InstallProgressStep.shortcuts;
@@ -63,15 +55,11 @@ class _InstallViewState extends State<InstallView> {
           startMenu: widget.options.startMenuShortcut,
         );
       }
-
-      // 3. Registrar desinstalación en Windows
       setState(() {
         _step = InstallProgressStep.registering;
         _progress = 0.85;
       });
-      await WinSetupService.registerUninstall(version: "1.0.0");
-
-      // 4. Configurar auto-inicio si el usuario lo eligió
+      await WinSetupService.registerUninstall(version: AppConfig.appVersion);
       if (widget.options.autoStart) {
         setState(() {
           _step = InstallProgressStep.autoStart;
@@ -79,7 +67,6 @@ class _InstallViewState extends State<InstallView> {
         });
         await WinSetupService.registerAutoStart();
       }
-
       setState(() {
         _step = InstallProgressStep.done;
         _progress = 1.0;
@@ -98,7 +85,6 @@ class _InstallViewState extends State<InstallView> {
       [],
       mode: ProcessStartMode.detached,
     );
-    // Pequeño retardo para asegurar que el proceso se inicie
     Future<void>.delayed(const Duration(milliseconds: 500), () => exit(0));
   }
 
@@ -136,7 +122,6 @@ class _InstallViewState extends State<InstallView> {
       default:
         stepLabel = "";
     }
-
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
@@ -183,8 +168,11 @@ class _InstallViewState extends State<InstallView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline_rounded,
-                size: 56, color: NexoTheme.success),
+            const Icon(
+              Icons.check_circle_outline_rounded,
+              size: 56,
+              color: NexoTheme.success,
+            ),
             const SizedBox(height: 16),
             Text(
               l.setupSuccessTitle,
@@ -209,9 +197,17 @@ class _InstallViewState extends State<InstallView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: NexoTheme.success,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
                 minimumSize: Size.zero,
               ),
@@ -231,7 +227,11 @@ class _InstallViewState extends State<InstallView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 56, color: NexoTheme.danger),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 56,
+              color: NexoTheme.danger,
+            ),
             const SizedBox(height: 16),
             Text(
               l.setupErrorTitle,
@@ -268,9 +268,17 @@ class _InstallViewState extends State<InstallView> {
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: NexoTheme.textSecondary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     side: BorderSide(color: NexoTheme.border),
                   ),
                   child: Text(l.setupBtnRetry),
@@ -281,9 +289,17 @@ class _InstallViewState extends State<InstallView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: NexoTheme.danger,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     minimumSize: Size.zero,
                   ),
                   child: Text(l.setupBtnExit),
@@ -297,11 +313,8 @@ class _InstallViewState extends State<InstallView> {
   }
 }
 
-// ==================== VISTA DE DESINSTALACIÓN ====================
-
 class UninstallView extends StatefulWidget {
   const UninstallView({super.key});
-
   @override
   State<UninstallView> createState() => _UninstallViewState();
 }
@@ -313,9 +326,7 @@ class _UninstallViewState extends State<UninstallView> {
   bool _purgeData = true;
   String _currentStep = "";
   String _errorMessage = "";
-
   static const double _w = 480;
-
   @override
   void initState() {
     super.initState();
@@ -334,11 +345,8 @@ class _UninstallViewState extends State<UninstallView> {
       _state = UninstallViewState.uninstalling;
       _currentStep = "Iniciando desinstalación...";
     });
-
     try {
-      // Quitar del auto-inicio antes de desinstalar
       await WinSetupService.removeAutoStart();
-
       await WinSetupService.performUninstall(
         purgeData: _purgeData,
         onStepProgress: (stepMsg) {
@@ -347,12 +355,9 @@ class _UninstallViewState extends State<UninstallView> {
           });
         },
       );
-
       setState(() {
         _state = UninstallViewState.success;
       });
-
-      // Retardo corto y luego autodestrucción
       await Future<void>.delayed(const Duration(milliseconds: 1500));
       await WinSetupService.triggerSelfDestruct();
     } catch (e) {
@@ -367,25 +372,25 @@ class _UninstallViewState extends State<UninstallView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NexoTheme.bg,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 18),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, anim) => FadeTransition(
-                  opacity: anim,
-                  child: child,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 18),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, anim) =>
+                      FadeTransition(opacity: anim, child: child),
+                  child: _buildCurrentState(),
                 ),
-                child: _buildCurrentState(),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -434,13 +439,16 @@ class _UninstallViewState extends State<UninstallView> {
         return KeyedSubtree(key: const ValueKey('idle'), child: _buildIdle());
       case UninstallViewState.uninstalling:
         return KeyedSubtree(
-            key: const ValueKey('uninstalling'), child: _buildUninstalling());
+          key: const ValueKey('uninstalling'),
+          child: _buildUninstalling(),
+        );
       case UninstallViewState.success:
         return KeyedSubtree(
-            key: const ValueKey('success'), child: _buildSuccess());
+          key: const ValueKey('success'),
+          child: _buildSuccess(),
+        );
       case UninstallViewState.error:
-        return KeyedSubtree(
-            key: const ValueKey('error'), child: _buildError());
+        return KeyedSubtree(key: const ValueKey('error'), child: _buildError());
     }
   }
 
@@ -489,11 +497,11 @@ class _UninstallViewState extends State<UninstallView> {
             ),
             child: Row(
               children: [
-                Icon(Icons.delete_sweep_rounded,
-                    size: 18,
-                    color: _purgeData
-                        ? NexoTheme.danger
-                        : NexoTheme.textMuted),
+                Icon(
+                  Icons.delete_sweep_rounded,
+                  size: 18,
+                  color: _purgeData ? NexoTheme.danger : NexoTheme.textMuted,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -511,9 +519,11 @@ class _UninstallViewState extends State<UninstallView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Elimina bases de datos locales, historial de notas y sesión.',
+                        'Elimina bases de datos locales, historial de grades y sesión.',
                         style: TextStyle(
-                            fontSize: 10, color: NexoTheme.textMuted),
+                          fontSize: 10,
+                          color: NexoTheme.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -541,12 +551,17 @@ class _UninstallViewState extends State<UninstallView> {
               onPressed: () => exit(0),
               style: OutlinedButton.styleFrom(
                 foregroundColor: NexoTheme.textSecondary,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 9,
+                ),
                 textStyle: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w700),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 side: BorderSide(color: NexoTheme.border),
               ),
               child: const Text('Cancelar'),
@@ -559,12 +574,17 @@ class _UninstallViewState extends State<UninstallView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: NexoTheme.danger,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 9,
+                ),
                 textStyle: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w700),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
                 minimumSize: Size.zero,
               ),
@@ -603,8 +623,11 @@ class _UninstallViewState extends State<UninstallView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle_outline_rounded,
-            size: 56, color: NexoTheme.success),
+        const Icon(
+          Icons.check_circle_outline_rounded,
+          size: 56,
+          color: NexoTheme.success,
+        ),
         const SizedBox(height: 14),
         Text(
           '¡Desinstalación exitosa!',
@@ -619,9 +642,10 @@ class _UninstallViewState extends State<UninstallView> {
         Text(
           'Nexo UPLA ha sido removido. Limpiando directorios...',
           style: TextStyle(
-              fontSize: 11,
-              color: NexoTheme.textSecondary,
-              height: 1.4),
+            fontSize: 11,
+            color: NexoTheme.textSecondary,
+            height: 1.4,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -634,8 +658,11 @@ class _UninstallViewState extends State<UninstallView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Center(
-          child: Icon(Icons.error_outline_rounded,
-              size: 48, color: NexoTheme.danger),
+          child: Icon(
+            Icons.error_outline_rounded,
+            size: 48,
+            color: NexoTheme.danger,
+          ),
         ),
         const SizedBox(height: 14),
         Text(
@@ -676,12 +703,14 @@ class _UninstallViewState extends State<UninstallView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: NexoTheme.danger,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
               textStyle: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
               elevation: 0,
               minimumSize: Size.zero,
             ),

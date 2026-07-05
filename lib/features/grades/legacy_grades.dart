@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/grades/grade_widgets.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -18,27 +18,25 @@ Color _grade(num? n) {
   return NexoTheme.danger;
 }
 
-/// Notas de periodos ≤2025 (modelo de 2 parciales, diseño anterior).
-class LegacyNotasList extends StatelessWidget {
-  final AsyncValue<List<NotaAsignatura>> state;
-  final Periodo periodo;
+class LegacyGradesList extends StatelessWidget {
+  final AsyncValue<List<CourseGrade>> state;
+  final Term periodo;
   final AppStore store;
-  const LegacyNotasList({
+  const LegacyGradesList({
     super.key,
     required this.state,
     required this.periodo,
     required this.store,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     if (state.loading && !state.hasValue) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           child: Column(
-            children: const [
+            children: [
               Skeleton(height: 18, width: 160),
               SizedBox(height: 16),
               Skeleton(height: 64, radius: 14),
@@ -66,15 +64,15 @@ class LegacyNotasList extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () =>
-                  store.loadBoletaLegacy(periodo.anio, periodo.periodo),
+                  store.loadBoletaLegacy(periodo.year, periodo.number),
               child: Text(l.actionRetry),
             ),
           ],
         ),
       );
     }
-    final notas = state.value ?? const <NotaAsignatura>[];
-    if (notas.isEmpty) {
+    final grades = state.value ?? const <CourseGrade>[];
+    if (grades.isEmpty) {
       return SectionCard(
         title: l.gradesSubjects,
         icon: Icons.menu_book_rounded,
@@ -85,34 +83,26 @@ class LegacyNotasList extends StatelessWidget {
       );
     }
     return SectionCard(
-      title: l.gradesSubjectsWithPeriod(periodo.descripcion),
+      title: l.gradesSubjectsWithPeriod(periodo.label),
       icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
       trailing: StatusChip(
-        text: l.gradesCoursesCount(notas.length),
+        text: l.gradesCoursesCount(grades.length),
         color: NexoTheme.primary,
       ),
-      child: Column(
-        children: [
-          for (var i = 0; i < notas.length; i++) ...[
-            _Tile(nota: notas[i]),
-            if (i < notas.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      ),
+      child: gradeTileGrid(context, [for (final n in grades) _Tile(grade: n)]),
     );
   }
 }
 
 class _Tile extends StatelessWidget {
-  final NotaAsignatura nota;
-  const _Tile({required this.nota});
-
+  final CourseGrade grade;
+  const _Tile({required this.grade});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = _grade(nota.notaActualNum);
-    final enProceso = nota.notaActualNum == null;
+    final color = _grade(grade.currentGradeNum);
+    final inProgress = grade.currentGradeNum == null;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
@@ -122,7 +112,7 @@ class _Tile extends StatelessWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (_) => _Sheet(nota: nota),
+          builder: (_) => _Sheet(grade: grade),
         ),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -146,7 +136,7 @@ class _Tile extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        nota.notaActualText,
+                        grade.currentGradeText,
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
@@ -161,7 +151,7 @@ class _Tile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          nota.asignatura,
+                          grade.subject,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -177,15 +167,20 @@ class _Tile extends StatelessWidget {
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            _meta(Icons.tag_rounded, '${l.detailSection} ${nota.seccion}'),
-                            if (nota.asistenciaPct != null)
+                            _meta(
+                              Icons.tag_rounded,
+                              '${l.detailSection} ${grade.section}',
+                            ),
+                            if (grade.asistenciaPct != null)
                               _meta(
                                 Icons.fact_check_outlined,
-                                l.docenteAsisPercent(nota.asistenciaPct.toString()),
+                                l.docenteAsisPercent(
+                                  grade.asistenciaPct.toString(),
+                                ),
                               ),
-                            if (nota.puesto.isNotEmpty && nota.puesto != '0/0')
-                              _meta(Icons.emoji_events_outlined, nota.puesto),
-                            if (enProceso)
+                            if (grade.rank.isNotEmpty && grade.rank != '0/0')
+                              _meta(Icons.emoji_events_outlined, grade.rank),
+                            if (inProgress)
                               StatusChip(
                                 text: l.statusInProcess,
                                 color: NexoTheme.warning,
@@ -198,23 +193,23 @@ class _Tile extends StatelessWidget {
                   Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
                 ],
               ),
-              if (nota.pF1.isNotEmpty || nota.pF2.isNotEmpty) ...[
+              if (grade.pF1.isNotEmpty || grade.pF2.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: _Badge(
                         label: l.gradesParcial1,
-                        value: notaFmt(nota.pF1),
-                        color: _grade(notaToDouble(nota.pF1)),
+                        value: formatGrade(grade.pF1),
+                        color: _grade(parseGrade(grade.pF1)),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _Badge(
                         label: l.gradesParcial2,
-                        value: notaFmt(nota.pF2),
-                        color: _grade(notaToDouble(nota.pF2)),
+                        value: formatGrade(grade.pF2),
+                        color: _grade(parseGrade(grade.pF2)),
                       ),
                     ),
                   ],
@@ -249,7 +244,6 @@ class _Badge extends StatelessWidget {
   final String value;
   final Color color;
   const _Badge({required this.label, required this.value, required this.color});
-
   @override
   Widget build(BuildContext context) {
     final empty = value.isEmpty || value == '—';
@@ -286,21 +280,19 @@ class _Badge extends StatelessWidget {
 }
 
 class _Sheet extends StatelessWidget {
-  final NotaAsignatura nota;
-  const _Sheet({required this.nota});
-
+  final CourseGrade grade;
+  const _Sheet({required this.grade});
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (_, controller) => Container(
+      builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -315,47 +307,9 @@ class _Sheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView(
+              child: LegacyNotaDetalleBody(
+                grade: grade,
                 controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                children: [
-                  GradeHeader(
-                    titulo: nota.asignatura,
-                    subtitulo:
-                        '${nota.codigo} · ${l.detailSection} ${nota.seccion}'
-                        '${nota.puesto.isNotEmpty && nota.puesto != '0/0' ? l.gradesRank(nota.puesto) : ''}',
-                    notaFinalText: nota.notaActualText,
-                    enProceso: nota.notaActualNum == null,
-                  ),
-                  const SizedBox(height: 16),
-                  // Resumen de parciales como tarjeta de sección.
-                  GradeSectionCard(
-                    titulo: l.gradesSummary,
-                    rows: [
-                      GradeRow(label: l.gradesPromedioParcial1, valueRaw: nota.pF1),
-                      GradeRow(label: l.gradesPromedioParcial2, valueRaw: nota.pF2),
-                      GradeRow(
-                        label: l.gradesPromedioFinal,
-                        valueRaw: nota.pf,
-                        strong: true,
-                        last: true,
-                      ),
-                    ],
-                  ),
-                  if (!nota.primer.vacio) ...[
-                    const SizedBox(height: 12),
-                    _parcialCard(l.gradesPrimerParcial, nota.primer, l),
-                  ],
-                  if (!nota.segundo.vacio) ...[
-                    const SizedBox(height: 12),
-                    _parcialCard(l.gradesSegundoParcial, nota.segundo, l),
-                  ],
-                  if (nota.complementario.isNotEmpty &&
-                      nota.complementario != '--') ...[
-                    const SizedBox(height: 12),
-                    _ComplementarioBanner(value: nota.complementario),
-                  ],
-                ],
               ),
             ),
           ],
@@ -363,22 +317,75 @@ class _Sheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _parcialCard(String titulo, NotasParcial p, AppLocalizations l) {
+class LegacyNotaDetalleBody extends StatelessWidget {
+  const LegacyNotaDetalleBody({
+    super.key,
+    required this.grade,
+    this.controller,
+  });
+  final CourseGrade grade;
+  final ScrollController? controller;
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return ListView(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+      children: [
+        GradeHeader(
+          titulo: grade.subject,
+          subtitulo:
+              '${grade.code} · ${l.detailSection} ${grade.section}'
+              '${grade.rank.isNotEmpty && grade.rank != '0/0' ? l.gradesRank(grade.rank) : ''}',
+          notaFinalText: grade.currentGradeText,
+          inProgress: grade.currentGradeNum == null,
+        ),
+        const SizedBox(height: 16),
+        GradeSectionCard(
+          titulo: l.gradesSummary,
+          rows: [
+            GradeRow(label: l.gradesPromedioParcial1, valueRaw: grade.pF1),
+            GradeRow(label: l.gradesPromedioParcial2, valueRaw: grade.pF2),
+            GradeRow(
+              label: l.gradesPromedioFinal,
+              valueRaw: grade.pf,
+              strong: true,
+              last: true,
+            ),
+          ],
+        ),
+        if (!grade.firstTerm.isEmpty) ...[
+          const SizedBox(height: 12),
+          _parcialCard(l.gradesPrimerParcial, grade.firstTerm, l),
+        ],
+        if (!grade.secondTerm.isEmpty) ...[
+          const SizedBox(height: 12),
+          _parcialCard(l.gradesSegundoParcial, grade.secondTerm, l),
+        ],
+        if (grade.complementary.isNotEmpty && grade.complementary != '--') ...[
+          const SizedBox(height: 12),
+          _ComplementarioBanner(value: grade.complementary),
+        ],
+      ],
+    );
+  }
+
+  Widget _parcialCard(String titulo, TermGrades p, AppLocalizations l) {
     final entries = <(String, String)>[];
     void add(String label, String raw) {
       if (raw.trim().isNotEmpty) entries.add((label, raw));
     }
 
-    for (var i = 0; i < p.practicas.length; i++) {
-      add(l.gradesPractice((i + 1).toString()), p.practicas[i]);
+    for (var i = 0; i < p.practices.length; i++) {
+      add(l.gradesPractice((i + 1).toString()), p.practices[i]);
     }
-    add(l.gradesPromedioPracticas, p.promPracticas);
-    add(l.gradesTrabajoInvestigacion, p.trabajoInv);
-    add(l.gradesProyecto, p.proyecto);
-    add(l.gradesPromedioTiPy, p.promTiPy);
-    add(l.gradesExamenParcial, p.examen);
-
+    add(l.gradesPromedioPracticas, p.displayPracticesAverage);
+    add(l.gradesTrabajoInvestigacion, p.researchWork);
+    add(l.gradesProyecto, p.project);
+    add(l.gradesPromedioTiPy, p.researchProjectAverage);
+    add(l.gradesExamenParcial, p.exam);
     if (entries.isEmpty) return const SizedBox.shrink();
     return GradeSectionCard(
       titulo: titulo,
@@ -387,7 +394,8 @@ class _Sheet extends StatelessWidget {
           GradeRow(
             label: entries[i].$1,
             valueRaw: entries[i].$2,
-            strong: entries[i].$1 == l.gradesPromedioPracticas ||
+            strong:
+                entries[i].$1 == l.gradesPromedioPracticas ||
                 entries[i].$1 == l.gradesPromedioTiPy,
             last: i == entries.length - 1,
           ),
@@ -399,7 +407,6 @@ class _Sheet extends StatelessWidget {
 class _ComplementarioBanner extends StatelessWidget {
   final String value;
   const _ComplementarioBanner({required this.value});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -425,7 +432,7 @@ class _ComplementarioBanner extends StatelessWidget {
             ),
           ),
           Text(
-            notaFmt(value),
+            formatGrade(value),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,

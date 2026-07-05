@@ -6,21 +6,38 @@ import 'package:nexo/domain/unified_models.dart';
 
 class CacheManager {
   CacheManager({Database? database}) : _db = database;
-
   Database? _db;
-
   Future<void> init() async {
     if (_db != null) return;
     final path = join(await getDatabasesPath(), 'nexo_cache.db');
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createTables,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        final tables = [
+          'student_profile',
+          'boleta_cursos',
+          'boleta_legacy',
+          'schedule',
+          'periodos',
+          'promedios',
+          'pagos',
+          'docente_info',
+          'docente_cursos',
+          'docente_alumnos',
+          'unified_student',
+          'unified_teacher'
+        ];
+        for (final t in tables) {
+          await db.execute('DROP TABLE IF EXISTS $t');
+        }
+        await _createTables(db, newVersion);
+      },
     );
   }
 
   Future<void> _createTables(Database db, int version) async {
-    // Student Profile
     await db.execute('''
       CREATE TABLE student_profile (
         id TEXT PRIMARY KEY,
@@ -28,39 +45,31 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Boleta cursos (new)
     await db.execute('''
       CREATE TABLE boleta_cursos (
-        anio TEXT NOT NULL,
+        year TEXT NOT NULL,
         periodo TEXT NOT NULL,
         json_data TEXT NOT NULL,
         updated_at INTEGER NOT NULL,
-        PRIMARY KEY (anio, periodo)
+        PRIMARY KEY (year, periodo)
       )
     ''');
-
-    // Boleta legacy
     await db.execute('''
       CREATE TABLE boleta_legacy (
-        anio TEXT NOT NULL,
+        year TEXT NOT NULL,
         periodo TEXT NOT NULL,
         json_data TEXT NOT NULL,
         updated_at INTEGER NOT NULL,
-        PRIMARY KEY (anio, periodo)
+        PRIMARY KEY (year, periodo)
       )
     ''');
-
-    // Horario
     await db.execute('''
-      CREATE TABLE horario (
+      CREATE TABLE schedule (
         id TEXT PRIMARY KEY,
         json_data TEXT NOT NULL,
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Periodos
     await db.execute('''
       CREATE TABLE periodos (
         id TEXT PRIMARY KEY,
@@ -68,8 +77,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Promedios
     await db.execute('''
       CREATE TABLE promedios (
         id TEXT PRIMARY KEY,
@@ -77,8 +84,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Pagos
     await db.execute('''
       CREATE TABLE pagos (
         id TEXT PRIMARY KEY,
@@ -86,8 +91,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Docente Info
     await db.execute('''
       CREATE TABLE docente_info (
         id TEXT PRIMARY KEY,
@@ -95,8 +98,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Docente Cursos
     await db.execute('''
       CREATE TABLE docente_cursos (
         id TEXT PRIMARY KEY,
@@ -104,8 +105,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Docente Alumnos
     await db.execute('''
       CREATE TABLE docente_alumnos (
         curso_id TEXT PRIMARY KEY,
@@ -113,8 +112,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Unified student
     await db.execute('''
       CREATE TABLE unified_student (
         id TEXT PRIMARY KEY,
@@ -122,8 +119,6 @@ class CacheManager {
         updated_at INTEGER NOT NULL
       )
     ''');
-
-    // Unified teacher
     await db.execute('''
       CREATE TABLE unified_teacher (
         id TEXT PRIMARY KEY,
@@ -141,254 +136,184 @@ class CacheManager {
     return d;
   }
 
-  // === StudentProfile ===
-  Future<void> saveProfile(StudentProfile profile) async {
-    await db.insert(
-      'student_profile',
-      {
-        'id': profile.estId,
-        'json_data': jsonEncode(profile.toJson()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveBoleta(
+    String year,
+    String periodo,
+    List<ReportCardCourse> courses,
+  ) async {
+    await db.insert('boleta_cursos', {
+      'year': year,
+      'periodo': periodo,
+      'json_data': jsonEncode(courses.map((c) => c.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<StudentProfile?> getProfile() async {
-    final List<Map<String, dynamic>> maps = await db.query('student_profile', limit: 1);
-    if (maps.isEmpty) return null;
-    try {
-      final rawJson = maps.first['json_data'] as String;
-      return StudentProfile.fromJson(jsonDecode(rawJson) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // === BoletaCurso (New Boleta) ===
-  Future<void> saveBoleta(String anio, String periodo, List<BoletaCurso> cursos) async {
-    await db.insert(
-      'boleta_cursos',
-      {
-        'anio': anio,
-        'periodo': periodo,
-        'json_data': jsonEncode(cursos.map((c) => c.promedioRaw.isEmpty ? {
-          // If BoletaCurso row serialization was simple, let's look at how it maps to Json
-          // BoletaCurso has no toJson/fromJson by default?
-          // Let's verify: BoletaCurso.fromRow is the only constructor.
-          // Wait! Let's write manual map representation for BoletaCurso if there is no toJson.
-          // Let's check models.dart to see if BoletaCurso has a toJson.
-          // From models.dart lines 759-798:
-          // class BoletaCurso {
-          //   final String matriculaAsignaturaId;
-          //   final String plan;
-          //   final String codigo;
-          //   final String nombre;
-          //   final String seccion;
-          //   final String asistenciaRaw;
-          //   final String promedioRaw;
-          //   final String estado;
-          //   ...
-          // }
-          // Ah, BoletaCurso has no toJson/fromJson. Let's serialize manually, or map it.
-          'matriculaAsignaturaId': c.matriculaAsignaturaId,
-          'plan': c.plan,
-          'codigo': c.codigo,
-          'nombre': c.nombre,
-          'seccion': c.seccion,
-          'asistenciaRaw': c.asistenciaRaw,
-          'promedioRaw': c.promedioRaw,
-          'estado': c.estado,
-        } : {
-          'matriculaAsignaturaId': c.matriculaAsignaturaId,
-          'plan': c.plan,
-          'codigo': c.codigo,
-          'nombre': c.nombre,
-          'seccion': c.seccion,
-          'asistenciaRaw': c.asistenciaRaw,
-          'promedioRaw': c.promedioRaw,
-          'estado': c.estado,
-        }).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<List<BoletaCurso>?> getBoleta(String anio, String periodo) async {
+  Future<List<ReportCardCourse>?> getBoleta(String year, String periodo) async {
     final List<Map<String, dynamic>> maps = await db.query(
       'boleta_cursos',
-      where: 'anio = ? AND periodo = ?',
-      whereArgs: [anio, periodo],
+      where: 'year = ? AND periodo = ?',
+      whereArgs: [year, periodo],
     );
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) {
-        final m = e as Map<String, dynamic>;
-        // Map back using a constructor or manual fields
-        return BoletaCurso(
-          matriculaAsignaturaId: m['matriculaAsignaturaId'] as String? ?? '',
-          plan: m['plan'] as String? ?? '',
-          codigo: m['codigo'] as String? ?? '',
-          nombre: m['nombre'] as String? ?? '',
-          seccion: m['seccion'] as String? ?? '',
-          asistenciaRaw: m['asistenciaRaw'] as String? ?? '',
-          promedioRaw: m['promedioRaw'] as String? ?? '',
-          estado: m['estado'] as String? ?? '',
-        );
-      }).toList();
+      return list
+          .map((e) => ReportCardCourse.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === NotaAsignatura (Legacy Boleta) ===
-  Future<void> saveBoletaLegacy(String anio, String periodo, List<NotaAsignatura> notas) async {
-    // Wait, let's check if NotaAsignatura has a toJson or if we can serialize it.
-    // Wait, does NotaAsignatura have a toJson? It has fromJson and fromLegacyRow.
-    // Let's check models.dart to see if it has a toJson.
-    // No, it doesn't seem to have a toJson. Let's serialize it manually or add a toJson helper.
-    // Let's inspect NotaAsignatura's fields:
-    // String codigo, asignatura, seccion, ciclo, credito (double), asistencia (String?),
-    // tipoAsignatura, mtr_Anio, mtr_Periodo, pf, pfp, complementario, cc, puesto, pF1, pF2,
-    // primer (NotasParcial), segundo (NotasParcial).
-    // Let's write helper serialization function for it here.
-    final list = notas.map((n) => {
-      'codigo': n.codigo,
-      'asignatura': n.asignatura,
-      'seccion': n.seccion,
-      'ciclo': n.ciclo,
-      'credito': n.credito,
-      'asistencia': n.asistencia,
-      'tipoAsignatura': n.tipoAsignatura,
-      'mtr_Anio': n.anio,
-      'mtr_Periodo': n.periodoNum,
-      'pf': n.pf,
-      'pfp': n.pfp,
-      'complementario': n.complementario,
-      'cc': n.cc,
-      'puesto': n.puesto,
-      'pF1': n.pF1,
-      'pF2': n.pF2,
-      // NotasParcial serialization
-      'p1': n.primer.practicas.isNotEmpty ? n.primer.practicas[0] : '',
-      'p2': n.primer.practicas.length > 1 ? n.primer.practicas[1] : '',
-      'p3': n.primer.practicas.length > 2 ? n.primer.practicas[2] : '',
-      'p4': n.primer.practicas.length > 3 ? n.primer.practicas[3] : '',
-      'ntaP1': n.primer.promPracticas,
-      'ntaTI1': n.primer.trabajoInv,
-      'ntaPY1': n.primer.proyecto,
-      'ntaPromTiPy': n.primer.promTiPy,
-      'ntaParcial1': n.primer.examen,
-      '_2P1': n.segundo.practicas.isNotEmpty ? n.segundo.practicas[0] : '',
-      '_2P2': n.segundo.practicas.length > 1 ? n.segundo.practicas[1] : '',
-      '_2P3': n.segundo.practicas.length > 2 ? n.segundo.practicas[2] : '',
-      '_2P4': n.segundo.practicas.length > 3 ? n.segundo.practicas[3] : '',
-      '_2NtaP1': n.segundo.promPracticas,
-      '_2NtaTI1': n.segundo.trabajoInv,
-      '_2NtaPY1': n.segundo.proyecto,
-      '_2NtaPromTiPy': n.segundo.promTiPy,
-      '_2NtaParcial1': n.segundo.examen,
-    }).toList();
-
-    await db.insert(
-      'boleta_legacy',
-      {
-        'anio': anio,
-        'periodo': periodo,
-        'json_data': jsonEncode(list),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveBoletaLegacy(
+    String year,
+    String periodo,
+    List<CourseGrade> grades,
+  ) async {
+    final list = grades
+        .map(
+          (n) => {
+            'codigo': n.code,
+            'asignatura': n.subject,
+            'seccion': n.section,
+            'ciclo': n.cycle,
+            'credito': n.credit,
+            'asistencia': n.attendance,
+            'tipoAsignatura': n.subjectType,
+            'mtr_Anio': n.year,
+            'mtr_Periodo': n.periodNum,
+            'pf': n.pf,
+            'pfp': n.pfp,
+            'complementario': n.complementary,
+            'cc': n.cc,
+            'puesto': n.rank,
+            'pF1': n.pF1,
+            'pF2': n.pF2,
+            'p1': n.firstTerm.practices.isNotEmpty
+                ? n.firstTerm.practices[0]
+                : '',
+            'p2': n.firstTerm.practices.length > 1
+                ? n.firstTerm.practices[1]
+                : '',
+            'p3': n.firstTerm.practices.length > 2
+                ? n.firstTerm.practices[2]
+                : '',
+            'p4': n.firstTerm.practices.length > 3
+                ? n.firstTerm.practices[3]
+                : '',
+            'ntaP1': n.firstTerm.practicesAverage,
+            'ntaTI1': n.firstTerm.researchWork,
+            'ntaPY1': n.firstTerm.project,
+            'ntaPromTiPy': n.firstTerm.researchProjectAverage,
+            'ntaParcial1': n.firstTerm.exam,
+            '_2P1': n.secondTerm.practices.isNotEmpty
+                ? n.secondTerm.practices[0]
+                : '',
+            '_2P2': n.secondTerm.practices.length > 1
+                ? n.secondTerm.practices[1]
+                : '',
+            '_2P3': n.secondTerm.practices.length > 2
+                ? n.secondTerm.practices[2]
+                : '',
+            '_2P4': n.secondTerm.practices.length > 3
+                ? n.secondTerm.practices[3]
+                : '',
+            '_2NtaP1': n.secondTerm.practicesAverage,
+            '_2NtaTI1': n.secondTerm.researchWork,
+            '_2NtaPY1': n.secondTerm.project,
+            '_2NtaPromTiPy': n.secondTerm.researchProjectAverage,
+            '_2NtaParcial1': n.secondTerm.exam,
+          },
+        )
+        .toList();
+    await db.insert('boleta_legacy', {
+      'year': year,
+      'periodo': periodo,
+      'json_data': jsonEncode(list),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<NotaAsignatura>?> getBoletaLegacy(String anio, String periodo) async {
+  Future<List<CourseGrade>?> getBoletaLegacy(
+    String year,
+    String periodo,
+  ) async {
     final List<Map<String, dynamic>> maps = await db.query(
       'boleta_legacy',
-      where: 'anio = ? AND periodo = ?',
-      whereArgs: [anio, periodo],
+      where: 'year = ? AND periodo = ?',
+      whereArgs: [year, periodo],
     );
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => NotaAsignatura.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => CourseGrade.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Horario ===
-  Future<void> saveHorario(List<ClaseHorario> clases) async {
-    await db.insert(
-      'horario',
-      {
-        'id': 'current',
-        'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveHorario(List<ScheduleClass> clases) async {
+    await db.insert('schedule', {
+      'id': 'current',
+      'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<ClaseHorario>?> getHorario() async {
+  Future<List<ScheduleClass>?> getHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
-      'horario',
+      'schedule',
       where: 'id = ?',
       whereArgs: ['current'],
     );
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Docente Horario ===
-  Future<void> saveDocenteHorario(List<ClaseHorario> clases) async {
-    await db.insert(
-      'horario',
-      {
-        'id': 'docente_current',
-        'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveDocenteHorario(List<ScheduleClass> clases) async {
+    await db.insert('schedule', {
+      'id': 'docente_current',
+      'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<ClaseHorario>?> getDocenteHorario() async {
+  Future<List<ScheduleClass>?> getDocenteHorario() async {
     final List<Map<String, dynamic>> maps = await db.query(
-      'horario',
+      'schedule',
       where: 'id = ?',
       whereArgs: ['docente_current'],
     );
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => ClaseHorario.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => ScheduleClass.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Periodos ===
-  Future<void> savePeriodos(List<Periodo> periodos) async {
-    await db.insert(
-      'periodos',
-      {
-        'id': 'current',
-        'json_data': jsonEncode(periodos.map((p) => p.toJson()).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> savePeriodos(List<Term> periodos) async {
+    await db.insert('periodos', {
+      'id': 'current',
+      'json_data': jsonEncode(periodos.map((p) => p.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Periodo>?> getPeriodos() async {
+  Future<List<Term>?> getPeriodos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'periodos',
       where: 'id = ?',
@@ -397,26 +322,21 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Periodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => Term.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Promedios ===
-  Future<void> savePromedios(List<PromedioPeriodo> promedios) async {
-    await db.insert(
-      'promedios',
-      {
-        'id': 'current',
-        'json_data': jsonEncode(promedios.map((p) => p.toJson()).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> savePromedios(List<TermAverage> promedios) async {
+    await db.insert('promedios', {
+      'id': 'current',
+      'json_data': jsonEncode(promedios.map((p) => p.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<PromedioPeriodo>?> getPromedios() async {
+  Future<List<TermAverage>?> getPromedios() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'promedios',
       where: 'id = ?',
@@ -425,26 +345,23 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => PromedioPeriodo.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => TermAverage.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Pagos ===
-  Future<void> savePagos(List<Cuota> pagos) async {
-    await db.insert(
-      'pagos',
-      {
-        'id': 'current',
-        'json_data': jsonEncode(pagos.map((p) => p.toJson()).toList()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> savePagos(List<Payment> pagos) async {
+    await db.insert('pagos', {
+      'id': 'current',
+      'json_data': jsonEncode(pagos.map((p) => p.toJson()).toList()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Cuota>?> getPagos() async {
+  Future<List<Payment>?> getPagos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'pagos',
       where: 'id = ?',
@@ -453,70 +370,65 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => Cuota.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => Payment.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === DocenteInfo ===
-  Future<void> saveDocenteInfo(DocenteInfo info) async {
-    // Let's verify if DocenteInfo has a toJson.
-    // Yes: Map<String, dynamic> toJson() => ... wait, let's see if it has toJson in models.dart:
-    // It has: factory DocenteInfo.fromJson(Map<String, dynamic> j)
-    // But does not seem to have a toJson. Let's serialize manually.
+  Future<void> saveDocenteInfo(TeacherInfo info) async {
     final data = {
-      'codigo': info.codigo,
-      'nombres': info.nombres,
-      'apellidos': info.apellidos,
-      'facultad': info.facultad,
-      'especialidad': info.especialidad,
+      'codigo': info.code,
+      'nombres': info.firstName,
+      'apellidos': info.lastName,
+      'facultad': info.faculty,
+      'especialidad': info.specialty,
     };
-    await db.insert(
-      'docente_info',
-      {
-        'id': info.codigo,
-        'json_data': jsonEncode(data),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('docente_info', {
+      'id': info.code,
+      'json_data': jsonEncode(data),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<DocenteInfo?> getDocenteInfo() async {
-    final List<Map<String, dynamic>> maps = await db.query('docente_info', limit: 1);
+  Future<TeacherInfo?> getDocenteInfo() async {
+    final List<Map<String, dynamic>> maps = await db.query(
+      'docente_info',
+      limit: 1,
+    );
     if (maps.isEmpty) return null;
     try {
-      return DocenteInfo.fromJson(jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>);
+      return TeacherInfo.fromJson(
+        jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>,
+      );
     } catch (_) {
       return null;
     }
   }
 
-  // === DocenteCursos ===
-  Future<void> saveDocenteCursos(List<DocenteAsignatura> cursos) async {
-    // DocenteAsignatura doesn't seem to have a toJson, let's serialize it manually.
-    final list = cursos.map((c) => {
-      'cleAuto': c.id,
-      'codigo': c.codigo,
-      'asignatura': c.asignatura,
-      'seccion': c.seccion,
-      'periodo': c.periodo,
-      'matriculados': c.matriculados,
-    }).toList();
-
-    await db.insert(
-      'docente_cursos',
-      {
-        'id': 'current',
-        'json_data': jsonEncode(list),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveDocenteCursos(List<TeacherSubject> courses) async {
+    final list = courses
+        .map(
+          (c) => {
+            'cleAuto': c.id,
+            'codigo': c.code,
+            'asignatura': c.subject,
+            'seccion': c.section,
+            'periodo': c.periodo,
+            'matriculados': c.enrolledCount,
+          },
+        )
+        .toList();
+    await db.insert('docente_cursos', {
+      'id': 'current',
+      'json_data': jsonEncode(list),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<DocenteAsignatura>?> getDocenteCursos() async {
+  Future<List<TeacherSubject>?> getDocenteCursos() async {
     final List<Map<String, dynamic>> maps = await db.query(
       'docente_cursos',
       where: 'id = ?',
@@ -525,35 +437,37 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => DocenteAsignatura.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => TeacherSubject.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === DocenteAlumnos ===
-  Future<void> saveDocenteAlumnos(String cursoId, List<DocenteAlumno> alumnos) async {
-    // DocenteAlumno doesn't seem to have a toJson. Let's serialize manually.
-    final list = alumnos.map((a) => {
-      'codigo': a.codigo,
-      'nombres': a.nombres,
-      'apellidos': a.apellidos,
-      'asistencia': a.asistencia,
-      'nota': a.nota,
-    }).toList();
-
-    await db.insert(
-      'docente_alumnos',
-      {
-        'curso_id': cursoId,
-        'json_data': jsonEncode(list),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> saveDocenteAlumnos(
+    String cursoId,
+    List<TeacherStudent> alumnos,
+  ) async {
+    final list = alumnos
+        .map(
+          (a) => {
+            'codigo': a.code,
+            'nombres': a.firstName,
+            'apellidos': a.lastName,
+            'asistencia': a.attendance,
+            'nota': a.grade,
+          },
+        )
+        .toList();
+    await db.insert('docente_alumnos', {
+      'curso_id': cursoId,
+      'json_data': jsonEncode(list),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<DocenteAlumno>?> getDocenteAlumnos(String cursoId) async {
+  Future<List<TeacherStudent>?> getDocenteAlumnos(String cursoId) async {
     final List<Map<String, dynamic>> maps = await db.query(
       'docente_alumnos',
       where: 'curso_id = ?',
@@ -562,65 +476,66 @@ class CacheManager {
     if (maps.isEmpty) return null;
     try {
       final list = jsonDecode(maps.first['json_data'] as String) as List;
-      return list.map((e) => DocenteAlumno.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => TeacherStudent.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
-  // === Unified Student ===
   Future<void> saveStudent(Student student) async {
-    await db.insert(
-      'unified_student',
-      {
-        'id': student.id.isNotEmpty ? student.id : 'current',
-        'json_data': jsonEncode(student.toJson()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('unified_student', {
+      'id': student.id.isNotEmpty ? student.id : 'current',
+      'json_data': jsonEncode(student.toJson()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Student?> getStudent() async {
-    final List<Map<String, dynamic>> maps = await db.query('unified_student', limit: 1);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'unified_student',
+      limit: 1,
+    );
     if (maps.isEmpty) return null;
     try {
-      return Student.fromJson(jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>);
+      return Student.fromJson(
+        jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>,
+      );
     } catch (_) {
       return null;
     }
   }
 
-  // === Unified Teacher ===
   Future<void> saveTeacher(Teacher teacher) async {
-    await db.insert(
-      'unified_teacher',
-      {
-        'id': teacher.id.isNotEmpty ? teacher.id : 'current',
-        'json_data': jsonEncode(teacher.toJson()),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('unified_teacher', {
+      'id': teacher.id.isNotEmpty ? teacher.id : 'current',
+      'json_data': jsonEncode(teacher.toJson()),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Teacher?> getTeacher() async {
-    final List<Map<String, dynamic>> maps = await db.query('unified_teacher', limit: 1);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'unified_teacher',
+      limit: 1,
+    );
     if (maps.isEmpty) return null;
     try {
-      return Teacher.fromJson(jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>);
+      return Teacher.fromJson(
+        jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>,
+      );
     } catch (_) {
       return null;
     }
   }
 
-  // === Utilities ===
   Future<void> clearAll() async {
     final tables = [
       'student_profile',
       'boleta_cursos',
       'boleta_legacy',
-      'horario',
+      'schedule',
       'periodos',
       'promedios',
       'pagos',
@@ -636,12 +551,13 @@ class CacheManager {
   }
 
   Future<void> clearExpired(Duration maxAge) async {
-    final cutoff = DateTime.now().millisecondsSinceEpoch - maxAge.inMilliseconds;
+    final cutoff =
+        DateTime.now().millisecondsSinceEpoch - maxAge.inMilliseconds;
     final tables = [
       'student_profile',
       'boleta_cursos',
       'boleta_legacy',
-      'horario',
+      'schedule',
       'periodos',
       'promedios',
       'pagos',
@@ -656,7 +572,12 @@ class CacheManager {
     }
   }
 
-  Future<bool> isFresh(String table, String keyColumn, String keyValue, Duration maxAge) async {
+  Future<bool> isFresh(
+    String table,
+    String keyColumn,
+    String keyValue,
+    Duration maxAge,
+  ) async {
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         table,

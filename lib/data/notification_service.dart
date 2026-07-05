@@ -1,28 +1,24 @@
+import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
+
+import 'package:flutter/material.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
-
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/notification_prefs.dart';
+import 'package:nexo/domain/unified_models.dart';
 
 class NotificationService extends ChangeNotifier {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
-
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
   NotificationPrefs _prefs = const NotificationPrefs();
-
   NotificationPrefs get prefs => _prefs;
-
-  /// Plataformas con backend nativo de notificaciones. Web no tiene; las
-  /// demás (Android/iOS/macOS/Linux/Windows) están soportadas por
-  /// flutter_local_notifications >=19.
   bool get _supported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
@@ -30,19 +26,15 @@ class NotificationService extends ChangeNotifier {
           defaultTargetPlatform == TargetPlatform.macOS ||
           defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.windows);
-
-  /// Plataformas donde tiene sentido programar notificaciones futuras
-  /// (`zonedSchedule`). En Windows, el backend WinRT no soporta
-  /// `zonedSchedule`; ahí solo usamos `show()` (inmediatas, como las de
-  /// "nueva nota publicada"). Programaciones futuras de clases/pagos siguen
-  /// activas en mobile/macOS/Linux.
   bool get _supportsScheduling =>
       _supported && defaultTargetPlatform != TargetPlatform.windows;
-
   static const _idClassBase = 10000;
   static const _idPaymentBase = 20000;
   static const _idGradeBase = 30000;
-
+  static const _idUpdate = 40001;
+  static const _payloadUpdateInstall = 'nexo:update:install';
+  Future<void> Function()? onInstallUpdateTap;
+  AndroidScheduleMode _androidMode = AndroidScheduleMode.exactAllowWhileIdle;
   Future<void> init() async {
     final raw = AppStorage.instance.notifPrefsJson;
     if (raw != null) {
@@ -58,14 +50,10 @@ class NotificationService extends ChangeNotifier {
       final name = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(name));
     } catch (_) {}
-
     const android = AndroidInitializationSettings('@mipmap/launcher_icon');
     const ios = DarwinInitializationSettings();
     const macos = DarwinInitializationSettings();
     const linux = LinuxInitializationSettings(defaultActionName: 'Abrir');
-    // AUMID consistente con la instalación de Windows (HKCU\...\Uninstall\Nexo
-    // y los .lnk creados por WinSetupService apuntan al mismo ejecutable).
-    // GUID estable para que Action Center agrupe correctamente.
     const windows = WindowsInitializationSettings(
       appName: 'Nexo UPLA',
       appUserModelId: 'pe.upla.nexo',
@@ -79,8 +67,16 @@ class NotificationService extends ChangeNotifier {
         linux: linux,
         windows: windows,
       ),
+      onDidReceiveNotificationResponse: _onTap,
     );
     _ready = true;
+  }
+
+  void _onTap(NotificationResponse r) {
+    if (r.payload == _payloadUpdateInstall) {
+      final cb = onInstallUpdateTap;
+      if (cb != null) unawaited(cb());
+    }
   }
 
   Future<bool> requestPermission() async {
@@ -91,6 +87,7 @@ class NotificationService extends ChangeNotifier {
             AndroidFlutterLocalNotificationsPlugin
           >();
       final granted = await android?.requestNotificationsPermission();
+      await _ensureExactAlarms(request: true);
       return granted ?? false;
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -117,20 +114,39 @@ class NotificationService extends ChangeNotifier {
       );
       return granted ?? false;
     }
-    // Linux/Windows: no requieren permiso explícito en runtime.
     return true;
+  }
+
+  Future<void> _ensureExactAlarms({bool request = false}) async {
+    if (!_supportsScheduling ||
+        defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+    var can = await android.canScheduleExactNotifications() ?? false;
+    if (!can && request) {
+      await android.requestExactAlarmsPermission();
+      can = await android.canScheduleExactNotifications() ?? false;
+    }
+    _androidMode = can
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   Future<void> updatePrefs(
     NotificationPrefs prefs, {
-    List<ClaseHorario>? clases,
-    List<Cuota>? cuotas,
+    List<ScheduleClass>? clases,
+    List<Payment>? installments,
   }) async {
     _prefs = prefs;
     await AppStorage.instance.setNotifPrefsJson(jsonEncode(prefs.toJson()));
     notifyListeners();
     if (prefs.enabled) await requestPermission();
-    await reschedule(clases: clases, cuotas: cuotas);
+    await reschedule(clases: clases, installments: installments);
   }
 
   AndroidNotificationDetails _androidDetails(String channelId, String name) =>
@@ -140,7 +156,6 @@ class NotificationService extends ChangeNotifier {
         importance: Importance.high,
         priority: Priority.high,
       );
-
   NotificationDetails _details(String channelId, String name) =>
       NotificationDetails(
         android: _androidDetails(channelId, name),
@@ -149,37 +164,38 @@ class NotificationService extends ChangeNotifier {
         linux: const LinuxNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       );
+  Timer? _rescheduleDebounce;
 
   Future<void> reschedule({
-    List<ClaseHorario>? clases,
-    List<Cuota>? cuotas,
+    List<ScheduleClass>? clases,
+    List<Payment>? installments,
   }) async {
     if (!_supported || !_ready) return;
-    if (_supportsScheduling) {
-      await _plugin.cancelAll();
-    }
-    if (!_prefs.enabled) return;
-
-    // Programaciones futuras solo donde el backend soporta zonedSchedule.
-    if (!_supportsScheduling) return;
-
-    if (_prefs.classesEnabled && clases != null) {
-      await _scheduleClasses(clases);
-    }
-    if (_prefs.paymentsEnabled && cuotas != null) {
-      await _schedulePayments(cuotas);
-    }
+    _rescheduleDebounce?.cancel();
+    _rescheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_supportsScheduling) {
+        await _plugin.cancelAll();
+      }
+      if (!_prefs.enabled) return;
+      if (!_supportsScheduling) return;
+      await _ensureExactAlarms();
+      if (_prefs.classesEnabled && clases != null) {
+        await _scheduleClasses(clases);
+      }
+      if (_prefs.paymentsEnabled && installments != null) {
+        await _schedulePayments(installments);
+      }
+    });
   }
 
-  Future<void> _scheduleClasses(List<ClaseHorario> clases) async {
+  Future<void> _scheduleClasses(List<ScheduleClass> clases) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idClassBase;
-    // Próximos 7 días de clases.
     for (var offset = 0; offset < 7; offset++) {
       final day = now.add(Duration(days: offset));
-      final weekday = day.weekday; // 1=Lun..7=Dom
-      for (final c in clases.where((c) => c.idDia == weekday)) {
-        final hm = c.horaInicio.split(':');
+      final weekday = day.weekday;
+      for (final c in clases.where((c) => c.weekday == weekday)) {
+        final hm = c.startTime.split(':');
         if (hm.length < 2) continue;
         final h = int.tryParse(hm[0]);
         final m = int.tryParse(hm[1]);
@@ -194,23 +210,24 @@ class NotificationService extends ChangeNotifier {
         );
         final when = start.subtract(Duration(minutes: _prefs.classLeadMinutes));
         if (when.isBefore(now)) continue;
+        final l10n = lookupAppLocalizations(Locale(AppStorage.instance.localeCode ?? 'es'));
         await _zoned(
           id++,
-          c.asignatura,
-          'Empieza en ${_prefs.classLeadMinutes} minutos',
+          c.subject,
+          l10n.notifStartsIn(_prefs.classLeadMinutes),
           when,
-          'clases',
-          'Recordatorio de clases',
+          'classes',
+          l10n.notifClassesReminder,
         );
       }
     }
   }
 
-  Future<void> _schedulePayments(List<Cuota> cuotas) async {
+  Future<void> _schedulePayments(List<Payment> pagos) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idPaymentBase;
-    for (final c in cuotas) {
-      final due = c.vencimientoDate;
+    for (final c in pagos) {
+      final due = c.dueDate;
       if (due == null) continue;
       for (final lead in _prefs.paymentLeadDays) {
         final day = due.subtract(Duration(days: lead));
@@ -223,19 +240,20 @@ class NotificationService extends ChangeNotifier {
           0,
         );
         if (when.isBefore(now)) continue;
+        final l10n = lookupAppLocalizations(Locale(AppStorage.instance.localeCode ?? 'es'));
         final cuando = lead == 0
-            ? 'vence hoy'
+            ? l10n.notifDueToday
             : lead == 1
-            ? 'vence mañana'
-            : 'vence en $lead días';
+            ? l10n.notifDueTomorrow
+            : l10n.notifDueInDays(lead);
         await _zoned(
           id++,
-          'Pago pendiente — $cuando',
-          '${c.descripcion}: ${c.tipoMoneda} '
-              '${c.subtotal.toStringAsFixed(2)} (${c.fechaVencimiento})',
+          l10n.notifPendingPayment(cuando),
+          '${c.description}: ${c.currency} '
+              '${c.total.toStringAsFixed(2)} (${c.dueDateRaw})',
           when,
-          'pagos',
-          'Recordatorio de pagos',
+          'payments',
+          l10n.notifPaymentsReminder,
         );
       }
     }
@@ -256,20 +274,55 @@ class NotificationService extends ChangeNotifier {
         body,
         when,
         _details(channelId, channelName),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: _androidMode,
       );
-    } catch (_) {}
+    } catch (_) {
+      if (_androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
+        _androidMode = AndroidScheduleMode.inexactAllowWhileIdle;
+        try {
+          await _plugin.zonedSchedule(
+            id,
+            title,
+            body,
+            when,
+            _details(channelId, channelName),
+            androidScheduleMode: _androidMode,
+          );
+        } catch (_) {}
+      }
+    }
   }
 
-  Future<void> showGradeChanged(String curso, String nota) async {
+  Future<void> showGradeChanged(String course, String grade) async {
     if (!_supported || !_ready || !_prefs.enabled || !_prefs.gradesEnabled) {
       return;
     }
     await _plugin.show(
-      _idGradeBase + (curso.hashCode % 1000),
+      _idGradeBase + (course.hashCode % 1000),
       'Nueva nota publicada',
-      '$curso: $nota',
-      _details('notas', 'Notas'),
+      '$course: $grade',
+      _details('grades', 'Notas'),
+    );
+  }
+
+  Future<void> showUpdateAvailable(String version) async {
+    if (!_supported || !_ready) return;
+    await _plugin.show(
+      _idUpdate,
+      'Actualización disponible',
+      'Nexo $version está disponible. Se descargará cuando haya conexión.',
+      _details('actualizaciones', 'Actualizaciones'),
+    );
+  }
+
+  Future<void> showUpdateReady(String version) async {
+    if (!_supported || !_ready) return;
+    await _plugin.show(
+      _idUpdate,
+      'Actualización lista para instalar',
+      'Toca para instalar Nexo $version.',
+      _details('actualizaciones', 'Actualizaciones'),
+      payload: _payloadUpdateInstall,
     );
   }
 }
