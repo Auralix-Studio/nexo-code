@@ -621,7 +621,7 @@ class _DashboardArea extends StatelessWidget {
   }
 }
 
-class _DashboardWidgetWrapper extends StatefulWidget {
+class _DashboardWidgetWrapper extends StatelessWidget {
   final DashboardWidgetConfig config;
   final AppStore store;
   final ValueChanged<int> onJump;
@@ -633,19 +633,9 @@ class _DashboardWidgetWrapper extends StatefulWidget {
     required this.onJump,
   });
 
-  @override
-  State<_DashboardWidgetWrapper> createState() => _DashboardWidgetWrapperState();
-}
-
-class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
-  bool _isEditing = false;
-
-  Widget _buildChild() {
-    final store = widget.store;
-    final config = widget.config;
-    final onJump = widget.onJump;
+  Widget _buildChild(BuildContext context) {
+    final isCompact = config.span == 1;
     final l = AppLocalizations.of(context);
-    final isCompact = config.size == 'compact';
 
     switch (config.id) {
       case 'stats_promedio':
@@ -715,20 +705,24 @@ class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final child = _buildChild();
+    final child = _buildChild(context);
     if (child is SizedBox) return child;
 
     final totalSpacing = 12.0;
     final screenWidth = MediaQuery.of(context).size.width;
     final padding = context.contentPadding * 2;
     final availableWidth = screenWidth - padding;
-    final itemWidth = widget.config.span == 2 
+    final colWidth = (availableWidth - totalSpacing * 3) / 4;
+    
+    final itemWidth = config.span >= 4 
         ? availableWidth 
-        : (availableWidth - totalSpacing) / 2;
+        : (colWidth * config.span + totalSpacing * (config.span - 1)) - 0.5;
+
+    final isEditing = store.editingDashboardWidgetId == config.id;
 
     final content = GestureDetector(
-      onLongPress: () {
-        if (!_isEditing) setState(() => _isEditing = true);
+      onTap: () {
+        if (isEditing) store.setEditingDashboardWidget(null);
       },
       child: SizedBox(
         width: itemWidth,
@@ -736,7 +730,7 @@ class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
           clipBehavior: Clip.none,
           children: [
             child,
-            if (_isEditing)
+            if (isEditing)
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -745,66 +739,47 @@ class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
                   ),
                 ),
               ),
-            if (_isEditing)
+            if (isEditing && config.id.startsWith('stats_'))
               Positioned(
-                right: -8,
+                right: -6,
                 top: 0,
                 bottom: 0,
                 child: Center(
-                  child: GestureDetector(
-                    onTap: () => widget.store.toggleDashboardWidgetSpan(widget.config.id),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: NexoTheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.code_rounded, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (_isEditing)
-              Positioned(
-                left: -8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () => widget.store.toggleDashboardWidgetSpan(widget.config.id),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: NexoTheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.code_rounded, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (_isEditing)
-              Positioned(
-                top: -8,
-                right: -8,
-                child: GestureDetector(
-                  onTap: () => setState(() => _isEditing = false),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: NexoTheme.success,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      double dragOffset = 0;
+                      return GestureDetector(
+                        onPanUpdate: (details) {
+                          dragOffset += details.delta.dx;
+                          if (dragOffset < -20 && config.span == 4) {
+                            store.setDashboardWidgetSpan(config.id, 2);
+                            dragOffset = 0;
+                          } else if (dragOffset > 20 && config.span == 2) {
+                            store.setDashboardWidgetSpan(config.id, 4);
+                            dragOffset = 0;
+                          }
+                        },
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: NexoTheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Center(
+                            child: RotatedBox(
+                              quarterTurns: 1,
+                              child: Icon(
+                                config.span < 4 ? Icons.unfold_more_rounded : Icons.unfold_less_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -815,36 +790,36 @@ class _DashboardWidgetWrapperState extends State<_DashboardWidgetWrapper> {
 
     return DragTarget<String>(
       onWillAcceptWithDetails: (details) {
-        if (details.data != widget.config.id) {
-          widget.store.reorderDashboard(details.data, widget.config.id, save: false);
+        if (details.data != config.id) {
+          store.reorderDashboard(details.data, config.id, save: false);
           return true;
         }
         return false;
       },
       onAcceptWithDetails: (details) {
-        widget.store.saveDashboardLayout();
+        store.saveDashboardLayout();
       },
       builder: (context, candidateData, rejectedData) {
         return Container(
           width: itemWidth,
           margin: EdgeInsets.zero,
-          child: _isEditing
-              ? Draggable<String>(
-                  data: widget.config.id,
-                  onDragEnd: (_) => widget.store.saveDashboardLayout(),
-                  feedback: Material(
-                    color: Colors.transparent,
-                    elevation: 12,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Opacity(
-                      opacity: 0.8,
-                      child: SizedBox(width: itemWidth, child: content),
-                    ),
-                  ),
-                  childWhenDragging: Opacity(opacity: 0.2, child: content),
-                  child: content,
-                )
-              : content,
+          child: LongPressDraggable<String>(
+            data: config.id,
+            delay: const Duration(milliseconds: 250),
+            onDragStarted: () => store.setEditingDashboardWidget(config.id),
+            onDragEnd: (_) => store.saveDashboardLayout(),
+            feedback: Material(
+              color: Colors.transparent,
+              elevation: 12,
+              borderRadius: BorderRadius.circular(24),
+              child: Opacity(
+                opacity: 0.8,
+                child: SizedBox(width: itemWidth, child: content),
+              ),
+            ),
+            childWhenDragging: Opacity(opacity: 0.2, child: content),
+            child: content,
+          ),
         );
       },
     );
@@ -859,18 +834,26 @@ class _MobileStack extends StatelessWidget {
   Widget build(BuildContext context) {
     final layout = store.dashboardLayout;
     
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final config in layout)
-          _DashboardWidgetWrapper(
-            key: ValueKey(config.id),
-            config: config,
-            store: store,
-            onJump: onJump,
-          ),
-      ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (store.editingDashboardWidgetId != null) {
+          store.setEditingDashboardWidget(null);
+        }
+      },
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (final config in layout)
+            _DashboardWidgetWrapper(
+              key: ValueKey(config.id),
+              config: config,
+              store: store,
+              onJump: onJump,
+            ),
+        ],
+      ),
     );
   }
 }
