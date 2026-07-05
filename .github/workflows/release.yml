@@ -102,11 +102,8 @@ jobs:
           cd ../../../
 
       - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           repository: Auralix-Studio/nexo
           files: dist/*
-        env:
-          # NOTA: GITHUB_TOKEN por defecto no tiene acceso a otros repositorios.
-          # Se necesita un Personal Access Token (PAT) guardado en los secretos de este repo.
-          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
+          token: ${{ secrets.ORG_GITHUB_TOKEN }}
