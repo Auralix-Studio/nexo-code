@@ -1,30 +1,16 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-/// Paleta y primitivos compartidos por los PDFs.
-///
-/// Estilo basado en las plantillas oficiales de Intranet UPLA: documento
-/// formal, fondo blanco, tipografía sans-serif, tablas con bordes finos,
-/// títulos centrados en mayúsculas. Sin degradados ni cabeceras de marca.
 abstract final class PdfTheme {
-  // Negro suave para textos (no #000 puro — más profesional).
   static const PdfColor text = PdfColor.fromInt(0xFF1A1A1A);
   static const PdfColor textSecondary = PdfColor.fromInt(0xFF555555);
   static const PdfColor textMuted = PdfColor.fromInt(0xFF888888);
-
-  // Líneas de tabla y separadores.
   static const PdfColor border = PdfColor.fromInt(0xFFBFBFBF);
   static const PdfColor borderStrong = PdfColor.fromInt(0xFF707070);
-
-  // Cabecera de tabla — gris muy claro como Intranet.
   static const PdfColor tableHeader = PdfColor.fromInt(0xFFE5E7EB);
-
-  // Color institucional para el acento del título (mínimo).
   static const PdfColor institucional = PdfColor.fromInt(0xFF173E61);
 }
 
-/// Cabecera del documento estilo Intranet: título centrado en mayúsculas
-/// con una línea sutil debajo. [periodoSuffix] aparece en una sub-línea.
 pw.Widget pdfTitle(String titulo, {String? periodoSuffix}) {
   return pw.Container(
     padding: const pw.EdgeInsets.only(bottom: 10),
@@ -62,7 +48,6 @@ pw.Widget pdfTitle(String titulo, {String? periodoSuffix}) {
   );
 }
 
-/// Fila etiqueta:valor estilo Intranet. Etiqueta en bold, dos puntos, valor.
 pw.Widget pdfDataRow(String label, String value, {double labelWidth = 110}) {
   return pw.Padding(
     padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
@@ -91,11 +76,11 @@ pw.Widget pdfDataRow(String label, String value, {double labelWidth = 110}) {
   );
 }
 
-/// Pie con créditos discretos y fecha de generación.
 pw.Widget pdfFooter() {
   final ahora = DateTime.now();
   String fmt(int n) => n.toString().padLeft(2, '0');
-  final fecha = '${fmt(ahora.day)}/${fmt(ahora.month)}/${ahora.year} '
+  final date =
+      '${fmt(ahora.day)}/${fmt(ahora.month)}/${ahora.year} '
       '${fmt(ahora.hour)}:${fmt(ahora.minute)}';
   return pw.Container(
     padding: const pw.EdgeInsets.only(top: 12),
@@ -106,7 +91,7 @@ pw.Widget pdfFooter() {
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Text(
-          'Generado por Nexo · $fecha',
+          'Generado por Nexo · $date',
           style: pw.TextStyle(
             fontSize: 8,
             color: PdfTheme.textMuted,
@@ -126,27 +111,23 @@ pw.Widget pdfFooter() {
   );
 }
 
-/// Encabezado de tabla estilo Intranet (fondo gris claro, texto negro).
-pw.Widget pdfTableHeader(String text, {pw.TextAlign? align}) =>
-    pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      child: pw.Text(
-        text,
-        textAlign: align ?? pw.TextAlign.center,
-        style: pw.TextStyle(
-          fontSize: 9.5,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfTheme.text,
-        ),
-      ),
-    );
-
-/// Celda de tabla estándar.
+pw.Widget pdfTableHeader(String text, {pw.TextAlign? align}) => pw.Padding(
+  padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+  child: pw.Text(
+    text,
+    textAlign: align ?? pw.TextAlign.center,
+    style: pw.TextStyle(
+      fontSize: 9.5,
+      fontWeight: pw.FontWeight.bold,
+      color: PdfTheme.text,
+    ),
+  ),
+);
 pw.Widget pdfTableCell(String text, {pw.TextAlign? align}) => pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      child: pw.Text(
-        text,
-        textAlign: align ?? pw.TextAlign.center,
-        style: const pw.TextStyle(fontSize: 9.5, color: PdfTheme.text),
-      ),
-    );
+  padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+  child: pw.Text(
+    text,
+    textAlign: align ?? pw.TextAlign.center,
+    style: const pw.TextStyle(fontSize: 9.5, color: PdfTheme.text),
+  ),
+);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/app_locale.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
@@ -11,17 +10,10 @@ import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
-/// Pantalla de Configuración común a estudiante y docente.
-/// Centraliza Apariencia, Idioma, Formato de hora y Notificaciones.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({
-    super.key,
-    required this.store,
-    required this.theme,
-  });
+  const SettingsScreen({super.key, required this.store, required this.theme});
   final AppStore store;
   final ThemeController theme;
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -51,12 +43,9 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// ===== Apariencia (paletas) =====
-
 class _AppearanceCard extends StatelessWidget {
   final ThemeController theme;
   const _AppearanceCard({required this.theme});
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -87,29 +76,31 @@ class _AppearanceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              LayoutBuilder(builder: (ctx, c) {
-                final cols = c.maxWidth >= 480 ? 3 : 2;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: NexoColors.all.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: cols,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    mainAxisExtent: 96,
-                  ),
-                  itemBuilder: (_, i) {
-                    final palette = NexoColors.all[i];
-                    return _PaletteTile(
-                      palette: palette,
-                      selected: selection == palette.id,
-                      activeLabel: l.settingsActive,
-                      onTap: () => theme.setSelection(palette.id),
-                    );
-                  },
-                );
-              }),
+              LayoutBuilder(
+                builder: (ctx, c) {
+                  final cols = c.maxWidth >= 480 ? 3 : 2;
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: NexoColors.all.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      mainAxisExtent: 96,
+                    ),
+                    itemBuilder: (_, i) {
+                      final palette = NexoColors.all[i];
+                      return _PaletteTile(
+                        palette: palette,
+                        selected: selection == palette.id,
+                        activeLabel: l.settingsActive,
+                        onTap: () => theme.setSelection(palette.id),
+                      );
+                    },
+                  );
+                },
+              ),
             ],
           ),
         );
@@ -129,7 +120,6 @@ class _SystemOption extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -166,8 +156,9 @@ class _SystemOption extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color:
-                          selected ? NexoTheme.primary : NexoTheme.textPrimary,
+                      color: selected
+                          ? NexoTheme.primary
+                          : NexoTheme.textPrimary,
                     ),
                   ),
                   Text(
@@ -181,8 +172,11 @@ class _SystemOption extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(Icons.check_circle_rounded,
-                  size: 20, color: NexoTheme.primary),
+              Icon(
+                Icons.check_circle_rounded,
+                size: 20,
+                color: NexoTheme.primary,
+              ),
           ],
         ),
       ),
@@ -201,7 +195,6 @@ class _PaletteTile extends StatelessWidget {
     required this.activeLabel,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -259,7 +252,6 @@ class _PaletteTile extends StatelessWidget {
 class _PalettePreview extends StatelessWidget {
   final NexoColors palette;
   const _PalettePreview({required this.palette});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -273,7 +265,9 @@ class _PalettePreview extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            left: 6, top: 22, right: 6,
+            left: 6,
+            top: 22,
+            right: 6,
             child: Container(
               height: 14,
               decoration: BoxDecoration(
@@ -284,9 +278,11 @@ class _PalettePreview extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 6, top: 6,
+            left: 6,
+            top: 6,
             child: Container(
-              width: 12, height: 12,
+              width: 12,
+              height: 12,
               decoration: BoxDecoration(
                 color: palette.primary,
                 shape: BoxShape.circle,
@@ -294,9 +290,11 @@ class _PalettePreview extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 22, top: 6,
+            left: 22,
+            top: 6,
             child: Container(
-              width: 12, height: 12,
+              width: 12,
+              height: 12,
               decoration: BoxDecoration(
                 color: palette.accent,
                 shape: BoxShape.circle,
@@ -309,12 +307,9 @@ class _PalettePreview extends StatelessWidget {
   }
 }
 
-// ===== Idioma + Formato de hora =====
-
 class _PreferencesCard extends StatelessWidget {
   final ThemeController theme;
   const _PreferencesCard({required this.theme});
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -347,8 +342,7 @@ class _PreferencesCard extends StatelessWidget {
                         onTap: () => theme.setLocale(loc),
                       ),
                     ),
-                    if (loc != AppLocale.values.last)
-                      const SizedBox(width: 8),
+                    if (loc != AppLocale.values.last) const SizedBox(width: 8),
                   ],
                 ],
               ),
@@ -392,11 +386,8 @@ class _PreferencesCard extends StatelessWidget {
   }
 }
 
-/// Toggle de adornos de festividades. Autocontenido: lee/escribe el flag en
-/// [AppStorage] y se reconstruye solo (no depende del ThemeController).
 class _FestivityToggle extends StatefulWidget {
   const _FestivityToggle();
-
   @override
   State<_FestivityToggle> createState() => _FestivityToggleState();
 }
@@ -456,7 +447,6 @@ class _PrefChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -490,12 +480,9 @@ class _PrefChip extends StatelessWidget {
   }
 }
 
-// ===== Notificaciones (link) =====
-
 class _NotificationsCard extends StatelessWidget {
   final AppStore store;
   const _NotificationsCard({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -508,11 +495,16 @@ class _NotificationsCard extends StatelessWidget {
             color: NexoTheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(Icons.notifications_active_outlined,
-              color: NexoTheme.primary, size: 20),
+          child: Icon(
+            Icons.notifications_active_outlined,
+            color: NexoTheme.primary,
+            size: 20,
+          ),
         ),
-        title: Text(l.titleNotifications,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          l.titleNotifications,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           l.settingsNotificationsSubtitle,
           style: TextStyle(color: NexoTheme.textSecondary),
@@ -528,14 +520,8 @@ class _NotificationsCard extends StatelessWidget {
   }
 }
 
-// ===== Actualizaciones (Android) =====
-
-/// Tarjeta de actualización: muestra la versión actual, permite buscar
-/// actualizaciones manualmente y descargar/instalar la nueva versión.
-/// Se oculta en plataformas sin autoupdater (todo lo que no es Android).
 class UpdateCard extends StatelessWidget {
   const UpdateCard({super.key});
-
   @override
   Widget build(BuildContext context) {
     final updater = UpdateService.instance;
@@ -598,7 +584,6 @@ class _StatusPill extends StatelessWidget {
   final UpdateStatus status;
   final bool busy;
   const _StatusPill({required this.status, required this.busy});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -661,7 +646,6 @@ class _UpdateAction extends StatelessWidget {
     required this.status,
     required this.busy,
   });
-
   Future<void> _check(BuildContext context) async {
     final l = AppLocalizations.of(context);
     final s = await updater.checkNow();
@@ -669,8 +653,7 @@ class _UpdateAction extends StatelessWidget {
     final msg = switch (s.state) {
       UpdateState.upToDate => l.updSnackUpToDate,
       UpdateState.available ||
-      UpdateState.ready =>
-        l.updSnackAvailable(s.latestVersion ?? ''),
+      UpdateState.ready => l.updSnackAvailable(s.latestVersion ?? ''),
       _ => l.updSnackCheckFailed,
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -680,17 +663,17 @@ class _UpdateAction extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final ok = await updater.installDownloaded();
     if (!context.mounted || ok) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l.updSnackInstallFailed)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l.updSnackInstallFailed)));
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final hasUpdate = status.state == UpdateState.available ||
+    final hasUpdate =
+        status.state == UpdateState.available ||
         status.state == UpdateState.ready;
-
     if (hasUpdate) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -709,14 +692,15 @@ class _UpdateAction extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download_rounded, size: 18),
-            label: Text(status.state == UpdateState.ready
-                ? l.updInstallNow
-                : l.updDownloadInstall),
+            label: Text(
+              status.state == UpdateState.ready
+                  ? l.updInstallNow
+                  : l.updDownloadInstall,
+            ),
           ),
         ],
       );
     }
-
     return OutlinedButton.icon(
       onPressed: busy ? null : () => _check(context),
       icon: busy
@@ -730,4 +714,3 @@ class _UpdateAction extends StatelessWidget {
     );
   }
 }
-

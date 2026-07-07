@@ -1,52 +1,45 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/reports/pdf_theme.dart';
 
-/// PDF del Cronograma de Pagos con el estilo formal de Intranet.
-Future<pw.Document> buildCronogramaPdf(
-  CronogramaPagos data, {
+Future<pw.Document> buildSchedulePdf(
+  PaymentSchedule data, {
   Student? student,
   Term? periodo,
 }) async {
-  final doc = pw.Document(
-    title: 'Cronograma de Pagos',
-    author: 'Nexo',
-  );
-
-  final periodoLabel = periodo == null
+  final doc = pw.Document(title: 'Schedule de Pagos', author: 'Nexo');
+  final periodLabel = periodo == null
       ? ''
       : '${periodo.year}-${periodo.number == 1 ? 'I' : 'II'}';
-
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.fromLTRB(40, 36, 40, 30),
       header: (_) => pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 20),
-        child: pdfTitle('Cronograma de Pagos',
-            periodoSuffix: periodoLabel.isEmpty ? null : 'Semestre $periodoLabel'),
+        child: pdfTitle(
+          'Schedule de Pagos',
+          periodoSuffix: periodLabel.isEmpty ? null : 'Semestre $periodLabel',
+        ),
       ),
       footer: (_) => pdfFooter(),
       build: (_) => [
         if (student != null) _DatosEstudiante(student: student),
         if (student != null) pw.SizedBox(height: 18),
-        _TablaCuotas(cuotas: data.cuotas),
+        _TablaCuotas(installments: data.installments),
         pw.SizedBox(height: 10),
-        _Total(montoTotal: data.montoTotal),
+        _Total(totalAmount: data.totalAmount),
       ],
     ),
   );
-
   return doc;
 }
 
 class _DatosEstudiante extends pw.StatelessWidget {
   final Student student;
   _DatosEstudiante({required this.student});
-
   @override
   pw.Widget build(pw.Context context) {
     return pw.Column(
@@ -55,7 +48,7 @@ class _DatosEstudiante extends pw.StatelessWidget {
         pdfDataRow('Facultad', student.faculty),
         pdfDataRow('Carrera', student.career),
         pdfDataRow('Código', student.id),
-        pdfDataRow('Alumno', student.fullName),
+        pdfDataRow('Estudiante', student.fullName),
         pdfDataRow('Modalidad', student.modality),
       ],
     );
@@ -63,17 +56,16 @@ class _DatosEstudiante extends pw.StatelessWidget {
 }
 
 class _TablaCuotas extends pw.StatelessWidget {
-  final List<CuotaCronograma> cuotas;
-  _TablaCuotas({required this.cuotas});
-
+  final List<PaymentInstallment> installments;
+  _TablaCuotas({required this.installments});
   @override
   pw.Widget build(pw.Context context) {
-    if (cuotas.isEmpty) {
+    if (installments.isEmpty) {
       return pw.Container(
         padding: const pw.EdgeInsets.all(20),
         alignment: pw.Alignment.center,
         child: pw.Text(
-          'Sin cuotas registradas.',
+          'Sin installments registradas.',
           style: pw.TextStyle(
             fontSize: 10,
             color: PdfTheme.textMuted,
@@ -98,12 +90,12 @@ class _TablaCuotas extends pw.StatelessWidget {
             pdfTableHeader('Fecha de Vencimiento'),
           ],
         ),
-        for (final c in cuotas)
+        for (final c in installments)
           pw.TableRow(
             children: [
-              pdfTableCell(c.numero),
-              pdfTableCell('S/ ${c.monto.toStringAsFixed(2)}'),
-              pdfTableCell(c.fechaVencRaw),
+              pdfTableCell(c.number),
+              pdfTableCell('S/ ${c.amount.toStringAsFixed(2)}'),
+              pdfTableCell(c.rawDueDate),
             ],
           ),
       ],
@@ -112,9 +104,8 @@ class _TablaCuotas extends pw.StatelessWidget {
 }
 
 class _Total extends pw.StatelessWidget {
-  final double montoTotal;
-  _Total({required this.montoTotal});
-
+  final double totalAmount;
+  _Total({required this.totalAmount});
   @override
   pw.Widget build(pw.Context context) {
     return pw.Container(
@@ -137,7 +128,7 @@ class _Total extends pw.StatelessWidget {
             ),
           ),
           pw.Text(
-            'S/ ${montoTotal.toStringAsFixed(2)}',
+            'S/ ${totalAmount.toStringAsFixed(2)}',
             style: pw.TextStyle(
               fontSize: 13,
               fontWeight: pw.FontWeight.bold,

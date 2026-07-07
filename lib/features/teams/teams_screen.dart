@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -17,10 +16,8 @@ import 'package:nexo/shared/widgets/upcoming_assignments_widget.dart';
 
 class TeamsScreen extends StatefulWidget {
   const TeamsScreen({super.key, required this.store, required this.msAuth});
-
   final AppStore store;
   final MsAuthService msAuth;
-
   @override
   State<TeamsScreen> createState() => _TeamsScreenState();
 }
@@ -106,7 +103,6 @@ class _ScrollBody extends StatelessWidget {
   final Widget child;
   final bool alwaysScrollable;
   const _ScrollBody({required this.child, this.alwaysScrollable = false});
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -126,7 +122,6 @@ class _ScrollBody extends StatelessWidget {
 class _ConnectedView extends StatelessWidget {
   final AppStore store;
   const _ConnectedView({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -136,7 +131,6 @@ class _ConnectedView extends StatelessWidget {
       for (final c in classes.value ?? const <TeamsClass>[])
         c.id: c.displayName,
     };
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -144,7 +138,7 @@ class _ConnectedView extends StatelessWidget {
           state: classes,
           title: l.teamsMySubjects,
           icon: Icons.groups_outlined,
-          builder: (v) => TeamsClassesWidget(clases: v),
+          builder: (v) => TeamsClassesWidget(classes: v),
         ),
         const Gap(AppSpacing.lg),
         _Slice(
@@ -170,7 +164,6 @@ class _Slice<T> extends StatelessWidget {
     required this.icon,
     required this.builder,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -206,7 +199,6 @@ class _Slice<T> extends StatelessWidget {
 class _ConnectCard extends StatelessWidget {
   final MsAuthService auth;
   const _ConnectCard({required this.auth});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -254,7 +246,6 @@ class _ConnectCard extends StatelessWidget {
 class _DeviceCodeCard extends StatelessWidget {
   final MsAuthService auth;
   const _DeviceCodeCard({required this.auth});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -372,7 +363,6 @@ class _Step extends StatelessWidget {
   final String number;
   final Widget child;
   const _Step({required this.number, required this.child});
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -406,7 +396,6 @@ class _CodeChip extends StatelessWidget {
   final String code;
   final VoidCallback onCopy;
   const _CodeChip({required this.code, required this.onCopy});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -450,7 +439,6 @@ class _CodeChip extends StatelessWidget {
 class _ErrorBox extends StatelessWidget {
   final String message;
   const _ErrorBox({required this.message});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -487,7 +475,6 @@ class _ErrorBox extends StatelessWidget {
 
 class _NotConfiguredCard extends StatelessWidget {
   const _NotConfiguredCard();
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -529,11 +516,13 @@ class _NotConfiguredCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ..._TeamsFaqItem.getItems(context).map((item) => _CollapsibleInfo(
-                  title: item.title,
-                  description: item.description,
-                  bulletPoints: item.bulletPoints,
-                )),
+            ..._TeamsFaqItem.getItems(context).map(
+              (item) => _CollapsibleInfo(
+                title: item.title,
+                description: item.description,
+                bulletPoints: item.bulletPoints,
+              ),
+            ),
           ],
         ),
       ),
@@ -545,20 +534,17 @@ class _CollapsibleInfo extends StatefulWidget {
   final String title;
   final String description;
   final List<String> bulletPoints;
-
   const _CollapsibleInfo({
     required this.title,
     required this.description,
     required this.bulletPoints,
   });
-
   @override
   State<_CollapsibleInfo> createState() => _CollapsibleInfoState();
 }
 
 class _CollapsibleInfoState extends State<_CollapsibleInfo> {
   bool _isExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -663,7 +649,9 @@ class _CollapsibleInfoState extends State<_CollapsibleInfo> {
                 ],
               ),
             ),
-            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 250),
           ),
         ],
@@ -676,20 +664,19 @@ class _TeamsFaqItem {
   final String title;
   final String description;
   final List<String> bulletPoints;
-
   _TeamsFaqItem({
     required this.title,
     required this.description,
     required this.bulletPoints,
   });
-
   static List<_TeamsFaqItem> getItems(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     if (locale == 'en') {
       return [
         _TeamsFaqItem(
           title: "What is the Microsoft Teams integration?",
-          description: "Nexo UPLA will securely connect with the university's Microsoft Teams servers using your institutional credentials. This will unify your virtual classes, assignments, and grades in a single interface.",
+          description:
+              "Nexo UPLA will securely connect with the university's Microsoft Teams servers using your institutional credentials. This will unify your virtual classes, assignments, and grades in a single interface.",
           bulletPoints: [
             "Virtual Classes View: See your class schedule, direct links to join videocalls, and past recordings without leaving Nexo.",
             "Assignments Monitoring: Automated synchronization of all pending Teams assignments, including due dates and notifications before they expire.",
@@ -699,7 +686,8 @@ class _TeamsFaqItem {
         ),
         _TeamsFaqItem(
           title: "How will account linking work?",
-          description: "When this feature is released, linking your account will be quick and secure:",
+          description:
+              "When this feature is released, linking your account will be quick and secure:",
           bulletPoints: [
             "Nexo will display a unique Microsoft verification code.",
             "You will click the link to open the official Microsoft login page in your browser.",
@@ -712,10 +700,11 @@ class _TeamsFaqItem {
       return [
         _TeamsFaqItem(
           title: "Imamanta Microsoft Teams chaskina rimakun? (Integración)",
-          description: "Nexo UPLA Microsoft Teams llikawan tupanqa (correo institucional yupaywan). Kaypi virtual yachayniykikunata, ruranakunata hinaspa notasniykikunata qawayta atinki.",
+          description:
+              "Nexo UPLA Microsoft Teams llikawan tupanqa (correo institucional yupaywan). Kaypi virtual yachayniykikunata, ruranakunata hinaspa notasniykikunata qawayta atinki.",
           bulletPoints: [
             "Virtual Yachaykuna Qaway (Clases Virtuales): Horariota hinaspa directollanta link videollamadasman yaykunaykipaq.",
-            "Ruranakuna (Tareas y Entregas): Sincronización automática de todas las asignaciones pendientes en Teams.",
+            "Ruranakuna (Tareas y Entregas): Sincronización automática de todas las asignaciones pending en Teams.",
             "Seguridad y Privacidad: Microsoft Device Code nisqawan, contraseñaykiqa mana Nexopi churasqachu kanqa.",
           ],
         ),
@@ -724,17 +713,19 @@ class _TeamsFaqItem {
       return [
         _TeamsFaqItem(
           title: "¿De qué trata la integración con Microsoft Teams?",
-          description: "Nexo UPLA se conectará de manera segura y directa con los servidores de Microsoft Teams de la universidad (utilizando las credenciales de tu correo institucional). Esto permitirá unificar tus clases virtuales, tareas y calificaciones en un solo entorno.",
+          description:
+              "Nexo UPLA se conectará de manera segura y directa con los servidores de Microsoft Teams de la universidad (utilizando las credenciales de tu correo institucional). Esto permitirá unificar tus clases virtuales, tareas y calificaciones en un solo entorno.",
           bulletPoints: [
             "Visualización de Clases Virtuales: Podrás ver el horario, enlace directo a las videollamadas de tus clases y las grabaciones pasadas de cada asignatura sin salir de Nexo.",
             "Monitoreo de Tareas y Entregas: Sincronización automática de todas las asignaciones pendientes en Teams, incluyendo fechas límite y notificaciones automáticas antes de que expiren.",
-            "Historial de Calificaciones e Indicadores: Visualiza los comentarios y notas de los docentes de forma inmediata en tu dashboard.",
-            "Seguridad y Privacidad: La autenticación se realiza directamente mediante Microsoft Device Code, lo que garantiza que tus contrasezas nunca pasen ni se almacenen en nuestros servidores locales.",
+            "Historial de Calificaciones e Indicadores: Visualiza los comentarios y notas de los docentes de forma inmediata en tu panel.",
+            "Seguridad y Privacidad: La autenticación se realiza directamente mediante Microsoft Device Code, lo que garantiza que tus contraseñas nunca pasen ni se almacenen en nuestros servidores locales.",
           ],
         ),
         _TeamsFaqItem(
           title: "¿Cómo funcionará la vinculación de cuenta?",
-          description: "Cuando la función esté disponible, el proceso de vinculación será rápido y seguro:",
+          description:
+              "Cuando la función esté disponible, el proceso de vinculación será rápido y seguro:",
           bulletPoints: [
             "Nexo te mostrará un código de verificación de Microsoft único de un solo uso.",
             "Presionarás el enlace para abrir la página oficial de Microsoft en tu navegador.",

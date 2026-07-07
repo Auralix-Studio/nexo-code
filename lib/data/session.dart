@@ -1,38 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/api_client.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/domain/models.dart';
 
-/// Estados posibles de la sesión.
 enum SessionStatus { unknown, authenticated, unauthenticated }
 
-/// Servicio central de autenticación + sesión persistida con
-/// re-login automático mediante credenciales guardadas.
 class SessionService extends ChangeNotifier {
   SessionService({required ApiClient apiClient, required SigmaRepository repo})
-      : _api = apiClient,
-        _repo = repo {
+    : _api = apiClient,
+      _repo = repo {
     _api.onUnauthorized = _onAuthFailed;
     _api.reauthenticate = _reauthenticate;
   }
-
   final ApiClient _api;
   final SigmaRepository _repo;
-
   SessionStatus _status = SessionStatus.unknown;
-  UserInfo? _user;
+  UserProfile? _user;
   Future<bool>? _inFlightReauth;
-
   SessionStatus get status => _status;
-  UserInfo? get user => _user;
+  UserProfile? get user => _user;
   bool get isAuthenticated => _status == SessionStatus.authenticated;
-
-  /// Arranque: usa el token guardado; si no hay, intenta re-login
-  /// automático con las credenciales persistidas.
   Future<void> bootstrap() async {
     final storage = AppStorage.instance;
     final tok = storage.token;
@@ -41,13 +31,12 @@ class SessionService extends ChangeNotifier {
       final raw = storage.userJson;
       if (raw != null) {
         try {
-          _user = UserInfo.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+          _user = UserProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
         } catch (_) {}
       }
       _setStatus(SessionStatus.authenticated);
       return;
     }
-    // Sin token: probar auto-login.
     if (storage.hasCredentials) {
       final ok = await _reauthenticate();
       if (ok) {
@@ -58,7 +47,6 @@ class SessionService extends ChangeNotifier {
     _setStatus(SessionStatus.unauthenticated);
   }
 
-  /// Login manual: autentica y **persiste credenciales** para auto-login.
   Future<void> login(String usuarioId, String password) async {
     final result = await _repo.login(usuarioId, password);
     await _persistSession(result);
@@ -74,7 +62,6 @@ class SessionService extends ChangeNotifier {
     }
   }
 
-  /// Re-autenticación transparente (deduplicada si hay varias en vuelo).
   Future<bool> _reauthenticate() {
     return _inFlightReauth ??= _doReauth()
       ..whenComplete(() => _inFlightReauth = null);
@@ -94,7 +81,6 @@ class SessionService extends ChangeNotifier {
     }
   }
 
-  /// Cierre de sesión explícito por el usuario: olvida credenciales.
   Future<void> logout() async {
     await AppStorage.instance.clear(keepCredentials: false);
     _api.setToken(null);
@@ -102,7 +88,6 @@ class SessionService extends ChangeNotifier {
     _setStatus(SessionStatus.unauthenticated);
   }
 
-  /// Fallo de auth irrecuperable (re-login también falló).
   void _onAuthFailed() {
     scheduleMicrotask(() async {
       await AppStorage.instance.clear(keepCredentials: false);

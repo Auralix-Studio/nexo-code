@@ -1,29 +1,17 @@
 ﻿# generate_release_notes.ps1 — Genera las notas del release para GitHub
 
-#
-
 # Extrae la sección correspondiente a la versión actual de CHANGELOG.md y
-
 # genera un archivo RELEASE_NOTES.md en dist/ con la tabla de artefactos,
-
 # hashes SHA-256 e instrucciones de instalación.
 
-#
-
 # Uso:
-
 #   powershell -ExecutionPolicy Bypass -File scripts\generate_release_notes.ps1
-
 #   (ejecutar DESPUÉS de build_release.ps1 para que dist/ tenga los artefactos)
-
 #
 
 # Fuentes:
-
 #   - CHANGELOG.md del repo nexo-releases (../nexo-releases/CHANGELOG.md)
-
 #     o fallback a uno local si no existe
-
 #   - dist/ (artefactos compilados + SHA256SUMS.txt)
 
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
@@ -16,23 +15,21 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
 
-/// Dashboard del módulo Docente: perfil + métricas + acceso a cada curso.
-class DocenteScreen extends StatefulWidget {
-  const DocenteScreen({super.key, required this.store});
+class TeacherScreen extends StatefulWidget {
+  const TeacherScreen({super.key, required this.store});
   final AppStore store;
-
   @override
-  State<DocenteScreen> createState() => _DocenteScreenState();
+  State<TeacherScreen> createState() => _TeacherScreenState();
 }
 
-class _DocenteScreenState extends State<DocenteScreen> {
+class _TeacherScreenState extends State<TeacherScreen> {
   @override
   void initState() {
     super.initState();
     final s = widget.store;
-    if (!s.docenteInfo.hasValue) s.loadDocenteInfo();
-    if (!s.docenteAsignaturas.hasValue) s.loadDocenteAsignaturas();
-    if (!s.docenteHorario.hasValue) s.loadDocenteHorario();
+    if (!s.teacherInfo.hasValue) s.loadTeacherInfo();
+    if (!s.teacherSubjects.hasValue) s.loadTeacherSubjects();
+    if (!s.teacherSchedule.hasValue) s.loadDocenteHorario();
   }
 
   @override
@@ -43,14 +40,15 @@ class _DocenteScreenState extends State<DocenteScreen> {
         return RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
-              widget.store.loadDocenteInfo(),
-              widget.store.loadDocenteAsignaturas(),
+              widget.store.loadTeacherInfo(),
+              widget.store.loadTeacherSubjects(),
               widget.store.loadDocenteHorario(),
             ]);
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverToBoxAdapter(
                 child: PageHeader(
@@ -65,12 +63,15 @@ class _DocenteScreenState extends State<DocenteScreen> {
                     children: [
                       Reveal(
                         index: 0,
-                        child: _HeroInfoCard(state: widget.store.docenteInfo),
+                        child: _HeroInfoCard(state: widget.store.teacherInfo),
                       ),
                       const Gap(AppSpacing.lg),
                       Reveal(index: 1, child: _TodayCard(store: widget.store)),
                       const Gap(AppSpacing.lg),
-                      Reveal(index: 2, child: _MetricsGrid(store: widget.store)),
+                      Reveal(
+                        index: 2,
+                        child: _MetricsGrid(store: widget.store),
+                      ),
                     ],
                   ),
                 ),
@@ -84,12 +85,9 @@ class _DocenteScreenState extends State<DocenteScreen> {
   }
 }
 
-// ===== Hero card: perfil del docente =====
-
 class _HeroInfoCard extends StatelessWidget {
-  final AsyncValue<DocenteInfo> state;
+  final AsyncValue<TeacherInfo> state;
   const _HeroInfoCard({required this.state});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -97,8 +95,7 @@ class _HeroInfoCard extends StatelessWidget {
       return const Skeleton(height: 130, radius: 22);
     }
     final info = state.value;
-    if (info == null || info.codigo.isEmpty) return const SizedBox.shrink();
-
+    if (info == null || info.code.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
@@ -121,8 +118,11 @@ class _HeroInfoCard extends StatelessWidget {
           CircleAvatar(
             radius: 32,
             backgroundColor: Colors.white.withValues(alpha: 0.18),
-            child: const Icon(Icons.person_rounded,
-                color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.person_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const Gap.h(AppSpacing.lg),
           Expanded(
@@ -153,14 +153,14 @@ class _HeroInfoCard extends StatelessWidget {
                 GestureDetector(
                   onTap: () => ClipboardHelper.copyAndShow(
                     context,
-                    info.codigo,
+                    info.code,
                     label: l.docenteCodeLabel,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        info.codigo,
+                        info.code,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.88),
                           fontSize: AppFont.body,
@@ -173,10 +173,10 @@ class _HeroInfoCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.7),
                         size: 13,
                       ),
-                      if ((info.facultad ?? '').isNotEmpty) ...[
+                      if ((info.faculty ?? '').isNotEmpty) ...[
                         const SizedBox(width: 6),
                         Text(
-                          '· ${info.facultad}',
+                          '· ${info.faculty}',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.88),
                             fontSize: AppFont.body,
@@ -196,23 +196,21 @@ class _HeroInfoCard extends StatelessWidget {
   }
 }
 
-// ===== Métricas (cursos, alumnos, notas pendientes) =====
-
 class _MetricsGrid extends StatelessWidget {
   final AppStore store;
   const _MetricsGrid({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final cursos = store.docenteAsignaturas.value ?? const <DocenteAsignatura>[];
-    final totalAlumnos =
-        cursos.fold<int>(0, (a, c) => a + (c.matriculados ?? 0));
-
+    final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
+    final totalAlumnos = courses.fold<int>(
+      0,
+      (a, c) => a + (c.enrolledCount ?? 0),
+    );
     final stats = <_StatData>[
       _StatData(
         label: l.docenteMetricCursos,
-        value: '${cursos.length}',
+        value: '${courses.length}',
         icon: Icons.menu_book_rounded,
         color: NexoTheme.primary,
       ),
@@ -224,12 +222,11 @@ class _MetricsGrid extends StatelessWidget {
       ),
       _StatData(
         label: l.docenteMetricPeriodo,
-        value: cursos.isEmpty ? '—' : cursos.first.periodo,
+        value: courses.isEmpty ? '—' : courses.first.periodo,
         icon: Icons.calendar_month_rounded,
         color: NexoTheme.success,
       ),
     ];
-
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -261,7 +258,6 @@ class _StatData {
 class _StatTile extends StatelessWidget {
   final _StatData data;
   const _StatTile({required this.data});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -304,29 +300,24 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// Card "Hoy" — preview de las clases que el docente dicta hoy.
 class _TodayCard extends StatelessWidget {
   final AppStore store;
   const _TodayCard({required this.store});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final today = DateTime.now().weekday;
-    final state = store.docenteHorario;
-
+    final state = store.teacherSchedule;
     if (state.loading && !state.hasValue) {
       return const Skeleton(height: 140, radius: 22);
     }
-
-    final clases = (state.value ?? const <ScheduleClass>[])
-        .where((c) => c.weekday == today)
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
+    final clases =
+        (state.value ?? const <ScheduleClass>[])
+            .where((c) => c.weekday == today)
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
     final h24 = AppStorage.instance.use24h;
     final isToday = today >= 1 && today <= 7;
-
     return SectionCard(
       title: l.docenteToday,
       subtitle: isToday ? Fmt.dayLabel(today) : '',
@@ -344,8 +335,11 @@ class _TodayCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Icon(Icons.coffee_outlined,
-                      size: 32, color: NexoTheme.textSecondary),
+                  Icon(
+                    Icons.coffee_outlined,
+                    size: 32,
+                    color: NexoTheme.textSecondary,
+                  ),
                   const Gap(AppSpacing.sm),
                   Text(
                     l.docenteNoClassesToday,
@@ -374,7 +368,6 @@ class _TodaySessionRow extends StatelessWidget {
   final ScheduleClass c;
   final bool h24;
   const _TodaySessionRow({required this.c, required this.h24});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -382,13 +375,11 @@ class _TodaySessionRow extends StatelessWidget {
     final color = isTeoria ? NexoTheme.info : NexoTheme.success;
     final hi = Fmt.time(c.startTime, h24: h24);
     final hf = Fmt.time(c.endTime, h24: h24);
-
     final grupo = ScheduleClassGroup(
       subject: c.subject,
       weekday: c.weekday,
       sessions: [c],
     );
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -430,8 +421,7 @@ class _TodaySessionRow extends StatelessWidget {
                     const Gap(AppSpacing.xs),
                     Row(
                       children: [
-                        Icon(Icons.access_time_rounded,
-                            size: 13, color: color),
+                        Icon(Icons.access_time_rounded, size: 13, color: color),
                         const SizedBox(width: 4),
                         Text(
                           '$hi – $hf',
@@ -442,8 +432,11 @@ class _TodaySessionRow extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Icon(Icons.location_on_outlined,
-                            size: 13, color: NexoTheme.textSecondary),
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: NexoTheme.textSecondary,
+                        ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
@@ -463,7 +456,9 @@ class _TodaySessionRow extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: 3),
+                  horizontal: AppSpacing.sm,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.14),
                   borderRadius: AppRadii.rPill,

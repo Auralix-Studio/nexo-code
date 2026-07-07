@@ -1,7 +1,5 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -24,37 +22,36 @@ class _Page {
 }
 
 List<_Page> _pages(AppLocalizations l) => [
-      _Page(
-        icon: Icons.auto_awesome,
-        title: l.onboardingTitleWelcome,
-        body: l.onboardingBodyWelcome,
-        color: NexoTheme.primary,
-        isIntro: true,
-      ),
-      _Page(
-        icon: Icons.calendar_today_rounded,
-        title: l.onboardingTitleSchedule,
-        body: l.onboardingBodySchedule,
-        color: NexoTheme.accent,
-      ),
-      _Page(
-        icon: Icons.account_balance_wallet_rounded,
-        title: l.onboardingTitlePayments,
-        body: l.onboardingBodyPayments,
-        color: NexoTheme.warning,
-      ),
-      _Page(
-        icon: Icons.widgets_rounded,
-        title: l.onboardingTitleWidgets,
-        body: l.onboardingBodyWidgets,
-        color: NexoTheme.success,
-      ),
-    ];
+  _Page(
+    icon: Icons.auto_awesome,
+    title: l.onboardingTitleWelcome,
+    body: l.onboardingBodyWelcome,
+    color: NexoTheme.primary,
+    isIntro: true,
+  ),
+  _Page(
+    icon: Icons.calendar_today_rounded,
+    title: l.onboardingTitleSchedule,
+    body: l.onboardingBodySchedule,
+    color: NexoTheme.accent,
+  ),
+  _Page(
+    icon: Icons.account_balance_wallet_rounded,
+    title: l.onboardingTitlePayments,
+    body: l.onboardingBodyPayments,
+    color: NexoTheme.warning,
+  ),
+  _Page(
+    icon: Icons.widgets_rounded,
+    title: l.onboardingTitleWidgets,
+    body: l.onboardingBodyWidgets,
+    color: NexoTheme.success,
+  ),
+];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onDone});
   final VoidCallback onDone;
-
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
@@ -63,9 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
   static const int _pageCount = 4;
-
   bool get _isLast => _index == _pageCount - 1;
-
   @override
   void dispose() {
     _controller.dispose();
@@ -89,18 +84,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isDesktop = context.isDesktop;
     final pages = _pages(l);
     final page = pages[_index];
-
     final pager = PageView.builder(
       controller: _controller,
       itemCount: pages.length,
       onPageChanged: (i) => setState(() => _index = i),
-      itemBuilder: (_, i) => _Slide(
-        page: pages[i],
-        active: _index == i,
-        compact: isDesktop, // en desktop la ilustración va al panel izq.
-      ),
+      itemBuilder: (_, i) =>
+          _Slide(page: pages[i], active: _index == i, compact: isDesktop),
     );
-
     final controls = _Controls(
       index: _index,
       total: pages.length,
@@ -110,15 +100,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       onNext: _next,
       l: l,
     );
-
     if (isDesktop) {
       return Scaffold(
         body: Row(
           children: [
-            Expanded(
-              flex: 5,
-              child: _VisualPane(page: page),
-            ),
+            Expanded(flex: 5, child: _VisualPane(page: page)),
             Expanded(
               flex: 6,
               child: SafeArea(
@@ -133,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           duration: AppDurations.fast,
                           child: TextButton(
                             onPressed: _isLast ? null : widget.onDone,
-                              child: Text(l.actionSkip),
+                            child: Text(l.actionSkip),
                           ),
                         ),
                       ),
@@ -141,8 +127,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Expanded(
                       child: Center(
                         child: ConstrainedBox(
-                          constraints:
-                              const BoxConstraints(maxWidth: 460),
+                          constraints: const BoxConstraints(maxWidth: 460),
                           child: pager,
                         ),
                       ),
@@ -159,8 +144,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
       );
     }
-
-    // Móvil / tablet.
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -223,7 +206,6 @@ class _Controls extends StatelessWidget {
     required this.onNext,
     required this.l,
   });
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -272,11 +254,9 @@ class _Controls extends StatelessWidget {
   }
 }
 
-/// Panel visual de escritorio (lado izquierdo).
 class _VisualPane extends StatelessWidget {
   final _Page page;
   const _VisualPane({required this.page});
-
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
@@ -284,10 +264,7 @@ class _VisualPane extends StatelessWidget {
       curve: Curves.easeOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            page.color,
-            Color.lerp(page.color, Colors.black, 0.35)!,
-          ],
+          colors: [page.color, Color.lerp(page.color, Colors.black, 0.35)!],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -341,16 +318,15 @@ class _VisualPane extends StatelessWidget {
   }
 
   Widget _halo(double s, Color c) => Container(
-        width: s,
-        height: s,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: c),
-      );
+    width: s,
+    height: s,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: c),
+  );
 }
 
 class _GlassBadge extends StatelessWidget {
   final _Page page;
   const _GlassBadge({required this.page});
-
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
@@ -358,8 +334,7 @@ class _GlassBadge extends StatelessWidget {
       tween: Tween(begin: 0.8, end: 1),
       duration: AppDurations.slow,
       curve: Curves.easeOutBack,
-      builder: (_, v, child) =>
-          Transform.scale(scale: v, child: child),
+      builder: (_, v, child) => Transform.scale(scale: v, child: child),
       child: Container(
         width: 96,
         height: 96,
@@ -376,7 +351,6 @@ class _GlassBadge extends StatelessWidget {
   }
 }
 
-/// Slide para móvil (ilustración + textos) o solo textos en desktop.
 class _Slide extends StatelessWidget {
   final _Page page;
   final bool active;
@@ -386,7 +360,6 @@ class _Slide extends StatelessWidget {
     required this.active,
     required this.compact,
   });
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -434,7 +407,6 @@ class _Slide extends StatelessWidget {
 class _Illustration extends StatelessWidget {
   final _Page page;
   const _Illustration({required this.page});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(

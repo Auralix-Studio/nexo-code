@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -20,18 +19,16 @@ import 'package:nexo/shared/widgets/status_chip.dart';
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key, required this.store});
   final AppStore store;
-
   @override
   State<ScheduleScreen> createState() => _HorarioScreenState();
 }
 
 class _HorarioScreenState extends State<ScheduleScreen> {
   bool _weekView = true;
-
   @override
   void initState() {
     super.initState();
-    if (!widget.store.horario.hasValue) {
+    if (!widget.store.schedule.hasValue) {
       widget.store.loadHorarioActual();
     }
   }
@@ -41,10 +38,10 @@ class _HorarioScreenState extends State<ScheduleScreen> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final state = widget.store.horario;
-        // Cuenta las clases ya agrupadas (teoría + práctica de un mismo
-        // curso en un día = 1 clase), igual que las tarjetas que ve el alumno.
-        final agrupadas = ScheduleClassGroup.groupBy(state.value ?? const []).length;
+        final state = widget.store.schedule;
+        final agrupadas = ScheduleClassGroup.groupBy(
+          state.value ?? const [],
+        ).length;
         final list = RefreshIndicator(
           onRefresh: () => widget.store.loadHorarioActual(),
           child: CustomScrollView(
@@ -69,7 +66,6 @@ class _HorarioScreenState extends State<ScheduleScreen> {
               ),
               SliverToBoxAdapter(
                 child: PageBody(
-                  // Transición suave al alternar Semana ↔ Lista.
                   child: AnimatedSwitcher(
                     duration: AppDurations.normal,
                     switchInCurve: Curves.easeOutCubic,
@@ -140,7 +136,6 @@ class _ViewToggle extends StatelessWidget {
   final bool weekView;
   final ValueChanged<bool> onChanged;
   const _ViewToggle({required this.weekView, required this.onChanged});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -187,10 +182,8 @@ class _ViewToggle extends StatelessWidget {
 class _WeekView extends StatelessWidget {
   final List<ScheduleClass> clases;
   const _WeekView({required this.clases});
-
   @override
   Widget build(BuildContext context) {
-    // Agrupar por día.
     final byDay = <int, List<ScheduleClass>>{};
     for (final c in clases) {
       byDay.putIfAbsent(c.weekday, () => []).add(c);
@@ -198,7 +191,6 @@ class _WeekView extends StatelessWidget {
     for (final list in byDay.values) {
       list.sort((a, b) => a.startTime.compareTo(b.startTime));
     }
-
     final today = DateTime.now().weekday;
     final daysOrder = [
       1,
@@ -215,7 +207,6 @@ class _WeekView extends StatelessWidget {
         title: 'Sin clases programadas',
       );
     }
-
     final cards = [
       for (var i = 0; i < daysOrder.length; i++)
         Reveal(
@@ -227,9 +218,6 @@ class _WeekView extends StatelessWidget {
           ),
         ),
     ];
-
-    // Escritorio: grilla de 2 columnas (cada día en su lugar, no una columna
-    // angosta). Móvil/tablet: apilado vertical.
     if (context.isDesktop) {
       const spacing = 14.0;
       return LayoutBuilder(
@@ -245,14 +233,10 @@ class _WeekView extends StatelessWidget {
         },
       );
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final card in cards) ...[
-          card,
-          const SizedBox(height: 14),
-        ],
+        for (final card in cards) ...[card, const SizedBox(height: 14)],
       ],
     );
   }
@@ -261,22 +245,17 @@ class _WeekView extends StatelessWidget {
 class _DayListView extends StatelessWidget {
   final List<ScheduleClass> clases;
   const _DayListView({required this.clases});
-
   @override
   Widget build(BuildContext context) {
-    // Primero agrupamos por día
     final byDay = <int, List<ScheduleClass>>{};
     for (final c in clases) {
       byDay.putIfAbsent(c.weekday, () => []).add(c);
     }
-
-    // Convertimos cada día en grupos unificados
     final gruposTotales = <ScheduleClassGroup>[];
     final days = byDay.keys.toList()..sort();
     for (final d in days) {
       gruposTotales.addAll(ScheduleClassGroup.groupBy(byDay[d]!));
     }
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -300,17 +279,15 @@ class _DaySection extends StatelessWidget {
   final int day;
   final List<ScheduleClass> clases;
   final bool isToday;
-
   const _DaySection({
     required this.day,
     required this.clases,
     required this.isToday,
   });
-
   @override
   Widget build(BuildContext context) {
     final grupos = ScheduleClassGroup.groupBy(clases);
-
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -341,7 +318,7 @@ class _DaySection extends StatelessWidget {
                 if (isToday) StatusChip(text: 'HOY', color: NexoTheme.primary),
                 const Spacer(),
                 Text(
-                  '${grupos.length} ${grupos.length == 1 ? 'curso' : 'cursos'}',
+                  l.gradesCoursesCount(grupos.length),
                   style: TextStyle(
                     fontSize: 12,
                     color: NexoTheme.textMuted,
@@ -366,14 +343,12 @@ class _GrupoTile extends StatefulWidget {
   final ScheduleClassGroup grupo;
   final bool showDay;
   const _GrupoTile({required this.grupo, this.showDay = false});
-
   @override
   State<_GrupoTile> createState() => _GrupoTileState();
 }
 
 class _GrupoTileState extends State<_GrupoTile> {
   bool _isHovered = false;
-
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -410,12 +385,14 @@ class _GrupoTileState extends State<_GrupoTile> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Time block
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     width: 80,
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _isHovered
                           ? NexoTheme.primary.withValues(alpha: 0.06)
@@ -493,8 +470,14 @@ class _GrupoTileState extends State<_GrupoTile> {
                                 Fmt.dayLabel(widget.grupo.weekday),
                               ),
                             if (widget.grupo.room.isNotEmpty)
-                              _meta(Icons.location_on_outlined, Fmt.formatAula(widget.grupo.room)),
-                            _meta(Icons.tag_rounded, widget.grupo.sessions.first.section),
+                              _meta(
+                                Icons.location_on_outlined,
+                                Fmt.formatAula(widget.grupo.room),
+                              ),
+                            _meta(
+                              Icons.tag_rounded,
+                              widget.grupo.sessions.first.section,
+                            ),
                           ],
                         ),
                         if (widget.grupo.teacher.isNotEmpty) ...[
@@ -522,7 +505,6 @@ class _GrupoTileState extends State<_GrupoTile> {
                           ),
                         ],
                         const SizedBox(height: 8),
-                        // Sesiones unificadas
                         for (final s in widget.grupo.sessions)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 2),
@@ -565,30 +547,29 @@ class _GrupoTileState extends State<_GrupoTile> {
   }
 
   Widget _meta(IconData icon, String text) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: NexoTheme.textSecondary),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-              style: TextStyle(
-                fontSize: 12,
-                color: NexoTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 13, color: NexoTheme.textSecondary),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: TextStyle(
+            fontSize: 12,
+            color: NexoTheme.textSecondary,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }
 
 class _Loading extends StatelessWidget {
   const _Loading();
-
   @override
   Widget build(BuildContext context) {
     return Column(

@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
-/// Lista las clases de Teams del alumno tal como las devuelve Graph
-/// (nombre original de la asignatura). Sin personalización: solo validación.
 class TeamsClassesWidget extends StatelessWidget {
-  final List<TeamsClass> clases;
-  const TeamsClassesWidget({super.key, required this.clases});
-
+  final List<TeamsClass> classes;
+  const TeamsClassesWidget({super.key, required this.classes});
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SectionCard(
-      title: 'Mis asignaturas',
-      subtitle: 'Grupos de Teams',
+      title: l10n.widgetTeamsTitle,
+      subtitle: l10n.widgetTeamsSubtitle,
       icon: Icons.groups_outlined,
       iconColor: NexoTheme.accent,
-      trailing: _Counter(count: clases.length),
-      child: clases.isEmpty
+      trailing: _Counter(count: classes.length),
+      child: classes.isEmpty
           ? const _Empty()
           : Column(
               children: [
-                for (var i = 0; i < clases.length; i++) ...[
-                  _ClassTile(clase: clases[i]),
-                  if (i < clases.length - 1) const Gap(AppSpacing.sm + 2),
+                for (var i = 0; i < classes.length; i++) ...[
+                  _ClassTile(teamClass: classes[i]),
+                  if (i < classes.length - 1) const Gap(AppSpacing.sm + 2),
                 ],
               ],
             ),
@@ -36,37 +34,35 @@ class TeamsClassesWidget extends StatelessWidget {
 class _Counter extends StatelessWidget {
   final int count;
   const _Counter({required this.count});
-
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: NexoTheme.accent.withValues(alpha: 0.1),
-          borderRadius: AppRadii.rPill,
-        ),
-        child: Text(
-          '$count',
-          style: TextStyle(
-            fontSize: AppFont.small,
-            fontWeight: FontWeight.w600,
-            color: NexoTheme.accent,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.sm + 2,
+      vertical: AppSpacing.xs,
+    ),
+    decoration: BoxDecoration(
+      color: NexoTheme.accent.withValues(alpha: 0.1),
+      borderRadius: AppRadii.rPill,
+    ),
+    child: Text(
+      '$count',
+      style: TextStyle(
+        fontSize: AppFont.small,
+        fontWeight: FontWeight.w600,
+        color: NexoTheme.accent,
+      ),
+    ),
+  );
 }
 
 class _ClassTile extends StatelessWidget {
-  final TeamsClass clase;
-  const _ClassTile({required this.clase});
-
+  final TeamsClass teamClass;
+  const _ClassTile({required this.teamClass});
   @override
   Widget build(BuildContext context) {
-    final subtitle = clase.classCode.isNotEmpty
-        ? clase.classCode
-        : (clase.description.isNotEmpty ? clase.description : null);
+    final subtitle = teamClass.classCode.isNotEmpty
+        ? teamClass.classCode
+        : (teamClass.description.isNotEmpty ? teamClass.description : null);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg - 2),
       decoration: BoxDecoration(
@@ -90,7 +86,7 @@ class _ClassTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  clase.displayName,
+                  teamClass.displayName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -125,22 +121,21 @@ class _Empty extends StatelessWidget {
   const _Empty();
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            Icon(Icons.school_outlined,
-                size: 36, color: NexoTheme.textSecondary),
-            const Gap(AppSpacing.sm),
-            Text(
-              'No hay asignaturas en Teams',
-              style: TextStyle(
-                fontSize: AppFont.body,
-                color: NexoTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
+    alignment: Alignment.center,
+    child: Column(
+      children: [
+        Icon(Icons.school_outlined, size: 36, color: NexoTheme.textSecondary),
+        const Gap(AppSpacing.sm),
+        Text(
+          AppLocalizations.of(context).widgetTeamsEmpty,
+          style: TextStyle(
+            fontSize: AppFont.body,
+            color: NexoTheme.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }

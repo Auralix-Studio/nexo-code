@@ -5,54 +5,54 @@ import 'package:nexo/domain/unified_models.dart';
 
 // ─── Helpers ───
 
-BoletaCurso _curso(double credito, String nota, [String codigo = 'X']) =>
-    BoletaCurso(
-      matriculaAsignaturaId: codigo,
+ReportCardCourse _curso(double credit, String grade, [String code = 'X']) =>
+    ReportCardCourse(
+      enrollmentSubjectId: code,
       plan: '2022',
-      codigo: codigo,
-      nombre: 'Curso $codigo',
-      seccion: 'A',
-      credito: credito,
-      asistenciaRaw: '100',
-      promedioRaw: nota,
-      estado: nota.trim().isEmpty || nota.trim() == '-' ? '-' : 'Dsp.',
+      code: code,
+      name: 'Course $code',
+      section: 'A',
+      credit: credit,
+      rawAttendance: '100',
+      rawAverage: grade,
+      state: grade.trim().isEmpty || grade.trim() == '-' ? '-' : 'Dsp.',
     );
 
-const _parcialVacio = NotasParcial(
-  practicas: ['', '', '', ''],
-  promPracticas: '',
-  trabajoInv: '',
-  proyecto: '',
-  promTiPy: '',
-  examen: '',
+const _parcialVacio = TermGrades(
+  practices: ['', '', '', ''],
+  practicesAverage: '',
+  researchWork: '',
+  project: '',
+  researchProjectAverage: '',
+  exam: '',
 );
 
-NotaAsignatura _legacy(double credito, String nota) => NotaAsignatura(
-      codigo: 'X',
-      asignatura: 'Curso',
-      seccion: 'A',
-      ciclo: 'I',
-      credito: credito,
-      asistencia: null,
-      tipoAsignatura: 'TN',
-      anio: 2025,
-      periodoNum: 1,
-      pf: nota,
+CourseGrade _legacy(double credit, String grade) => CourseGrade(
+      code: 'X',
+      subject: 'Course',
+      section: 'A',
+      cycle: 'I',
+      credit: credit,
+      attendance: null,
+      subjectType: 'TN',
+      year: 2025,
+      periodNum: 1,
+      pf: grade,
       pfp: '',
-      complementario: '',
+      complementary: '',
       cc: 'true',
-      puesto: '',
+      rank: '',
       pF1: '',
       pF2: '',
-      primer: _parcialVacio,
-      segundo: _parcialVacio,
+      firstTerm: _parcialVacio,
+      secondTerm: _parcialVacio,
     );
 
 void main() {
   group('promedioPonderadoBoleta (modelo nuevo)', () {
     test('reproduce el "Promedio ponderado" oficial de Intranet = 8.23', () {
-      // Datos reales del portal (2026-1). El curso con "-" no cuenta.
-      final cursos = [
+      // Datos reales del portal (2026-1). El course con "-" no cuenta.
+      final courses = [
         _curso(2, '5.80'),
         _curso(3, '6.13'),
         _curso(2, '5.53'),
@@ -61,28 +61,28 @@ void main() {
         _curso(2, '5.00'),
         _curso(2, '5.93'),
         _curso(2, '5.80'),
-        _curso(1, '-'), // TALLER VI — en proceso, sin nota → excluido
+        _curso(1, '-'), // TALLER VI — en proceso, sin grade → excluido
         _curso(2, '4.20'),
         _curso(1, '78.13'),
         _curso(3, '3.53'),
       ];
-      final r = GradeCalculator.promedioPonderadoBoleta(cursos);
+      final r = GradeCalculator.promedioPonderadoBoleta(courses);
       expect(r, isNotNull);
       expect(r!.toStringAsFixed(2), '8.23');
     });
 
     test('pondera por créditos (no es media simple)', () {
       // (18*4 + 12*2) / 6 = 16.0
-      final cursos = [_curso(4, '18', 'A'), _curso(2, '12', 'B')];
-      expect(GradeCalculator.promedioPonderadoBoleta(cursos), 16.0);
+      final courses = [_curso(4, '18', 'A'), _curso(2, '12', 'B')];
+      expect(GradeCalculator.promedioPonderadoBoleta(courses), 16.0);
     });
 
-    test('ignora cursos sin nota ("-")', () {
-      final cursos = [_curso(3, '15', 'A'), _curso(3, '-', 'B')];
-      expect(GradeCalculator.promedioPonderadoBoleta(cursos), 15.0);
+    test('ignora courses sin grade ("-")', () {
+      final courses = [_curso(3, '15', 'A'), _curso(3, '-', 'B')];
+      expect(GradeCalculator.promedioPonderadoBoleta(courses), 15.0);
     });
 
-    test('sin cursos con nota → null', () {
+    test('sin courses con grade → null', () {
       expect(
         GradeCalculator.promedioPonderadoBoleta([_curso(3, '-', 'A')]),
         isNull,
@@ -92,13 +92,13 @@ void main() {
 
   group('promedioPonderadoLegacy (≤2025)', () {
     test('pondera por créditos', () {
-      final cursos = [_legacy(4, '18'), _legacy(2, '12')];
-      expect(GradeCalculator.promedioPonderadoLegacy(cursos), 16.0);
+      final courses = [_legacy(4, '18'), _legacy(2, '12')];
+      expect(GradeCalculator.promedioPonderadoLegacy(courses), 16.0);
     });
 
-    test('ignora cursos sin nota', () {
-      final cursos = [_legacy(3, '15'), _legacy(3, '')];
-      expect(GradeCalculator.promedioPonderadoLegacy(cursos), 15.0);
+    test('ignora courses sin grade', () {
+      final courses = [_legacy(3, '15'), _legacy(3, '')];
+      expect(GradeCalculator.promedioPonderadoLegacy(courses), 15.0);
     });
   });
 
@@ -106,7 +106,7 @@ void main() {
     TermAverage t(int year, int number, double avg) =>
         TermAverage(year: year, number: number, average: avg);
 
-    test('excluye el periodo activo en curso', () {
+    test('excluye el periodo activo en course', () {
       final periodos = [t(2024, 1, 14), t(2024, 2, 16), t(2025, 1, 0)];
       expect(
         GradeCalculator.promedioAcumulado(periodos,
@@ -115,7 +115,7 @@ void main() {
       );
     });
 
-    test('excluye periodos con promedio 0', () {
+    test('excluye periodos con average 0', () {
       expect(
         GradeCalculator.promedioAcumulado([t(2024, 1, 0), t(2024, 2, 15)]),
         15.0,

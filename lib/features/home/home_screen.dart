@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
@@ -9,6 +7,7 @@ import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/unified_models.dart';
+import 'package:nexo/domain/dashboard_widget_config.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -19,25 +18,20 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
-import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/data/connectivity_service.dart';
 import 'package:nexo/features/legal/support_screen.dart';
+import 'package:nexo/features/festivity/widgets/escarapela_widget.dart';
 
-/// Dashboard de bienvenida con resumen y accesos rápidos.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.store,
     required this.connectivity,
-    required this.lumen,
     required this.onJump,
   });
-
   final AppStore store;
   final ConnectivityService connectivity;
-  final LumenServices lumen;
   final ValueChanged<int> onJump;
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -61,27 +55,18 @@ class HomeScreen extends StatelessWidget {
                 sliver: SliverToBoxAdapter(
                   child: Center(
                     child: ConstrainedBox(
-                      // En escritorio usamos más ancho para que el dashboard no
-                      // quede como una columna angosta centrada (look móvil).
                       constraints: BoxConstraints(
                         maxWidth: context.isDesktop ? 1600 : 1240,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // KPIs siempre arriba como franja.
-                          Reveal(index: 0, child: _StatsGrid(store: store)),
-                          const SizedBox(height: 16),
                           Reveal(
                             index: 1,
                             child: context.isWide
                                 ? _DashboardArea(store: store, onJump: onJump)
                                 : _MobileStack(store: store, onJump: onJump),
                           ),
-                          // El FAB de Lumen vive en el shell (overlay
-                          // scroll-aware), por eso aquí solo dejamos el
-                          // padding inferior extra para que el último
-                          // contenido no quede tapado por el FAB.
                           const SizedBox(height: 96),
                         ],
                       ),
@@ -101,7 +86,6 @@ class _Header extends StatelessWidget {
   final AppStore store;
   final ConnectivityService connectivity;
   const _Header({required this.store, required this.connectivity});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -132,8 +116,8 @@ class _Header extends StatelessWidget {
                   ],
                 ),
                 child: StudentAvatar(
-                  codigo: profile?.id,
-                  nombre: profile?.fullName ?? '',
+                  code: profile?.id,
+                  name: profile?.fullName ?? '',
                   size: 56,
                   radius: 18,
                 ),
@@ -144,16 +128,28 @@ class _Header extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _HomeGreeting(),
-                    Text(
-                      profile == null ? '...' : Fmt.firstName(profile.fullName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: NexoTheme.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            profile == null ? '...' : Fmt.firstName(profile.fullName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: NexoTheme.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        if (AppStorage.instance.festivityDecor &&
+                            FestivityService.active(DateTime.now())?.festivity.id == 'fiestas_patrias') ...[
+                          const SizedBox(width: 8),
+                          const EscarapelaWidget(),
+                        ],
+                      ],
                     ),
                     if (profile != null)
                       Text(
@@ -178,11 +174,9 @@ class _Header extends StatelessWidget {
                       connectivity.intranetStatus == ServerStatus.online;
                   final isFullyOnline =
                       isOnline && sigmaOnline && intranetOnline;
-
                   final color = isFullyOnline
                       ? NexoTheme.success
                       : NexoTheme.danger;
-
                   return Tooltip(
                     message: l.homeVerifyConnectivity,
                     child: InkWell(
@@ -241,7 +235,6 @@ class _Header extends StatelessWidget {
               final isOnline = connectivity.hasInternet;
               final sigma = connectivity.sigmaStatus;
               final intranet = connectivity.intranetStatus;
-
               Widget buildStatusTile(
                 String title,
                 bool active,
@@ -250,7 +243,6 @@ class _Header extends StatelessWidget {
                 final Color color;
                 final String label;
                 final IconData icon;
-
                 if (status != null) {
                   switch (status) {
                     case ServerStatus.online:
@@ -276,7 +268,6 @@ class _Header extends StatelessWidget {
                       : l.connectivityDisconnected;
                   icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
                 }
-
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   padding: const EdgeInsets.symmetric(
@@ -442,13 +433,8 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Saludo del home: rota entre el saludo por hora ("Buenas tardes,") y, si hay
-/// festividad activa, su saludo ("¡Feliz aniversario UPLA!"). Sin festividad
-/// rota con una frase cálida para que no sea una sola línea fija. Respeta el
-/// flag de adornos y reduce-motion.
 class _HomeGreeting extends StatefulWidget {
   const _HomeGreeting();
-
   @override
   State<_HomeGreeting> createState() => _HomeGreetingState();
 }
@@ -456,17 +442,16 @@ class _HomeGreeting extends StatefulWidget {
 class _HomeGreetingState extends State<_HomeGreeting> {
   late final Timer _timer;
   int _i = 0;
-
-  /// Frases cálidas que rotan cuando NO hay festividad (además del saludo por
-  /// hora). Neutras y sin emojis. Editables a gusto.
   static const _idlePhrases = <String>[
     'Nos alegra verte',
     'Qué bueno tenerte por aquí',
     'Tu UPLA en un solo lugar',
     'Al día con tu vida académica',
     'Todo tu campus, a la mano',
+    '¿Todo listo para hoy?',
+    '¿Qué tenemos para hoy?',
+    'Qué gusto verte de nuevo',
   ];
-
   @override
   void initState() {
     super.initState();
@@ -485,32 +470,30 @@ class _HomeGreetingState extends State<_HomeGreeting> {
   Widget build(BuildContext context) {
     final base = TextStyle(fontSize: 14, color: NexoTheme.textSecondary);
     final festive = base.copyWith(
-        color: NexoTheme.primary, fontWeight: FontWeight.w700);
+      color: NexoTheme.primary,
+      fontWeight: FontWeight.w700,
+    );
     final time = '${Fmt.greeting(DateTime.now())},';
     final active = AppStorage.instance.festivityDecor
         ? FestivityService.active(DateTime.now())
         : null;
-
-    // reduce-motion → sin rotación: saludo de la festividad (si hay) o el de la
-    // hora, fijo.
     if (MediaQuery.of(context).disableAnimations) {
       final txt = active?.greeting ?? time;
       return Align(
         alignment: Alignment.centerLeft,
-        child: Text(txt,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: active != null ? festive : base),
+        child: Text(
+          txt,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: active != null ? festive : base,
+        ),
       );
     }
-
-    // Con festividad: rota entre el saludo por hora y las frases DEL evento
-    // (resaltadas). Sin festividad: el saludo por hora + las frases cálidas.
     final phrases = active != null
         ? <String>[time, ...active.greetings]
         : <String>[time, ..._idlePhrases];
     final idx = _i % phrases.length;
-    final isFest = active != null && idx != 0; // las frases del evento van en color
+    final isFest = active != null && idx != 0;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       layoutBuilder: (current, previous) => Stack(
@@ -530,80 +513,7 @@ class _HomeGreetingState extends State<_HomeGreeting> {
   }
 }
 
-class _StatsGrid extends StatelessWidget {
-  final AppStore store;
-  const _StatsGrid({required this.store});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final p = store.profile.value;
-    final cuotas = store.cuotasPendientes.value ?? const <Payment>[];
-    final horario = store.horario.value ?? const <ScheduleClass>[];
-
-    final today = DateTime.now().weekday;
-    final clasesHoy = horario.where((c) => c.weekday == today).length;
-    final montoPendiente = cuotas.fold<double>(0, (acc, c) => acc + c.total);
-
-    // Promedio acumulado (periodos cerrados). El promedio del ciclo en curso
-    // NO va aquí: vive en Notas → evolución por notas.
-    final promedioAcum = store.promedioAcumulado;
-    final creditosAprob = store.creditosAprobados ?? p?.creditsApproved;
-    final creditosTotal = store.creditosTotales;
-
-    final creditosLabel = creditosAprob == null
-        ? '—'
-        : creditosTotal != null && creditosTotal > 0
-        ? '$creditosAprob/$creditosTotal'
-        : '$creditosAprob';
-
-    final stats = <_StatData>[
-      _StatData(
-        label: l.homeMetricPromedio,
-        value: promedioAcum == null ? '—' : promedioAcum.toStringAsFixed(2),
-        icon: Icons.trending_up_rounded,
-        color: NexoTheme.primary,
-        loading: store.promedios.loading && !store.promedios.hasValue,
-      ),
-      _StatData(
-        label: l.homeMetricCreditos,
-        value: creditosLabel,
-        icon: Icons.school_rounded,
-        color: NexoTheme.accent,
-        loading: store.profile.loading && !store.profile.hasValue,
-      ),
-      _StatData(
-        label: l.homeMetricClasesHoy,
-        value: '$clasesHoy',
-        icon: Icons.today_rounded,
-        color: NexoTheme.success,
-        loading: store.horario.loading && !store.horario.hasValue,
-      ),
-      _StatData(
-        label: l.homeMetricPorPagar,
-        value: cuotas.isEmpty ? 'S/ 0' : Fmt.currency(montoPendiente),
-        icon: Icons.account_balance_wallet_rounded,
-        color: NexoTheme.warning,
-        loading:
-            store.cuotasPendientes.loading && !store.cuotasPendientes.hasValue,
-      ),
-    ];
-
-    final isMobile = context.isMobile;
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: stats.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isMobile ? 2 : 4,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        mainAxisExtent: 86,
-      ),
-      itemBuilder: (_, i) => _StatTile(data: stats[i]),
-    );
-  }
-}
+// _StatsGrid eliminado (ahora las métricas se generan en _DashboardWidgetWrapper)
 
 class _StatData {
   final String label;
@@ -623,7 +533,6 @@ class _StatData {
 class _StatTile extends StatelessWidget {
   final _StatData data;
   const _StatTile({required this.data});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -686,26 +595,22 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// Dashboard de escritorio/tablet: cada bloque en su columna.
-///   - Izquierda (más ancha): próxima clase + clases de hoy.
-///   - Derecha: cuotas pendientes.
 class _DashboardArea extends StatelessWidget {
   final AppStore store;
   final ValueChanged<int> onJump;
   const _DashboardArea({required this.store, required this.onJump});
-
   @override
   Widget build(BuildContext context) {
-    final horario = store.horario.value ?? const <ScheduleClass>[];
+    final schedule = store.schedule.value ?? const <ScheduleClass>[];
     final leftCol = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (horario.isNotEmpty) ...[
-          NextClassWidget(all: horario),
+        if (schedule.isNotEmpty) ...[
+          NextClassWidget(all: schedule),
           const SizedBox(height: 16),
         ],
         _ClasesHoyBlock(
-          state: store.horario,
+          state: store.schedule,
           onSeeAll: () => onJump(1),
           onRetry: () => store.loadHorarioActual(),
         ),
@@ -719,7 +624,7 @@ class _DashboardArea extends StatelessWidget {
         Expanded(
           flex: 2,
           child: _PagosBlock(
-            state: store.cuotasPendientes,
+            state: store.pendingInstallments,
             onSeeAll: () => onJump(3),
             onRetry: () => store.loadCuotasPendientes(),
           ),
@@ -729,34 +634,237 @@ class _DashboardArea extends StatelessWidget {
   }
 }
 
-/// Apilado vertical para móvil: próxima clase, clases de hoy, pagos.
+class _DashboardWidgetWrapper extends StatelessWidget {
+  final DashboardWidgetConfig config;
+  final AppStore store;
+  final ValueChanged<int> onJump;
+
+  const _DashboardWidgetWrapper({
+    super.key,
+    required this.config,
+    required this.store,
+    required this.onJump,
+  });
+
+  Widget _buildChild(BuildContext context) {
+    final isCompact = config.span == 1;
+    final l = AppLocalizations.of(context);
+
+    switch (config.id) {
+      case 'stats_promedio':
+        final promedioAcum = store.promedioAcumulado;
+        return _StatTile(data: _StatData(
+          label: l.homeMetricPromedio,
+          value: promedioAcum == null ? '—' : promedioAcum.toStringAsFixed(2),
+          icon: Icons.trending_up_rounded,
+          color: NexoTheme.primary,
+          loading: store.promedios.loading && !store.promedios.hasValue,
+        ));
+      case 'stats_creditos':
+        final p = store.profile.value;
+        final creditosAprob = store.approvedCredits ?? p?.creditsApproved;
+        final creditosTotal = store.totalCredits;
+        final creditosLabel = creditosAprob == null ? '—' : creditosTotal != null && creditosTotal > 0 ? '$creditosAprob/$creditosTotal' : '$creditosAprob';
+        return _StatTile(data: _StatData(
+          label: l.homeMetricCreditos,
+          value: creditosLabel,
+          icon: Icons.school_rounded,
+          color: NexoTheme.accent,
+          loading: store.profile.loading && !store.profile.hasValue,
+        ));
+      case 'stats_clases_hoy':
+        final schedule = store.schedule.value ?? const <ScheduleClass>[];
+        final today = DateTime.now().weekday;
+        final clasesHoy = schedule.where((c) => c.weekday == today).length;
+        return _StatTile(data: _StatData(
+          label: l.homeMetricClasesHoy,
+          value: '$clasesHoy',
+          icon: Icons.today_rounded,
+          color: NexoTheme.success,
+          loading: store.schedule.loading && !store.schedule.hasValue,
+        ));
+      case 'stats_pagos':
+        final installments = store.pendingInstallments.value ?? const <Payment>[];
+        final montoPendiente = installments.fold<double>(0, (acc, c) => acc + c.total);
+        return _StatTile(data: _StatData(
+          label: l.homeMetricPorPagar,
+          value: installments.isEmpty ? 'S/ 0' : Fmt.currency(montoPendiente),
+          icon: Icons.account_balance_wallet_rounded,
+          color: NexoTheme.warning,
+          loading: store.pendingInstallments.loading && !store.pendingInstallments.hasValue,
+        ));
+      case 'next_class':
+        final schedule = store.schedule.value ?? const <ScheduleClass>[];
+        if (schedule.isEmpty) return const SizedBox.shrink();
+        return NextClassWidget(all: schedule);
+      case 'today_classes':
+        return _ClasesHoyBlock(
+          state: store.schedule,
+          onSeeAll: () => onJump(1),
+          onRetry: () => store.loadHorarioActual(),
+          isCompact: isCompact,
+        );
+      case 'pending_payments':
+        return _PagosBlock(
+          state: store.pendingInstallments,
+          onSeeAll: () => onJump(3),
+          onRetry: () => store.loadCuotasPendientes(),
+          isCompact: isCompact,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _buildChild(context);
+    if (child is SizedBox) return child;
+
+    final totalSpacing = 12.0;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = context.contentPadding * 2;
+    final availableWidth = screenWidth - padding;
+    final colWidth = (availableWidth - totalSpacing * 3) / 4;
+    
+    final itemWidth = config.span >= 4 
+        ? availableWidth 
+        : (colWidth * config.span + totalSpacing * (config.span - 1)) - 0.5;
+
+    final isEditing = store.editingDashboardWidgetId == config.id;
+
+    final content = GestureDetector(
+      onTap: () {
+        if (isEditing) store.setEditingDashboardWidget(null);
+      },
+      child: SizedBox(
+        width: itemWidth,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            child,
+            if (isEditing)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: NexoTheme.primary, width: 3),
+                  ),
+                ),
+              ),
+            if (isEditing && config.id.startsWith('stats_'))
+              Positioned(
+                right: -6,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      return GestureDetector(
+                        onTap: () {
+                          if (config.span == 1) {
+                            store.setDashboardWidgetSpan(config.id, 2);
+                          } else if (config.span == 2) {
+                            store.setDashboardWidgetSpan(config.id, 4);
+                          } else {
+                            store.setDashboardWidgetSpan(config.id, 1);
+                          }
+                        },
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: NexoTheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Center(
+                            child: RotatedBox(
+                              quarterTurns: 1,
+                              child: Icon(
+                                config.span < 4 ? Icons.unfold_more_rounded : Icons.unfold_less_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (details) {
+        if (details.data != config.id) {
+          store.reorderDashboard(details.data, config.id, save: false);
+          return true;
+        }
+        return false;
+      },
+      onAcceptWithDetails: (details) {
+        store.saveDashboardLayout();
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Container(
+          width: itemWidth,
+          margin: EdgeInsets.zero,
+          child: LongPressDraggable<String>(
+            data: config.id,
+            delay: const Duration(milliseconds: 250),
+            onDragStarted: () => store.setEditingDashboardWidget(config.id),
+            onDragEnd: (_) => store.saveDashboardLayout(),
+            feedback: Material(
+              color: Colors.transparent,
+              elevation: 12,
+              borderRadius: BorderRadius.circular(24),
+              child: Opacity(
+                opacity: 0.8,
+                child: SizedBox(width: itemWidth, child: content),
+              ),
+            ),
+            childWhenDragging: Opacity(opacity: 0.2, child: content),
+            child: content,
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _MobileStack extends StatelessWidget {
   final AppStore store;
   final ValueChanged<int> onJump;
   const _MobileStack({required this.store, required this.onJump});
-
   @override
   Widget build(BuildContext context) {
-    final horario = store.horario.value ?? const <ScheduleClass>[];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (horario.isNotEmpty) ...[
-          NextClassWidget(all: horario),
-          const SizedBox(height: 16),
+    final layout = store.dashboardLayout;
+    
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (store.editingDashboardWidgetId != null) {
+          store.setEditingDashboardWidget(null);
+        }
+      },
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (final config in layout)
+            _DashboardWidgetWrapper(
+              key: ValueKey(config.id),
+              config: config,
+              store: store,
+              onJump: onJump,
+            ),
         ],
-        _ClasesHoyBlock(
-          state: store.horario,
-          onSeeAll: () => onJump(1),
-          onRetry: () => store.loadHorarioActual(),
-        ),
-        const SizedBox(height: 16),
-        _PagosBlock(
-          state: store.cuotasPendientes,
-          onSeeAll: () => onJump(3),
-          onRetry: () => store.loadCuotasPendientes(),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -765,12 +873,13 @@ class _ClasesHoyBlock extends StatelessWidget {
   final AsyncValue<List<ScheduleClass>> state;
   final VoidCallback onSeeAll;
   final VoidCallback? onRetry;
+  final bool isCompact;
   const _ClasesHoyBlock({
     required this.state,
     required this.onSeeAll,
     this.onRetry,
+    this.isCompact = false,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -802,16 +911,18 @@ class _ClasesHoyBlock extends StatelessWidget {
     }
     return Column(
       children: [
-        TodayClassesWidget(all: state.value ?? const []),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: onSeeAll,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: Text(l.homeSeeFullWeek),
+        TodayClassesWidget(all: state.value ?? const [], isCompact: isCompact),
+        if (!isCompact) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onSeeAll,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: Text(l.homeSeeFullWeek),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -821,12 +932,13 @@ class _PagosBlock extends StatelessWidget {
   final AsyncValue<List<Payment>> state;
   final VoidCallback onSeeAll;
   final VoidCallback? onRetry;
+  final bool isCompact;
   const _PagosBlock({
     required this.state,
     required this.onSeeAll,
     this.onRetry,
+    this.isCompact = false,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -858,16 +970,18 @@ class _PagosBlock extends StatelessWidget {
     }
     return Column(
       children: [
-        PendingPaymentsWidget(cuotas: state.value ?? const []),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: onSeeAll,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: Text(l.homeSeeAllPayments),
+        PendingPaymentsWidget(installments: state.value ?? const [], isCompact: isCompact),
+        if (!isCompact) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onSeeAll,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: Text(l.homeSeeAllPayments),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

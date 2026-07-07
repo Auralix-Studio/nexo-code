@@ -22,7 +22,6 @@ android {
 
     defaultConfig {
         applicationId = "pe.upla.nexo"
-        // MediaPipe LLM Inference (Lumen vía flutter_gemma) requiere Android 7.0+.
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -37,30 +36,7 @@ android {
         // }
     }
 
-    // flutter_gemma empaqueta toda la pila MediaPipe (vision, image-gen,
-    // embeddings, RAG, vector store, LiteRT, …) aunque Lumen solo usa
-    // LLM Inference. Cada .so excluido aquí baja ~10-20 MB del APK.
-    //
-    // Verificado: el código Dart solo consume `InferenceModel`,
-    // `InferenceChat`, `Message.text`, `TextResponse`. No hay vision,
-    // ni image gen, ni embeddings, ni vector store, ni LiteRT.
-    //
-    // Si en el futuro Lumen agrega alguna de esas features, retirar la
-    // exclusión correspondiente — el `System.loadLibrary` fallaría con
-    // UnsatisfiedLinkError si la lib se necesita en runtime.
-    packaging {
-        jniLibs {
-            excludes += setOf(
-                "**/libmediapipe_tasks_vision_jni.so",
-                "**/libmediapipe_tasks_vision_image_generator_jni.so",
-                "**/libimagegenerator_gpu.so",
-                "**/libgecko_embedding_model_jni.so",
-                "**/libgemma_embedding_model_jni.so",
-                "**/libtext_chunker_jni.so",
-                "**/libsqlite_vector_store_jni.so",
-            )
-        }
-    }
+
 
     buildTypes {
         release {

@@ -26,7 +26,6 @@ if (-not $Type -and -not $Set) {
   throw "Especificar -Type (major|minor|patch) o -Set X.Y.Z"
 }
 
-# --- Leer versión actual ---
 $lines = [System.IO.File]::ReadAllLines($pubspec, [System.Text.Encoding]::UTF8)
 $idx = -1
 for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -50,7 +49,6 @@ $patch = [int]$semParts[2]
 
 Write-Host "Versión actual: $oldSemver+$oldBuild" -ForegroundColor Cyan
 
-# --- Calcular nueva versión ---
 if ($Set) {
   if ($Set -notmatch '^\d+\.\d+\.\d+$') { throw "Formato inválido: '$Set' (esperado X.Y.Z)" }
   $newSemver = $Set
@@ -68,17 +66,14 @@ $newFull = "$newSemver+$newBuild"
 
 Write-Host "Nueva versión : $newSemver+$newBuild" -ForegroundColor Green
 
-# --- Actualizar pubspec.yaml ---
 $lines[$idx] = "version: $newFull"
 $lines | Set-Content $pubspec -Encoding UTF8
 
 Write-Host "pubspec.yaml actualizado." -ForegroundColor Green
 
-# --- Sincronizar config.dart ---
 Write-Host ""
 & (Join-Path $PSScriptRoot 'sync_version.ps1')
 
-# --- Mostrar resumen ---
 Write-Host ""
 Write-Host "=== Resumen ===" -ForegroundColor Yellow
 Write-Host "  Versión anterior : $oldSemver+$oldBuild"

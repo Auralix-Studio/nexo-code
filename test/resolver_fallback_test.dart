@@ -4,7 +4,7 @@ import 'package:nexo/core/errors.dart';
 
 /// Verifica el contrato que distingue "vacío legítimo" de "backend caído".
 /// De esto depende que una caída de SIGMA/Intranet caiga a la copia local en
-/// vez de pisar el estado con `[]` (bug de "pantallas vacías").
+/// vez de pisar el state con `[]` (bug de "pantallas vacías").
 void main() {
   Resolver<List<String>> resolver(List<DataSource<List<String>>> sources) =>
       Resolver<List<String>>(

@@ -1,40 +1,36 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/features/docente/docente_alumno_sheet.dart';
+import 'package:nexo/features/teacher/teacher_student_sheet.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 
-/// Pantalla de detalle de un curso para el docente: alumnos, asistencia y notas.
-class DocenteCursoDetailScreen extends StatefulWidget {
-  const DocenteCursoDetailScreen({
+class TeacherCourseDetailScreen extends StatefulWidget {
+  const TeacherCourseDetailScreen({
     super.key,
     required this.store,
-    required this.curso,
+    required this.course,
   });
   final AppStore store;
-  final DocenteAsignatura curso;
-
+  final TeacherSubject course;
   @override
-  State<DocenteCursoDetailScreen> createState() =>
-      _DocenteCursoDetailScreenState();
+  State<TeacherCourseDetailScreen> createState() =>
+      _TeacherCourseDetailScreenState();
 }
 
-class _DocenteCursoDetailScreenState extends State<DocenteCursoDetailScreen>
+class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
-
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    if (!widget.store.alumnosDe(widget.curso.id).hasValue) {
-      widget.store.loadDocenteAlumnos(widget.curso.id);
+    if (!widget.store.alumnosDe(widget.course.id).hasValue) {
+      widget.store.loadDocenteAlumnos(widget.course.id);
     }
   }
 
@@ -50,12 +46,16 @@ class _DocenteCursoDetailScreenState extends State<DocenteCursoDetailScreen>
     return Scaffold(
       backgroundColor: NexoTheme.bg,
       appBar: AppBar(
-        title: Text(widget.curso.asignatura, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          widget.course.subject,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            _Header(curso: widget.curso),
+            _Header(course: widget.course),
             ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
@@ -74,9 +74,12 @@ class _DocenteCursoDetailScreenState extends State<DocenteCursoDetailScreen>
                   return TabBarView(
                     controller: _tabs,
                     children: [
-                      _AlumnosTab(store: widget.store, curso: widget.curso),
-                      _AsistenciaTab(store: widget.store, curso: widget.curso),
-                      _NotasTab(store: widget.store, curso: widget.curso),
+                      _AlumnosTab(store: widget.store, course: widget.course),
+                      _AsistenciaTab(
+                        store: widget.store,
+                        course: widget.course,
+                      ),
+                      _NotasTab(store: widget.store, course: widget.course),
                     ],
                   );
                 },
@@ -90,16 +93,19 @@ class _DocenteCursoDetailScreenState extends State<DocenteCursoDetailScreen>
 }
 
 class _Header extends StatelessWidget {
-  final DocenteAsignatura curso;
-  const _Header({required this.curso});
-
+  final TeacherSubject course;
+  const _Header({required this.course});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.lg),
+        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+      ),
       color: NexoTheme.surface,
       child: Row(
         children: [
@@ -108,7 +114,7 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  curso.codigo.isEmpty ? l.docenteNoCode : curso.codigo,
+                  course.code.isEmpty ? l.docenteNoCode : course.code,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -118,7 +124,7 @@ class _Header extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  l.docenteSectionPeriod(curso.seccion, curso.periodo),
+                  l.docenteSectionPeriod(course.section, course.periodo),
                   style: TextStyle(
                     fontSize: AppFont.body,
                     fontWeight: FontWeight.w700,
@@ -130,13 +136,15 @@ class _Header extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
               color: NexoTheme.primary.withValues(alpha: 0.12),
               borderRadius: AppRadii.rPill,
             ),
             child: Text(
-              l.docenteMetricAlumnosCount(curso.matriculados ?? 0),
+              l.docenteMetricAlumnosCount(course.enrolledCount ?? 0),
               style: TextStyle(
                 fontSize: AppFont.small,
                 fontWeight: FontWeight.w700,
@@ -150,21 +158,18 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ===== TAB 1: Alumnos =====
-
 class _AlumnosTab extends StatelessWidget {
   final AppStore store;
-  final DocenteAsignatura curso;
-  const _AlumnosTab({required this.store, required this.curso});
-
+  final TeacherSubject course;
+  const _AlumnosTab({required this.store, required this.course});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final state = store.alumnosDe(curso.id);
+    final state = store.alumnosDe(course.id);
     if (state.loading && !state.hasValue) {
       return const _SkeletonList();
     }
-    final alumnos = state.value ?? const <DocenteAlumno>[];
+    final alumnos = state.value ?? const <TeacherStudent>[];
     if (alumnos.isEmpty) {
       return Center(
         child: EmptyState(
@@ -180,12 +185,12 @@ class _AlumnosTab extends StatelessWidget {
       itemBuilder: (_, i) {
         final a = alumnos[i];
         return _AlumnoTile(
-          alumno: a,
-          onTap: () => showDocenteAlumnoSheet(
+          student: a,
+          onTap: () => showTeacherStudentSheet(
             context: context,
             store: store,
-            curso: curso,
-            alumno: a,
+            course: course,
+            student: a,
           ),
         );
       },
@@ -194,14 +199,13 @@ class _AlumnosTab extends StatelessWidget {
 }
 
 class _AlumnoTile extends StatelessWidget {
-  final DocenteAlumno alumno;
+  final TeacherStudent student;
   final VoidCallback onTap;
-  const _AlumnoTile({required this.alumno, required this.onTap});
-
+  const _AlumnoTile({required this.student, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final asis = int.tryParse(alumno.asistencia ?? '');
+    final asis = int.tryParse(student.attendance ?? '');
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -220,7 +224,7 @@ class _AlumnoTile extends StatelessWidget {
                 radius: 22,
                 backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
                 child: Text(
-                  _initials(alumno),
+                  _initials(student),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -234,7 +238,7 @@ class _AlumnoTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      alumno.displayName,
+                      student.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -245,7 +249,7 @@ class _AlumnoTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      alumno.codigo,
+                      student.code,
                       style: TextStyle(
                         fontSize: AppFont.small,
                         color: NexoTheme.textMuted,
@@ -258,8 +262,8 @@ class _AlumnoTile extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if ((alumno.nota ?? '').isNotEmpty)
-                    _gradePill(alumno.nota!),
+                  if ((student.grade ?? '').isNotEmpty)
+                    _gradePill(student.grade!),
                   if (asis != null) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -280,25 +284,27 @@ class _AlumnoTile extends StatelessWidget {
     );
   }
 
-  String _initials(DocenteAlumno a) {
-    final first = (a.nombres.split(' ').firstOrNull ?? '').trim();
-    final last = (a.apellidos.split(' ').firstOrNull ?? '').trim();
+  String _initials(TeacherStudent a) {
+    final first = (a.firstName.split(' ').firstOrNull ?? '').trim();
+    final last = (a.lastName.split(' ').firstOrNull ?? '').trim();
     String pick(String s) => s.isEmpty ? '' : s[0].toUpperCase();
     final ini = pick(first) + pick(last);
     return ini.isEmpty ? '?' : ini;
   }
 
-  Widget _gradePill(String nota) {
-    final color = gradeColor(nota);
+  Widget _gradePill(String grade) {
+    final color = gradeColor(grade);
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2, vertical: 3),
+        horizontal: AppSpacing.sm + 2,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),
         borderRadius: AppRadii.rPill,
       ),
       child: Text(
-        nota,
+        grade,
         style: TextStyle(
           fontSize: AppFont.small,
           fontWeight: FontWeight.w800,
@@ -309,13 +315,10 @@ class _AlumnoTile extends StatelessWidget {
   }
 }
 
-// ===== TAB 2: Asistencia =====
-
 class _AsistenciaTab extends StatefulWidget {
   final AppStore store;
-  final DocenteAsignatura curso;
-  const _AsistenciaTab({required this.store, required this.curso});
-
+  final TeacherSubject course;
+  const _AsistenciaTab({required this.store, required this.course});
   @override
   State<_AsistenciaTab> createState() => _AsistenciaTabState();
 }
@@ -325,7 +328,6 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
   Map<String, String> _estados = {};
   bool _loading = true;
   bool _saving = false;
-
   @override
   void initState() {
     super.initState();
@@ -334,8 +336,10 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final estados = await widget.store
-        .docenteAsistenciaDia(cleAuto: widget.curso.id, fecha: _fecha);
+    final estados = await widget.store.docenteAsistenciaDia(
+      cleAuto: widget.course.id,
+      date: _fecha,
+    );
     if (!mounted) return;
     setState(() {
       _estados = Map.of(estados);
@@ -346,8 +350,8 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final err = await widget.store.guardarAsistenciaDia(
-      cleAuto: widget.curso.id,
-      fecha: _fecha,
+      cleAuto: widget.course.id,
+      date: _fecha,
       estados: _estados,
     );
     if (!mounted) return;
@@ -356,18 +360,23 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
     if (err == null) {
       ClipboardHelper.showSuccess(context, l.docenteAttendanceSaved);
     } else {
-      ClipboardHelper.showError(context, err, fallback: l.docenteAttendanceError(err));
+      ClipboardHelper.showError(
+        context,
+        err,
+        fallback: l.docenteAttendanceError(err),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final alumnos = widget.store.alumnosDe(widget.curso.id).value ??
-        const <DocenteAlumno>[];
-    final fmt = '${_fecha.day.toString().padLeft(2, '0')}/'
+    final alumnos =
+        widget.store.alumnosDe(widget.course.id).value ??
+        const <TeacherStudent>[];
+    final fmt =
+        '${_fecha.day.toString().padLeft(2, '0')}/'
         '${_fecha.month.toString().padLeft(2, '0')}/${_fecha.year}';
-
     return Column(
       children: [
         Container(
@@ -415,11 +424,11 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
                   separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (_, i) {
                     final a = alumnos[i];
-                    final estado = _estados[a.codigo] ?? 'P';
+                    final state = _estados[a.code] ?? 'P';
                     return _AsistenciaRow(
-                      alumno: a,
-                      estado: estado,
-                      onChange: (s) => setState(() => _estados[a.codigo] = s),
+                      student: a,
+                      state: state,
+                      onChange: (s) => setState(() => _estados[a.code] = s),
                     );
                   },
                 ),
@@ -437,7 +446,9 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2.2, color: Colors.white),
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.save_rounded),
                 label: Text(l.docenteSaveAttendance),
@@ -451,15 +462,14 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
 }
 
 class _AsistenciaRow extends StatelessWidget {
-  final DocenteAlumno alumno;
-  final String estado;
+  final TeacherStudent student;
+  final String state;
   final ValueChanged<String> onChange;
   const _AsistenciaRow({
-    required this.alumno,
-    required this.estado,
+    required this.student,
+    required this.state,
     required this.onChange,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -477,7 +487,7 @@ class _AsistenciaRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  alumno.displayName,
+                  student.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -487,7 +497,7 @@ class _AsistenciaRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  alumno.codigo,
+                  student.code,
                   style: TextStyle(
                     fontSize: 10,
                     color: NexoTheme.textMuted,
@@ -508,13 +518,12 @@ class _AsistenciaRow extends StatelessWidget {
   }
 
   Widget _stateChip(String code, String label, Color color) {
-    final active = estado == code;
+    final active = state == code;
     return GestureDetector(
       onTap: () => onChange(code),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: active ? color : Colors.transparent,
           borderRadius: AppRadii.rPill,
@@ -533,19 +542,16 @@ class _AsistenciaRow extends StatelessWidget {
   }
 }
 
-// ===== TAB 3: Notas (tabla con edición rápida) =====
-
 class _NotasTab extends StatelessWidget {
   final AppStore store;
-  final DocenteAsignatura curso;
-  const _NotasTab({required this.store, required this.curso});
-
+  final TeacherSubject course;
+  const _NotasTab({required this.store, required this.course});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final state = store.alumnosDe(curso.id);
+    final state = store.alumnosDe(course.id);
     if (state.loading && !state.hasValue) return const _SkeletonList();
-    final alumnos = state.value ?? const <DocenteAlumno>[];
+    final alumnos = state.value ?? const <TeacherStudent>[];
     if (alumnos.isEmpty) {
       return Center(
         child: EmptyState(
@@ -554,11 +560,10 @@ class _NotasTab extends StatelessWidget {
         ),
       );
     }
-    final aprobados = alumnos.where((a) {
-      final n = double.tryParse((a.nota ?? '').replaceAll(',', '.'));
+    final approved = alumnos.where((a) {
+      final n = double.tryParse((a.grade ?? '').replaceAll(',', '.'));
       return n != null && n >= 10.5;
     }).length;
-
     return Column(
       children: [
         Container(
@@ -568,7 +573,10 @@ class _NotasTab extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  l.docenteAprobadosCount(aprobados.toString(), alumnos.length.toString()),
+                  l.docenteAprobadosCount(
+                    approved.toString(),
+                    alumnos.length.toString(),
+                  ),
                   style: TextStyle(
                     fontSize: AppFont.small,
                     fontWeight: FontWeight.w700,
@@ -594,12 +602,12 @@ class _NotasTab extends StatelessWidget {
             itemBuilder: (_, i) {
               final a = alumnos[i];
               return _AlumnoTile(
-                alumno: a,
-                onTap: () => showDocenteAlumnoSheet(
+                student: a,
+                onTap: () => showTeacherStudentSheet(
                   context: context,
                   store: store,
-                  curso: curso,
-                  alumno: a,
+                  course: course,
+                  student: a,
                   initialTab: 1,
                 ),
               );
@@ -610,8 +618,6 @@ class _NotasTab extends StatelessWidget {
     );
   }
 }
-
-// ===== Utilidades compartidas =====
 
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
@@ -626,7 +632,6 @@ class _SkeletonList extends StatelessWidget {
   }
 }
 
-/// Color de nota según rango (rojo / azul / verde). Reutilizable.
 Color gradeColor(String? raw) {
   final n = double.tryParse((raw ?? '').trim().replaceAll(',', '.'));
   if (n == null) return NexoTheme.textMuted;

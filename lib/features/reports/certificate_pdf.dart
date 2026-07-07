@@ -1,16 +1,13 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/reports/pdf_theme.dart';
 
-/// PDF de Constancia de Matrícula con el estilo formal de Intranet.
-Future<pw.Document> buildConstanciaPdf(ConstanciaMatricula c) async {
+Future<pw.Document> buildCertificatePdf(EnrollmentCertificate c) async {
   final doc = pw.Document(
-    title: 'Constancia de Matrícula ${c.periodoLabel}',
+    title: 'Certificate de Matrícula ${c.periodLabel}',
     author: 'Nexo',
   );
-
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -18,55 +15,52 @@ Future<pw.Document> buildConstanciaPdf(ConstanciaMatricula c) async {
       header: (_) => pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 20),
         child: pdfTitle(
-          'Constancia de Matrícula',
-          periodoSuffix: '${c.periodoLabel}'
-              '${c.modalidad.isNotEmpty ? ' · ${c.modalidad}' : ''}',
+          'Certificate de Matrícula',
+          periodoSuffix:
+              '${c.periodLabel}'
+              '${c.modality.isNotEmpty ? ' · ${c.modality}' : ''}',
         ),
       ),
       footer: (_) => pdfFooter(),
       build: (_) => [
         _DatosEstudiante(c: c),
         pw.SizedBox(height: 18),
-        _TablaCursos(cursos: c.cursos),
+        _TablaCursos(courses: c.courses),
         pw.SizedBox(height: 14),
         _Resumen(c: c),
       ],
     ),
   );
-
   return doc;
 }
 
 class _DatosEstudiante extends pw.StatelessWidget {
-  final ConstanciaMatricula c;
+  final EnrollmentCertificate c;
   _DatosEstudiante({required this.c});
-
   @override
   pw.Widget build(pw.Context context) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pdfDataRow('Facultad', c.facultad),
-        pdfDataRow(c.etiquetaCarrera, c.carrera),
-        if (c.especialidad.isNotEmpty)
-          pdfDataRow('Especialidad', c.especialidad),
-        pdfDataRow('Código', c.codigo),
-        pdfDataRow('Alumno', c.estudiante),
-        pdfDataRow('Plan de Estudios', c.planEstudios),
-        pdfDataRow('Nivel', c.nivel),
-        pdfDataRow('Modalidad', c.modalidad),
+        pdfDataRow('Facultad', c.faculty),
+        pdfDataRow(c.careerLabel, c.career),
+        if (c.specialty.isNotEmpty) pdfDataRow('Especialidad', c.specialty),
+        pdfDataRow('Código', c.code),
+        pdfDataRow('Estudiante', c.student),
+        pdfDataRow('Plan de Estudios', c.studyPlan),
+        pdfDataRow('Nivel', c.level),
+        pdfDataRow('Modalidad', c.modality),
       ],
     );
   }
 }
 
 class _TablaCursos extends pw.StatelessWidget {
-  final List<MatriculaCurso> cursos;
-  _TablaCursos({required this.cursos});
-
+  final List<EnrollmentCourse> courses;
+  _TablaCursos({required this.courses});
   @override
   pw.Widget build(pw.Context context) {
-    if (cursos.isEmpty) {
+    if (courses.isEmpty) {
       return pw.Container(
         padding: const pw.EdgeInsets.all(20),
         alignment: pw.Alignment.center,
@@ -102,15 +96,15 @@ class _TablaCursos extends pw.StatelessWidget {
             pdfTableHeader('Créditos'),
           ],
         ),
-        for (var i = 0; i < cursos.length; i++)
+        for (var i = 0; i < courses.length; i++)
           pw.TableRow(
             children: [
               pdfTableCell('${i + 1}'),
-              pdfTableCell(cursos[i].codigo),
-              pdfTableCell(cursos[i].asignatura, align: pw.TextAlign.left),
-              pdfTableCell(cursos[i].ciclo),
-              pdfTableCell(cursos[i].seccion),
-              pdfTableCell(cursos[i].creditos),
+              pdfTableCell(courses[i].code),
+              pdfTableCell(courses[i].subject, align: pw.TextAlign.left),
+              pdfTableCell(courses[i].cycle),
+              pdfTableCell(courses[i].section),
+              pdfTableCell(courses[i].creditos),
             ],
           ),
       ],
@@ -119,9 +113,8 @@ class _TablaCursos extends pw.StatelessWidget {
 }
 
 class _Resumen extends pw.StatelessWidget {
-  final ConstanciaMatricula c;
+  final EnrollmentCertificate c;
   _Resumen({required this.c});
-
   @override
   pw.Widget build(pw.Context context) {
     return pw.Container(
@@ -135,7 +128,7 @@ class _Resumen extends pw.StatelessWidget {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(
-            'Total de asignaturas: ${c.cursos.length}',
+            'Total de asignaturas: ${c.courses.length}',
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,
@@ -143,7 +136,7 @@ class _Resumen extends pw.StatelessWidget {
             ),
           ),
           pw.Text(
-            'Total de créditos: ${c.totalCreditos.toStringAsFixed(0)}',
+            'Total de créditos: ${c.totalCredits.toStringAsFixed(0)}',
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,

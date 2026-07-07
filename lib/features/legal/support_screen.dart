@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/l10n/app_localizations.dart';
@@ -9,14 +8,9 @@ import 'package:nexo/shared/widgets/section_card.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
-
-  static Future<void> open(BuildContext context) =>
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const SupportScreen(),
-        ),
-      );
-
+  static Future<void> open(BuildContext context) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const SupportScreen()));
   Future<void> _launchWhatsApp(BuildContext context) async {
     final l = AppLocalizations.of(context);
     final url = Uri.https('wa.me', '/51907924307', {
@@ -28,7 +22,6 @@ class SupportScreen extends StatelessWidget {
         return;
       }
     } catch (_) {}
-
     if (!context.mounted) return;
     ClipboardHelper.copyAndShow(
       context,
@@ -43,7 +36,7 @@ class SupportScreen extends StatelessWidget {
       scheme: 'mailto',
       path: 'alessandrovillogas@outlook.es',
       queryParameters: {
-        'subject': l.supportEmailSubject,
+        'asignatura': l.supportEmailSubject,
         'body': l.supportEmailBody,
       },
     );
@@ -53,7 +46,6 @@ class SupportScreen extends StatelessWidget {
         return;
       }
     } catch (_) {}
-
     if (!context.mounted) return;
     ClipboardHelper.copyAndShow(
       context,
@@ -67,9 +59,7 @@ class SupportScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: NexoTheme.bg,
-      appBar: AppBar(
-        title: Text(l.supportTitle),
-      ),
+      appBar: AppBar(title: Text(l.supportTitle)),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -99,7 +89,9 @@ class SupportScreen extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm + 2, vertical: 3),
+                          horizontal: AppSpacing.sm + 2,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: AppRadii.rPill,
@@ -156,7 +148,9 @@ class SupportScreen extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF25D366).withValues(alpha: 0.12),
+                                  color: const Color(
+                                    0xFF25D366,
+                                  ).withValues(alpha: 0.12),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -263,7 +257,11 @@ class SupportScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: NexoTheme.textMuted, size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: NexoTheme.textMuted,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(

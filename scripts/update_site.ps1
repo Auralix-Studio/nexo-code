@@ -1,23 +1,13 @@
 ﻿# update_site.ps1 — Actualiza el sitio web nexo-releases con la nueva versión
 
-#
-
 # Lee release-meta.json (generado por build_release.ps1) y actualiza:
-
 #   - downloads.html: versión en links, tamaños, SHA-256
-
 #   - changelog.html: agrega la sección de la nueva versión
-
 #   - Todos los nav-cta (botón "Descargar" del header) en todos los .html
 
-#
-
 # Uso:
-
 #   powershell -ExecutionPolicy Bypass -File scripts\update_site.ps1 -MetaFile dist\release-meta.json
-
 #   powershell -ExecutionPolicy Bypass -File scripts\update_site.ps1 -MetaFile dist\release-meta.json -Push
-
 #     (además hace commit + push a nexo-releases)
 
 
@@ -393,28 +383,15 @@ if ($Push) {
   Push-Location $siteDir
 
   try {
-
     git add -A
-
     git commit -m "chore: actualizar sitio para $tag"
-
     git push
-
     Write-Host "    nexo-releases actualizado y pusheado." -ForegroundColor Green
-
   } catch {
-
     Write-Host "    Error al pushear: $_" -ForegroundColor Red
-
   } finally {
-
     Pop-Location
-
   }
-
 }
 
-
-
 Write-Host "`nSitio web actualizado para $tag" -ForegroundColor Green
-

@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/payments/payment_detail_screen.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
+import 'package:nexo/l10n/app_localizations.dart';
 
-/// Widget de "Deudas pendientes" — segundo widget crítico del home.
 class PendingPaymentsWidget extends StatelessWidget {
-  final List<Payment> cuotas;
+  final List<Payment> installments;
   final DateTime? nowOverride;
-
+  final bool isCompact;
   const PendingPaymentsWidget({
     super.key,
-    required this.cuotas,
+    required this.installments,
     this.nowOverride,
+    this.isCompact = false,
   });
-
   DateTime get now => nowOverride ?? DateTime.now();
-
   @override
   Widget build(BuildContext context) {
-    final sorted = [...cuotas]..sort((a, b) {
+    final sorted = [...installments]
+      ..sort((a, b) {
         final da = a.dueDate;
         final db = b.dueDate;
         if (da == null && db == null) return 0;
@@ -28,20 +27,18 @@ class PendingPaymentsWidget extends StatelessWidget {
         if (db == null) return -1;
         return da.compareTo(db);
       });
-
     final total = sorted.fold<double>(0, (acc, c) => acc + c.total);
     final next = sorted.firstOrNull;
     final hoy = DateTime(now.year, now.month, now.day);
-    final vencidas =
-        sorted.where((c) => (c.dueDate?.isBefore(hoy) ?? false)).length;
-
+    final vencidas = sorted
+        .where((c) => (c.dueDate?.isBefore(hoy) ?? false))
+        .length;
+    final l10n = AppLocalizations.of(context);
     return SectionCard(
-      title: 'Pagos pendientes',
+      title: l10n.homePendingPaymentsTitle,
       subtitle: vencidas > 0
-          ? '$vencidas vencida${vencidas == 1 ? '' : 's'}'
-          : (next == null
-              ? 'Sin deudas'
-              : 'Próximo: ${next.dueDateRaw}'),
+          ? l10n.homePendingPaymentsOverdueCount(vencidas)
+          : (next == null ? l10n.widgetNoPendingDebts : '${l10n.paymentDaysLeft('0').split(' ')[0]} ${next.dueDateRaw}'),
       icon: Icons.payments_outlined,
       iconColor: vencidas > 0 ? NexoTheme.danger : NexoTheme.warning,
       trailing: Container(
@@ -60,19 +57,19 @@ class PendingPaymentsWidget extends StatelessWidget {
         ),
       ),
       child: sorted.isEmpty
-          ? _empty()
+          ? _empty(context)
           : Column(
               children: [
-                for (var i = 0; i < sorted.length.clamp(0, 4); i++) ...[
+                for (var i = 0; i < sorted.length.clamp(0, isCompact ? 2 : 4); i++) ...[
                   _CuotaRow(cuota: sorted[i], now: now),
-                  if (i < sorted.length.clamp(0, 4) - 1)
+                  if (i < sorted.length.clamp(0, isCompact ? 2 : 4) - 1)
                     const SizedBox(height: 10),
                 ],
-                if (sorted.length > 4) ...[
+                if (sorted.length > (isCompact ? 2 : 4)) ...[
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      '+ ${sorted.length - 4} cuotas más',
+                      AppLocalizations.of(context).homePendingPaymentsMore(sorted.length - (isCompact ? 2 : 4)),
                       style: TextStyle(
                         color: NexoTheme.textSecondary,
                         fontSize: 13,
@@ -86,52 +83,48 @@ class PendingPaymentsWidget extends StatelessWidget {
     );
   }
 
-  Widget _empty() => Container(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            const Icon(Icons.verified_outlined,
-                size: 36, color: NexoTheme.success),
-            const SizedBox(height: 8),
-            Text(
-              '¡Estás al día!',
-              style: TextStyle(
-                fontSize: 14,
-                color: NexoTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+  Widget _empty(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 28),
+    alignment: Alignment.center,
+    child: Column(
+      children: [
+        const Icon(Icons.verified_outlined, size: 36, color: NexoTheme.success),
+        const SizedBox(height: 8),
+        Text(
+          AppLocalizations.of(context).paymentsUpToDateTitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: NexoTheme.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _CuotaRow extends StatelessWidget {
   final Payment cuota;
   final DateTime now;
-
   const _CuotaRow({required this.cuota, required this.now});
-
   @override
   Widget build(BuildContext context) {
     final days = cuota.daysUntilDue(now);
     final isOverdue = days != null && days < 0;
     final isSoon = days != null && days >= 0 && days <= 3;
-
     final tagColor = isOverdue
         ? NexoTheme.danger
         : isSoon
-            ? NexoTheme.warning
-            : NexoTheme.textSecondary;
+        ? NexoTheme.warning
+        : NexoTheme.textSecondary;
+    final l10n = AppLocalizations.of(context);
     final tagText = isOverdue
-        ? 'VENCIDA hace ${-days} d.'
+        ? l10n.paymentDaysOverdue((-days).toString())
         : days == 0
-            ? 'VENCE HOY'
-            : days == 1
-                ? 'Mañana'
-                : 'En $days días';
-
+        ? l10n.paymentVenceHoy
+        : days == 1
+        ? l10n.paymentVenceManana
+        : l10n.paymentDaysLeft(days.toString());
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -152,72 +145,77 @@ class _CuotaRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cuota.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: NexoTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Text(
+                      cuota.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: NexoTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(Icons.event_outlined,
-                            size: 14, color: NexoTheme.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(
-                          cuota.dueDateRaw,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: NexoTheme.textSecondary,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.event_outlined,
+                              size: 14,
+                              color: NexoTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              cuota.dueDateRaw,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: NexoTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tagColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            tagText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: tagColor,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: tagColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        tagText,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: tagColor,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: NexoTheme.textPrimary,
-            ),
-          ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: NexoTheme.textPrimary,
+                ),
+              ),
             ],
           ),
         ),

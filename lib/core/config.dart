@@ -1,99 +1,39 @@
-﻿/// Configuración del autoupdater de la app y mirror de modelos Lumen.
-///
-/// Un solo repo en GitHub (`auralix-studio/nexo`) hostea **dos** tipos
-/// de releases:
-///   - Releases de la **app**: tag semver (`v1.3.0`) con los artefactos:
-///     APK universal + APKs split por ABI (Android) y el zip/instalador de
-///     Windows. El release "Latest" en GitHub es el target del autoupdater
-///     (`/releases/latest`). El updater elige el artefacto por plataforma y,
-///     en Android, prefiere el **universal**.
-///   - Releases de **modelos Lumen**: tag fijo (`lumen-models-v1`), NO
-///     marcado como Latest, con los `.task`/`.litertlm`. Lo consulta
-///     [LumenModelArtifact.downloadUrl] por tag, no por "latest".
-class UpdateConfig {
+﻿class UpdateConfig {
   static const String repo = 'auralix-studio/nexo';
   static const String latestReleaseApi =
       'https://api.github.com/repos/$repo/releases/latest';
-
-  /// APKs aptos para el autoupdate (Android). Si el release no trae ninguno,
-  /// se ignora (puede ser un release exclusivo de modelos).
   static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
-
-  /// Artefacto de Windows (instalador o zip portable).
   static bool isWindowsAsset(String name) {
     final n = name.toLowerCase();
     return n.endsWith('.exe') || n.endsWith('.msix') || n.endsWith('.zip');
   }
 
-  /// El APK **universal** corre en todo dispositivo; se prefiere sobre los
-  /// split por ABI (arm64-v8a, armeabi-v7a, x86_64) para el auto-update.
   static bool isUniversalApk(String name) =>
       isApkAsset(name) && name.toLowerCase().contains('universal');
-
-  /// Throttle del chequeo automático en el arranque para no martillar el
-  /// rate limit anónimo de GitHub API (60 req/h por IP).
   static const Duration checkInterval = Duration(hours: 24);
 }
 
-/// Configuración global de la aplicación.
 class AppConfig {
-  /// Versión semver de la app. Fuente única — usar en UI y user-agent.
-  /// Mantener sincronizada con `version:` en pubspec.yaml.
-  static const String appVersion = '1.3.1';
-  static const int appBuild = 6;
-
+  static const String appVersion = '1.5.0';
+  static const int appBuild = 8;
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';
   static const Duration httpTimeout = Duration(seconds: 30);
   static const String userAgent =
       'Nexo-UPLA/$appVersion (Flutter; multiplatform)';
-
-  /// Tipo de documento por defecto que usan los endpoints de pagos.
   static const String tipDI = '12';
-
-  /// Foto de perfil del estudiante. Patrón visto en el bundle de SIGMA.
-  /// Si no existe, el servidor responde 404 (manejar con errorBuilder).
-  static String photoUrlFor(String codigo) =>
-      'https://academico.upla.edu.pe/FotosAlum/037000$codigo.jpg';
+  static String photoUrlFor(String code) =>
+      'https://academico.upla.edu.pe/FotosAlum/037000$code.jpg';
 }
 
-/// Configuración de la integración Microsoft 365 / Teams (Graph Education).
-///
-/// El login es OAuth2 **Device Code Flow** con peticiones HTTP propias
-/// (sin SDK): la app pide un código, el alumno lo confirma en el navegador
-/// y luego sondeamos el token. Funciona igual en Android, iOS, Escritorio y
-/// (con la salvedad de CORS) Web.
-///
-/// ⚠ Falta el registro de la app en Azure AD. Para probar de extremo a
-/// extremo, registra un *public client* en el portal de Azure y pega aquí su
-/// Application (client) ID. Pasos en [README]/abajo:
-///   1. Azure Portal → Microsoft Entra ID → App registrations → New.
-///   2. Supported account types: cuentas del directorio organizacional.
-///   3. Authentication → Advanced → "Allow public client flows" = Yes
-///      (imprescindible para Device Code).
-///   4. API permissions → Microsoft Graph → Delegated:
-///      EduRoster.ReadBasic, EduAssignments.ReadBasic (+ offline_access,
-///      openid, profile, User.Read).
-///   5. Copia el Application (client) ID → [msClientId].
 class MsConfig {
-  /// Application (client) ID del registro en Azure AD.
-  /// TODO: reemplazar por el ID real del registro de la universidad.
   static const String clientId = 'TODO_AZURE_CLIENT_ID';
-
-  /// Tenant. `organizations` acepta cualquier cuenta institucional; si la
-  /// universidad exige su propio tenant, usa su GUID o dominio
-  /// (p.ej. `upla.edu.pe`).
   static const String tenant = 'organizations';
-
   static String get _authority =>
       'https://login.microsoftonline.com/$tenant/oauth2/v2.0';
   static String get deviceCodeUrl => '$_authority/devicecode';
   static String get tokenUrl => '$_authority/token';
-
   static const String graphBaseUrl = 'https://graph.microsoft.com/v1.0';
-
-  /// Permisos delegados mínimos para leer clases y tareas propias del alumno.
-  /// `offline_access` habilita el refresh token.
   static const List<String> scopes = [
     'offline_access',
     'openid',
@@ -102,180 +42,6 @@ class MsConfig {
     'EduRoster.ReadBasic',
     'EduAssignments.ReadBasic',
   ];
-
   static String get scopeParam => scopes.join(' ');
-
-  /// `true` cuando aún no se ha configurado el registro de Azure AD.
   static bool get isConfigured => clientId != 'TODO_AZURE_CLIENT_ID';
-}
-
-/// Artefacto descargable de un modelo Lumen para una plataforma específica.
-///
-/// flutter_gemma usa formatos distintos por plataforma:
-/// - Mobile (Android/iOS) y Web → `.task` (MediaPipe).
-/// - Desktop (Windows/macOS/Linux) → `.litertlm` (LiteRT-LM).
-///
-/// Cada [LumenModelSpec] referencia una o dos variantes según los
-/// archivos publicados.
-class LumenModelArtifact {
-  const LumenModelArtifact({
-    required this.filename,
-    required this.sha256,
-    required this.sizeBytes,
-  });
-
-  /// Nombre del archivo tal como está subido al release de GH.
-  final String filename;
-
-  /// SHA-256 esperado. Si empieza con `TODO_` se considera no publicado.
-  final String sha256;
-
-  /// Tamaño exacto en bytes (para progress bar y validación rápida).
-  final int sizeBytes;
-
-  String get downloadUrl =>
-      'https://github.com/${UpdateConfig.repo}/releases/download/'
-      '${LumenConfig.releaseTag}/$filename';
-
-  bool get isConfigured => !sha256.startsWith('TODO_');
-}
-
-/// Metadata de un modelo Lumen instalable.
-///
-/// Cada variante (270M, 1B, etc) es una instancia const de esta clase.
-/// El manager opera siempre sobre una instancia activa que el usuario
-/// elige en el onboarding y puede cambiar desde settings.
-class LumenModelSpec {
-  const LumenModelSpec({
-    required this.id,
-    required this.displayName,
-    required this.tagline,
-    required this.recommendedFor,
-    required this.mobile,
-    this.desktop,
-  });
-
-  /// Identificador estable, persistido en SharedPreferences.
-  /// No cambiar entre releases sin lógica de migración.
-  final String id;
-
-  /// Nombre para mostrar en UI. Usamos nombres camuflados ("Lumen Ligero")
-  /// en lugar del nombre del modelo subyacente — al usuario no le importa
-  /// que sea Gemma/Qwen/Phi, le importa "rápido vs preciso".
-  final String displayName;
-
-  /// Una línea corta para el selector ('Ligero · descarga rápida').
-  final String tagline;
-
-  /// Para qué hardware se recomienda esta variante.
-  final String recommendedFor;
-
-  /// Variante para móviles (Android/iOS) y Web — formato `.task`.
-  final LumenModelArtifact mobile;
-
-  /// Variante para escritorio (Windows/macOS/Linux) — formato `.litertlm`.
-  /// `null` si no publicamos versión desktop para este modelo todavía.
-  final LumenModelArtifact? desktop;
-
-  /// Devuelve el artefacto adecuado para la plataforma indicada por el
-  /// caller. El manager pasa `isDesktop` calculado con `Platform.isWindows |
-  /// isMacOS | isLinux` (sin importar dart:io desde un getter de modelo).
-  LumenModelArtifact artifactFor({required bool isDesktop}) {
-    if (isDesktop && desktop != null) return desktop!;
-    return mobile;
-  }
-
-  /// `true` cuando AL MENOS la variante móvil está publicada.
-  /// (La desktop puede faltar y el modelo igual se considera utilizable
-  /// en celulares.)
-  bool get isConfigured => mobile.isConfigured;
-}
-
-/// Configuración del asistente IA **Lumen**.
-///
-/// Filosofía:
-/// - 100% on-device. Toda la inferencia corre vía MediaPipe LLM Inference
-///   (CPU/GPU del dispositivo). Cero llamadas a APIs externas.
-/// - Opt-in. La descarga del modelo solo ocurre cuando el usuario activa
-///   Lumen y acepta los términos.
-/// - Gratis y sin fricción. Los modelos se mirror-ean en GitHub Releases
-///   del repo Nexo (la licencia Gemma se aceptó al subirlos). El usuario
-///   no necesita cuenta de HuggingFace ni token.
-///
-/// Para publicar un modelo nuevo:
-///   1. Aceptar términos Gemma en Kaggle o HuggingFace.
-///   2. Descargar el .task de la variante deseada.
-///   3. Subirlo como release asset al repo `auralix-studio/nexo` con el tag
-///      indicado en [releaseTag].
-///   4. Verificar el SHA-256 y pegarlo en la entrada del modelo en [models]
-///      (el manager rechaza descargas con checksum distinto).
-class LumenConfig {
-  /// Tag del release de GitHub donde están alojados los .task de todos
-  /// los modelos.
-  static const String releaseTag = 'lumen-models-v1';
-
-  /// Variante ligera — para teléfonos viejos o con poca RAM.
-  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-270m-it-q8 v1).
-  /// ~290 MB en disco, ~500 MB RAM en runtime, 30-50 tok/s en gama media.
-  /// Sin int4 disponible para móvil — Google solo publica q8.
-  static const LumenModelSpec light = LumenModelSpec(
-    id: 'gemma-270m-int8',
-    displayName: 'Lumen Ligero',
-    tagline: 'Ligero · descarga rápida',
-    recommendedFor: 'Teléfonos con 2-3 GB de RAM o gama media-baja.',
-    mobile: LumenModelArtifact(
-      filename: 'gemma-3-270m-it-int8.task',
-      sha256:
-          '0f7147f1c22eaf758b819bbf7841793e4c90096c9352cde7fbe5c631f2265ef5',
-      sizeBytes: 303950933,
-    ),
-    desktop: LumenModelArtifact(
-      filename: 'gemma-3-270m-it-int8.litertlm',
-      sha256:
-          '757e9119fa5bd667a2774fb470ac4afcd3190a21c677f8e69a5d6bc908abdd63',
-      sizeBytes: 304005120,
-    ),
-  );
-
-  /// Variante estándar — recomendada para hardware moderno.
-  /// Origen: Kaggle (google/gemma-3/tfLite/gemma3-1b-it-int4 v1).
-  /// ~529 MB en disco, ~800 MB RAM en runtime, 15-25 tok/s en móvil moderno.
-  /// TODO desktop: bajar la variante `.litertlm` de 1B de Kaggle y subirla.
-  static const LumenModelSpec standard = LumenModelSpec(
-    id: 'gemma-1b-int4',
-    displayName: 'Lumen Estándar',
-    tagline: 'Mejor calidad de respuestas',
-    recommendedFor: 'Teléfonos con 4 GB de RAM o más.',
-    mobile: LumenModelArtifact(
-      filename: 'gemma3-1B-it-int4.task',
-      sha256:
-          'e3d981c01aeaaac69a84ffa0d4be13281b3176731063f1bea1c9fe6887bd9dee',
-      sizeBytes: 554661243,
-    ),
-    // desktop: TODO_LITERTLM_1B — pendiente de subir el .litertlm
-    // correspondiente al release. En Windows/macOS/Linux el Estándar
-    // todavía no puede cargar; usar Ligero hasta que tengamos el asset.
-  );
-
-  /// Catálogo completo de modelos disponibles.
-  static const List<LumenModelSpec> models = [light, standard];
-
-  /// Modelo seleccionado por defecto si el usuario no elige uno explícito
-  /// en el onboarding. Pickeamos el liviano para maximizar compatibilidad.
-  static const LumenModelSpec defaultModel = light;
-
-  /// Busca un modelo por id; devuelve [defaultModel] si no se encuentra
-  /// (útil para tolerar SharedPreferences viejas con ids removidos).
-  static LumenModelSpec byId(String? id) {
-    if (id == null) return defaultModel;
-    return models.firstWhere(
-      (m) => m.id == id,
-      orElse: () => defaultModel,
-    );
-  }
-
-  /// `true` si AL MENOS uno de los modelos del catálogo está listo para
-  /// descargar (tiene checksum real). Si todos están en TODO, la app
-  /// muestra el aviso de "no disponible aún".
-  static bool get anyConfigured => models.any((m) => m.isConfigured);
 }

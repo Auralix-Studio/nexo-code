@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -12,38 +11,32 @@ import 'package:nexo/features/legal/developer_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/settings/settings_screen.dart';
-import 'package:nexo/ai/lumen_services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 
-/// Perfil del docente. Muestra **solo los campos reales** de [DocenteInfo]
-/// (codigo, nombres, apellidos, facultad, especialidad) sin inventar nada.
-class DocenteProfileScreen extends StatefulWidget {
-  const DocenteProfileScreen({
+class TeacherProfileScreen extends StatefulWidget {
+  const TeacherProfileScreen({
     super.key,
     required this.store,
     required this.session,
     required this.theme,
-    required this.lumen,
   });
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
-  final LumenServices lumen;
-
   @override
-  State<DocenteProfileScreen> createState() => _DocenteProfileScreenState();
+  State<TeacherProfileScreen> createState() => _TeacherProfileScreenState();
 }
 
-class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
+class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.store.docenteInfo.hasValue) {
-      widget.store.loadDocenteInfo();
+    if (!widget.store.teacherInfo.hasValue) {
+      widget.store.loadTeacherInfo();
     }
   }
 
@@ -54,7 +47,8 @@ class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
       builder: (context, _) {
         return CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics()),
+            parent: BouncingScrollPhysics(),
+          ),
           slivers: [
             SliverToBoxAdapter(
               child: PageHeader(
@@ -68,14 +62,12 @@ class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
                   children: [
                     Reveal(
                       index: 0,
-                      child: _HeroCard(
-                        infoState: widget.store.docenteInfo,
-                      ),
+                      child: _HeroCard(infoState: widget.store.teacherInfo),
                     ),
                     const Gap(AppSpacing.lg),
                     Reveal(
                       index: 1,
-                      child: _InfoCard(infoState: widget.store.docenteInfo),
+                      child: _InfoCard(infoState: widget.store.teacherInfo),
                     ),
                     const Gap(AppSpacing.lg),
                     Reveal(
@@ -83,7 +75,6 @@ class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
                       child: _ActionsCard(
                         store: widget.store,
                         theme: widget.theme,
-                        lumen: widget.lumen,
                         onLogout: widget.session.logout,
                       ),
                     ),
@@ -100,9 +91,8 @@ class _DocenteProfileScreenState extends State<DocenteProfileScreen> {
 }
 
 class _HeroCard extends StatelessWidget {
-  final AsyncValue<DocenteInfo> infoState;
+  final AsyncValue<TeacherInfo> infoState;
   const _HeroCard({required this.infoState});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -110,8 +100,7 @@ class _HeroCard extends StatelessWidget {
       return const Skeleton(height: 130, radius: 22);
     }
     final info = infoState.value;
-    if (info == null || info.codigo.isEmpty) return const SizedBox.shrink();
-
+    if (info == null || info.code.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
@@ -134,8 +123,11 @@ class _HeroCard extends StatelessWidget {
           CircleAvatar(
             radius: 32,
             backgroundColor: Colors.white.withValues(alpha: 0.18),
-            child: const Icon(Icons.person_rounded,
-                color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.person_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const Gap.h(AppSpacing.lg),
           Expanded(
@@ -166,14 +158,14 @@ class _HeroCard extends StatelessWidget {
                 GestureDetector(
                   onTap: () => ClipboardHelper.copyAndShow(
                     context,
-                    info.codigo,
+                    info.code,
                     label: l.docenteCodeLabel,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        info.codigo,
+                        info.code,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.88),
                           fontSize: AppFont.body,
@@ -200,46 +192,43 @@ class _HeroCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  final AsyncValue<DocenteInfo> infoState;
+  final AsyncValue<TeacherInfo> infoState;
   const _InfoCard({required this.infoState});
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final info = infoState.value;
-    if (info == null || info.codigo.isEmpty) return const SizedBox.shrink();
-
+    if (info == null || info.code.isEmpty) return const SizedBox.shrink();
     final rows = <_InfoItem>[
       _InfoItem(
         icon: Icons.numbers_rounded,
         label: l.docenteCodeLabel,
-        value: info.codigo,
+        value: info.code,
         color: NexoTheme.primary,
       ),
       _InfoItem(
         icon: Icons.badge_outlined,
         label: l.docenteInfoFieldNombres,
-        value: info.nombres,
+        value: info.firstName,
       ),
       _InfoItem(
         icon: Icons.person_outline_rounded,
         label: l.docenteInfoFieldApellidos,
-        value: info.apellidos,
+        value: info.lastName,
       ),
-      if ((info.facultad ?? '').isNotEmpty)
+      if ((info.faculty ?? '').isNotEmpty)
         _InfoItem(
           icon: Icons.account_balance_outlined,
           label: l.docenteInfoFieldFacultad,
-          value: info.facultad!,
+          value: info.faculty!,
         ),
-      if ((info.especialidad ?? '').isNotEmpty)
+      if ((info.specialty ?? '').isNotEmpty)
         _InfoItem(
           icon: Icons.menu_book_outlined,
           label: l.docenteInfoFieldEspecialidad,
-          value: info.especialidad!,
+          value: info.specialty!,
         ),
     ];
-
     return SectionCard(
       title: l.docenteInfoTitle,
       icon: Icons.assignment_ind_outlined,
@@ -271,14 +260,14 @@ class _InfoItem {
 class _InfoRow extends StatelessWidget {
   final _InfoItem item;
   const _InfoRow({required this.item});
-
   @override
   Widget build(BuildContext context) {
     final color = item.color ?? NexoTheme.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => ClipboardHelper.copyAndShow(context, item.value, label: item.label),
+        onTap: () =>
+            ClipboardHelper.copyAndShow(context, item.value, label: item.label),
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -338,15 +327,12 @@ class _InfoRow extends StatelessWidget {
 class _ActionsCard extends StatelessWidget {
   final AppStore store;
   final ThemeController theme;
-  final LumenServices lumen;
   final Future<void> Function() onLogout;
   const _ActionsCard({
     required this.store,
     required this.theme,
-    required this.lumen,
     required this.onLogout,
   });
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -411,8 +397,11 @@ class _ActionsCard extends StatelessWidget {
                 color: NexoTheme.danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded,
-                  color: NexoTheme.danger, size: 20),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: NexoTheme.danger,
+                size: 20,
+              ),
             ),
             title: Text(
               l.actionLogout,
@@ -477,7 +466,9 @@ class _ActionsCard extends StatelessWidget {
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx, false),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -499,7 +490,9 @@ class _ActionsCard extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: NexoTheme.danger,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -549,8 +542,7 @@ class _ActionsCard extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle == null
           ? null
-          : Text(subtitle,
-              style: TextStyle(color: NexoTheme.textSecondary)),
+          : Text(subtitle, style: TextStyle(color: NexoTheme.textSecondary)),
       trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
       onTap: onTap,
     );
