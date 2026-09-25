@@ -132,14 +132,16 @@ Future<void> main(List<String> args) async {
   final repo = SigmaRepository(api);
   final session = SessionService(apiClient: api, repo: repo);
   final connectivity = ConnectivityService(httpClient: secureHttp);
-  final cache = CacheManager();
+  final cache = CacheManager(scope: api.scope);
   final errorHandler = ErrorHandler(
     connectivity: connectivity,
     session: session,
   );
-  final intranet = IntranetRepository(IntranetClient(transport: secureHttp));
+  final intranet = IntranetRepository(
+    IntranetClient(transport: secureHttp, scope: api.scope),
+  );
   final teacher = TeacherRepository(api);
-  final idiomas = IdiomasRepository(client: secureHttp);
+  final idiomas = IdiomasRepository(client: secureHttp, scope: api.scope);
   final store = AppStore(
     repo,
     cache: cache,
@@ -148,27 +150,32 @@ Future<void> main(List<String> args) async {
     intranet: intranet,
     teacher: teacher,
     idiomas: idiomas,
+    scope: api.scope,
   );
   final theme = ThemeController()..load();
   final widgets = HomeWidgetService();
   final updater = UpdateService(httpClient: secureHttp);
   store.onGradeChange = (course, grade) =>
       NotificationService.instance.showGradeChanged(course, grade);
-  session.addListener(() {
-    if (!session.isAuthenticated) store.clear();
-  });
+  session.onSessionEnded = () async {
+    final cleared = store.clear(invalidateSession: false);
+    await Future.wait<void>([
+      cleared,
+      widgets.sync(store),
+      NotificationService.instance.clearAccount(),
+    ]);
+  };
+  session.onAccountReady = cache.activateAccount;
   store.addListener(() {
+    if (!session.isAuthenticated) return;
     if (!store.profile.loading && !store.schedule.loading) {
       widgets.sync(store);
-      if (NotificationService.instance.prefs.enabled &&
-          !store.pendingInstallments.loading) {
-        NotificationService.instance.reschedule(
-          clases: store.schedule.value,
-          installments: store.pendingInstallments.value,
-          finishedSubjects: store.finishedSubjectsThisTerm,
-        );
-      }
     }
+    NotificationService.instance.reschedule(
+      clases: store.schedule.value,
+      installments: store.pendingInstallments.value,
+      finishedSubjects: store.finishedSubjectsThisTerm,
+    );
   });
   // Pintar ANTES de tocar red o disco. La certificación de la Microsoft Store
   // rechazó la 1.6.3.0 (10.1.2.10 Functionality) con «the product does not
@@ -233,6 +240,13 @@ Future<void> _bootstrap({
     _startupStep('widgets', widgets.init),
     _startupStep('notifications', NotificationService.instance.init),
   ]);
+  if (session.isAuthenticated) {
+    await NotificationService.instance.reschedule(
+      clases: store.schedule.value,
+      installments: store.pendingInstallments.value,
+      finishedSubjects: store.finishedSubjectsThisTerm,
+    );
+  }
 
   _startupStepSync('shortcuts', ShortcutService.instance.init);
 
@@ -308,7 +322,8 @@ class NexoApp extends StatelessWidget {
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (ctx, child) {
             final palette = theme.resolvedPalette(ctx);
-            final isTest = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+            final isTest =
+                !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
             if (!kIsWeb && Platform.isWindows && !isTest) {
               windowManager.setBackgroundColor(palette.bg);
             }
@@ -514,7 +529,8 @@ class _GateState extends State<_Gate> {
               FadeTransition(opacity: anim, child: c),
           child: KeyedSubtree(key: ValueKey(key), child: gated),
         );
-        final isTest = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+        final isTest =
+            !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
         if (!kIsWeb && Platform.isWindows && !isTest) {
           child = Scaffold(
             backgroundColor: NexoTheme.bg,

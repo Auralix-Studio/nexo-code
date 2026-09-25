@@ -614,7 +614,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get termsItemSecurityBody =>
-      'El almacenamiento local no está cifrado a nivel del sistema, así que usa Nexo solo en dispositivos de tu confianza. Puedes cerrar sesión para borrar credenciales y caché en cualquier momento.';
+      'En móvil y escritorio, las credenciales se protegen con el almacén seguro del sistema. En el navegador, la sesión permanece en memoria y debes iniciar sesión de nuevo al recargar. Los datos académicos se guardan localmente sin cifrado adicional. Cerrar sesión elimina credenciales y caché.';
 
   @override
   String get termsItemResponsibleTitle => 'Uso responsable';

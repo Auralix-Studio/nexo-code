@@ -699,7 +699,10 @@ class _DashboardWidgetWrapper extends StatelessWidget {
       case 'stats_clases_hoy':
         final schedule = store.schedule.value ?? const <ScheduleClass>[];
         final today = DateTime.now().weekday;
-        final clasesHoy = schedule.where((c) => c.weekday == today).length;
+        final clasesHoy = ScheduleClassGroup.groupBy(
+          schedule.where((c) => c.weekday == today).toList(),
+          finishedSubjects: store.finishedSubjectsThisTerm,
+        ).length;
         return _StatTile(
           data: _StatData(
             label: l.homeMetricClasesHoy,

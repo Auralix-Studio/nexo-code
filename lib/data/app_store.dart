@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nexo/core/session_scope.dart';
 import 'dart:convert';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -53,7 +54,9 @@ class AppStore extends ChangeNotifier {
     IntranetRepository? intranet,
     TeacherRepository? teacher,
     IdiomasRepository? idiomas,
-  }) : _cache = cache,
+    SessionScope? scope,
+  }) : _scope = scope ?? SessionScope(),
+       _cache = cache,
        _errorHandler = errorHandler,
        _connectivity = connectivity,
        _intranet = intranet,
@@ -64,8 +67,14 @@ class AppStore extends ChangeNotifier {
     // spans por defecto rotos (tarjetas aplastadas en móvil).
     _loadDashboardLayout();
   }
-  DataSource<T> _sigma<T>(SourceId id, Future<T> Function() fn) =>
-      DataSource(id: id, fetch: fn);
+  final SessionScope _scope;
+  DataSource<T> _sigma<T>(SourceId id, Future<T> Function() fn) => DataSource(
+    id: id,
+    fetch: () {
+      _scope.check();
+      return fn();
+    },
+  );
   List<DataSource<T>> _intra<T>(Future<T> Function(IntranetRepository) fn) {
     final r = _intranet;
     if (r == null) return const [];
@@ -73,12 +82,15 @@ class AppStore extends ChangeNotifier {
       DataSource(
         id: 'intranet',
         available: () async {
+          _scope.check();
           final s = AppStorage.instance;
           return s.credUser != null && s.credPass != null;
         },
         fetch: () async {
+          _scope.check();
           final s = AppStorage.instance;
           final ok = await r.ensureSession(s.credUser!, s.credPass!);
+          _scope.check();
           if (!ok) throw const NetworkException('Sesión Intranet falló.');
           return fn(r);
         },
@@ -348,11 +360,12 @@ class AppStore extends ChangeNotifier {
 
   int? get totalCredits => resumen.value?.totalCredits;
   void _notify() {
+    if (_disposed || !_scope.isCurrent) return;
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.midFrameMicrotasks) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_disposed) notifyListeners();
+        if (!_disposed && _scope.isCurrent) notifyListeners();
       });
     } else {
       notifyListeners();
@@ -371,9 +384,9 @@ class AppStore extends ChangeNotifier {
     AsyncValue<T> Function() get,
     void Function(AsyncValue<T>) set, {
     Future<T?> Function()? cached,
-    void Function(T value)? persist,
+    Future<void> Function(T value)? persist,
     required String operationName,
-  }) async {
+  }) => _scope.run(() async {
     set(AsyncValue.loading(get().value));
     _notify();
     try {
@@ -382,6 +395,7 @@ class AppStore extends ChangeNotifier {
         cached: cached ?? () => Future.value(null),
         operationName: operationName,
       );
+      if (!_scope.isCurrent) return null;
       // Si el primer chequeo de conectividad aún no terminó y los datos
       // vinieron del caché (hasInternet era false prematuramente), marcamos
       // la operación para que `retryFailedEssentials` la reintente luego.
@@ -390,14 +404,17 @@ class AppStore extends ChangeNotifier {
       }
       set(AsyncValue.data(v));
       _notify();
-      persist?.call(v);
+      if (!_scope.isCurrent) return null;
+      await persist?.call(v);
+      if (!_scope.isCurrent) return null;
       return v;
     } catch (e) {
+      if (!_scope.isCurrent) return null;
       set(AsyncValue.failure(e, get().value));
       _notify();
       return null;
     }
-  }
+  });
 
   static const _ckProfile = 'profile';
   static const _ckPeriodos = 'periodos';
@@ -405,8 +422,10 @@ class AppStore extends ChangeNotifier {
   static const _ckResumen = 'resumen';
   static const _ckPromedios = 'promedios';
   static const _ckCuotasPend = 'cuotasPend';
-  void _setStorageCache(String key, Object data) =>
-      AppStorage.instance.setCache(key, data);
+  Future<void> _setStorageCache(String key, Object data) {
+    _scope.check();
+    return AppStorage.instance.setCache(key, data);
+  }
 
   static const List<DashboardWidgetConfig> _defaultDashboardLayout = [
     DashboardWidgetConfig(id: 'stats_promedio', span: 2),
@@ -510,16 +529,18 @@ class AppStore extends ChangeNotifier {
     }
   }
 
-  Future<void> hydrateFromCache() async {
+  Future<void> hydrateFromCache() => _scope.run(() async {
     final s = AppStorage.instance;
     _loadDashboardLayout();
     try {
       final cached = await _cache.getStudent();
+      if (!_scope.isCurrent) return;
       if (cached != null) {
         profile = AsyncValue.data(cached);
         _notify();
       }
     } catch (_) {}
+    if (!_scope.isCurrent) return;
     final p = s.getCache(_ckProfile);
     if (p is Map && profile.value == null) {
       profile = AsyncValue.data(Student.fromJson(p.cast<String, dynamic>()));
@@ -571,14 +592,15 @@ class AppStore extends ChangeNotifier {
     if (profile.hasValue || schedule.hasValue || pendingInstallments.hasValue) {
       _notify();
     }
-  }
+  });
 
-  Future<void> loadHomeEssentials() async {
+  Future<void> loadHomeEssentials() => _scope.run(() async {
     // Los periodos van primero: `periodoActivo` alimenta al perfil, horario y
     // boleta. Cargarlos en paralelo provocaba que esas fuentes consultaran un
     // periodo adivinado por fecha y a veces volvieran vacías ("no aparecen
     // los datos hasta recargar").
     await loadPeriodos();
+    if (!_scope.isCurrent) return;
     await Future.wait([
       loadProfile(),
       loadHorarioActual(),
@@ -586,17 +608,19 @@ class AppStore extends ChangeNotifier {
       loadPromedios(),
       loadIdiomasMatricula(),
     ]);
+    if (!_scope.isCurrent) return;
     final p = profile.value;
     if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
       await loadResumen(p.studyPlan, p.level);
     }
+    if (!_scope.isCurrent) return;
     unawaited(checkActiveBoleta());
-  }
+  });
 
   /// Reintenta lo que falló, lo que nunca llegó a cargar, o lo que resolvió
   /// desde caché porque el primer chequeo de conectividad aún no había
   /// terminado (falso negativo de offline al arranque).
-  Future<void> retryFailedEssentials() async {
+  Future<void> retryFailedEssentials() => _scope.run(() async {
     bool needs(AsyncValue s, [String? opName]) {
       if (s.loading) return false;
       if (!s.hasValue) return true;
@@ -606,6 +630,7 @@ class AppStore extends ChangeNotifier {
     }
 
     if (needs(periodos, 'loadPeriodos')) await loadPeriodos();
+    if (!_scope.isCurrent) return;
     final tasks = <Future<void>>[
       if (needs(profile, 'loadProfile')) loadProfile(),
       if (needs(schedule, 'loadHorarioActual')) loadHorarioActual(),
@@ -618,6 +643,7 @@ class AppStore extends ChangeNotifier {
     _startupCacheOps.clear();
     if (tasks.isEmpty) return;
     await Future.wait(tasks);
+    if (!_scope.isCurrent) return;
     final p = profile.value;
     if (needs(resumen) &&
         p != null &&
@@ -625,10 +651,11 @@ class AppStore extends ChangeNotifier {
         p.level.isNotEmpty) {
       await loadResumen(p.studyPlan, p.level);
     }
+    if (!_scope.isCurrent) return;
     unawaited(checkActiveBoleta());
-  }
+  });
 
-  Future<void> checkActiveBoleta() async {
+  Future<void> checkActiveBoleta() => _scope.run(() async {
     final activo = periodoActivo;
     if (activo == null) return;
     if (isNewModel(activo.year, activo.number)) {
@@ -636,7 +663,7 @@ class AppStore extends ChangeNotifier {
     } else {
       await loadBoletaLegacy(activo.year, activo.number);
     }
-  }
+  });
 
   Future<Student?> loadProfile() => _wrap(
     () => _studentRes.load(),
@@ -646,7 +673,7 @@ class AppStore extends ChangeNotifier {
     persist: _cache.saveStudent,
     operationName: 'loadProfile',
   );
-  Future<List<Term>?> loadPeriodos() async {
+  Future<List<Term>?> loadPeriodos() => _scope.run(() async {
     final result = await _wrap(
       () => _resolveOrEmpty(_periodosRes),
       () => periodos,
@@ -655,11 +682,12 @@ class AppStore extends ChangeNotifier {
       persist: (v) => _cache.savePeriodos(v),
       operationName: 'loadPeriodos',
     );
+    if (!_scope.isCurrent) return null;
     // El periodo más antiguo es la cohorte de ingreso, y de ahí sale qué nota
     // aprueba para este estudiante.
     PassingRule.resolveFrom(periodos.value);
     return result;
-  }
+  });
 
   Future<List<ScheduleClass>?> loadHorarioActual() => _wrap(
     () => _resolveOrEmpty(_horarioRes),
@@ -671,7 +699,7 @@ class AppStore extends ChangeNotifier {
   );
 
   /// Carga la matrícula del Centro de Idiomas y fusiona el horario.
-  Future<void> loadIdiomasMatricula() async {
+  Future<void> loadIdiomasMatricula() => _scope.run(() async {
     final r = _idiomas;
     if (r == null) return;
     final s = AppStorage.instance;
@@ -682,6 +710,7 @@ class AppStore extends ChangeNotifier {
       idiomasMatricula = const AsyncValue.loading();
       _notify();
       final loginResult = await r.login(user, pass);
+      if (!_scope.isCurrent) return;
       if (loginResult == IdiomasLoginResult.invalidCredentials) {
         // Credenciales rechazadas: no es un error de red, simplemente
         // el estudiante no tiene cuenta de Idiomas o la contraseña difiere.
@@ -695,6 +724,7 @@ class AppStore extends ChangeNotifier {
         );
       }
       final courses = await r.getMatricula(user);
+      if (!_scope.isCurrent) return;
       idiomasMatricula = AsyncValue.data(courses);
 
       // B8: Paralelizar las llamadas a getNotas por curso.
@@ -702,6 +732,7 @@ class AppStore extends ChangeNotifier {
         final notasResults = await Future.wait(
           courses.map((c) => r.getNotas(c.detMatriculaId)),
         );
+        if (!_scope.isCurrent) return;
         final allNotas = notasResults.expand((n) => n).toList();
         idiomasNotas = AsyncValue.data(allNotas);
       } else {
@@ -712,11 +743,12 @@ class AppStore extends ChangeNotifier {
       // se encarga de combinar `_baseSchedule` y `idiomasVigentes` al vuelo.
       _notify();
     } catch (e) {
+      if (!_scope.isCurrent) return;
       idiomasMatricula = AsyncValue.failure(e);
       idiomasNotas = AsyncValue.failure(e);
       _notify();
     }
-  }
+  });
 
   Future<GradesSummary?> loadResumen(String pesId, String level) => _wrap(
     () => _repo
@@ -757,7 +789,7 @@ class AppStore extends ChangeNotifier {
       _boleta['$year-$periodo'] ?? const AsyncValue.idle();
   AsyncValue<List<CourseGrade>> boletaLegacyOf(int year, int periodo) =>
       _boletaLegacy['$year-$periodo'] ?? const AsyncValue.idle();
-  Future<void> loadBoletaLegacy(int year, int periodo) async {
+  Future<void> loadBoletaLegacy(int year, int periodo) => _scope.run(() async {
     final key = '$year-$periodo';
     _boletaLegacy[key] = AsyncValue.loading(_boletaLegacy[key]?.value);
     _notify();
@@ -775,18 +807,20 @@ class AppStore extends ChangeNotifier {
             _cache.getBoletaLegacy(year.toString(), periodo.toString()),
         operationName: 'loadBoletaLegacy($year, $periodo)',
       );
+      if (!_scope.isCurrent) return;
       _boletaLegacy[key] = AsyncValue.data(data);
       _checkGrades(data.map((n) => (n.subject, n.currentGradeText)));
       await _cache.saveBoletaLegacy(year.toString(), periodo.toString(), data);
     } catch (e) {
+      if (!_scope.isCurrent) return;
       _boletaLegacy[key] = AsyncValue.failure(e, _boletaLegacy[key]?.value);
     }
     _notify();
-  }
+  });
 
   AsyncValue<CourseGradeDetail> detalleOf(String id) =>
       _detalle[id] ?? const AsyncValue.idle();
-  Future<void> loadBoleta(int year, int periodo) async {
+  Future<void> loadBoleta(int year, int periodo) => _scope.run(() async {
     final key = '$year-$periodo';
     _boleta[key] = AsyncValue.loading(_boleta[key]?.value);
     _notify();
@@ -800,49 +834,52 @@ class AppStore extends ChangeNotifier {
         cached: () => _cache.getBoleta(year.toString(), periodo.toString()),
         operationName: 'loadBoleta($year, $periodo)',
       );
+      if (!_scope.isCurrent) return;
       _boleta[key] = AsyncValue.data(data);
       _checkGrades(data.map((c) => (c.name, c.promedioText)));
       await _cache.saveBoleta(year.toString(), periodo.toString(), data);
       // Trae el detalle de los cursos en proceso para poder mostrar el
       // promedio real (con decimales) en la lista, no el redondeado.
+      if (!_scope.isCurrent) return;
       unawaited(_prefetchDetalles(year, periodo, data));
     } catch (e) {
+      if (!_scope.isCurrent) return;
       _boleta[key] = AsyncValue.failure(e, _boleta[key]?.value);
     }
     _notify();
-  }
+  });
 
   Future<void> _prefetchDetalles(
     int year,
     int periodo,
     List<ReportCardCourse> courses,
-  ) async {
+  ) => _scope.run(() async {
     for (final c in courses.where((c) => c.inProgress)) {
+      if (!_scope.isCurrent) return;
       if (_detalle[c.enrollmentSubjectId]?.hasValue ?? false) continue;
       await loadDetalle(year, periodo, c.enrollmentSubjectId);
     }
-  }
+  });
 
-  Future<void> loadDetalle(
-    int year,
-    int periodo,
-    String enrollmentSubjectId,
-  ) async {
-    final id = enrollmentSubjectId;
-    if (_detalle[id]?.loading == true) return;
-    _detalle[id] = AsyncValue.loading(_detalle[id]?.value);
-    _notify();
-    try {
-      final data = await Resolver<CourseGradeDetail>(
-        sources: _intra((r) => r.detalleCurso(year, periodo, id)),
-        merge: MergeStrategies.firstWins,
-      ).load();
-      _detalle[id] = AsyncValue.data(data);
-    } catch (e) {
-      _detalle[id] = AsyncValue.failure(e, _detalle[id]?.value);
-    }
-    _notify();
-  }
+  Future<void> loadDetalle(int year, int periodo, String enrollmentSubjectId) =>
+      _scope.run(() async {
+        final id = enrollmentSubjectId;
+        if (_detalle[id]?.loading == true) return;
+        _detalle[id] = AsyncValue.loading(_detalle[id]?.value);
+        _notify();
+        try {
+          final data = await Resolver<CourseGradeDetail>(
+            sources: _intra((r) => r.detalleCurso(year, periodo, id)),
+            merge: MergeStrategies.firstWins,
+          ).load();
+          if (!_scope.isCurrent) return;
+          _detalle[id] = AsyncValue.data(data);
+        } catch (e) {
+          if (!_scope.isCurrent) return;
+          _detalle[id] = AsyncValue.failure(e, _detalle[id]?.value);
+        }
+        _notify();
+      });
 
   Future<List<RecordCourse>?> loadRecord() => _wrap<List<RecordCourse>>(
     () {
@@ -988,7 +1025,7 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteHorario(v),
     operationName: 'loadDocenteHorario',
   );
-  Future<void> loadDocenteAlumnos(String cleAuto) async {
+  Future<void> loadDocenteAlumnos(String cleAuto) => _scope.run(() async {
     _teacherStudents[cleAuto] = AsyncValue.loading(
       _teacherStudents[cleAuto]?.value,
     );
@@ -999,48 +1036,57 @@ class AppStore extends ChangeNotifier {
         cached: () => _cache.getDocenteAlumnos(cleAuto),
         operationName: 'loadDocenteAlumnos($cleAuto)',
       );
+      if (!_scope.isCurrent) return;
       _teacherStudents[cleAuto] = AsyncValue.data(v);
       await _cache.saveDocenteAlumnos(cleAuto, v);
     } catch (e) {
+      if (!_scope.isCurrent) return;
       _teacherStudents[cleAuto] = AsyncValue.failure(
         e,
         _teacherStudents[cleAuto]?.value,
       );
     }
     _notify();
-  }
+  });
 
   Future<String?> updateDocenteNota({
     required String cleAuto,
     required String codigoAlumno,
     required String grade,
-  }) async {
+  }) => _scope.run(() async {
     try {
       await _teacherReady().updateNota(
         cleAuto: cleAuto,
         codigoAlumno: codigoAlumno,
         grade: grade,
       );
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       await loadDocenteAlumnos(cleAuto);
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return null;
     } catch (e) {
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return e.toString();
     }
-  }
+  });
 
   Future<List<EvaluationGrade>> docenteNotasDetalle({
     required String cleAuto,
     required String codigoAlumno,
-  }) => _teacherReady().notasDetalle(
-    cleAuto: cleAuto,
-    codigoAlumno: codigoAlumno,
-  );
+  }) => _scope.run(() async {
+    final result = await _teacherReady().notasDetalle(
+      cleAuto: cleAuto,
+      codigoAlumno: codigoAlumno,
+    );
+    _scope.check();
+    return result;
+  });
   Future<String?> updateDocenteEvaluacion({
     required String cleAuto,
     required String codigoAlumno,
     required String codigoEvaluacion,
     required String grade,
-  }) async {
+  }) => _scope.run(() async {
     try {
       await _teacherReady().updateEvaluacion(
         cleAuto: cleAuto,
@@ -1048,76 +1094,105 @@ class AppStore extends ChangeNotifier {
         codigoEvaluacion: codigoEvaluacion,
         grade: grade,
       );
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       await loadDocenteAlumnos(cleAuto);
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return null;
     } catch (e) {
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return e.toString();
     }
-  }
+  });
 
   Future<List<DailyAttendance>> docenteAsistenciaAlumno({
     required String cleAuto,
     required String codigoAlumno,
-  }) => _teacherReady().asistenciaAlumno(
-    cleAuto: cleAuto,
-    codigoAlumno: codigoAlumno,
-  );
+  }) => _scope.run(() async {
+    final result = await _teacherReady().asistenciaAlumno(
+      cleAuto: cleAuto,
+      codigoAlumno: codigoAlumno,
+    );
+    _scope.check();
+    return result;
+  });
   Future<Map<String, String>> docenteAsistenciaDia({
     required String cleAuto,
     required DateTime date,
-  }) => _teacherReady().asistenciaDelDia(cleAuto: cleAuto, date: date);
+  }) => _scope.run(() async {
+    final result = await _teacherReady().asistenciaDelDia(
+      cleAuto: cleAuto,
+      date: date,
+    );
+    _scope.check();
+    return result;
+  });
   Future<String?> guardarAsistenciaDia({
     required String cleAuto,
     required DateTime date,
     required Map<String, String> estados,
-  }) async {
+  }) => _scope.run(() async {
     try {
       await _teacherReady().guardarAsistenciaDelDia(
         cleAuto: cleAuto,
         date: date,
         estados: estados,
       );
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return null;
     } catch (e) {
+      if (!_scope.isCurrent) return const StaleSessionException().toString();
       return e.toString();
     }
-  }
+  });
 
   bool get tieneDocente => _teacher != null;
   Future<void> changePassword(String actual, String nueva) =>
-      _repo.changePassword(actual, nueva);
-  Future<List<CourseGrade>?> loadNotas(int year, int periodo) async {
-    final key = '$year-$periodo';
-    final prev = _notasByPeriodo[key]?.value;
-    _notasByPeriodo[key] = AsyncValue.loading(prev);
-    _notify();
-    try {
-      final v = await _errorHandler.withFallback<List<CourseGrade>>(
-        remote: () => Resolver<List<CourseGrade>>(
-          sources: [
-            ..._intra((r) => r.boletaLegacy(year, periodo)),
-            _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
-          ],
-          merge: MergeStrategies.firstWins,
-          isEmpty: _emptyList,
-        ).load(),
-        cached: () =>
-            _cache.getBoletaLegacy(year.toString(), periodo.toString()),
-        operationName: 'loadNotas($year, $periodo)',
-      );
-      _notasByPeriodo[key] = AsyncValue.data(v);
-      _notify();
-      await _cache.saveBoletaLegacy(year.toString(), periodo.toString(), v);
-      return v;
-    } catch (e) {
-      _notasByPeriodo[key] = AsyncValue.failure(e, prev);
-      _notify();
-      return null;
-    }
-  }
+      _scope.run(() async {
+        await _repo.changePassword(actual, nueva);
+        _scope.check();
+        final user = AppStorage.instance.credUser;
+        if (user != null) await AppStorage.instance.setCredentials(user, nueva);
+        _scope.check();
+        _intranet?.invalidate();
+        await AppStorage.instance.setIntranetSession(null, null);
+      });
+  Future<List<CourseGrade>?> loadNotas(int year, int periodo) =>
+      _scope.run(() async {
+        final key = '$year-$periodo';
+        final prev = _notasByPeriodo[key]?.value;
+        _notasByPeriodo[key] = AsyncValue.loading(prev);
+        _notify();
+        try {
+          final v = await _errorHandler.withFallback<List<CourseGrade>>(
+            remote: () => Resolver<List<CourseGrade>>(
+              sources: [
+                ..._intra((r) => r.boletaLegacy(year, periodo)),
+                _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
+              ],
+              merge: MergeStrategies.firstWins,
+              isEmpty: _emptyList,
+            ).load(),
+            cached: () =>
+                _cache.getBoletaLegacy(year.toString(), periodo.toString()),
+            operationName: 'loadNotas($year, $periodo)',
+          );
+          if (!_scope.isCurrent) return null;
+          _notasByPeriodo[key] = AsyncValue.data(v);
+          _notify();
+          await _cache.saveBoletaLegacy(year.toString(), periodo.toString(), v);
+          return v;
+        } catch (e) {
+          if (!_scope.isCurrent) return null;
+          _notasByPeriodo[key] = AsyncValue.failure(e, prev);
+          _notify();
+          return null;
+        }
+      });
 
-  void clear() {
-    unawaited(_cache.clearAll());
+  Future<void> clear({bool invalidateSession = true}) {
+    if (invalidateSession) _scope.invalidate();
+    final cleared = _cache.clearAll();
+    _startupCacheOps.clear();
     profile = const AsyncValue.idle();
     periodos = const AsyncValue.idle();
     // Otro estudiante puede tener otra regla de aprobación: no se hereda.
@@ -1145,6 +1220,8 @@ class AppStore extends ChangeNotifier {
     teacherSchedule = const AsyncValue.idle();
     _teacherStudents.clear();
     _intranet?.invalidate();
+    _idiomas?.invalidate();
     _notify();
+    return cleared;
   }
 }

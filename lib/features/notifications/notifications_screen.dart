@@ -23,6 +23,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       next,
       clases: widget.store.schedule.value,
       installments: widget.store.pendingInstallments.value,
+      finishedSubjects: widget.store.finishedSubjectsThisTerm,
     );
   }
 

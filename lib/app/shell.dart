@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/data/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/data/connectivity_service.dart';
@@ -150,6 +151,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    if (widget.session.isAuthenticated) {
+      NotificationService.instance.reschedule(
+        clases: widget.store.schedule.value,
+        installments: widget.store.pendingInstallments.value,
+        finishedSubjects: widget.store.finishedSubjectsThisTerm,
+      );
+    }
     if (widget.session.user?.isTeacher ?? false) return;
     final now = DateTime.now();
     if (_lastBoletaCheck != null &&

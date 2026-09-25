@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:nexo/core/session_scope.dart';
 import 'package:path/path.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
@@ -6,7 +7,25 @@ import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
 class CacheManager {
-  CacheManager({Database? database}) : _db = database;
+  CacheManager({Database? database, SessionScope? scope})
+    : _db = database,
+      _scope = scope ?? SessionScope();
+  final SessionScope _scope;
+  String? _account;
+  static const _tables = [
+    'student_profile',
+    'boleta_cursos',
+    'boleta_legacy',
+    'schedule',
+    'periodos',
+    'promedios',
+    'pagos',
+    'docente_info',
+    'docente_cursos',
+    'docente_alumnos',
+    'unified_student',
+    'unified_teacher',
+  ];
   Database? _db;
   Future<void> init() async {
     if (kIsWeb) return;
@@ -14,7 +33,7 @@ class CacheManager {
     final path = join(await getDatabasesPath(), 'nexo_cache.db');
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createTables,
       onUpgrade: (db, oldVersion, newVersion) async {
         final tables = [
@@ -34,13 +53,16 @@ class CacheManager {
         for (final t in tables) {
           await db.execute('DROP TABLE IF EXISTS $t');
         }
+        await db.execute('DROP TABLE IF EXISTS cache_owner');
         await _createTables(db, newVersion);
       },
     );
   }
 
   Future<void> _createTables(Database db, int version) async {
-    if (!isReady) return;
+    await db.execute(
+      'CREATE TABLE cache_owner (id INTEGER PRIMARY KEY CHECK(id = 1), account TEXT NOT NULL)',
+    );
     await db.execute('''
       CREATE TABLE student_profile (
         id TEXT PRIMARY KEY,
@@ -131,7 +153,40 @@ class CacheManager {
     ''');
   }
 
+  /// Only one account is retained on this device. Binding and eviction are
+  /// atomic; legacy unowned data is never attributed to the next login.
+  Future<void> activateAccount(String account) async {
+    _scope.check();
+    if (kIsWeb) return;
+    await init();
+    _scope.check();
+    final database = _db!;
+    await database.transaction((txn) async {
+      _scope.check();
+      final rows = await txn.query(
+        'cache_owner',
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+      _scope.check();
+      if (rows.isEmpty || rows.first['account'] != account) {
+        for (final table in _tables) {
+          await txn.delete(table);
+        }
+        await txn.insert('cache_owner', {
+          'id': 1,
+          'account': account,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      _scope.check();
+    });
+    _scope.check();
+    _account = account;
+  }
+
   Database get db {
+    _scope.check();
+    if (_account == null) throw StateError('Cache has no authenticated owner.');
     final d = _db;
     if (d == null) {
       throw StateError('CacheManager not initialized. Call init() first.');
@@ -547,27 +602,15 @@ class CacheManager {
   }
 
   Future<void> clearAll() async {
-    if (!isReady) return;
-    final tables = [
-      'student_profile',
-      'boleta_cursos',
-      'boleta_legacy',
-      'schedule',
-      'periodos',
-      'promedios',
-      'pagos',
-      'docente_info',
-      'docente_cursos',
-      'docente_alumnos',
-      'unified_student',
-      'unified_teacher',
-    ];
-    // Cerrar sesión antes de que el caché termine de abrirse no debe reventar:
-    // si no hay base, no hay nada que borrar.
-    if (!isReady) return;
-    for (final table in tables) {
-      await db.delete(table);
-    }
+    _account = null;
+    final database = _db;
+    if (database == null) return;
+    await database.transaction((txn) async {
+      for (final table in _tables) {
+        await txn.delete(table);
+      }
+      await txn.delete('cache_owner');
+    });
   }
 
   Future<void> clearExpired(Duration maxAge) async {

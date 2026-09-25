@@ -19,6 +19,7 @@ dependencies:
   http: ^1.2.2
   # Persistencia local del token y datos cacheados.
   shared_preferences: ^2.3.2
+  flutter_secure_storage: ^10.3.4
   # Conectividad y base de datos local SQLite
   connectivity_plus: ^6.0.3
   sqflite: ^2.3.0

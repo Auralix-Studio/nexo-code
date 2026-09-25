@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nexo/core/session_scope.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:nexo/core/errors.dart';
@@ -18,15 +19,25 @@ class SessionService extends ChangeNotifier {
   }
   final ApiClient _api;
   final SigmaRepository _repo;
+  SessionScope get scope => _api.scope;
+  Future<void> Function()? onSessionEnded;
+  Future<void> Function(String account)? onAccountReady;
+  Future<void> _cleanup = Future.value();
   SessionStatus _status = SessionStatus.unknown;
   UserProfile? _user;
   Future<ReauthOutcome>? _inFlightReauth;
   SessionStatus get status => _status;
   UserProfile? get user => _user;
   bool get isAuthenticated => _status == SessionStatus.authenticated;
-  Future<void> bootstrap() async {
+  Future<void> bootstrap() => scope.run(() async {
     final storage = AppStorage.instance;
-    final tok = storage.token;
+    _loadUserFromStorage(storage);
+    final account = storage.credUser ?? _user?.code;
+    if (account != null && account.isNotEmpty) {
+      await onAccountReady?.call(account);
+      scope.check();
+    }
+    final tok = account == null || account.isEmpty ? null : storage.token;
     final hasToken = tok != null && tok.isNotEmpty;
     if (hasToken) {
       _api.setToken(tok);
@@ -40,6 +51,7 @@ class SessionService extends ChangeNotifier {
     // Token ausente o vencido: intentar reautenticar si hay credenciales.
     if (storage.hasCredentials) {
       final outcome = await _reauthenticate();
+      scope.check();
       if (outcome == ReauthOutcome.refreshed) {
         _setStatus(SessionStatus.authenticated);
         return;
@@ -53,8 +65,8 @@ class SessionService extends ChangeNotifier {
         return;
       }
     }
-    _setStatus(SessionStatus.unauthenticated);
-  }
+    await logout();
+  });
 
   void _loadUserFromStorage(AppStorage storage) {
     final raw = storage.userJson;
@@ -88,53 +100,96 @@ class SessionService extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String usuarioId, String password) async {
-    final result = await _repo.login(usuarioId, password);
-    await _persistSession(result);
-    await AppStorage.instance.setCredentials(usuarioId, password);
-    _setStatus(SessionStatus.authenticated);
+  Future<void> login(String usuarioId, String password) {
+    _reset();
+    return scope.runFresh(() async {
+      await _cleanup;
+      scope.check();
+      final result = await _repo.login(usuarioId, password);
+      scope.check();
+      await onAccountReady?.call(usuarioId);
+      scope.check();
+      await _persistSession(result, usuarioId, password);
+      scope.check();
+      _setStatus(SessionStatus.authenticated);
+    });
   }
 
-  Future<void> _persistSession(LoginResult result) async {
-    await AppStorage.instance.setToken(result.token);
-    if (result.info != null) {
-      await AppStorage.instance.setUserJson(jsonEncode(result.info!.toJson()));
-      _user = result.info;
-    }
+  Future<void> _persistSession(
+    LoginResult result,
+    String user,
+    String pass,
+  ) async {
+    scope.check();
+    await AppStorage.instance.setAuthenticatedSession(
+      token: result.token,
+      account: user,
+      password: pass,
+      userJson: result.info == null ? null : jsonEncode(result.info!.toJson()),
+    );
+    scope.check();
+    _api.setToken(result.token);
+    _user = result.info;
   }
 
   Future<ReauthOutcome> _reauthenticate() {
-    return _inFlightReauth ??= _doReauth()
-      ..whenComplete(() => _inFlightReauth = null);
+    scope.check();
+    final existing = _inFlightReauth;
+    if (existing != null) return existing;
+    late final Future<ReauthOutcome> request;
+    request = scope.run(_doReauth).whenComplete(() {
+      if (identical(_inFlightReauth, request)) _inFlightReauth = null;
+    });
+    return _inFlightReauth = request;
   }
 
   Future<ReauthOutcome> _doReauth() async {
     final s = AppStorage.instance;
     final u = s.credUser;
     final p = s.credPass;
-    // Sin credenciales guardadas no hay forma de reautenticar en silencio:
-    // hay que ir a login.
     if (u == null || p == null || u.isEmpty || p.isEmpty) {
       return ReauthOutcome.invalidCredentials;
     }
     try {
       final result = await _repo.login(u, p);
-      await _persistSession(result);
+      scope.check();
+      await _persistSession(result, u, p);
       return ReauthOutcome.refreshed;
+    } on StaleSessionException {
+      rethrow;
     } on InvalidCredentialsException {
-      // El servidor rechazó las credenciales: única causa de logout.
       return ReauthOutcome.invalidCredentials;
     } catch (_) {
-      // Red / timeout / servidor / HTML: transitorio → conservar la sesión.
       return ReauthOutcome.unavailable;
     }
   }
 
-  Future<void> logout() async {
-    await AppStorage.instance.clear(keepCredentials: false);
+  void _reset() {
+    scope.invalidate();
+    _inFlightReauth = null;
     _api.setToken(null);
     _user = null;
     _setStatus(SessionStatus.unauthenticated);
+    final previous = _cleanup.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    _cleanup = scope.runFresh(
+      () => Future.wait<void>([
+        previous,
+        AppStorage.instance.clear(keepCredentials: false),
+        if (onSessionEnded != null) onSessionEnded!(),
+      ]).then((_) {}),
+    );
+    // Report failures to logout/login callers without an unhandled microtask.
+    unawaited(
+      _cleanup.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+    );
+  }
+
+  Future<void> logout() {
+    _reset();
+    return _cleanup;
   }
 
   /// Cierra el arranque cuando `bootstrap` no pudo decidir —falló o tardó
@@ -142,17 +197,18 @@ class SessionService extends ChangeNotifier {
   /// pantalla de login siempre es recuperable, así que es el destino seguro.
   void resolveUnknownAsUnauthenticated() {
     if (_status == SessionStatus.unknown) {
+      // The timed-out bootstrap future is still running: revoke its writes.
+      scope.invalidate();
+      _api.setToken(null);
+      _user = null;
       _setStatus(SessionStatus.unauthenticated);
     }
   }
 
   void _onAuthFailed() {
-    scheduleMicrotask(() async {
-      await AppStorage.instance.clear(keepCredentials: false);
-      _api.setToken(null);
-      _user = null;
-      _setStatus(SessionStatus.unauthenticated);
-    });
+    // ApiClient calls this in the originating scope; stale 401s cannot logout B.
+    if (!scope.isCurrent) return;
+    _reset();
   }
 
   void _setStatus(SessionStatus s) {

@@ -9,6 +9,7 @@ import 'package:nexo/domain/unified_models.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nexo/core/storage.dart';
+import 'package:nexo/core/secret_store.dart';
 
 class FakeSigmaRepository extends Fake implements SigmaRepository {}
 
@@ -24,7 +25,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      await AppStorage.init();
+      await AppStorage.init(secrets: MemorySecretStore());
       store = AppStore(
         FakeSigmaRepository(),
         cache: FakeCacheManager(),

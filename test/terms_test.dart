@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/storage.dart';
+import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,7 +21,7 @@ void main() {
     test('quien aceptó la versión vieja tiene que volver a aceptar', () async {
       // Antes solo existía el booleano.
       SharedPreferences.setMockInitialValues({'nexo.acceptedTerms': true});
-      final storage = await AppStorage.init();
+      final storage = await AppStorage.init(secrets: MemorySecretStore());
 
       expect(storage.acceptedTermsVersion, 1);
       expect(storage.acceptedTerms, isFalse);
@@ -28,7 +29,7 @@ void main() {
 
     test('aceptar guarda la versión actual', () async {
       SharedPreferences.setMockInitialValues({});
-      final storage = await AppStorage.init();
+      final storage = await AppStorage.init(secrets: MemorySecretStore());
 
       expect(storage.acceptedTerms, isFalse);
       await storage.setAcceptedTerms(true);

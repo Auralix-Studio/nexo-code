@@ -22,7 +22,13 @@ class HomeWidgetService {
     } catch (_) {}
   }
 
-  Future<void> sync(AppStore store) async {
+  Future<void> _syncWork = Future.value();
+  Future<void> sync(AppStore store) {
+    // A logout's empty snapshot must finish after any previous account write.
+    return _syncWork = _syncWork.then((_) => _sync(store));
+  }
+
+  Future<void> _sync(AppStore store) async {
     if (!_supported) return;
     try {
       await _syncNextAndToday(store.schedule.value ?? const []);
@@ -95,7 +101,9 @@ class HomeWidgetService {
         if (db == null) return -1;
         return da.compareTo(db);
       });
-    final l10n = lookupAppLocalizations(Locale(AppStorage.instance.localeCode ?? 'es'));
+    final l10n = lookupAppLocalizations(
+      Locale(AppStorage.instance.localeCode ?? 'es'),
+    );
     if (sorted.isEmpty) {
       await _save('pay_desc', l10n.widgetNoPendingDebts);
       await _save('pay_amount', '');

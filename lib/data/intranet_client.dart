@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'package:nexo/core/session_scope.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:nexo/core/errors.dart';
 
 class IntranetClient {
-  IntranetClient({http.Client? transport}) : _http = transport ?? http.Client();
+  IntranetClient({http.Client? transport, SessionScope? scope})
+    : _http = transport ?? http.Client(),
+      scope = scope ?? SessionScope();
+  final SessionScope scope;
+  int _cookieGeneration = 0;
   static const _base = 'https://intranet.upla.edu.pe';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -32,8 +37,15 @@ class IntranetClient {
   }
 
   void invalidateSession() {
+    _cookieGeneration++;
     _loggedIn = false;
     _cookies.clear();
+  }
+
+  void reset() {
+    invalidateSession();
+    reauthenticate = null;
+    _reauthInFlight = null;
   }
 
   void _storeCookies(http.BaseResponse res) {
@@ -57,18 +69,23 @@ class IntranetClient {
     if (referer != null) 'Referer': '$_base/$referer',
     if (form) 'Content-Type': 'application/x-www-form-urlencoded',
   };
-  Future<http.Response> _send(http.BaseRequest req) async {
+  Future<http.Response> _send(http.BaseRequest req) => scope.run(() async {
+    final generation = _cookieGeneration;
     try {
       final streamed = await _http.send(req).timeout(_timeout);
       final res = await http.Response.fromStream(streamed);
+      scope.check();
+      if (generation != _cookieGeneration) throw const StaleSessionException();
       _storeCookies(res);
       return res;
+    } on StaleSessionException {
+      rethrow;
     } on TimeoutException {
       throw const TimeoutException('Intranet no respondió a tiempo.');
     } catch (e) {
       throw NetworkException('Error de red (Intranet): $e');
     }
-  }
+  });
 
   Future<http.Response> _get(String path, {String? referer}) {
     final req = http.Request('GET', Uri.parse('$_base/$path'))
@@ -89,10 +106,13 @@ class IntranetClient {
     return _send(req);
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password) => scope.run(() async {
     _cookies.clear();
     _loggedIn = false;
+    final generation = _cookieGeneration;
     await _get('');
+    scope.check();
+    if (generation != _cookieGeneration) throw const StaleSessionException();
     final res = await _post('login', {
       'usuario': username,
       'contrasena': password,
@@ -100,13 +120,15 @@ class IntranetClient {
       'captcha_modelo': '',
       'captcha_respuesta': '',
     }, referer: '');
+    scope.check();
+    if (generation != _cookieGeneration) throw const StaleSessionException();
     final loc = res.headers['location'] ?? '';
     _loggedIn = res.statusCode == 302 && loc.contains('inicio');
     if (_loggedIn) {
       await _get('inicio?filtro=noticias', referer: 'login');
     }
     return _loggedIn;
-  }
+  });
 
   void _checkSession(http.Response res) {
     if (res.statusCode == 302 &&
@@ -131,15 +153,20 @@ class IntranetClient {
   }
 
   Future<bool> _reauthOnce() {
-    return _reauthInFlight ??= () async {
-      try {
-        final cb = reauthenticate;
-        if (cb == null) return false;
-        return await cb();
-      } finally {
-        _reauthInFlight = null;
-      }
-    }();
+    scope.check();
+    final existing = _reauthInFlight;
+    if (existing != null) return existing;
+    late final Future<bool> request;
+    request = scope
+        .run(() async {
+          final cb = reauthenticate;
+          if (cb == null) return false;
+          return await cb();
+        })
+        .whenComplete(() {
+          if (identical(_reauthInFlight, request)) _reauthInFlight = null;
+        });
+    return _reauthInFlight = request;
   }
 
   Future<List<dynamic>> getJsonList(String path, {String? referer}) =>
@@ -148,7 +175,7 @@ class IntranetClient {
     String path, {
     String? referer,
     required bool isRetry,
-  }) async {
+  }) => scope.run(() async {
     final res = await _get(path, referer: referer);
     try {
       _checkSession(res);
@@ -157,10 +184,11 @@ class IntranetClient {
     } on SessionExpiredException {
       if (isRetry || reauthenticate == null) rethrow;
       final ok = await _reauthOnce();
+      scope.check();
       if (!ok) rethrow;
       return _jsonListGet(path, referer: referer, isRetry: true);
     }
-  }
+  });
 
   Future<List<dynamic>> postJsonList(
     String path,
@@ -172,7 +200,7 @@ class IntranetClient {
     Map<String, String> body, {
     String? referer,
     required bool isRetry,
-  }) async {
+  }) => scope.run(() async {
     final res = await _post(path, body, referer: referer);
     try {
       _checkSession(res);
@@ -184,7 +212,7 @@ class IntranetClient {
       if (!ok) rethrow;
       return _jsonListPost(path, body, referer: referer, isRetry: true);
     }
-  }
+  });
 
   void close() => _http.close();
 }
