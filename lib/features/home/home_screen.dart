@@ -712,6 +712,9 @@ class _DashboardWidgetWrapper extends StatelessWidget {
           ),
         );
       case 'next_class':
+        if (store.schedule.showSkeleton) {
+          return const Skeleton(height: 140, radius: 20);
+        }
         final schedule = store.schedule.value ?? const <ScheduleClass>[];
         if (schedule.isEmpty) return const SizedBox.shrink();
         return NextClassWidget(all: schedule);

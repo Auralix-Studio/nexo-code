@@ -2,6 +2,12 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [1.7.1] - 2026-09-26
+
+### Correcciones
+- Indicadores de sincronización ("Consultado al servidor", "Guardado") eliminados de la UI — ya no aparecen en ninguna pantalla
+- Próxima clase en inicio ahora muestra un skeleton animado mientras carga en lugar de espacio en blanco
+
 ## [1.7.0] - 2026-09-26
 
 ### Mejoras
