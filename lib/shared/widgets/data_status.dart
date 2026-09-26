@@ -17,7 +17,8 @@ class DataStatus extends StatelessWidget {
       children: [
         for (final entry in operations.entries)
           if (store.freshnessOf(entry.key) case final state?)
-            Padding(
+            if (state.refreshing || state.failed || state.fromCache)
+              Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 '${entry.value}: '
