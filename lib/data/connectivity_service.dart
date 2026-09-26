@@ -21,9 +21,14 @@ class ConnectivityService extends ChangeNotifier {
   ServerStatus _idiomasApiStatus = ServerStatus.offline;
 
   /// Completer que se resuelve cuando el primer health-check termina.
-  /// Permite a `AppShell` esperar antes de disparar `loadHomeEssentials`,
-  /// evitando que `ErrorHandler` vea `hasInternet = false` prematuramente.
+  /// Se mantiene separado de networkReady para distinguir el diagnóstico
+  /// completo de la disponibilidad inicial de una interfaz de red.
   final Completer<void> _firstCheckCompleter = Completer<void>();
+  final Completer<void> _networkReadyCompleter = Completer<void>();
+
+  /// La interfaz de red ya fue consultada; los diagnósticos HTTP pueden seguir
+  /// pendientes. Permite cargar datos sin esperar al servidor más lento.
+  Future<void> get networkReady => _networkReadyCompleter.future;
 
   /// Future que se resuelve al completar el primer chequeo de conectividad.
   Future<void> get firstCheckDone => _firstCheckCompleter.future;
@@ -49,10 +54,17 @@ class ConnectivityService extends ChangeNotifier {
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       _handleConnectivityChange(results);
     });
-    final initialResults = await _connectivity.checkConnectivity();
-    await _handleConnectivityChange(initialResults);
-    if (!_firstCheckCompleter.isCompleted) {
-      _firstCheckCompleter.complete();
+    try {
+      final initialResults = await _connectivity.checkConnectivity();
+      await _handleConnectivityChange(initialResults);
+    } finally {
+      // Un fallo del plugin tampoco debe dejar el inicio esperando para siempre.
+      if (!_networkReadyCompleter.isCompleted) {
+        _networkReadyCompleter.complete();
+      }
+      if (!_firstCheckCompleter.isCompleted) {
+        _firstCheckCompleter.complete();
+      }
     }
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_hasInternet) {
@@ -82,6 +94,9 @@ class ConnectivityService extends ChangeNotifier {
     final hasNet =
         results.isNotEmpty && !results.contains(ConnectivityResult.none);
     _hasInternet = hasNet;
+    if (!_networkReadyCompleter.isCompleted) {
+      _networkReadyCompleter.complete();
+    }
     await _healthCheck();
   }
 

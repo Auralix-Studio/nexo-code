@@ -238,14 +238,18 @@ class _Header extends StatelessWidget {
       barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (context) {
         final l = AppLocalizations.of(context);
-        return ConstrainedBox(
+        return Dialog(
           constraints: const BoxConstraints(maxWidth: 420),
-          child: Dialog(
-            backgroundColor: NexoTheme.card,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: NexoTheme.border),
-            ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          backgroundColor: NexoTheme.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: NexoTheme.border),
+          ),
+          child: SingleChildScrollView(
             child: ListenableBuilder(
               listenable: connectivity,
               builder: (context, _) {
@@ -301,21 +305,27 @@ class _Header extends StatelessWidget {
                         Icon(icon, color: color, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: NexoTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: color,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: NexoTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: color,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -324,7 +334,7 @@ class _Header extends StatelessWidget {
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -409,41 +419,41 @@ class _Header extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Row(
+                      OverflowBar(
+                        alignment: MainAxisAlignment.end,
+                        spacing: 12,
+                        overflowSpacing: 8,
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => connectivity.checkNow(),
-                              icon: const Icon(Icons.refresh_rounded, size: 18),
-                              label: Text(l.actionRetry),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                side: BorderSide(color: NexoTheme.border),
+                          OutlinedButton.icon(
+                            onPressed: () => connectivity.checkNow(),
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: Text(l.actionRetry),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
                               ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(color: NexoTheme.border),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: NexoTheme.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NexoTheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
                               ),
-                              child: Text(l.actionClose),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: Text(l.actionClose),
                           ),
                         ],
                       ),

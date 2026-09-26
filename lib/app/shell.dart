@@ -114,10 +114,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.initState();
     final isTeacher = widget.session.user?.isTeacher ?? false;
     if (!isTeacher) {
-      // Esperar el primer health-check de conectividad antes de cargar datos:
-      // sin esto, `ErrorHandler` ve `hasInternet = false` (valor por defecto) y
-      // cae a caché innecesariamente, produciendo el log repetido
-      // "ErrorHandler: offline flag for X → cache".
+      // Basta conocer la interfaz de red. Los diagnósticos de servidores
+      // continúan en paralelo y no retrasan las peticiones académicas.
       _awaitConnectivityThenLoad();
     }
     _lastBoletaCheck = DateTime.now();
@@ -131,7 +129,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   Future<void> _awaitConnectivityThenLoad() async {
-    await widget.connectivity.firstCheckDone;
+    await widget.connectivity.networkReady;
     if (!mounted) return;
     _wasOnline = widget.connectivity.hasInternet;
     widget.store.loadHomeEssentials();

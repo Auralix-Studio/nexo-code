@@ -7,16 +7,17 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
   final ok = await showDialog<bool>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.5),
-    builder: (ctx) => ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 420),
-      child: Dialog(
-        backgroundColor: NexoTheme.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: NexoTheme.border),
-        ),
+    builder: (ctx) => Dialog(
+      constraints: const BoxConstraints(maxWidth: 380),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      backgroundColor: NexoTheme.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: NexoTheme.border),
+      ),
+      child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

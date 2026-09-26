@@ -669,20 +669,24 @@ class AppStore extends ChangeNotifier {
       // los datos hasta recargar").
       await loadPeriodos();
       if (!_scope.isCurrent) return;
+      // La boleta no bloquea el refresco del inicio ni espera a pagos/idiomas.
+      unawaited(checkActiveBoleta());
+      Future<void> loadAcademicSummary() async {
+        await loadProfile();
+        if (!_scope.isCurrent) return;
+        final p = profile.value;
+        if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
+          await loadResumen(p.studyPlan, p.level);
+        }
+      }
+
       await Future.wait([
-        loadProfile(),
+        loadAcademicSummary(),
         loadHorarioActual(),
         loadCuotasPendientes(),
         loadPromedios(),
         loadIdiomasMatricula(),
       ]);
-      if (!_scope.isCurrent) return;
-      final p = profile.value;
-      if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
-        await loadResumen(p.studyPlan, p.level);
-      }
-      if (!_scope.isCurrent) return;
-      unawaited(checkActiveBoleta());
     }),
   );
 
