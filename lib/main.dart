@@ -60,6 +60,9 @@ Future<void> main(List<String> args) async {
 
   // Único paso del que no se puede prescindir: sin preferencias no hay sesión
   // ni tema. Si ni eso funciona, mejor decirlo que dejar la ventana vacía.
+  if (!kIsWeb && Platform.isWindows) {
+    await _startupStep('sqlite-path', WinSetupService.prepareDatabaseDirectory);
+  }
   if (!await _startupStep('storage', AppStorage.init)) {
     runApp(const _StartupErrorApp());
     return;
@@ -75,7 +78,10 @@ Future<void> main(List<String> args) async {
     final isInstalled = WinSetupService.isInstalledInstance;
     final isPortable = AppStorage.instance.runPortable;
     isSetup =
-        !StoreBuild.isStore && (isUninstall || (!isInstalled && !isPortable));
+        !StoreBuild.isStore &&
+        (isUninstall ||
+            args.contains('--setup') ||
+            (!isInstalled && !isPortable));
     final themeMode = AppStorage.instance.themeMode ?? 'system';
     bool isDark = false;
     if (themeMode == 'system') {
@@ -195,17 +201,18 @@ Future<void> main(List<String> args) async {
     ),
   );
 
-  unawaited(
-    _bootstrap(
-      cache: cache,
-      connectivity: connectivity,
-      session: session,
-      store: store,
-      widgets: widgets,
-      updater: updater,
-    ),
+  _startPortable = () => _bootstrap(
+    cache: cache,
+    connectivity: connectivity,
+    session: session,
+    store: store,
+    widgets: widgets,
+    updater: updater,
   );
+  if (!isSetup) unawaited(_startPortable!());
 }
+
+Future<void> Function()? _startPortable;
 
 /// Arranque en segundo plano.
 ///
@@ -425,6 +432,7 @@ class _GateState extends State<_Gate> {
                   await AppStorage.instance.setRunPortable(true);
                   await AppStorage.instance.setAcceptedTerms(true);
                   await AppStorage.instance.setSeenOnboarding(true);
+                  unawaited(_startPortable?.call() ?? Future<void>.value());
                   if (!kIsWeb && Platform.isWindows) {
                     await windowManager.setMinimumSize(const Size(800, 600));
                     await windowManager.setMaximumSize(const Size(9999, 9999));

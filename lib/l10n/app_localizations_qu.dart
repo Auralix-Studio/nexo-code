@@ -1669,4 +1669,24 @@ class AppLocalizationsQu extends AppLocalizations {
   String projectionAssume(String unit, String value) {
     return 'Si en $unit sacas $value:';
   }
+
+  @override
+  String get dataSaved => 'Waqaychasqa willakuy';
+
+  @override
+  String get dataServer => 'Servidor nisqamanta willakuy';
+
+  @override
+  String get dataRefreshing => 'Musuqyachispa…';
+
+  @override
+  String get dataRefreshFailed => 'Mana musuqyachiy atikunchu';
+
+  @override
+  String get dataUnknownDate => 'Musuqyachisqa pacha mana yachasqa';
+
+  @override
+  String dataUpdatedAt(String date) {
+    return 'Qhipa musuqyachiy: $date';
+  }
 }

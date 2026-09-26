@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
@@ -51,6 +52,18 @@ class _HorarioScreenState extends State<ScheduleScreen> {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
+              SliverToBoxAdapter(
+                child: PageBody(
+                  child: DataStatus(
+                    store: widget.store,
+                    operations: {
+                      'loadHorarioActual': AppLocalizations.of(
+                        context,
+                      ).titleSchedule,
+                    },
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: PageHeader(
                   title: AppLocalizations.of(context).titleSchedule,
@@ -256,7 +269,9 @@ class _DayListView extends StatelessWidget {
   const _DayListView({required this.clases});
   @override
   Widget build(BuildContext context) {
-    final store = context.findAncestorWidgetOfExactType<ScheduleScreen>()?.store;
+    final store = context
+        .findAncestorWidgetOfExactType<ScheduleScreen>()
+        ?.store;
     final finished = store?.finishedSubjectsThisTerm ?? const {};
     final byDay = <int, List<ScheduleClass>>{};
     for (final c in clases) {
@@ -265,7 +280,9 @@ class _DayListView extends StatelessWidget {
     final gruposTotales = <ScheduleClassGroup>[];
     final days = byDay.keys.toList()..sort();
     for (final d in days) {
-      gruposTotales.addAll(ScheduleClassGroup.groupBy(byDay[d]!, finishedSubjects: finished));
+      gruposTotales.addAll(
+        ScheduleClassGroup.groupBy(byDay[d]!, finishedSubjects: finished),
+      );
     }
     return Card(
       child: Padding(
@@ -275,7 +292,11 @@ class _DayListView extends StatelessWidget {
             for (var i = 0; i < gruposTotales.length; i++) ...[
               Reveal(
                 index: i,
-                child: _GrupoTile(grupo: gruposTotales[i], showDay: true, store: store),
+                child: _GrupoTile(
+                  grupo: gruposTotales[i],
+                  showDay: true,
+                  store: store,
+                ),
               ),
               if (i < gruposTotales.length - 1) const Divider(height: 12),
             ],
@@ -297,9 +318,14 @@ class _DaySection extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    final store = context.findAncestorWidgetOfExactType<ScheduleScreen>()?.store;
+    final store = context
+        .findAncestorWidgetOfExactType<ScheduleScreen>()
+        ?.store;
     final finished = store?.finishedSubjectsThisTerm ?? const {};
-    final grupos = ScheduleClassGroup.groupBy(clases, finishedSubjects: finished);
+    final grupos = ScheduleClassGroup.groupBy(
+      clases,
+      finishedSubjects: finished,
+    );
     final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
@@ -393,7 +419,11 @@ class _GrupoTileState extends State<_GrupoTile> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => ScheduleDetailScreen.open(context, widget.grupo, store: widget.store),
+            onTap: () => ScheduleDetailScreen.open(
+              context,
+              widget.grupo,
+              store: widget.store,
+            ),
             borderRadius: BorderRadius.circular(14),
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -504,20 +534,27 @@ class _GrupoTileState extends State<_GrupoTile> {
                                 Fmt.formatAula(widget.grupo.room),
                               ),
                             if (widget.grupo.sessions.isNotEmpty)
-                              Builder(builder: (_) {
-                                final first = widget.grupo.sessions.first;
-                                var s = first.section.trim();
-                                if (s.toLowerCase().startsWith('sec')) {
-                                  s = s.replaceFirst(RegExp(r'sec\.?\s*', caseSensitive: false), '');
-                                }
-                                final isIdiomasVirtual = first.id.startsWith('ING') && 
-                                                         first.modality.toUpperCase() == 'VIRTUAL';
-                                if (s.isEmpty || isIdiomasVirtual) return const SizedBox.shrink();
-                                return _meta(
-                                  Icons.tag_rounded,
-                                  'Sección $s',
-                                );
-                              }),
+                              Builder(
+                                builder: (_) {
+                                  final first = widget.grupo.sessions.first;
+                                  var s = first.section.trim();
+                                  if (s.toLowerCase().startsWith('sec')) {
+                                    s = s.replaceFirst(
+                                      RegExp(
+                                        r'sec\.?\s*',
+                                        caseSensitive: false,
+                                      ),
+                                      '',
+                                    );
+                                  }
+                                  final isIdiomasVirtual =
+                                      first.id.startsWith('ING') &&
+                                      first.modality.toUpperCase() == 'VIRTUAL';
+                                  if (s.isEmpty || isIdiomasVirtual)
+                                    return const SizedBox.shrink();
+                                  return _meta(Icons.tag_rounded, 'Sección $s');
+                                },
+                              ),
                           ],
                         ),
                         if (widget.grupo.teacher.isNotEmpty) ...[

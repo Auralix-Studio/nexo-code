@@ -198,6 +198,46 @@ class CacheManager {
   /// y borrar un caché que no existe no es un error: ya está vacío.
   bool get isReady => _db != null;
 
+  /// Read the timestamp stored with the data, without refreshing its age.
+  Future<DateTime?> updatedAtFor(String operation) async {
+    if (!isReady) return null;
+    final table = switch (operation) {
+      'loadProfile' => 'unified_student',
+      'loadPeriodos' => 'periodos',
+      'loadHorarioActual' || 'loadDocenteHorario' => 'schedule',
+      'loadPromedios' => 'promedios',
+      'loadCuotasPendientes' => 'pagos',
+      'loadTeacherInfo' => 'docente_info',
+      'loadTeacherSubjects' => 'docente_cursos',
+      _ when operation.startsWith('loadBoleta:') => 'boleta_cursos',
+      _ when operation.startsWith('loadBoletaLegacy:') => 'boleta_legacy',
+      _ => null,
+    };
+    if (table == null) return null;
+    String? where;
+    List<Object?>? args;
+    if (operation.startsWith('loadBoleta')) {
+      final period = operation.split(':').last.split('-');
+      if (period.length != 2) return null;
+      where = 'year = ? AND periodo = ?';
+      args = period;
+    } else if (table == 'schedule') {
+      where = 'id = ?';
+      args = [
+        operation == 'loadDocenteHorario' ? 'docente_current' : 'current',
+      ];
+    }
+    final rows = await db.query(
+      table,
+      columns: ['updated_at'],
+      where: where,
+      whereArgs: args,
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return DateTime.fromMillisecondsSinceEpoch(rows.first['updated_at'] as int);
+  }
+
   Future<void> saveBoleta(
     String year,
     String periodo,

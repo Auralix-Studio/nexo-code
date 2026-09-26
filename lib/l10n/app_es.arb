@@ -915,5 +915,18 @@
         "type": "String"
       }
     }
+  },
+  "dataSaved": "Datos guardados",
+  "dataServer": "Consultado al servidor",
+  "dataRefreshing": "Actualizando…",
+  "dataRefreshFailed": "No se pudo actualizar",
+  "dataUnknownDate": "Fecha de actualización desconocida",
+  "dataUpdatedAt": "Última actualización: {date}",
+  "@dataUpdatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }

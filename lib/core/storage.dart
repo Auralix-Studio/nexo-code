@@ -120,6 +120,7 @@ class AppStorage {
   static const _kUpdLatestVer = 'nexo.upd.latestVer';
   static const _kUpdApkUrl = 'nexo.upd.apkUrl';
   static const _kUpdApkSize = 'nexo.upd.apkSize';
+  static const _kUpdSha256 = 'nexo.upd.sha256';
   static const _kUpdDownloadedVer = 'nexo.upd.downloadedVer';
   static const _kUpdApkPath = 'nexo.upd.apkPath';
   static const _kDashboardConfig = 'nexo.dashboardConfig';
@@ -224,20 +225,28 @@ class AppStorage {
   String? get updLatestVer => _prefs.getString(_kUpdLatestVer);
   String? get updApkUrl => _prefs.getString(_kUpdApkUrl);
   int? get updApkSize => _prefs.getInt(_kUpdApkSize);
+  String? get updSha256 => _prefs.getString(_kUpdSha256);
   Future<void> setUpdLatest({
     required String version,
     required String url,
     required int size,
+    String? sha256,
   }) async {
     await _prefs.setString(_kUpdLatestVer, version);
     await _prefs.setString(_kUpdApkUrl, url);
     await _prefs.setInt(_kUpdApkSize, size);
+    if (sha256 == null) {
+      await _prefs.remove(_kUpdSha256);
+    } else {
+      await _prefs.setString(_kUpdSha256, sha256);
+    }
   }
 
   Future<void> clearUpdLatest() async {
     await _prefs.remove(_kUpdLatestVer);
     await _prefs.remove(_kUpdApkUrl);
     await _prefs.remove(_kUpdApkSize);
+    await _prefs.remove(_kUpdSha256);
   }
 
   String? get updDownloadedVer => _prefs.getString(_kUpdDownloadedVer);

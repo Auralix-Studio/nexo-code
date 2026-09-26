@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_filex/open_filex.dart';
+import 'package:nexo/core/update_integrity.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:nexo/core/config.dart';
@@ -80,7 +80,10 @@ class UpdateService extends ChangeNotifier {
     }
     final downloaded = s.updDownloadedVer;
     final path = s.updApkPath;
-    if (downloaded == latest && path != null && File(path).existsSync()) {
+    if (downloaded == latest &&
+        path != null &&
+        s.updSha256 != null &&
+        File(path).existsSync()) {
       return UpdateStatus(
         state: UpdateState.ready,
         latestVersion: latest,
@@ -104,8 +107,22 @@ class UpdateService extends ChangeNotifier {
         return false;
       }
       try {
-        final res = await OpenFilex.open(status.apkPath!);
-        return res.type == ResultType.done;
+        final storage = AppStorage.instance;
+        final directory = await _apkDir();
+        final file = File(status.apkPath!);
+        if (!p.isWithin(directory.path, file.absolute.path) ||
+            !await UpdateIntegrity.verify(
+              file,
+              storage.updSha256,
+              storage.updApkSize,
+            )) {
+          await storage.clearUpdDownloaded();
+          throw const FileSystemException(
+            'El instalador no superó la verificación SHA-256.',
+          );
+        }
+        await Process.start(file.path, [], mode: ProcessStartMode.detached);
+        return true;
       } catch (e) {
         debugPrint('[UpdateService] install failed: $e');
         return false;
@@ -134,7 +151,12 @@ class UpdateService extends ChangeNotifier {
       final version = release.version;
       final asset = release.apkAsset;
       if (asset == null) return;
-      await s.setUpdLatest(version: version, url: asset.url, size: asset.size);
+      await s.setUpdLatest(
+        version: version,
+        url: asset.url,
+        size: asset.size,
+        sha256: asset.digest,
+      );
       if (!_isNewer(version, AppConfig.appVersion)) return;
       await _downloadOnce();
       final fresh = currentStatus();
@@ -164,13 +186,21 @@ class UpdateService extends ChangeNotifier {
     final version = s.updLatestVer;
     final url = s.updApkUrl;
     final size = s.updApkSize;
-    if (version == null || url == null) return;
+    if (version == null ||
+        url == null ||
+        UpdateIntegrity.digest(s.updSha256) == null)
+      return;
+    if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) ||
+        !url.endsWith('-setup-x64.exe'))
+      return;
     final existingPath = s.updApkPath;
     if (s.updDownloadedVer == version && existingPath != null) {
       final f = File(existingPath);
       if (await f.exists()) {
         final len = await f.length();
-        if (size == null || len == size) return;
+        if ((size == null || len == size) &&
+            await UpdateIntegrity.verify(f, s.updSha256, size))
+          return;
         await _safeDelete(f);
         await s.clearUpdDownloaded();
       }
@@ -180,7 +210,7 @@ class UpdateService extends ChangeNotifier {
     final dest = File(p.join(dir.path, 'nexo-$version$ext'));
     final part = File('${dest.path}.part');
     final req = http.Request('GET', Uri.parse(url));
-    final res = await _http.send(req);
+    final res = await _http.send(req).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
       throw HttpException(
         'GET $url devolvió ${res.statusCode}',
@@ -190,7 +220,7 @@ class UpdateService extends ChangeNotifier {
     if (await part.exists()) await _safeDelete(part);
     final sink = part.openWrite();
     try {
-      await res.stream.pipe(sink);
+      await res.stream.timeout(const Duration(seconds: 30)).pipe(sink);
     } finally {
       await sink.close();
     }
@@ -202,6 +232,12 @@ class UpdateService extends ChangeNotifier {
           'Descarga incompleta — tamaño no coincide con el release.',
         );
       }
+    }
+    if (!await UpdateIntegrity.verify(part, s.updSha256, size)) {
+      await _safeDelete(part);
+      throw const FileSystemException(
+        'La descarga no coincide con SHA-256 del release.',
+      );
     }
     if (await dest.exists()) await _safeDelete(dest);
     await part.rename(dest.path);
@@ -288,6 +324,7 @@ class UpdateService extends ChangeNotifier {
     final tag = (json['tag_name'] as String?)?.trim();
     if (tag == null || tag.isEmpty) return null;
     final version = _stripVPrefix(tag);
+    if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version)) return null;
     final assets = (json['assets'] as List?) ?? const [];
     final isWindows = defaultTargetPlatform == TargetPlatform.windows;
     _GhAsset? chosen;
@@ -298,11 +335,36 @@ class UpdateService extends ChangeNotifier {
       final matches = isWindows
           ? UpdateConfig.isWindowsAsset(name)
           : UpdateConfig.isApkAsset(name);
-      if (!matches) continue;
+      if (!matches || name.toLowerCase() != 'nexo-v$version-setup-x64.exe')
+        continue;
       final url = a['browser_download_url'] as String?;
       final size = (a['size'] as num?)?.toInt();
       if (url == null || size == null) continue;
-      final asset = _GhAsset(url: url, size: size, name: name);
+      if (!UpdateIntegrity.releaseAsset(url, tag, name)) continue;
+      var digest = UpdateIntegrity.digest(a['digest'] as String?);
+      if (digest == null) {
+        for (final checksum in assets.whereType<Map<String, dynamic>>()) {
+          final checksumName = checksum['name'] as String? ?? '';
+          if (checksumName != 'SHA256SUMS-windows.txt' &&
+              checksumName != 'SHA256SUMS.txt')
+            continue;
+          final checksumUrl = checksum['browser_download_url'] as String?;
+          if (checksumUrl == null ||
+              !UpdateIntegrity.releaseAsset(checksumUrl, tag, checksumName))
+            continue;
+          final response = await _http
+              .get(Uri.parse(checksumUrl))
+              .timeout(const Duration(seconds: 15));
+          if (response.statusCode != 200) continue;
+          for (final line in response.body.split('\n')) {
+            final parts = line.trim().split(RegExp(r'\s+'));
+            if (parts.length == 2 && parts[1] == name)
+              digest = UpdateIntegrity.digest(parts[0]);
+          }
+        }
+      }
+      if (digest == null) continue;
+      final asset = _GhAsset(url: url, size: size, name: name, digest: digest);
       if (!isWindows && UpdateConfig.isUniversalApk(name)) {
         chosen = asset;
         break;
@@ -350,8 +412,14 @@ class _GhRelease {
 }
 
 class _GhAsset {
-  _GhAsset({required this.url, required this.size, required this.name});
+  _GhAsset({
+    required this.url,
+    required this.size,
+    required this.name,
+    required this.digest,
+  });
   final String url;
   final int size;
   final String name;
+  final String digest;
 }

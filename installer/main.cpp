@@ -1,23 +1,3 @@
-// ============================================================================
-//  Nexo UPLA — Stub autoextraíble (bootstrapper estilo Discord), 100% propio.
-// ============================================================================
-//  Un solo .exe: al doble clic extrae la app y lanza nexo.exe, que muestra TU
-//  SetupWizard (Instalar / Portable). No usa Inno ni warp.
-//
-//  Cómo lleva la app dentro (overlay):
-//    [ stub.exe | payload.zip | uint64 zipLen (LE) | "NEXOZIP1" ]
-//  El footer son los últimos 16 bytes. Añadir datos AL FINAL del .exe es la
-//  práctica estándar de NSIS/Inno/InstallShield — no toca el PE, así que NO
-//  dispara la heurística de "binario modificado" que puso a warp en cuarentena.
-//
-//  Extracción: usa tar.exe (bsdtar, firmado por Microsoft, incluido en
-//  Windows 10 1809+) hacia %LOCALAPPDATA%\Nexo\_stage — nunca %TEMP%, para no
-//  parecer un "dropper". Luego lanza %LOCALAPPDATA%\Nexo\_stage\nexo.exe.
-//
-//  Compilación: installer\build_installer.ps1 (usa cl.exe de tu VS).
-//  Subsistema GUI vía /SUBSYSTEM:WINDOWS (forma legítima, no parcheando bytes).
-// ============================================================================
-
 #ifndef UNICODE
 #define UNICODE
 #endif
@@ -27,7 +7,7 @@
 #include <string>
 #include <vector>
 
-static const char kMagic[8] = {'N', 'E', 'X', 'O', 'Z', 'I', 'P', '1'};
+
 
 // --- utilidades -------------------------------------------------------------
 
@@ -72,7 +52,10 @@ static int RunHiddenWait(const std::wstring& cmdLine) {
                       CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
     return -1;
   }
-  WaitForSingleObject(pi.hProcess, INFINITE);
+  if (WaitForSingleObject(pi.hProcess, 120000) != WAIT_OBJECT_0) {
+    TerminateProcess(pi.hProcess, ERROR_TIMEOUT);
+    CloseHandle(pi.hThread); CloseHandle(pi.hProcess); return ERROR_TIMEOUT;
+  }
   DWORD code = 1;
   GetExitCodeProcess(pi.hProcess, &code);
   CloseHandle(pi.hThread);
@@ -82,7 +65,7 @@ static int RunHiddenWait(const std::wstring& cmdLine) {
 
 static bool LaunchDetached(const std::wstring& exePath,
                            const std::wstring& workDir) {
-  std::wstring cmd = L"\"" + exePath + L"\"";
+  std::wstring cmd = L"\"" + exePath + L"\" --setup";
   STARTUPINFOW si{};
   si.cb = sizeof(si);
   PROCESS_INFORMATION pi{};
@@ -95,71 +78,20 @@ static bool LaunchDetached(const std::wstring& exePath,
   return true;
 }
 
-// Lee el overlay (payload.zip) desde el final del propio .exe y lo escribe en
-// destZip. Devuelve false si el footer no es válido.
+// Embed the archive as a PE resource, compatible with Authenticode signing.
 static bool ExtractOverlayToFile(const std::wstring& destZip) {
-  HANDLE h = CreateFileW(SelfPath().c_str(), GENERIC_READ, FILE_SHARE_READ,
-                         nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (h == INVALID_HANDLE_VALUE) return false;
-
-  LARGE_INTEGER size{};
-  if (!GetFileSizeEx(h, &size) || size.QuadPart < 16) {
-    CloseHandle(h);
-    return false;
-  }
-
-  // Footer: [uint64 zipLen (8, LE)] [magic (8)]
-  unsigned char footer[16];
-  LARGE_INTEGER pos;
-  pos.QuadPart = size.QuadPart - 16;
-  SetFilePointerEx(h, pos, nullptr, FILE_BEGIN);
-  DWORD got = 0;
-  if (!ReadFile(h, footer, 16, &got, nullptr) || got != 16) {
-    CloseHandle(h);
-    return false;
-  }
-  if (memcmp(footer + 8, kMagic, 8) != 0) {
-    CloseHandle(h);
-    return false;
-  }
-  unsigned long long zipLen = 0;
-  memcpy(&zipLen, footer, 8);  // little-endian nativo
-  if (zipLen == 0 ||
-      (long long)(zipLen + 16) > size.QuadPart) {
-    CloseHandle(h);
-    return false;
-  }
-
-  LARGE_INTEGER start;
-  start.QuadPart = size.QuadPart - 16 - (long long)zipLen;
-  SetFilePointerEx(h, start, nullptr, FILE_BEGIN);
-
-  HANDLE out = CreateFileW(destZip.c_str(), GENERIC_WRITE, 0, nullptr,
-                           CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (out == INVALID_HANDLE_VALUE) {
-    CloseHandle(h);
-    return false;
-  }
-
-  std::vector<unsigned char> chunk(1 << 20);  // 1 MB
-  unsigned long long remaining = zipLen;
-  bool ok = true;
-  while (remaining > 0) {
-    DWORD want = (DWORD)((remaining < chunk.size()) ? remaining : chunk.size());
-    DWORD read = 0;
-    if (!ReadFile(h, chunk.data(), want, &read, nullptr) || read == 0) {
-      ok = false;
-      break;
-    }
-    DWORD wrote = 0;
-    if (!WriteFile(out, chunk.data(), read, &wrote, nullptr) || wrote != read) {
-      ok = false;
-      break;
-    }
-    remaining -= read;
-  }
-  CloseHandle(out);
-  CloseHandle(h);
+  auto resource = FindResourceW(nullptr, MAKEINTRESOURCEW(101), RT_RCDATA);
+  if (!resource) return false;
+  const DWORD size = SizeofResource(nullptr, resource);
+  auto loaded = LoadResource(nullptr, resource);
+  auto data = LockResource(loaded);
+  if (!data || !size) return false;
+  HANDLE file = CreateFileW(destZip.c_str(), GENERIC_WRITE, 0, nullptr,
+                           CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (file == INVALID_HANDLE_VALUE) return false;
+  DWORD written = 0;
+  const bool ok = WriteFile(file, data, size, &written, nullptr) && written == size;
+  CloseHandle(file);
   return ok;
 }
 
@@ -222,14 +154,30 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
     Fatal(L"No se pudo determinar la carpeta de datos del usuario.");
     return 1;
   }
-  const std::wstring stage = lad + L"\\Nexo\\_stage";
+  HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\NexoSetup");
+  if (!mutex || GetLastError() == ERROR_ALREADY_EXISTS) {
+    Fatal(L"Ya hay un instalador de Nexo abierto."); return 1;
+  }
+  const std::wstring root = lad + L"\\Nexo";
+  const std::wstring stagingRoot = root + L"\\_stage";
+  for (const auto& path : {root, stagingRoot}) {
+    const DWORD attributes = GetFileAttributesW(path.c_str());
+    if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+      Fatal(L"La ruta de instalación está redirigida."); return 1;
+    }
+  }
+  GUID guid{}; CoCreateGuid(&guid);
+  wchar_t unique[40]; StringFromGUID2(guid, unique, 40);
+  const std::wstring stage = stagingRoot + L"\\" + unique;
   const std::wstring zipPath = stage + L"\\payload.zip";
   const std::wstring exePath = stage + L"\\nexo.exe";
 
   HWND splash = ShowSplash(hInst);
 
   // 1) Preparar carpeta de staging limpia.
-  SHCreateDirectoryExW(nullptr, stage.c_str(), nullptr);
+  if (SHCreateDirectoryExW(nullptr, stage.c_str(), nullptr) != ERROR_SUCCESS) {
+    Fatal(L"No se pudo crear una carpeta temporal privada."); return 1;
+  }
 
   // 2) Extraer el overlay (payload.zip) del propio .exe.
   if (!ExtractOverlayToFile(zipPath)) {

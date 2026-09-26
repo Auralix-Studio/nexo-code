@@ -20,6 +20,7 @@ import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/passing_rule.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/domain/dashboard_widget_config.dart';
+import 'package:nexo/domain/data_freshness.dart';
 
 class AsyncValue<T> {
   final T? value;
@@ -68,6 +69,38 @@ class AppStore extends ChangeNotifier {
     _loadDashboardLayout();
   }
   final SessionScope _scope;
+  final _inFlight = <String, Future<Object?>>{};
+  final _freshness = <String, DataFreshness>{};
+  DataFreshness? freshnessOf(String operation) => _freshness[operation];
+
+  Future<T> _singleFlight<T>(String key, Future<T> Function() action) {
+    _scope.check();
+    final existing = _inFlight[key];
+    if (existing != null) return existing.then((value) => value as T);
+    final completer = Completer<T>();
+    final future = completer.future;
+    _inFlight[key] = future;
+    () async {
+      try {
+        completer.complete(await action());
+      } catch (e, stack) {
+        completer.completeError(e, stack);
+      } finally {
+        if (identical(_inFlight[key], future)) _inFlight.remove(key);
+      }
+    }();
+    return future;
+  }
+
+  Future<DateTime?> _savedUpdate(String operation) async {
+    try {
+      final stamp = await _cache.updatedAtFor(operation);
+      if (stamp != null) return stamp;
+    } catch (_) {}
+    final value = AppStorage.instance.getCache('updated:$operation');
+    return value is int ? DateTime.fromMillisecondsSinceEpoch(value) : null;
+  }
+
   DataSource<T> _sigma<T>(SourceId id, Future<T> Function() fn) => DataSource(
     id: id,
     fetch: () {
@@ -119,6 +152,7 @@ class AppStore extends ChangeNotifier {
   late final Resolver<List<Payment>> _cuotasRes = Resolver(
     sources: [..._intra((r) => r.pensionesPendientes())],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Payment>> _vencidasRes = Resolver(
@@ -132,16 +166,19 @@ class AppStore extends ChangeNotifier {
       }),
     ],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<PaymentRecord>> _historicoRes = Resolver(
     sources: [..._intra((r) => r.historicoPagos())],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Fee>> _tasasRes = Resolver(
     sources: [..._intra((r) => r.tasasIntranet())],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Term>> _periodosRes = Resolver(
@@ -150,6 +187,7 @@ class AppStore extends ChangeNotifier {
       _sigma('sigma', _repo.periodosEstudiante),
     ],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<ScheduleClass>> _horarioRes = Resolver(
@@ -165,6 +203,7 @@ class AppStore extends ChangeNotifier {
       _sigma('sigma', () => _repo.schedule()),
     ],
     merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   final SigmaRepository _repo;
@@ -386,42 +425,71 @@ class AppStore extends ChangeNotifier {
     Future<T?> Function()? cached,
     Future<void> Function(T value)? persist,
     required String operationName,
-  }) => _scope.run(() async {
-    set(AsyncValue.loading(get().value));
-    _notify();
-    try {
-      final v = await _errorHandler.withFallback<T>(
-        remote: remote,
-        cached: cached ?? () => Future.value(null),
-        operationName: operationName,
+  }) => _singleFlight(
+    operationName,
+    () => _scope.run(() async {
+      final previous = _freshness[operationName];
+      _freshness[operationName] = DataFreshness(
+        updatedAt: previous?.updatedAt,
+        fromCache: previous?.fromCache ?? false,
+        refreshing: true,
       );
-      if (!_scope.isCurrent) return null;
-      // Si el primer chequeo de conectividad aún no terminó y los datos
-      // vinieron del caché (hasInternet era false prematuramente), marcamos
-      // la operación para que `retryFailedEssentials` la reintente luego.
-      if (!_connectivity.firstCheckCompleted && !_connectivity.hasInternet) {
-        _startupCacheOps.add(operationName);
+      set(AsyncValue.loading(get().value));
+      _notify();
+      try {
+        var fromCache = false;
+        final v = await _errorHandler.withFallback<T>(
+          remote: remote,
+          cached: () async {
+            final result = await cached?.call();
+            if (result != null) fromCache = true;
+            return result;
+          },
+          operationName: operationName,
+        );
+        if (!_scope.isCurrent) return null;
+        // Si el primer chequeo de conectividad aún no terminó y los datos
+        // vinieron del caché (hasInternet era false prematuramente), marcamos
+        // la operación para que `retryFailedEssentials` la reintente luego.
+        if (!_connectivity.firstCheckCompleted && !_connectivity.hasInternet) {
+          _startupCacheOps.add(operationName);
+        }
+        final updatedAt = fromCache
+            ? await _savedUpdate(operationName)
+            : DateTime.now();
+        if (!_scope.isCurrent) return null;
+        _freshness[operationName] = DataFreshness(
+          updatedAt: updatedAt,
+          fromCache: fromCache,
+        );
+        set(AsyncValue.data(v));
+        _notify();
+        if (!_scope.isCurrent) return null;
+        if (!fromCache && persist != null) {
+          await persist(v);
+          _scope.check();
+          await _setStorageCache(
+            'updated:$operationName',
+            updatedAt!.millisecondsSinceEpoch,
+          );
+        }
+        if (!_scope.isCurrent) return null;
+        return v;
+      } catch (e) {
+        if (!_scope.isCurrent) return null;
+        _freshness[operationName] = DataFreshness(
+          updatedAt: _freshness[operationName]?.updatedAt,
+          fromCache: true,
+          failed: true,
+        );
+        set(AsyncValue.failure(e, get().value));
+        _notify();
+        return null;
       }
-      set(AsyncValue.data(v));
-      _notify();
-      if (!_scope.isCurrent) return null;
-      await persist?.call(v);
-      if (!_scope.isCurrent) return null;
-      return v;
-    } catch (e) {
-      if (!_scope.isCurrent) return null;
-      set(AsyncValue.failure(e, get().value));
-      _notify();
-      return null;
-    }
-  });
+    }),
+  );
 
-  static const _ckProfile = 'profile';
-  static const _ckPeriodos = 'periodos';
-  static const _ckHorario = 'schedule';
   static const _ckResumen = 'resumen';
-  static const _ckPromedios = 'promedios';
-  static const _ckCuotasPend = 'cuotasPend';
   Future<void> _setStorageCache(String key, Object data) {
     _scope.check();
     return AppStorage.instance.setCache(key, data);
@@ -529,93 +597,94 @@ class AppStore extends ChangeNotifier {
     }
   }
 
-  Future<void> hydrateFromCache() => _scope.run(() async {
-    final s = AppStorage.instance;
-    _loadDashboardLayout();
+  Future<void> _hydrate<T>(
+    String operation,
+    Future<T?> Function() read,
+    AsyncValue<T> Function() get,
+    void Function(AsyncValue<T>) set,
+  ) async {
+    final previous = get();
+    if (previous.hasValue || previous.loading) return;
     try {
-      final cached = await _cache.getStudent();
-      if (!_scope.isCurrent) return;
-      if (cached != null) {
-        profile = AsyncValue.data(cached);
-        _notify();
+      final value = await read();
+      if (!_scope.isCurrent || !identical(previous, get()) || value == null) {
+        return;
       }
-    } catch (_) {}
-    if (!_scope.isCurrent) return;
-    final p = s.getCache(_ckProfile);
-    if (p is Map && profile.value == null) {
-      profile = AsyncValue.data(Student.fromJson(p.cast<String, dynamic>()));
-    }
-    final per = s.getCache(_ckPeriodos);
-    if (per is List) {
-      periodos = AsyncValue.data(
-        per
-            .map((e) => Term.fromJson((e as Map).cast<String, dynamic>()))
-            .toList(),
+      final updatedAt = await _savedUpdate(operation);
+      if (!_scope.isCurrent || !identical(previous, get())) return;
+      set(AsyncValue.data(value));
+      _freshness[operation] = DataFreshness(
+        updatedAt: updatedAt,
+        fromCache: true,
       );
-    }
-    final h = s.getCache(_ckHorario);
-    if (h is List) {
-      _baseSchedule = AsyncValue.data(
-        h
-            .map(
-              (e) => ScheduleClass.fromJson((e as Map).cast<String, dynamic>()),
-            )
-            .toList(),
-      );
-    }
-    final r = s.getCache(_ckResumen);
-    if (r is Map) {
-      resumen = AsyncValue.data(
-        GradesSummary.fromJson(r.cast<String, dynamic>()),
-      );
-    }
-    final pr = s.getCache(_ckPromedios);
-    if (pr is List) {
-      promedios = AsyncValue.data(
-        pr
-            .map(
-              (e) => TermAverage.fromJson((e as Map).cast<String, dynamic>()),
-            )
-            .toList(),
-      );
-    }
-    final cp = s.getCache(_ckCuotasPend);
-    if (cp is List) {
-      pendingInstallments = AsyncValue.data(
-        cp
-            .map(
-              (e) => Payment.fromSigmaJson((e as Map).cast<String, dynamic>()),
-            )
-            .toList(),
-      );
-    }
-    if (profile.hasValue || schedule.hasValue || pendingInstallments.hasValue) {
       _notify();
+    } catch (_) {
+      // An unavailable cache must not prevent the subsequent remote load.
     }
+  }
+
+  Future<void> hydrateFromCache() => _scope.run(() async {
+    _loadDashboardLayout();
+    await Future.wait([
+      _hydrate(
+        'loadProfile',
+        _cache.getStudent,
+        () => profile,
+        (v) => profile = v,
+      ),
+      _hydrate(
+        'loadPeriodos',
+        _cache.getPeriodos,
+        () => periodos,
+        (v) => periodos = v,
+      ),
+      _hydrate(
+        'loadHorarioActual',
+        _cache.getHorario,
+        () => _baseSchedule,
+        (v) => _baseSchedule = v,
+      ),
+      _hydrate(
+        'loadPromedios',
+        _cache.getPromedios,
+        () => promedios,
+        (v) => promedios = v,
+      ),
+      _hydrate(
+        'loadCuotasPendientes',
+        _cache.getPagos,
+        () => pendingInstallments,
+        (v) => pendingInstallments = v,
+      ),
+    ]);
+    if (_scope.isCurrent) PassingRule.resolveFrom(periodos.value);
   });
 
-  Future<void> loadHomeEssentials() => _scope.run(() async {
-    // Los periodos van primero: `periodoActivo` alimenta al perfil, horario y
-    // boleta. Cargarlos en paralelo provocaba que esas fuentes consultaran un
-    // periodo adivinado por fecha y a veces volvieran vacías ("no aparecen
-    // los datos hasta recargar").
-    await loadPeriodos();
-    if (!_scope.isCurrent) return;
-    await Future.wait([
-      loadProfile(),
-      loadHorarioActual(),
-      loadCuotasPendientes(),
-      loadPromedios(),
-      loadIdiomasMatricula(),
-    ]);
-    if (!_scope.isCurrent) return;
-    final p = profile.value;
-    if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
-      await loadResumen(p.studyPlan, p.level);
-    }
-    if (!_scope.isCurrent) return;
-    unawaited(checkActiveBoleta());
-  });
+  Future<void> loadHomeEssentials() => _singleFlight<void>(
+    'home',
+    () => _scope.run(() async {
+      // Los periodos van primero: `periodoActivo` alimenta al perfil, horario y
+      // boleta. Cargarlos en paralelo provocaba que esas fuentes consultaran un
+      // periodo adivinado por fecha y a veces volvieran vacías ("no aparecen
+      // los datos hasta recargar").
+      await loadPeriodos();
+      if (!_scope.isCurrent) return;
+      await Future.wait([
+        loadProfile(),
+        loadHorarioActual(),
+        loadCuotasPendientes(),
+        loadPromedios(),
+        loadIdiomasMatricula(),
+      ]);
+      if (!_scope.isCurrent) return;
+      final p = profile.value;
+      if (p != null && p.studyPlan.isNotEmpty && p.level.isNotEmpty) {
+        await loadResumen(p.studyPlan, p.level);
+      }
+      if (!_scope.isCurrent) return;
+      unawaited(checkActiveBoleta());
+    }),
+  );
 
   /// Reintenta lo que falló, lo que nunca llegó a cargar, o lo que resolvió
   /// desde caché porque el primer chequeo de conectividad aún no había
@@ -772,7 +841,7 @@ class AppStore extends ChangeNotifier {
       return null;
     },
     persist: (v) => _setStorageCache(_ckResumen, v.toJson()),
-    operationName: 'loadResumen',
+    operationName: 'loadResumen:$pesId:$level',
   );
   Future<List<TermAverage>?> loadPromedios() => _wrap(
     _repo.promediosResumen,
@@ -789,65 +858,55 @@ class AppStore extends ChangeNotifier {
       _boleta['$year-$periodo'] ?? const AsyncValue.idle();
   AsyncValue<List<CourseGrade>> boletaLegacyOf(int year, int periodo) =>
       _boletaLegacy['$year-$periodo'] ?? const AsyncValue.idle();
-  Future<void> loadBoletaLegacy(int year, int periodo) => _scope.run(() async {
+  Future<void> loadBoletaLegacy(int year, int periodo) async {
     final key = '$year-$periodo';
-    _boletaLegacy[key] = AsyncValue.loading(_boletaLegacy[key]?.value);
-    _notify();
-    try {
-      final data = await _errorHandler.withFallback<List<CourseGrade>>(
-        remote: () => Resolver<List<CourseGrade>>(
-          sources: [
-            ..._intra((r) => r.boletaLegacy(year, periodo)),
-            _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
-          ],
-          merge: MergeStrategies.firstWins,
-          isEmpty: _emptyList,
-        ).load(),
-        cached: () =>
-            _cache.getBoletaLegacy(year.toString(), periodo.toString()),
-        operationName: 'loadBoletaLegacy($year, $periodo)',
-      );
-      if (!_scope.isCurrent) return;
-      _boletaLegacy[key] = AsyncValue.data(data);
-      _checkGrades(data.map((n) => (n.subject, n.currentGradeText)));
-      await _cache.saveBoletaLegacy(year.toString(), periodo.toString(), data);
-    } catch (e) {
-      if (!_scope.isCurrent) return;
-      _boletaLegacy[key] = AsyncValue.failure(e, _boletaLegacy[key]?.value);
-    }
-    _notify();
-  });
+    await _wrap<List<CourseGrade>>(
+      () => Resolver<List<CourseGrade>>(
+        sources: [
+          ..._intra((r) => r.boletaLegacy(year, periodo)),
+          _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
+        ],
+        merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
+        isEmpty: _emptyList,
+      ).load(),
+      () => boletaLegacyOf(year, periodo),
+      (value) => _boletaLegacy[key] = value,
+      cached: () => _cache.getBoletaLegacy(year.toString(), periodo.toString()),
+      persist: (data) async {
+        _checkGrades(data.map((n) => (n.subject, n.currentGradeText)));
+        await _cache.saveBoletaLegacy(
+          year.toString(),
+          periodo.toString(),
+          data,
+        );
+      },
+      operationName: 'loadBoletaLegacy:$key',
+    );
+  }
 
   AsyncValue<CourseGradeDetail> detalleOf(String id) =>
       _detalle[id] ?? const AsyncValue.idle();
-  Future<void> loadBoleta(int year, int periodo) => _scope.run(() async {
+  Future<void> loadBoleta(int year, int periodo) async {
     final key = '$year-$periodo';
-    _boleta[key] = AsyncValue.loading(_boleta[key]?.value);
-    _notify();
-    try {
-      final data = await _errorHandler.withFallback<List<ReportCardCourse>>(
-        remote: () => Resolver<List<ReportCardCourse>>(
-          sources: _intra((r) => r.boleta(year, periodo)),
-          merge: MergeStrategies.firstWins,
-          isEmpty: _emptyList,
-        ).load(),
-        cached: () => _cache.getBoleta(year.toString(), periodo.toString()),
-        operationName: 'loadBoleta($year, $periodo)',
-      );
-      if (!_scope.isCurrent) return;
-      _boleta[key] = AsyncValue.data(data);
-      _checkGrades(data.map((c) => (c.name, c.promedioText)));
-      await _cache.saveBoleta(year.toString(), periodo.toString(), data);
-      // Trae el detalle de los cursos en proceso para poder mostrar el
-      // promedio real (con decimales) en la lista, no el redondeado.
-      if (!_scope.isCurrent) return;
-      unawaited(_prefetchDetalles(year, periodo, data));
-    } catch (e) {
-      if (!_scope.isCurrent) return;
-      _boleta[key] = AsyncValue.failure(e, _boleta[key]?.value);
-    }
-    _notify();
-  });
+    await _wrap<List<ReportCardCourse>>(
+      () => Resolver<List<ReportCardCourse>>(
+        sources: _intra((r) => r.boleta(year, periodo)),
+        merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
+        isEmpty: _emptyList,
+      ).load(),
+      () => boletaOf(year, periodo),
+      (value) => _boleta[key] = value,
+      cached: () => _cache.getBoleta(year.toString(), periodo.toString()),
+      persist: (data) async {
+        _checkGrades(data.map((c) => (c.name, c.promedioText)));
+        await _cache.saveBoleta(year.toString(), periodo.toString(), data);
+        if (_scope.isCurrent) unawaited(_prefetchDetalles(year, periodo, data));
+      },
+      operationName: 'loadBoleta:$key',
+    );
+  }
 
   Future<void> _prefetchDetalles(
     int year,
@@ -871,6 +930,7 @@ class AppStore extends ChangeNotifier {
           final data = await Resolver<CourseGradeDetail>(
             sources: _intra((r) => r.detalleCurso(year, periodo, id)),
             merge: MergeStrategies.firstWins,
+            stopAfterFirst: true,
           ).load();
           if (!_scope.isCurrent) return;
           _detalle[id] = AsyncValue.data(data);
@@ -889,6 +949,7 @@ class AppStore extends ChangeNotifier {
       return Resolver<List<RecordCourse>>(
         sources: _intra((r) => r.recordAcademico(codest)),
         merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
         isEmpty: _emptyList,
       ).load();
     },
@@ -939,10 +1000,11 @@ class AppStore extends ChangeNotifier {
       () => Resolver<EnrollmentCertificate>(
         sources: _intra((r) => r.constanciaMatricula(a, per)),
         merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
       ).load(),
       () => certificate,
       (v) => certificate = v,
-      operationName: 'loadCertificate',
+      operationName: 'loadCertificate:$a:$per',
     );
   }
 
@@ -950,6 +1012,7 @@ class AppStore extends ChangeNotifier {
     () => Resolver<PaymentSchedule>(
       sources: _intra((r) => r.cronogramaPagos()),
       merge: MergeStrategies.firstWins,
+      stopAfterFirst: true,
     ).load(),
     () => paymentSchedule,
     (v) => paymentSchedule = v,
@@ -986,7 +1049,7 @@ class AppStore extends ChangeNotifier {
       },
       () => gradesCount,
       (v) => gradesCount = v,
-      operationName: 'loadGradesCount',
+      operationName: 'loadGradesCount:${p.year}:${p.number}',
     );
   }
 
@@ -1170,6 +1233,7 @@ class AppStore extends ChangeNotifier {
                 _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
               ],
               merge: MergeStrategies.firstWins,
+              stopAfterFirst: true,
               isEmpty: _emptyList,
             ).load(),
             cached: () =>
@@ -1191,6 +1255,8 @@ class AppStore extends ChangeNotifier {
 
   Future<void> clear({bool invalidateSession = true}) {
     if (invalidateSession) _scope.invalidate();
+    _inFlight.clear();
+    _freshness.clear();
     final cleared = _cache.clearAll();
     _startupCacheOps.clear();
     profile = const AsyncValue.idle();

@@ -1,11 +1,11 @@
-﻿class UpdateConfig {
+class UpdateConfig {
   static const String repo = 'auralix-studio/nexo';
   static const String latestReleaseApi =
       'https://api.github.com/repos/$repo/releases/latest';
   static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
   static bool isWindowsAsset(String name) {
     final n = name.toLowerCase();
-    return n.endsWith('.exe') || n.endsWith('.msix') || n.endsWith('.zip');
+    return RegExp(r'^nexo-v\d+\.\d+\.\d+-setup-x64\.exe$').hasMatch(n);
   }
 
   static bool isUniversalApk(String name) =>

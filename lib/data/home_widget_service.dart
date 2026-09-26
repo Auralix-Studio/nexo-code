@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:home_widget/home_widget.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/shared/util/formatters.dart';
@@ -23,6 +24,7 @@ class HomeWidgetService {
   }
 
   Future<void> _syncWork = Future.value();
+  String? _lastSnapshot;
   Future<void> sync(AppStore store) {
     // A logout's empty snapshot must finish after any previous account write.
     return _syncWork = _syncWork.then((_) => _sync(store));
@@ -31,6 +33,16 @@ class HomeWidgetService {
   Future<void> _sync(AppStore store) async {
     if (!_supported) return;
     try {
+      final snapshot = jsonEncode([
+        store.schedule.value?.map((c) => c.toJson()).toList(),
+        store.pendingInstallments.value?.map((p) => p.toJson()).toList(),
+        store.promedioAcumulado,
+        store.approvedCredits,
+        store.totalCredits,
+        AppStorage.instance.localeCode,
+        DateTime.now().millisecondsSinceEpoch ~/ 60000,
+      ]);
+      if (snapshot == _lastSnapshot) return;
       await _syncNextAndToday(store.schedule.value ?? const []);
       await _syncPayment(store.pendingInstallments.value ?? const []);
       await _syncAcademic(
@@ -38,6 +50,7 @@ class HomeWidgetService {
         creditosAprob: store.approvedCredits,
         creditosTotal: store.totalCredits,
       );
+      _lastSnapshot = snapshot;
     } catch (e) {
       debugPrint('HomeWidget sync error: $e');
     }

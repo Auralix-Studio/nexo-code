@@ -210,4 +210,19 @@ void main() {
     );
     expect(plugin.scheduled, hasLength(1));
   });
+
+  test('identical refresh does not reschedule alarms', () async {
+    await service.init();
+    final classes = [
+      session('FÍSICA', weekday: tomorrow(), start: '09:00', end: '10:00'),
+    ];
+    await service.reschedule(clases: classes);
+    final count = plugin.scheduled.length;
+    await service.reschedule(clases: List.of(classes));
+    expect(plugin.scheduled.length, count);
+    await service.updatePrefs(
+      const NotificationPrefs(enabled: true, classLeadMinutes: 15),
+    );
+    expect(plugin.scheduled.length, greaterThan(count));
+  });
 }

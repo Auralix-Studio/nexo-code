@@ -173,6 +173,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> requestExactAlarmsPermission() async {
+    _lastSnapshot = null;
     if (defaultTargetPlatform != TargetPlatform.android) return;
     final android = _plugin
         .resolvePlatformSpecificImplementation<
@@ -223,8 +224,10 @@ class NotificationService extends ChangeNotifier {
   Set<String> _finishedSubjects = const {};
   int _revision = 0;
   Set<int>? _desiredIds;
+  String? _lastSnapshot;
 
   Future<void> clearAccount() {
+    _lastSnapshot = null;
     if (!_ready) _clearOnInit = true;
     _revision++;
     _classes = null;
@@ -256,11 +259,21 @@ class NotificationService extends ChangeNotifier {
           final classes = _classes;
           final payments = _installments;
           final finished = _finishedSubjects;
+          await _ensureExactAlarms();
+          final snapshot = jsonEncode([
+            classes?.map((c) => c.toJson()).toList(),
+            payments?.map((p) => p.toJson()).toList(),
+            finished.toList()..sort(),
+            _prefs.toJson(),
+            _androidMode.name,
+            AppStorage.instance.localeCode,
+            DateTime.now().millisecondsSinceEpoch ~/ 60000,
+          ]);
+          if (snapshot == _lastSnapshot) return;
           final previous = await _plugin.pendingNotificationRequests();
           _desiredIds = <int>{};
           try {
             if (_prefs.enabled) {
-              await _ensureExactAlarms();
               if (_prefs.classesEnabled && classes != null) {
                 await _scheduleClasses(classes, finished);
               }
@@ -284,6 +297,7 @@ class NotificationService extends ChangeNotifier {
                 await _plugin.cancel(request.id);
               }
             }
+            if (revision == _revision) _lastSnapshot = snapshot;
           } finally {
             _desiredIds = null;
           }

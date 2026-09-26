@@ -16,8 +16,10 @@ class Resolver<T> {
     required this.merge,
     this.isEmpty,
     this.onSourceUsed,
+    this.stopAfterFirst = false,
   });
   final List<DataSource<T>> sources;
+  final bool stopAfterFirst;
   final T Function(List<T>) merge;
   final bool Function(T)? isEmpty;
   final void Function(SourceId id, bool ok, Object? err)? onSourceUsed;
@@ -47,6 +49,7 @@ class Resolver<T> {
         }
         results.add(v);
         onSourceUsed?.call(s.id, true, null);
+        if (stopAfterFirst) return v;
       } catch (e, st) {
         lastError = e;
         lastStack = st;

@@ -59,13 +59,10 @@ jobs:
         run: |
           flutter build windows --release
           mkdir -p dist
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "dist\nexo-${{ github.ref_name }}-windows-x64.zip" -Force
-          # El instalador de Windows es el asistente interno de la app (SetupWizard):
-          # el usuario extrae el ZIP y ejecuta nexo.exe, que muestra el asistente
-          # Instalar / Modo portable en el primer arranque. Ya NO se genera un .exe
-          # auto-contenido con warp-packer: ese binario sin firmar y con el header PE
-          # parcheado era puesto en cuarentena por Windows Defender/antivirus en otros
-          # equipos (el "bloqueo" que impedía instalar Nexo fuera de la máquina de dev).
+          ./installer/build_installer.ps1 -ReleaseDir "build/windows/x64/runner/Release" -OutFile "dist/nexo-${{ github.ref_name }}-setup-x64.exe" -ZipOutFile "dist/nexo-${{ github.ref_name }}-windows-x64.zip"
+          Get-ChildItem dist -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content -Encoding ascii dist/SHA256SUMS-windows.txt
 
       - name: Build Linux
         if: matrix.target == 'linux'

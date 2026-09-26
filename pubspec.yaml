@@ -17,6 +17,7 @@ dependencies:
   # Lo usamos como transporte; la autenticación, sesión y manejo
   # de respuestas son 100% propios (ver lib/data/api_client.dart).
   http: ^1.2.2
+  crypto: ^3.0.7
   # Persistencia local del token y datos cacheados.
   shared_preferences: ^2.3.2
   flutter_secure_storage: ^10.3.4

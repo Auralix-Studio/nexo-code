@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
@@ -61,6 +62,17 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          DataStatus(
+                            store: store,
+                            operations: {
+                              'loadHorarioActual': AppLocalizations.of(
+                                context,
+                              ).titleSchedule,
+                              'loadCuotasPendientes': AppLocalizations.of(
+                                context,
+                              ).titlePayments,
+                            },
+                          ),
                           Reveal(
                             index: 1,
                             child: context.isWide

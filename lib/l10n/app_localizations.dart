@@ -2889,6 +2889,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Si en {unit} sacas {value}:'**
   String projectionAssume(String unit, String value);
+
+  /// No description provided for @dataSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos guardados'**
+  String get dataSaved;
+
+  /// No description provided for @dataServer.
+  ///
+  /// In es, this message translates to:
+  /// **'Consultado al servidor'**
+  String get dataServer;
+
+  /// No description provided for @dataRefreshing.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizando…'**
+  String get dataRefreshing;
+
+  /// No description provided for @dataRefreshFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo actualizar'**
+  String get dataRefreshFailed;
+
+  /// No description provided for @dataUnknownDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de actualización desconocida'**
+  String get dataUnknownDate;
+
+  /// No description provided for @dataUpdatedAt.
+  ///
+  /// In es, this message translates to:
+  /// **'Última actualización: {date}'**
+  String dataUpdatedAt(String date);
 }
 
 class _AppLocalizationsDelegate

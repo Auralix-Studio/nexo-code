@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
@@ -126,6 +127,14 @@ class _GradesScreenState extends State<GradesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (current != null)
+                        DataStatus(
+                          store: widget.store,
+                          operations: {
+                            '${nuevo ? 'loadBoleta' : 'loadBoletaLegacy'}:${current.year}-${current.number}':
+                                l.titleGrades,
+                          },
+                        ),
                       Reveal(
                         index: 0,
                         child: _ResumenCard(store: widget.store),

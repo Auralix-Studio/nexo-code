@@ -771,5 +771,18 @@
     }
   },
   "termsItemRightsTitle": "Derechoykikuna",
-  "termsItemRightsBody": "Willasqaykikunata qawanki, allichanki utaq pichanki, hinaspa mayqin pachapipas Ajustespi permisoykita qichunki. Soporte sectionmanta qillqamuwayku."
+  "termsItemRightsBody": "Willasqaykikunata qawanki, allichanki utaq pichanki, hinaspa mayqin pachapipas Ajustespi permisoykita qichunki. Soporte sectionmanta qillqamuwayku.",
+  "dataSaved": "Waqaychasqa willakuy",
+  "dataServer": "Servidor nisqamanta willakuy",
+  "dataRefreshing": "Musuqyachispa…",
+  "dataRefreshFailed": "Mana musuqyachiy atikunchu",
+  "dataUnknownDate": "Musuqyachisqa pacha mana yachasqa",
+  "dataUpdatedAt": "Qhipa musuqyachiy: {date}",
+  "@dataUpdatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

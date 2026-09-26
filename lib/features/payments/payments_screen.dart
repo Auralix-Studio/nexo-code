@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
@@ -67,6 +68,25 @@ class _PagosScreenState extends State<PaymentsScreen>
               parent: BouncingScrollPhysics(),
             ),
             headerSliverBuilder: (_, _) => [
+              SliverToBoxAdapter(
+                child: PageBody(
+                  child: DataStatus(
+                    store: widget.store,
+                    operations: {
+                      'loadCuotasPendientes': AppLocalizations.of(
+                        context,
+                      ).paymentsTabPending,
+                      'loadCuotasIntranet': AppLocalizations.of(
+                        context,
+                      ).paymentsTabOverdue,
+                      'loadTasas': AppLocalizations.of(context).paymentsTabFees,
+                      'loadHistorico': AppLocalizations.of(
+                        context,
+                      ).paymentsTabHistory,
+                    },
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: PageHeader(
                   title: AppLocalizations.of(context).titlePayments,

@@ -1661,4 +1661,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String projectionAssume(String unit, String value) {
     return 'If you get $value in $unit:';
   }
+
+  @override
+  String get dataSaved => 'Saved data';
+
+  @override
+  String get dataServer => 'Retrieved from server';
+
+  @override
+  String get dataRefreshing => 'Updating…';
+
+  @override
+  String get dataRefreshFailed => 'Could not update';
+
+  @override
+  String get dataUnknownDate => 'Update time unknown';
+
+  @override
+  String dataUpdatedAt(String date) {
+    return 'Last updated: $date';
+  }
 }

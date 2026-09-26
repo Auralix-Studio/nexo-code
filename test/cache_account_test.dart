@@ -87,6 +87,33 @@ void main() {
     );
   }
 
+  test(
+    'cache reads retain the original timestamp and isolate periods',
+    () async {
+      await cache.activateAccount('A');
+      await cache.saveBoleta('2026', '1', []);
+      await cache.saveBoleta('2026', '2', []);
+      await cache.db.update(
+        'boleta_cursos',
+        {'updated_at': 123456},
+        where: 'year = ? AND periodo = ?',
+        whereArgs: ['2026', '1'],
+      );
+      await cache.getBoleta('2026', '1');
+      expect(
+        (await cache.updatedAtFor('loadBoleta:2026-1'))!.millisecondsSinceEpoch,
+        123456,
+      );
+      expect(
+        (await cache.updatedAtFor('loadBoleta:2026-2'))!.millisecondsSinceEpoch,
+        isNot(123456),
+      );
+      await cache.activateAccount('B');
+      expect(await cache.updatedAtFor('loadBoleta:2026-1'), isNull);
+      await cache.db.close();
+    },
+  );
+
   test('obsolete session cannot read or write the account cache', () async {
     final scope = SessionScope();
     cache = CacheManager(scope: scope);
