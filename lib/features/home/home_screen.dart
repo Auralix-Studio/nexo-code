@@ -75,9 +75,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           Reveal(
                             index: 1,
-                            child: context.isWide
-                                ? _DashboardArea(store: store, onJump: onJump)
-                                : _MobileStack(store: store, onJump: onJump),
+                            child: _DashboardArea(store: store, onJump: onJump),
                           ),
                           const SizedBox(height: 96),
                         ],
@@ -623,59 +621,22 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _DashboardArea extends StatelessWidget {
-  final AppStore store;
-  final ValueChanged<int> onJump;
-  const _DashboardArea({required this.store, required this.onJump});
-  @override
-  Widget build(BuildContext context) {
-    final schedule = store.schedule.value ?? const <ScheduleClass>[];
-    final leftCol = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (schedule.isNotEmpty) ...[
-          NextClassWidget(all: schedule),
-          const SizedBox(height: 16),
-        ],
-        _ClasesHoyBlock(
-          state: store.schedule,
-          onSeeAll: () => onJump(1),
-          onRetry: () => store.loadHorarioActual(),
-        ),
-      ],
-    );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(flex: 3, child: leftCol),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: _PagosBlock(
-            state: store.pendingInstallments,
-            onSeeAll: () => onJump(3),
-            onRetry: () => store.loadCuotasPendientes(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _DashboardWidgetWrapper extends StatelessWidget {
   final DashboardWidgetConfig config;
   final AppStore store;
   final ValueChanged<int> onJump;
+  final double availableWidth;
 
   const _DashboardWidgetWrapper({
     super.key,
     required this.config,
     required this.store,
     required this.onJump,
+    required this.availableWidth,
   });
 
   Widget _buildChild(BuildContext context) {
-    final isCompact = config.span == 1;
+    final isCompact = config.id.startsWith('stats_') && config.span == 1;
     final l = AppLocalizations.of(context);
 
     switch (config.id) {
@@ -769,20 +730,15 @@ class _DashboardWidgetWrapper extends StatelessWidget {
     if (child is SizedBox) return child;
 
     const totalSpacing = 12.0;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final padding = context.contentPadding * 2;
-    final availableWidth = (screenWidth - padding).clamp(160.0, 1600.0);
-    final colWidth = (availableWidth - totalSpacing * 3) / 4;
-
-    // Los bloques de contenido (horario, pagos, próxima clase) necesitan al
-    // menos media pantalla en móvil; con span 1 el texto colapsa en vertical.
-    final minSpan = config.id.startsWith('stats_') ? config.span : 4;
-    final span = minSpan > config.span ? minSpan : config.span;
-    final itemWidth =
-        (span >= 4
-                ? availableWidth
-                : (colWidth * span + totalSpacing * (span - 1)) - 0.5)
-            .clamp(72.0, availableWidth);
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final isMetric = config.id.startsWith('stats_');
+    final minWidth = (isMetric ? 180.0 : 360.0) * textScale;
+    final desiredWidth =
+        (availableWidth + totalSpacing) * config.span.clamp(1, 4) / 4 -
+        totalSpacing;
+    final itemWidth = desiredWidth
+        .clamp(minWidth, double.infinity)
+        .clamp(0.0, availableWidth);
 
     final isEditing = store.editingDashboardWidgetId == config.id;
 
@@ -892,10 +848,10 @@ class _DashboardWidgetWrapper extends StatelessWidget {
   }
 }
 
-class _MobileStack extends StatelessWidget {
+class _DashboardArea extends StatelessWidget {
   final AppStore store;
   final ValueChanged<int> onJump;
-  const _MobileStack({required this.store, required this.onJump});
+  const _DashboardArea({required this.store, required this.onJump});
   @override
   Widget build(BuildContext context) {
     final layout = store.dashboardLayout;
@@ -907,18 +863,21 @@ class _MobileStack extends StatelessWidget {
           store.setEditingDashboardWidget(null);
         }
       },
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final config in layout)
-            _DashboardWidgetWrapper(
-              key: ValueKey(config.id),
-              config: config,
-              store: store,
-              onJump: onJump,
-            ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) => Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final config in layout)
+              _DashboardWidgetWrapper(
+                key: ValueKey(config.id),
+                config: config,
+                store: store,
+                onJump: onJump,
+                availableWidth: constraints.maxWidth,
+              ),
+          ],
+        ),
       ),
     );
   }

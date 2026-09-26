@@ -1,4 +1,4 @@
-class UpdateConfig {
+﻿class UpdateConfig {
   static const String repo = 'auralix-studio/nexo';
   static const String latestReleaseApi =
       'https://api.github.com/repos/$repo/releases/latest';
@@ -18,8 +18,8 @@ class StoreBuild {
 }
 
 class AppConfig {
-  static const String appVersion = '1.6.6';
-  static const int appBuild = 15;
+  static const String appVersion = '1.6.7';
+  static const int appBuild = 16;
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';
   static const Duration httpTimeout = Duration(seconds: 30);

@@ -105,8 +105,8 @@ Future<void> main(List<String> args) async {
       });
     } else {
       final windowOptions = WindowOptions(
-        size: const Size(1280, 800),
-        minimumSize: const Size(800, 600),
+        size: const Size(800, 480),
+        minimumSize: const Size(360, 400),
         titleBarStyle: TitleBarStyle.hidden,
         center: true,
         backgroundColor: initialBg,
@@ -434,10 +434,10 @@ class _GateState extends State<_Gate> {
                   await AppStorage.instance.setSeenOnboarding(true);
                   unawaited(_startPortable?.call() ?? Future<void>.value());
                   if (!kIsWeb && Platform.isWindows) {
-                    await windowManager.setMinimumSize(const Size(800, 600));
+                    await windowManager.setMinimumSize(const Size(360, 400));
                     await windowManager.setMaximumSize(const Size(9999, 9999));
                     await windowManager.setResizable(true);
-                    await windowManager.setSize(const Size(1280, 800));
+                    await windowManager.setSize(const Size(800, 480));
                     await windowManager.center();
                   }
                   setState(() {

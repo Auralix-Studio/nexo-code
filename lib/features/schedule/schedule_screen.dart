@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/shared/widgets/data_status.dart';
-import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -240,26 +239,18 @@ class _WeekView extends StatelessWidget {
           ),
         ),
     ];
-    if (context.isDesktop) {
-      const spacing = 14.0;
-      return LayoutBuilder(
-        builder: (ctx, c) {
-          final w = (c.maxWidth - spacing) / 2;
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: [
-              for (final card in cards) SizedBox(width: w, child: card),
-            ],
-          );
-        },
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final card in cards) ...[card, const SizedBox(height: 14)],
-      ],
+    const spacing = 14.0;
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final textScale = MediaQuery.textScalerOf(ctx).scale(14) / 14;
+        final columns = c.maxWidth >= 760 * textScale ? 2 : 1;
+        final w = (c.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [for (final card in cards) SizedBox(width: w, child: card)],
+        );
+      },
     );
   }
 }

@@ -636,7 +636,6 @@ class _ResumenCard extends StatelessWidget {
     final acumulado = store.promedioAcumulado;
     final creditosAprob = store.approvedCredits;
     final creditosTotal = store.totalCredits;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
     final metric = _BigMetric(
       label: l.gradesPromedioAcumulado,
       value: acumulado == null ? '—' : acumulado.toStringAsFixed(2),
@@ -657,21 +656,26 @@ class _ResumenCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: isWide
-            ? IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 2, child: metric),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 3, child: chart),
-                  ],
-                ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [metric, const SizedBox(height: 16), chart],
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            return constraints.maxWidth >= 720 * textScale
+                ? IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(flex: 2, child: metric),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 3, child: chart),
+                      ],
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [metric, const SizedBox(height: 16), chart],
+                  );
+          },
+        ),
       ),
     );
   }
