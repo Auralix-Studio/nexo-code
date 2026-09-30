@@ -576,7 +576,7 @@ class _BrokenScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.report_gmailerrorred_outlined,
                   size: 44,
                   color: NexoTheme.warning,
@@ -755,8 +755,8 @@ class _SplashScreenState extends State<_SplashScreen>
                                 color: Color(0xFFE2432A), // Rojo patrio
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const SizedBox(
+                            SizedBox(height: 12),
+                            SizedBox(
                               width: 160,
                               height: 80,
                               child: MarcaPeruEffect(

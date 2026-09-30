@@ -40,29 +40,34 @@ class InstallTransaction {
           throw StateError('La instalación contiene un enlace.');
         }
       }
-      if (!await target.exists() && await backup.exists())
+      if (!await target.exists() && await backup.exists()) {
         await backup.rename(target.path);
+      }
       staged = await Directory(rootPath).createTemp('bin.new-');
       final entries = await source
           .list(recursive: true, followLinks: false)
           .toList();
       var copied = 0;
       for (final entity in entries) {
-        if (entity is Link)
+        if (entity is Link) {
           throw StateError('El paquete contiene enlaces no admitidos.');
+        }
         final destination = p.join(
           staged.path,
           p.relative(entity.path, from: sourcePath),
         );
-        if (!p.isWithin(staged.path, destination))
+        if (!p.isWithin(staged.path, destination)) {
           throw StateError('Ruta de paquete inválida.');
-        if (entity is Directory)
+        }
+        if (entity is Directory) {
           await Directory(destination).create(recursive: true);
+        }
         if (entity is File) {
           await Directory(p.dirname(destination)).create(recursive: true);
           await entity.copy(destination);
-          if (await File(destination).length() != await entity.length())
+          if (await File(destination).length() != await entity.length()) {
             throw StateError('Copia incompleta.');
+          }
         }
         onProgress(++copied / entries.length);
       }
@@ -72,8 +77,9 @@ class InstallTransaction {
         'flutter_windows.dll',
         'data/icudtl.dat',
       ]) {
-        if (!await File(p.join(staged.path, name)).exists())
+        if (!await File(p.join(staged.path, name)).exists()) {
           throw StateError('Paquete incompleto: falta $name.');
+        }
       }
       if (await backup.exists()) await backup.delete(recursive: true);
       if (await target.exists()) {
@@ -88,8 +94,9 @@ class InstallTransaction {
         rethrow;
       }
     } finally {
-      if (staged != null && await staged.exists())
+      if (staged != null && await staged.exists()) {
         await staged.delete(recursive: true);
+      }
       await lock.close();
     }
   }

@@ -383,8 +383,9 @@ class AppStore extends ChangeNotifier {
   double? realAverageOf(ReportCardCourse c) {
     if (c.inProgress) {
       final computed = _detalle[c.enrollmentSubjectId]?.value?.computedAverage;
-      if (computed != null && computed >= 0 && computed <= 20.5)
+      if (computed != null && computed >= 0 && computed <= 20.5) {
         return computed;
+      }
     }
     return c.vigesimalAverage;
   }
@@ -840,8 +841,9 @@ class AppStore extends ChangeNotifier {
     (v) => resumen = v,
     cached: () async {
       final raw = AppStorage.instance.getCache(_ckResumen);
-      if (raw is Map)
+      if (raw is Map) {
         return GradesSummary.fromJson(raw.cast<String, dynamic>());
+      }
       return null;
     },
     persist: (v) => _setStorageCache(_ckResumen, v.toJson()),

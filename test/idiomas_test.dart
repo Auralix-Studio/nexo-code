@@ -256,15 +256,15 @@ void main() {
   group('IdiomasRepository', () {
     late MockClient mockClient;
 
-    http.Response _loginSuccess() => http.Response(
+    http.Response loginSuccess() => http.Response(
       jsonEncode({'rpta': 'Correcto', 'token': 'test-token-123'}),
       200,
     );
 
-    http.Response _loginFail() =>
+    http.Response loginFail() =>
         http.Response(jsonEncode({'rpta': 'Incorrecto'}), 200);
 
-    http.Response _matriculaSuccess() => http.Response(
+    http.Response matriculaSuccess() => http.Response(
       jsonEncode({
         'resultado': [
           {
@@ -296,7 +296,7 @@ void main() {
       200,
     );
 
-    http.Response _notasSuccess() => http.Response(
+    http.Response notasSuccess() => http.Response(
       jsonEncode({
         'resultado': [
           {
@@ -316,7 +316,7 @@ void main() {
 
     test('login exitoso retorna success', () async {
       mockClient = MockClient((request) async {
-        if (request.url.path == '/Login') return _loginSuccess();
+        if (request.url.path == '/Login') return loginSuccess();
         return http.Response('Not found', 404);
       });
       final repo = IdiomasRepository(client: mockClient);
@@ -329,7 +329,7 @@ void main() {
       'login con credenciales inválidas retorna invalidCredentials',
       () async {
         mockClient = MockClient((request) async {
-          if (request.url.path == '/Login') return _loginFail();
+          if (request.url.path == '/Login') return loginFail();
           return http.Response('Not found', 404);
         });
         final repo = IdiomasRepository(client: mockClient);
@@ -355,9 +355,9 @@ void main() {
 
     test('getMatricula retorna cursos tras login exitoso', () async {
       mockClient = MockClient((request) async {
-        if (request.url.path == '/Login') return _loginSuccess();
+        if (request.url.path == '/Login') return loginSuccess();
         if (request.url.path.contains('ListarMisAsignaturasMatriculadas')) {
-          return _matriculaSuccess();
+          return matriculaSuccess();
         }
         return http.Response('Not found', 404);
       });
@@ -380,9 +380,9 @@ void main() {
 
     test('getNotas retorna datos correctos', () async {
       mockClient = MockClient((request) async {
-        if (request.url.path == '/Login') return _loginSuccess();
+        if (request.url.path == '/Login') return loginSuccess();
         if (request.url.path.contains('NotasInglesXDetMatriculaId')) {
-          return _notasSuccess();
+          return notasSuccess();
         }
         return http.Response('Not found', 404);
       });
@@ -398,7 +398,7 @@ void main() {
 
     test('getNotas con 401 invalida token y lanza error', () async {
       mockClient = MockClient((request) async {
-        if (request.url.path == '/Login') return _loginSuccess();
+        if (request.url.path == '/Login') return loginSuccess();
         if (request.url.path.contains('NotasInglesXDetMatriculaId')) {
           return http.Response('Unauthorized', 401);
         }

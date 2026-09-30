@@ -30,8 +30,9 @@ class IntranetClient {
     _cookies.clear();
     for (final part in raw.split(';')) {
       final i = part.indexOf('=');
-      if (i > 0)
+      if (i > 0) {
         _cookies[part.substring(0, i).trim()] = part.substring(i + 1).trim();
+      }
     }
     _loggedIn = _cookies.containsKey('PHPSESSID');
   }

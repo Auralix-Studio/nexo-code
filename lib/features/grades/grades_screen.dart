@@ -1261,8 +1261,9 @@ class _IdiomasDetalleSheet extends StatelessWidget {
                         notaText = data['promedio']?.toString() ?? '—';
                         if (notaText == '0' ||
                             notaText == '0.0' ||
-                            notaText == '0.00')
+                            notaText == '0.00') {
                           notaText = '—';
+                        }
 
                         for (int i = 1; i <= 6; i++) {
                           final raw = data['nota$i'];

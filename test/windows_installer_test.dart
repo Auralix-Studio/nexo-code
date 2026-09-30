@@ -20,8 +20,9 @@ void main() {
   });
   tearDown(() async {
     final allowed = p.join(Directory.current.path, '.dart_tool');
-    if (!p.isWithin(allowed, workspace.absolute.path))
+    if (!p.isWithin(allowed, workspace.absolute.path)) {
       throw StateError('Unsafe test cleanup');
+    }
     await workspace.delete(recursive: true);
   });
   Future<void> package(Directory directory, String version) async {

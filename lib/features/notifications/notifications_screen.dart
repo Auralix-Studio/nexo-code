@@ -547,7 +547,7 @@ class _ExactAlarmsBannerState extends State<_ExactAlarmsBanner> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 8),
               side: const BorderSide(color: NexoTheme.warning),
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.rMd),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadii.rMd),
             ),
             child: const Text(
               'Conceder permiso',

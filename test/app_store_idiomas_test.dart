@@ -99,8 +99,8 @@ void main() {
 
       // Simular que el horario base cargó 1 clase de SIGMA
       store.setBaseScheduleForTesting(
-        AsyncValue.data([
-          const ScheduleClass(
+        const AsyncValue.data([
+          ScheduleClass(
             id: 'SIGMA1',
             nrc: '123',
             subject: 'MATEMATICA',

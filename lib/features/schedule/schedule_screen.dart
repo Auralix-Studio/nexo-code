@@ -541,8 +541,9 @@ class _GrupoTileState extends State<_GrupoTile> {
                                   final isIdiomasVirtual =
                                       first.id.startsWith('ING') &&
                                       first.modality.toUpperCase() == 'VIRTUAL';
-                                  if (s.isEmpty || isIdiomasVirtual)
+                                  if (s.isEmpty || isIdiomasVirtual) {
                                     return const SizedBox.shrink();
+                                  }
                                   return _meta(Icons.tag_rounded, 'Sección $s');
                                 },
                               ),

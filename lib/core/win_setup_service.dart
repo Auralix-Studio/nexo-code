@@ -9,8 +9,9 @@ import 'package:nexo/core/install_transaction.dart';
 class WinSetupService {
   static String get localAppData {
     final value = Platform.environment['LOCALAPPDATA'];
-    if (value == null || !p.isAbsolute(value))
+    if (value == null || !p.isAbsolute(value)) {
       throw StateError('LOCALAPPDATA inválido.');
+    }
     return value;
   }
 
@@ -68,8 +69,9 @@ class WinSetupService {
   static Future<void> copyApplicationFiles({
     required void Function(double) onProgress,
   }) async {
-    if (isInstalledInstance)
+    if (isInstalledInstance) {
       throw StateError('Abre el instalador descargado para actualizar.');
+    }
     await _closeInstalledApp();
     await InstallTransaction.install(
       source: Directory(p.dirname(Platform.resolvedExecutable)),
@@ -146,8 +148,9 @@ class WinSetupService {
   static Future<void> _cleanupAfterExit(List<String> children) async {
     final root = p.normalize(p.absolute(officialInstallDir));
     for (final child in children) {
-      if (!p.isWithin(root, p.normalize(p.absolute(child))))
+      if (!p.isWithin(root, p.normalize(p.absolute(child)))) {
         throw StateError('Ruta de limpieza inválida.');
+      }
     }
     await WindowsProcess.script('''
       \$parent = Get-Process -Id $pid -ErrorAction SilentlyContinue

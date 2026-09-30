@@ -10,10 +10,11 @@ class WindowsProcess {
       p.dirname(Platform.resolvedExecutable),
       'nexo_setup_helper.exe',
     );
-    if (!await File(helper).exists())
+    if (!await File(helper).exists()) {
       throw StateError(
         'Falta nexo_setup_helper.exe. Reinstala el paquete completo.',
       );
+    }
     final script =
         "\$ErrorActionPreference = 'Stop'\ntry {\n$body\nexit 0\n} catch { exit 1 }";
     final bytes = <int>[];
@@ -25,12 +26,13 @@ class WindowsProcess {
       base64Encode(bytes),
       if (detached) '--detach',
     ]);
-    if (result.exitCode != 0)
+    if (result.exitCode != 0) {
       throw ProcessException(
         helper,
         [],
         'No se completó la operación de Windows (código ${result.exitCode}).',
         result.exitCode,
       );
+    }
   }
 }

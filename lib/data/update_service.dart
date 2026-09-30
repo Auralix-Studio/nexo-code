@@ -57,8 +57,9 @@ class UpdateService extends ChangeNotifier {
   }
 
   Future<UpdateStatus> checkNow() async {
-    if (!_isSupported)
+    if (!_isSupported) {
       return const UpdateStatus(state: UpdateState.unsupported);
+    }
     _setBusy(true);
     try {
       await _notifications.requestPermission();
@@ -70,8 +71,9 @@ class UpdateService extends ChangeNotifier {
   }
 
   UpdateStatus currentStatus() {
-    if (!_isSupported)
+    if (!_isSupported) {
       return const UpdateStatus(state: UpdateState.unsupported);
+    }
     final s = AppStorage.instance;
     final latest = s.updLatestVer;
     if (latest == null) return const UpdateStatus(state: UpdateState.unknown);
@@ -188,19 +190,22 @@ class UpdateService extends ChangeNotifier {
     final size = s.updApkSize;
     if (version == null ||
         url == null ||
-        UpdateIntegrity.digest(s.updSha256) == null)
+        UpdateIntegrity.digest(s.updSha256) == null) {
       return;
+    }
     if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) ||
-        !url.endsWith('-setup-x64.exe'))
+        !url.endsWith('-setup-x64.exe')) {
       return;
+    }
     final existingPath = s.updApkPath;
     if (s.updDownloadedVer == version && existingPath != null) {
       final f = File(existingPath);
       if (await f.exists()) {
         final len = await f.length();
         if ((size == null || len == size) &&
-            await UpdateIntegrity.verify(f, s.updSha256, size))
+            await UpdateIntegrity.verify(f, s.updSha256, size)) {
           return;
+        }
         await _safeDelete(f);
         await s.clearUpdDownloaded();
       }
@@ -335,8 +340,9 @@ class UpdateService extends ChangeNotifier {
       final matches = isWindows
           ? UpdateConfig.isWindowsAsset(name)
           : UpdateConfig.isApkAsset(name);
-      if (!matches || name.toLowerCase() != 'nexo-v$version-setup-x64.exe')
+      if (!matches || name.toLowerCase() != 'nexo-v$version-setup-x64.exe') {
         continue;
+      }
       final url = a['browser_download_url'] as String?;
       final size = (a['size'] as num?)?.toInt();
       if (url == null || size == null) continue;
@@ -346,20 +352,23 @@ class UpdateService extends ChangeNotifier {
         for (final checksum in assets.whereType<Map<String, dynamic>>()) {
           final checksumName = checksum['name'] as String? ?? '';
           if (checksumName != 'SHA256SUMS-windows.txt' &&
-              checksumName != 'SHA256SUMS.txt')
+              checksumName != 'SHA256SUMS.txt') {
             continue;
+          }
           final checksumUrl = checksum['browser_download_url'] as String?;
           if (checksumUrl == null ||
-              !UpdateIntegrity.releaseAsset(checksumUrl, tag, checksumName))
+              !UpdateIntegrity.releaseAsset(checksumUrl, tag, checksumName)) {
             continue;
+          }
           final response = await _http
               .get(Uri.parse(checksumUrl))
               .timeout(const Duration(seconds: 15));
           if (response.statusCode != 200) continue;
           for (final line in response.body.split('\n')) {
             final parts = line.trim().split(RegExp(r'\s+'));
-            if (parts.length == 2 && parts[1] == name)
+            if (parts.length == 2 && parts[1] == name) {
               digest = UpdateIntegrity.digest(parts[0]);
+            }
           }
         }
       }
