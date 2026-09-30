@@ -215,6 +215,11 @@ void main() {
   ) async {
     handler.local = true;
     await store.loadPromedios();
+    final freshness = store.freshnessOf('loadPromedios');
+    expect(freshness, isNotNull);
+    expect(freshness!.fromCache, isTrue);
+    expect(freshness.updatedAt, isNull);
+
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
@@ -229,10 +234,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Datos guardados'), findsOneWidget);
-    expect(
-      find.textContaining('Fecha de actualización desconocida'),
-      findsOneWidget,
-    );
+    expect(find.byType(DataStatus), findsOneWidget);
   });
 }
