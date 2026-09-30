@@ -1,4 +1,5 @@
 import 'package:nexo/data/api_client.dart';
+import 'package:nexo/core/errors.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
@@ -84,11 +85,12 @@ class TeacherRepository {
     required String codigoAlumno,
     required String grade,
   }) async {
-    await _api.post<void>(
+    final result = await _api.post<void>(
       'Teacher/UpdateNota',
       body: {'cleAuto': cleAuto, 'codigoAlumno': codigoAlumno, 'nota': grade},
       decode: (_) {},
     );
+    _requireSaved(result);
   }
 
   Future<List<EvaluationGrade>> notasDetalle({
@@ -185,7 +187,7 @@ class TeacherRepository {
     required String codigoEvaluacion,
     required String grade,
   }) async {
-    await _api.post<void>(
+    final result = await _api.post<void>(
       'Teacher/InsertarNotas',
       body: {
         'cleAuto': cleAuto,
@@ -195,6 +197,7 @@ class TeacherRepository {
       },
       decode: (_) {},
     );
+    _requireSaved(result);
   }
 
   Future<List<DailyAttendance>> asistenciaAlumno({
@@ -274,10 +277,20 @@ class TeacherRepository {
           },
         )
         .toList();
-    await _api.post<void>(
+    final result = await _api.post<void>(
       'Teacher/InsertaRegistroAsistencia',
       body: payload,
       decode: (_) {},
     );
+    _requireSaved(result);
+  }
+
+  void _requireSaved(ApiEnvelope<void> result) {
+    if (!result.success) {
+      throw BadRequestException(
+        result.mensaje ?? 'El servidor no confirmó el guardado.',
+        status: 200,
+      );
+    }
   }
 }

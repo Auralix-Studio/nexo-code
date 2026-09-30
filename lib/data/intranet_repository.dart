@@ -1,3 +1,4 @@
+import 'package:nexo/core/session_scope.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/intranet_client.dart';
 import 'package:nexo/domain/models.dart';
@@ -9,6 +10,8 @@ class IntranetRepository {
   bool _ready = false;
   Future<bool>? _loginInFlight;
   String? _currentUser;
+  String? _pendingUser;
+  int _generation = 0;
   static const _cacheTtl = Duration(seconds: 60);
   final Map<String, _Cached> _cache = {};
   Future<List<dynamic>> _memoPostList(
@@ -26,7 +29,7 @@ class IntranetRepository {
     final future = _client.postJsonList(path, body, referer: referer);
     _cache[key] = _Cached(future, now);
     future.catchError((_) {
-      _cache.remove(key);
+      if (identical(_cache[key]?.future, future)) _cache.remove(key);
       return <dynamic>[];
     });
     return future;
@@ -50,7 +53,15 @@ class IntranetRepository {
 
   void clearCache() => _cache.clear();
   String? get currentUser => _currentUser;
-  Future<bool> ensureSession(String username, String password) async {
+  Future<bool> ensureSession(
+    String username,
+    String password,
+  ) => _client.scope.run(() async {
+    if ((_currentUser != null && _currentUser != username) ||
+        (_pendingUser != null && _pendingUser != username)) {
+      invalidate();
+    }
+    final generation = _generation;
     _armReauth(username, password);
     if (_ready && _client.isLoggedIn && _currentUser == username) return true;
     final inFlight = _loginInFlight;
@@ -64,23 +75,34 @@ class IntranetRepository {
       _ready = true;
       return true;
     }
+    _pendingUser = username;
     final future = _client.login(username, password);
     _loginInFlight = future;
     try {
-      _ready = await future;
+      final ready = await future;
+      _client.scope.check();
+      if (generation != _generation) throw const StaleSessionException();
+      _ready = ready;
       if (_ready) {
         _currentUser = username;
         await s.setIntranetSession(_client.exportCookies(), username);
       }
       return _ready;
     } finally {
-      _loginInFlight = null;
+      if (identical(_loginInFlight, future)) {
+        _loginInFlight = null;
+        _pendingUser = null;
+      }
     }
-  }
+  });
 
   void _armReauth(String username, String password) {
+    final generation = _generation;
     _client.reauthenticate = () async {
+      if (generation != _generation) throw const StaleSessionException();
       final ok = await _client.login(username, password);
+      _client.scope.check();
+      if (generation != _generation) throw const StaleSessionException();
       if (ok) {
         _currentUser = username;
         _ready = true;
@@ -135,16 +157,17 @@ class IntranetRepository {
         if (r.isEmpty) continue;
         final name = r[0]?.toString().trim() ?? '';
         if (name.isEmpty) continue;
-        
+
         if (r.length >= 10) {
           final teacher = r[9]?.toString().trim() ?? '';
           if (teacher.isNotEmpty) docentesByCurso[name] = teacher;
         }
-        
+
         // Buscar en todas las columnas alguna que parezca una observación de laboratorio o aula
         for (var i = 0; i < r.length; i++) {
           final s = r[i]?.toString().trim() ?? '';
-          if (s.toUpperCase().contains('LAB_') || s.toUpperCase().contains('LABORATORIO')) {
+          if (s.toUpperCase().contains('LAB_') ||
+              s.toUpperCase().contains('LABORATORIO')) {
             observacionByCurso[name] = s;
           }
         }
@@ -173,7 +196,7 @@ class IntranetRepository {
           seenIds.add(id);
           final type = at(13).toLowerCase();
           final subject = at(2);
-          
+
           var rawLocation = at(12);
           if (type.startsWith('p') && observacionByCurso.containsKey(subject)) {
             final obs = observacionByCurso[subject]!;
@@ -181,7 +204,7 @@ class IntranetRepository {
               rawLocation = obs;
             }
           }
-          
+
           final loc = ScheduleClass.parseLocation(rawLocation);
           result.add(
             ScheduleClass(
@@ -482,6 +505,11 @@ class IntranetRepository {
   }
 
   void invalidate() {
+    _generation++;
+    _loginInFlight = null;
+    _pendingUser = null;
+    _currentUser = null;
+    _client.reset();
     _ready = false;
     _cache.clear();
   }

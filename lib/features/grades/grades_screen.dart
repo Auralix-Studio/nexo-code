@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
@@ -126,6 +127,14 @@ class _GradesScreenState extends State<GradesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (current != null)
+                        DataStatus(
+                          store: widget.store,
+                          operations: {
+                            '${nuevo ? 'loadBoleta' : 'loadBoletaLegacy'}:${current.year}-${current.number}':
+                                l.titleGrades,
+                          },
+                        ),
                       Reveal(
                         index: 0,
                         child: _ResumenCard(store: widget.store),
@@ -172,8 +181,7 @@ class _GradesScreenState extends State<GradesScreen> {
                             store: widget.store,
                           ),
                         ),
-                      if (widget.store.idiomasMatricula.hasValue &&
-                          (widget.store.idiomasMatricula.value?.isNotEmpty ?? false)) ...[
+                      if (widget.store.idiomasVigentes.isNotEmpty) ...[
                         const SizedBox(height: 14),
                         Reveal(
                           index: 3,
@@ -628,7 +636,6 @@ class _ResumenCard extends StatelessWidget {
     final acumulado = store.promedioAcumulado;
     final creditosAprob = store.approvedCredits;
     final creditosTotal = store.totalCredits;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
     final metric = _BigMetric(
       label: l.gradesPromedioAcumulado,
       value: acumulado == null ? '—' : acumulado.toStringAsFixed(2),
@@ -649,21 +656,26 @@ class _ResumenCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: isWide
-            ? IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 2, child: metric),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 3, child: chart),
-                  ],
-                ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [metric, const SizedBox(height: 16), chart],
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            return constraints.maxWidth >= 720 * textScale
+                ? IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(flex: 2, child: metric),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 3, child: chart),
+                      ],
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [metric, const SizedBox(height: 16), chart],
+                  );
+          },
+        ),
       ),
     );
   }
@@ -1016,14 +1028,24 @@ class _IdiomasGradesList extends StatelessWidget {
   Widget build(BuildContext context) {
     String monthName(int mes) {
       const meses = [
-        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-        'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+        'ENERO',
+        'FEBRERO',
+        'MARZO',
+        'ABRIL',
+        'MAYO',
+        'JUNIO',
+        'JULIO',
+        'AGOSTO',
+        'SETIEMBRE',
+        'OCTUBRE',
+        'NOVIEMBRE',
+        'DICIEMBRE',
       ];
       if (mes >= 1 && mes <= 12) return meses[mes - 1];
       return mes.toString();
     }
-    
-    final courses = store.idiomasMatricula.value ?? [];
+
+    final courses = store.idiomasVigentes;
     if (courses.isEmpty) return const SizedBox.shrink();
     return SectionCard(
       title: 'Centro de Idiomas',
@@ -1037,7 +1059,9 @@ class _IdiomasGradesList extends StatelessWidget {
         for (final c in courses) ...[
           Builder(
             builder: (context) {
-              final avgText = c.promedio > 0 ? c.promedio.toStringAsFixed(2) : '—';
+              final avgText = c.promedio > 0
+                  ? c.promedio.toStringAsFixed(2)
+                  : '—';
               final color = c.promedio > 0
                   ? (c.promedio >= 10.5 ? NexoTheme.success : NexoTheme.danger)
                   : Colors.orange.shade400;
@@ -1052,11 +1076,12 @@ class _IdiomasGradesList extends StatelessWidget {
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
-                      builder: (_) => _IdiomasDetalleSheet(course: c, store: store),
+                      builder: (_) =>
+                          _IdiomasDetalleSheet(course: c, store: store),
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: NexoTheme.bg,
                       borderRadius: BorderRadius.circular(14),
@@ -1065,81 +1090,105 @@ class _IdiomasGradesList extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: color.withValues(alpha: 0.3),
                             ),
                           ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            avgText,
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
+                          child: Center(
+                            child: Text(
+                              avgText,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            c.asignatura,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: NexoTheme.textPrimary,
-                              height: 1.2,
-                            ),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                c.asignatura,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: NexoTheme.textPrimary,
+                                  height: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _meta(
+                                    Icons.calendar_month_outlined,
+                                    '${c.anio}-${monthName(c.mes)}',
+                                  ),
+                                  _meta(Icons.language_rounded, c.idiomaNombre),
+                                  StatusChip(
+                                    text: c.promedio > 0
+                                        ? (c.promedio >=
+                                                  GradeCalculator
+                                                      .notaAprobatoria
+                                              ? 'Aprobado'
+                                              : 'Desaprobado')
+                                        : 'En proceso',
+                                    color: c.promedio > 0
+                                        ? (c.promedio >=
+                                                  GradeCalculator
+                                                      .notaAprobatoria
+                                              ? NexoTheme.success
+                                              : NexoTheme.danger)
+                                        : NexoTheme.warning,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${c.anio}-${monthName(c.mes)} · ${c.idiomaNombre}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: NexoTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: NexoTheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '—',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: NexoTheme.textMuted,
-                          letterSpacing: -1,
                         ),
-                      ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: NexoTheme.textMuted,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              ),
-            );
-          },
-        ),
-      ],
+              );
+            },
+          ),
+        ],
       ]),
     );
   }
+
+  Widget _meta(IconData icon, String text) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 13, color: NexoTheme.textMuted),
+      const SizedBox(width: 3),
+      Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          color: NexoTheme.textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  );
 }
 
 class _IdiomasDetalleSheet extends StatelessWidget {
@@ -1176,98 +1225,90 @@ class _IdiomasDetalleSheet extends StatelessWidget {
                 controller: controller,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade400.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: Colors.orange.shade400.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '—',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.orange.shade400,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    course.asignatura,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: NexoTheme.textPrimary,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.language_rounded, size: 14, color: NexoTheme.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        course.idiomaNombre,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: NexoTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
                   Builder(
                     builder: (context) {
                       final allNotas = store.idiomasNotas.value ?? [];
-                      final match = allNotas.where((n) => n['detMatriculaId'] == course.detMatriculaId).toList();
-                      if (match.isEmpty) {
-                        return EmptyState(
-                          icon: Icons.access_time_rounded,
-                          title: 'Sin calificaciones',
-                          subtitle: 'Aún no se han registrado notas para este curso en el sistema de Idiomas.',
-                          color: NexoTheme.textMuted,
-                        );
-                      }
-                      
-                      final data = match.first as Map<String, dynamic>;
-                      final notasList = <Map<String, dynamic>>[];
-                      for (int i = 1; i <= 6; i++) {
-                        if (data['nota$i'] != null && data['nota$i'] > 0) {
-                          notasList.add({
-                            'label': 'Nota $i',
-                            'grade': (data['nota$i'] as num).toDouble(),
-                          });
-                        }
-                      }
-                      
-                      if (notasList.isEmpty) {
-                        return EmptyState(
-                          icon: Icons.access_time_rounded,
-                          title: 'Sin calificaciones',
-                          subtitle: 'Las notas están en proceso de ser publicadas.',
-                          color: NexoTheme.textMuted,
-                        );
+                      final match = allNotas
+                          .where(
+                            (n) => n['detMatriculaId'] == course.detMatriculaId,
+                          )
+                          .toList();
+
+                      String monthName(int mes) {
+                        const meses = [
+                          'ENERO',
+                          'FEBRERO',
+                          'MARZO',
+                          'ABRIL',
+                          'MAYO',
+                          'JUNIO',
+                          'JULIO',
+                          'AGOSTO',
+                          'SETIEMBRE',
+                          'OCTUBRE',
+                          'NOVIEMBRE',
+                          'DICIEMBRE',
+                        ];
+                        if (mes >= 1 && mes <= 12) return meses[mes - 1];
+                        return mes.toString();
                       }
 
-                      return GradeSectionCard(
-                        titulo: 'Evaluaciones',
-                        rawAverage: data['promedio']?.toString() ?? '-',
-                        rows: [
-                          for (var i = 0; i < notasList.length; i++)
-                            GradeRow(
-                              label: notasList[i]['label'] as String,
-                              valueRaw: notasList[i]['grade'].toString(),
-                              last: i == notasList.length - 1,
+                      String notaText = '—';
+                      final notasList = <Map<String, dynamic>>[];
+
+                      if (match.isNotEmpty) {
+                        final data = match.first as Map<String, dynamic>;
+                        notaText = data['promedio']?.toString() ?? '—';
+                        if (notaText == '0' ||
+                            notaText == '0.0' ||
+                            notaText == '0.00') {
+                          notaText = '—';
+                        }
+
+                        for (int i = 1; i <= 6; i++) {
+                          final raw = data['nota$i'];
+                          final nota = raw is num
+                              ? raw.toDouble()
+                              : raw is String
+                              ? double.tryParse(raw)
+                              : null;
+                          if (nota != null && nota > 0) {
+                            notasList.add({'label': 'Nota $i', 'grade': nota});
+                          }
+                        }
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          GradeHeader(
+                            titulo: course.asignatura,
+                            subtitulo:
+                                '${course.anio}-${monthName(course.mes)} · ${course.idiomaNombre}',
+                            notaFinalText: notaText,
+                          ),
+                          const SizedBox(height: 16),
+                          if (match.isEmpty || notasList.isEmpty)
+                            EmptyState(
+                              icon: Icons.access_time_rounded,
+                              title: 'Sin calificaciones',
+                              subtitle: match.isEmpty
+                                  ? 'Aún no se han registrado notas para este curso en el sistema de Idiomas.'
+                                  : 'Las notas están en proceso de ser publicadas.',
+                              color: NexoTheme.textMuted,
+                            )
+                          else
+                            GradeSectionCard(
+                              titulo: 'Evaluaciones',
+                              rawAverage: notaText,
+                              rows: [
+                                for (var i = 0; i < notasList.length; i++)
+                                  GradeRow(
+                                    label: notasList[i]['label'] as String,
+                                    valueRaw: notasList[i]['grade'].toString(),
+                                    last: i == notasList.length - 1,
+                                  ),
+                              ],
                             ),
                         ],
                       );
@@ -1282,4 +1323,3 @@ class _IdiomasDetalleSheet extends StatelessWidget {
     );
   }
 }
-

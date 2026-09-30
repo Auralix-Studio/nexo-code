@@ -1,7 +1,7 @@
 ﻿name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
-version: 1.6.5+14
+version: 1.7.1+19
 
 environment:
   sdk: ^3.10.1
@@ -17,8 +17,10 @@ dependencies:
   # Lo usamos como transporte; la autenticación, sesión y manejo
   # de respuestas son 100% propios (ver lib/data/api_client.dart).
   http: ^1.2.2
+  crypto: ^3.0.7
   # Persistencia local del token y datos cacheados.
   shared_preferences: ^2.3.2
+  flutter_secure_storage: ^10.3.4
   # Conectividad y base de datos local SQLite
   connectivity_plus: ^6.0.3
   sqflite: ^2.3.0

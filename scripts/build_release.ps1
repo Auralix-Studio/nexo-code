@@ -176,44 +176,11 @@ if (-not $SkipBuild) {
         }
         if ($winDir) {
           $zip = Join-Path $dist "nexo-$tag-windows-x64.zip"
-          Compress-Archive -Path "$winDir/*" -DestinationPath $zip -Force
-          $sizeMB = [math]::Round((Get-Item $zip).Length / 1MB, 1)
-          Write-Host "  + nexo-$tag-windows-x64.zip ($sizeMB MB)" -ForegroundColor Green
-
-          # El ZIP de arriba NO usa nada externo: se extrae y nexo.exe muestra
-          # tu asistente interno (SetupWizard en lib/features/settings/).
-          # Preserva el diseño al 100%.
-          #
-          # Además generamos un instalador .exe de UN SOLO ARCHIVO (estilo
-          # Discord) con TU propio stub nativo (installer/). Al doble clic
-          # extrae la app con el tar.exe de Windows a %LOCALAPPDATA%\Nexo\_stage
-          # y lanza nexo.exe → aparece TU mismo SetupWizard. Sin Inno, sin warp.
-          # Usa -SkipSetup para omitirlo.
-          #
-          # (warp se eliminó: su stub sin firmar + el header PE parcheado lo
-          #  ponían en cuarentena el antivirus — ese era el "bloqueo". Este stub
-          #  NO parchea el binario: el payload va como overlay al final del .exe,
-          #  práctica estándar de todo instalador.)
-          if (-not $SkipSetup) {
-            $mkInstaller = Join-Path $root 'installer\build_installer.ps1'
-            $setupExe = Join-Path $dist "nexo-$tag-setup-x64.exe"
-            if (Test-Path $mkInstaller) {
-              Write-Host "  Compilando instalador de un solo archivo (stub propio)..." -ForegroundColor DarkGray
-              try {
-                & $mkInstaller -ReleaseDir ($winDir -replace '/', '\') -OutFile $setupExe
-                if (Test-Path $setupExe) {
-                  $setupMB = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
-                  Write-Host "  + nexo-$tag-setup-x64.exe ($setupMB MB) - Instalador de un solo archivo" -ForegroundColor Green
-                } else {
-                  Write-Host "  (No se generó el instalador .exe)" -ForegroundColor DarkYellow
-                }
-              } catch {
-                  Write-Host "  (Fallo al compilar el instalador .exe: $_)" -ForegroundColor DarkYellow
-              }
-            } else {
-              Write-Host "  (installer/build_installer.ps1 no encontrado - omitido el .exe)" -ForegroundColor DarkYellow
-            }
-          }
+          $mkInstaller = Join-Path $root 'installer\build_installer.ps1'
+          $setupExe = Join-Path $dist "nexo-$tag-setup-x64.exe"
+          if (-not (Test-Path -LiteralPath $mkInstaller)) { throw 'Installer builder not found.' }
+          & $mkInstaller -ReleaseDir $winDir -OutFile $setupExe -ZipOutFile $zip -ZipOnly:$SkipSetup
+          Write-Host "  Windows bundle: $zip" -ForegroundColor Green
         } else {
           Write-Host '  (no se encontró el build de Windows)' -ForegroundColor DarkGray
         }

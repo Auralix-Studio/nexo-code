@@ -66,6 +66,8 @@ class _InstallViewState extends State<InstallView> {
           _progress = 0.95;
         });
         await WinSetupService.registerAutoStart();
+      } else {
+        await WinSetupService.removeAutoStart();
       }
       setState(() {
         _step = InstallProgressStep.done;
@@ -79,8 +81,9 @@ class _InstallViewState extends State<InstallView> {
     }
   }
 
-  void _launchAppAndExit() {
-    Process.start(
+  Future<void> _launchAppAndExit() async {
+    await WinSetupService.cleanupStaging();
+    await Process.start(
       WinSetupService.officialExePath,
       [],
       mode: ProcessStartMode.detached,
@@ -348,7 +351,6 @@ class _UninstallViewState extends State<UninstallView> {
       _currentStep = "Iniciando desinstalación...";
     });
     try {
-      await WinSetupService.removeAutoStart();
       await WinSetupService.performUninstall(
         purgeData: _purgeData,
         onStepProgress: (stepMsg) {
@@ -375,29 +377,29 @@ class _UninstallViewState extends State<UninstallView> {
     return installerButtonScope(
       context,
       Scaffold(
-      backgroundColor: NexoTheme.bg,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 18),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, anim) =>
-                      FadeTransition(opacity: anim, child: child),
-                  child: _buildCurrentState(),
-                ),
-              ],
+        backgroundColor: NexoTheme.bg,
+        body: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 18),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) =>
+                        FadeTransition(opacity: anim, child: child),
+                    child: _buildCurrentState(),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

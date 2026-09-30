@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/errors.dart';
+import 'package:nexo/core/session_scope.dart';
 
 class ApiEnvelope<T> {
   final bool success;
@@ -62,7 +63,10 @@ enum ReauthOutcome {
 }
 
 class ApiClient {
-  ApiClient({http.Client? transport}) : _http = transport ?? http.Client();
+  ApiClient({http.Client? transport, SessionScope? scope})
+    : _http = transport ?? http.Client(),
+      scope = scope ?? SessionScope();
+  final SessionScope scope;
   final http.Client _http;
   String? _token;
   void Function()? onUnauthorized;
@@ -91,7 +95,7 @@ class ApiClient {
     bool authorize = true,
     required T Function(Object? raw) decode,
     bool isRetry = false,
-  }) async {
+  }) => scope.run(() async {
     final uri = _buildUri(path, query);
     final headers = <String, String>{
       'Accept': 'application/json',
@@ -109,6 +113,9 @@ class ApiClient {
       }
       final streamed = await _http.send(req).timeout(AppConfig.httpTimeout);
       res = await http.Response.fromStream(streamed);
+      scope.check();
+    } on StaleSessionException {
+      rethrow;
     } on TimeoutException {
       throw const TimeoutException('El servidor no respondió a tiempo.');
     } catch (e) {
@@ -180,10 +187,10 @@ class ApiClient {
       );
     }
     if (payload == null) {
-      return ApiEnvelope<T>(success: true, data: decode(null));
+      return ApiEnvelope<T>(success: false, data: decode(null));
     }
     return ApiEnvelope<T>.fromJson(payload, decode);
-  }
+  });
 
   /// Punto ÚNICO de decisión ante un reto de autenticación (401 o página HTML
   /// de login en una petición autorizada). Desenlaces:
@@ -210,6 +217,7 @@ class ApiClient {
   }) async {
     if (authorize && !isRetry && reauthenticate != null) {
       final outcome = await reauthenticate!();
+      scope.check();
       switch (outcome) {
         case ReauthOutcome.refreshed:
           return _send<T>(

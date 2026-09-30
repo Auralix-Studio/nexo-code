@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nexo/core/design/breakpoints.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
@@ -67,6 +67,25 @@ class _PagosScreenState extends State<PaymentsScreen>
               parent: BouncingScrollPhysics(),
             ),
             headerSliverBuilder: (_, _) => [
+              SliverToBoxAdapter(
+                child: PageBody(
+                  child: DataStatus(
+                    store: widget.store,
+                    operations: {
+                      'loadCuotasPendientes': AppLocalizations.of(
+                        context,
+                      ).paymentsTabPending,
+                      'loadCuotasIntranet': AppLocalizations.of(
+                        context,
+                      ).paymentsTabOverdue,
+                      'loadTasas': AppLocalizations.of(context).paymentsTabFees,
+                      'loadHistorico': AppLocalizations.of(
+                        context,
+                      ).paymentsTabHistory,
+                    },
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: PageHeader(
                   title: AppLocalizations.of(context).titlePayments,
@@ -261,7 +280,8 @@ class _TabBar extends StatelessWidget {
       ),
       child: TabBar(
         controller: controller,
-        isScrollable: false,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
         indicator: BoxDecoration(
           color: NexoTheme.primary,
           borderRadius: BorderRadius.circular(10),
@@ -288,34 +308,39 @@ class _TabBar extends StatelessWidget {
 }
 
 Widget _cardList(BuildContext context, List<Widget> cards) {
-  if (!context.isDesktop) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      itemBuilder: (_, i) => cards[i],
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemCount: cards.length,
-    );
-  }
-  final rows = <Widget>[];
-  for (var i = 0; i < cards.length; i += 2) {
-    rows.add(
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: cards[i]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+      if (constraints.maxWidth < 760 * textScale) {
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          itemBuilder: (_, i) => cards[i],
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemCount: cards.length,
+        );
+      }
+      final rows = <Widget>[];
+      for (var i = 0; i < cards.length; i += 2) {
+        rows.add(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: cards[i]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-  return ListView.separated(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    itemBuilder: (_, i) => rows[i],
-    separatorBuilder: (_, _) => const SizedBox(height: 12),
-    itemCount: rows.length,
+        );
+      }
+      return ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        itemBuilder: (_, i) => rows[i],
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemCount: rows.length,
+      );
+    },
   );
 }
 

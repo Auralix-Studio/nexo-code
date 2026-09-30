@@ -10,7 +10,12 @@ propias — sin SDK ni cliente de terceros para autenticación o sesión.
 ## Stack
 - **Flutter** (Material 3, sin paquetes de estado de terceros)
 - `package:http` — únicamente como transporte HTTP base
-- `package:shared_preferences` — persistencia local del token
+- SQLite — caché académica con propietario y limpieza transaccional
+- `flutter_secure_storage` — credenciales y sesiones en el almacén seguro nativo
+- `shared_preferences` — ajustes no secretos; en web, sesión solo en memoria
+
+Ver [almacenamiento y seguridad](docs/storage-security.md) para la decisión
+SQL/NoSQL, migraciones y aislamiento entre cuentas.
 
 ## Arquitectura
 ```

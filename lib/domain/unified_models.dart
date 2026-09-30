@@ -613,8 +613,11 @@ class ScheduleClassGroup {
           final isG2Finished = finishedSubjects.contains(normalize(g2.subject));
           
           String activeName = g1.subject;
-          if (isG1Finished && !isG2Finished) activeName = g2.subject;
-          else if (isG2Finished && !isG1Finished) activeName = g1.subject;
+          if (isG1Finished && !isG2Finished) {
+            activeName = g2.subject;
+          } else if (isG2Finished && !isG1Finished) {
+            activeName = g1.subject;
+          }
           
           mergedGroups.add(ScheduleClassGroup(
             subject: activeName,

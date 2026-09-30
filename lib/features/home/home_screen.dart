@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
@@ -61,11 +62,20 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          DataStatus(
+                            store: store,
+                            operations: {
+                              'loadHorarioActual': AppLocalizations.of(
+                                context,
+                              ).titleSchedule,
+                              'loadCuotasPendientes': AppLocalizations.of(
+                                context,
+                              ).titlePayments,
+                            },
+                          ),
                           Reveal(
                             index: 1,
-                            child: context.isWide
-                                ? _DashboardArea(store: store, onJump: onJump)
-                                : _MobileStack(store: store, onJump: onJump),
+                            child: _DashboardArea(store: store, onJump: onJump),
                           ),
                           const SizedBox(height: 96),
                         ],
@@ -133,7 +143,9 @@ class _Header extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            profile == null ? '...' : Fmt.firstName(profile.fullName),
+                            profile == null
+                                ? '...'
+                                : Fmt.firstName(profile.fullName),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -145,7 +157,10 @@ class _Header extends StatelessWidget {
                           ),
                         ),
                         if (AppStorage.instance.festivityDecor &&
-                            FestivityService.active(DateTime.now())?.festivity.id == 'fiestas_patrias') ...[
+                            FestivityService.active(
+                                  DateTime.now(),
+                                )?.festivity.id ==
+                                'fiestas_patrias') ...[
                           const SizedBox(width: 8),
                           const EscarapelaWidget(),
                         ],
@@ -224,198 +239,215 @@ class _Header extends StatelessWidget {
       builder: (context) {
         final l = AppLocalizations.of(context);
         return Dialog(
+          constraints: const BoxConstraints(maxWidth: 420),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
           backgroundColor: NexoTheme.card,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(color: NexoTheme.border),
           ),
-          child: ListenableBuilder(
-            listenable: connectivity,
-            builder: (context, _) {
-              final isOnline = connectivity.hasInternet;
-              final sigma = connectivity.sigmaStatus;
-              final intranet = connectivity.intranetStatus;
-              final idiomasAuth = connectivity.idiomasAuthStatus;
-              final idiomasApi = connectivity.idiomasApiStatus;
-              Widget buildStatusTile(
-                String title,
-                bool active,
-                ServerStatus? status,
-              ) {
-                final Color color;
-                final String label;
-                final IconData icon;
-                if (status != null) {
-                  switch (status) {
-                    case ServerStatus.online:
-                      color = NexoTheme.success;
-                      label = l.connectivityOnline;
-                      icon = Icons.check_circle_outline_rounded;
-                      break;
-                    case ServerStatus.degraded:
-                      color = NexoTheme.warning;
-                      label = l.connectivityDegraded;
-                      icon = Icons.error_outline_rounded;
-                      break;
-                    case ServerStatus.offline:
-                      color = NexoTheme.danger;
-                      label = l.connectivityOffline;
-                      icon = Icons.cancel_outlined;
-                      break;
+          child: SingleChildScrollView(
+            child: ListenableBuilder(
+              listenable: connectivity,
+              builder: (context, _) {
+                final isOnline = connectivity.hasInternet;
+                final sigma = connectivity.sigmaStatus;
+                final intranet = connectivity.intranetStatus;
+                Widget buildStatusTile(
+                  String title,
+                  bool active,
+                  ServerStatus? status,
+                ) {
+                  final Color color;
+                  final String label;
+                  final IconData icon;
+                  if (status != null) {
+                    switch (status) {
+                      case ServerStatus.online:
+                        color = NexoTheme.success;
+                        label = l.connectivityOnline;
+                        icon = Icons.check_circle_outline_rounded;
+                        break;
+                      case ServerStatus.degraded:
+                        color = NexoTheme.warning;
+                        label = l.connectivityDegraded;
+                        icon = Icons.error_outline_rounded;
+                        break;
+                      case ServerStatus.offline:
+                        color = NexoTheme.danger;
+                        label = l.connectivityOffline;
+                        icon = Icons.cancel_outlined;
+                        break;
+                    }
+                  } else {
+                    color = active ? NexoTheme.success : NexoTheme.danger;
+                    label = active
+                        ? l.connectivityConnected
+                        : l.connectivityDisconnected;
+                    icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
                   }
-                } else {
-                  color = active ? NexoTheme.success : NexoTheme.danger;
-                  label = active
-                      ? l.connectivityConnected
-                      : l.connectivityDisconnected;
-                  icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
-                }
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: NexoTheme.bg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: NexoTheme.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(icon, color: color, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: NexoTheme.textPrimary,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [NexoTheme.primary, NexoTheme.primaryDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: NexoTheme.primary.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.sensors_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l.connectivityStatusTitle,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: NexoTheme.textPrimary,
-                        letterSpacing: -0.4,
-                      ),
+                    decoration: BoxDecoration(
+                      color: NexoTheme.bg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: NexoTheme.border),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l.connectivityDiagnosticsSubtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: NexoTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    buildStatusTile(l.connectivityInternet, isOnline, null),
-                    buildStatusTile(l.connectivitySigma, isOnline, sigma),
-                    buildStatusTile(l.connectivityIntranet, isOnline, intranet),
-                    buildStatusTile('Auth Idiomas', isOnline, idiomasAuth),
-                    buildStatusTile('API Idiomas', isOnline, idiomasApi),
-                    const SizedBox(height: 16),
-                    Text(
-                      l.connectivityBackupNote,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: NexoTheme.textMuted,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        SupportScreen.open(context);
-                      },
-                      icon: const Icon(
-                        Icons.help_outline_rounded,
-                        size: 16,
-                        color: NexoTheme.success,
-                      ),
-                      label: Text(
-                        l.supportContactButton,
-                        style: const TextStyle(
-                          color: NexoTheme.success,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
+                    child: Row(
                       children: [
+                        Icon(icon, color: color, size: 20),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: NexoTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [NexoTheme.primary, NexoTheme.primaryDark],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: NexoTheme.primary.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.sensors_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l.connectivityStatusTitle,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: NexoTheme.textPrimary,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l.connectivityDiagnosticsSubtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: NexoTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      buildStatusTile(l.connectivityInternet, isOnline, null),
+                      buildStatusTile(l.connectivitySigma, isOnline, sigma),
+                      buildStatusTile(
+                        l.connectivityIntranet,
+                        isOnline,
+                        intranet,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l.connectivityBackupNote,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: NexoTheme.textMuted,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          SupportScreen.open(context);
+                        },
+                        icon: const Icon(
+                          Icons.help_outline_rounded,
+                          size: 16,
+                          color: NexoTheme.success,
+                        ),
+                        label: Text(
+                          l.supportContactButton,
+                          style: const TextStyle(
+                            color: NexoTheme.success,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      OverflowBar(
+                        alignment: MainAxisAlignment.end,
+                        spacing: 12,
+                        overflowSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
                             onPressed: () => connectivity.checkNow(),
                             icon: const Icon(Icons.refresh_rounded, size: 18),
                             label: Text(l.actionRetry),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               side: BorderSide(color: NexoTheme.border),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
+                          ElevatedButton(
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: NexoTheme.primary,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -423,13 +455,13 @@ class _Header extends StatelessWidget {
                             ),
                             child: Text(l.actionClose),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
@@ -599,105 +631,90 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _DashboardArea extends StatelessWidget {
-  final AppStore store;
-  final ValueChanged<int> onJump;
-  const _DashboardArea({required this.store, required this.onJump});
-  @override
-  Widget build(BuildContext context) {
-    final schedule = store.schedule.value ?? const <ScheduleClass>[];
-    final leftCol = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (schedule.isNotEmpty) ...[
-          NextClassWidget(all: schedule),
-          const SizedBox(height: 16),
-        ],
-        _ClasesHoyBlock(
-          state: store.schedule,
-          onSeeAll: () => onJump(1),
-          onRetry: () => store.loadHorarioActual(),
-        ),
-      ],
-    );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(flex: 3, child: leftCol),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: _PagosBlock(
-            state: store.pendingInstallments,
-            onSeeAll: () => onJump(3),
-            onRetry: () => store.loadCuotasPendientes(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _DashboardWidgetWrapper extends StatelessWidget {
   final DashboardWidgetConfig config;
   final AppStore store;
   final ValueChanged<int> onJump;
+  final double availableWidth;
 
   const _DashboardWidgetWrapper({
     super.key,
     required this.config,
     required this.store,
     required this.onJump,
+    required this.availableWidth,
   });
 
   Widget _buildChild(BuildContext context) {
-    final isCompact = config.span == 1;
+    final isCompact = config.id.startsWith('stats_') && config.span == 1;
     final l = AppLocalizations.of(context);
 
     switch (config.id) {
       case 'stats_promedio':
         final promCiclo = store.promedioCicloActual;
-        return _StatTile(data: _StatData(
-          label: l.homeMetricPromedioCiclo,
-          value: promCiclo == null ? '—' : promCiclo.toStringAsFixed(2),
-          icon: Icons.trending_up_rounded,
-          color: NexoTheme.primary,
-          loading: store.promedios.showSkeleton && store.resumen.showSkeleton,
-        ));
+        return _StatTile(
+          data: _StatData(
+            label: l.homeMetricPromedioCiclo,
+            value: promCiclo == null ? '—' : promCiclo.toStringAsFixed(2),
+            icon: Icons.trending_up_rounded,
+            color: NexoTheme.primary,
+            loading: store.promedios.showSkeleton && store.resumen.showSkeleton,
+          ),
+        );
       case 'stats_creditos':
         final p = store.profile.value;
         final creditosAprob = store.approvedCredits ?? p?.creditsApproved;
         final creditosTotal = store.totalCredits;
-        final creditosLabel = creditosAprob == null ? '—' : creditosTotal != null && creditosTotal > 0 ? '$creditosAprob/$creditosTotal' : '$creditosAprob';
-        return _StatTile(data: _StatData(
-          label: l.homeMetricCreditos,
-          value: creditosLabel,
-          icon: Icons.school_rounded,
-          color: NexoTheme.accent,
-          loading: store.profile.showSkeleton,
-        ));
+        final creditosLabel = creditosAprob == null
+            ? '—'
+            : creditosTotal != null && creditosTotal > 0
+            ? '$creditosAprob/$creditosTotal'
+            : '$creditosAprob';
+        return _StatTile(
+          data: _StatData(
+            label: l.homeMetricCreditos,
+            value: creditosLabel,
+            icon: Icons.school_rounded,
+            color: NexoTheme.accent,
+            loading: store.profile.showSkeleton,
+          ),
+        );
       case 'stats_clases_hoy':
         final schedule = store.schedule.value ?? const <ScheduleClass>[];
         final today = DateTime.now().weekday;
-        final clasesHoy = schedule.where((c) => c.weekday == today).length;
-        return _StatTile(data: _StatData(
-          label: l.homeMetricClasesHoy,
-          value: '$clasesHoy',
-          icon: Icons.today_rounded,
-          color: NexoTheme.success,
-          loading: store.schedule.showSkeleton,
-        ));
+        final clasesHoy = ScheduleClassGroup.groupBy(
+          schedule.where((c) => c.weekday == today).toList(),
+          finishedSubjects: store.finishedSubjectsThisTerm,
+        ).length;
+        return _StatTile(
+          data: _StatData(
+            label: l.homeMetricClasesHoy,
+            value: '$clasesHoy',
+            icon: Icons.today_rounded,
+            color: NexoTheme.success,
+            loading: store.schedule.showSkeleton,
+          ),
+        );
       case 'stats_pagos':
-        final installments = store.pendingInstallments.value ?? const <Payment>[];
-        final montoPendiente = installments.fold<double>(0, (acc, c) => acc + c.total);
-        return _StatTile(data: _StatData(
-          label: l.homeMetricPorPagar,
-          value: Fmt.currency(montoPendiente),
-          icon: Icons.account_balance_wallet_rounded,
-          color: NexoTheme.warning,
-          loading: store.pendingInstallments.showSkeleton,
-        ));
+        final installments =
+            store.pendingInstallments.value ?? const <Payment>[];
+        final montoPendiente = installments.fold<double>(
+          0,
+          (acc, c) => acc + c.total,
+        );
+        return _StatTile(
+          data: _StatData(
+            label: l.homeMetricPorPagar,
+            value: Fmt.currency(montoPendiente),
+            icon: Icons.account_balance_wallet_rounded,
+            color: NexoTheme.warning,
+            loading: store.pendingInstallments.showSkeleton,
+          ),
+        );
       case 'next_class':
+        if (store.schedule.showSkeleton) {
+          return const Skeleton(height: 140, radius: 20);
+        }
         final schedule = store.schedule.value ?? const <ScheduleClass>[];
         if (schedule.isEmpty) return const SizedBox.shrink();
         return NextClassWidget(all: schedule);
@@ -726,19 +743,15 @@ class _DashboardWidgetWrapper extends StatelessWidget {
     if (child is SizedBox) return child;
 
     const totalSpacing = 12.0;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final padding = context.contentPadding * 2;
-    final availableWidth = (screenWidth - padding).clamp(160.0, 1600.0);
-    final colWidth = (availableWidth - totalSpacing * 3) / 4;
-
-    // Los bloques de contenido (horario, pagos, próxima clase) necesitan al
-    // menos media pantalla en móvil; con span 1 el texto colapsa en vertical.
-    final minSpan = config.id.startsWith('stats_') ? config.span : 4;
-    final span = minSpan > config.span ? minSpan : config.span;
-    final itemWidth = (span >= 4
-            ? availableWidth
-            : (colWidth * span + totalSpacing * (span - 1)) - 0.5)
-        .clamp(72.0, availableWidth);
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final isMetric = config.id.startsWith('stats_');
+    final minWidth = (isMetric ? 180.0 : 360.0) * textScale;
+    final desiredWidth =
+        (availableWidth + totalSpacing) * config.span.clamp(1, 4) / 4 -
+        totalSpacing;
+    final itemWidth = desiredWidth
+        .clamp(minWidth, double.infinity)
+        .clamp(0.0, availableWidth);
 
     final isEditing = store.editingDashboardWidgetId == config.id;
 
@@ -791,7 +804,9 @@ class _DashboardWidgetWrapper extends StatelessWidget {
                             child: RotatedBox(
                               quarterTurns: 1,
                               child: Icon(
-                                config.span < 4 ? Icons.unfold_more_rounded : Icons.unfold_less_rounded,
+                                config.span < 4
+                                    ? Icons.unfold_more_rounded
+                                    : Icons.unfold_less_rounded,
                                 size: 18,
                                 color: Colors.white,
                               ),
@@ -846,14 +861,14 @@ class _DashboardWidgetWrapper extends StatelessWidget {
   }
 }
 
-class _MobileStack extends StatelessWidget {
+class _DashboardArea extends StatelessWidget {
   final AppStore store;
   final ValueChanged<int> onJump;
-  const _MobileStack({required this.store, required this.onJump});
+  const _DashboardArea({required this.store, required this.onJump});
   @override
   Widget build(BuildContext context) {
     final layout = store.dashboardLayout;
-    
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
@@ -861,18 +876,21 @@ class _MobileStack extends StatelessWidget {
           store.setEditingDashboardWidget(null);
         }
       },
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final config in layout)
-            _DashboardWidgetWrapper(
-              key: ValueKey(config.id),
-              config: config,
-              store: store,
-              onJump: onJump,
-            ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) => Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final config in layout)
+              _DashboardWidgetWrapper(
+                key: ValueKey(config.id),
+                config: config,
+                store: store,
+                onJump: onJump,
+                availableWidth: constraints.maxWidth,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -979,7 +997,10 @@ class _PagosBlock extends StatelessWidget {
     }
     return Column(
       children: [
-        PendingPaymentsWidget(installments: state.value ?? const [], isCompact: isCompact),
+        PendingPaymentsWidget(
+          installments: state.value ?? const [],
+          isCompact: isCompact,
+        ),
         if (!isCompact) ...[
           const SizedBox(height: 8),
           Align(
