@@ -1,15 +1,94 @@
 import 'dart:convert';
+import 'package:nexo/core/secret_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nexo/core/config.dart';
 
 class AppStorage {
-  AppStorage._(this._prefs);
+  AppStorage._(this._prefs, this._secrets);
   static AppStorage? _instance;
   final SharedPreferences _prefs;
-  static Future<AppStorage> init() async {
-    _instance ??= AppStorage._(await SharedPreferences.getInstance());
-    return _instance!;
+  final SecretStore _secrets;
+  final Map<String, String> _auth = {};
+  Future<void> _writes = Future.value();
+  static const _authKey = 'nexo.auth.v1';
+
+  static Future<AppStorage> init({SecretStore? secrets}) async {
+    if (_instance != null && secrets == null) return _instance!;
+    final storage = AppStorage._(
+      await SharedPreferences.getInstance(),
+      secrets ?? createSecretStore(),
+    );
+    await storage._loadSecrets();
+    _instance = storage;
+    return storage;
   }
+
+  Future<void> _loadSecrets() async {
+    const legacyKeys = [
+      _kToken,
+      _kUser,
+      _kCredUser,
+      _kCredPass,
+      _kIntranetCookies,
+      _kIntranetUser,
+    ];
+    try {
+      final saved = await _secrets.read(_authKey);
+      if (saved != null) {
+        _auth.addAll(Map<String, String>.from(jsonDecode(saved) as Map));
+      } else {
+        // Old preferences caches have no owner and cannot be trusted after
+        // upgrading from a version that allowed cross-account responses.
+        await clearCache();
+        await _prefs.remove(_kGradeSnap);
+        for (final key in legacyKeys) {
+          var value = _prefs.getString(key);
+          if (value == null) continue;
+          if (key == _kCredUser || key == _kCredPass) {
+            try {
+              value = utf8.decode(base64.decode(value));
+            } catch (_) {
+              continue;
+            }
+          }
+          _auth[key] = value;
+        }
+        if (_auth.isNotEmpty) await _secrets.write(_authKey, jsonEncode(_auth));
+      }
+    } finally {
+      // Never leave reusable secrets in preferences, even if the vault fails.
+      for (final key in legacyKeys) {
+        await _prefs.remove(key);
+      }
+    }
+  }
+
+  Future<void> _updateAuth(Map<String, String?> changes) {
+    for (final entry in changes.entries) {
+      if (entry.value == null) {
+        _auth.remove(entry.key);
+      } else {
+        _auth[entry.key] = entry.value!;
+      }
+    }
+    final snapshot = _auth.isEmpty ? null : jsonEncode(_auth);
+    final write = _writes.then((_) => _secrets.write(_authKey, snapshot));
+    // Preserve ordering after errors; report the failure to the original caller.
+    _writes = write.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return write;
+  }
+
+  Future<void> setAuthenticatedSession({
+    required String token,
+    required String account,
+    required String password,
+    String? userJson,
+  }) => _updateAuth({
+    _kToken: token,
+    _kCredUser: account,
+    _kCredPass: password,
+    _kUser: userJson,
+  });
 
   static AppStorage get instance {
     final i = _instance;
@@ -41,6 +120,7 @@ class AppStorage {
   static const _kUpdLatestVer = 'nexo.upd.latestVer';
   static const _kUpdApkUrl = 'nexo.upd.apkUrl';
   static const _kUpdApkSize = 'nexo.upd.apkSize';
+  static const _kUpdSha256 = 'nexo.upd.sha256';
   static const _kUpdDownloadedVer = 'nexo.upd.downloadedVer';
   static const _kUpdApkPath = 'nexo.upd.apkPath';
   static const _kDashboardConfig = 'nexo.dashboardConfig';
@@ -81,17 +161,10 @@ class AppStorage {
       _prefs.setBool(_kWhatsappInvite, v);
   bool get festivityDecor => _prefs.getBool(_kFestivityDecor) ?? true;
   Future<void> setFestivityDecor(bool v) => _prefs.setBool(_kFestivityDecor, v);
-  String? get intranetCookies => _prefs.getString(_kIntranetCookies);
-  String? get intranetUser => _prefs.getString(_kIntranetUser);
-  Future<void> setIntranetSession(String? cookies, String? user) async {
-    if (cookies == null || user == null) {
-      await _prefs.remove(_kIntranetCookies);
-      await _prefs.remove(_kIntranetUser);
-    } else {
-      await _prefs.setString(_kIntranetCookies, cookies);
-      await _prefs.setString(_kIntranetUser, user);
-    }
-  }
+  String? get intranetCookies => _auth[_kIntranetCookies];
+  String? get intranetUser => _auth[_kIntranetUser];
+  Future<void> setIntranetSession(String? cookies, String? user) =>
+      _updateAuth({_kIntranetCookies: cookies, _kIntranetUser: user});
 
   String? get themeMode => _prefs.getString(_kTheme);
   Future<void> setThemeMode(String value) => _prefs.setString(_kTheme, value);
@@ -99,55 +172,18 @@ class AppStorage {
   Future<void> setLocaleCode(String value) => _prefs.setString(_kLocale, value);
   bool get use24h => _prefs.getBool(_kUse24h) ?? true;
   Future<void> setUse24h(bool value) => _prefs.setBool(_kUse24h, value);
-  String? get token => _prefs.getString(_kToken);
-  Future<void> setToken(String? value) async {
-    if (value == null) {
-      await _prefs.remove(_kToken);
-    } else {
-      await _prefs.setString(_kToken, value);
-    }
-  }
-
-  String? get userJson => _prefs.getString(_kUser);
-  Future<void> setUserJson(String? value) async {
-    if (value == null) {
-      await _prefs.remove(_kUser);
-    } else {
-      await _prefs.setString(_kUser, value);
-    }
-  }
-
-  String? get credUser {
-    final v = _prefs.getString(_kCredUser);
-    if (v == null) return null;
-    try {
-      return utf8.decode(base64.decode(v));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? get credPass {
-    final v = _prefs.getString(_kCredPass);
-    if (v == null) return null;
-    try {
-      return utf8.decode(base64.decode(v));
-    } catch (_) {
-      return null;
-    }
-  }
-
+  String? get token => _auth[_kToken];
+  Future<void> setToken(String? value) => _updateAuth({_kToken: value});
+  String? get userJson => _auth[_kUser];
+  Future<void> setUserJson(String? value) => _updateAuth({_kUser: value});
+  String? get credUser => _auth[_kCredUser];
+  String? get credPass => _auth[_kCredPass];
   bool get hasCredentials =>
       (credUser?.isNotEmpty ?? false) && (credPass?.isNotEmpty ?? false);
-  Future<void> setCredentials(String user, String pass) async {
-    await _prefs.setString(_kCredUser, base64.encode(utf8.encode(user)));
-    await _prefs.setString(_kCredPass, base64.encode(utf8.encode(pass)));
-  }
-
-  Future<void> clearCredentials() async {
-    await _prefs.remove(_kCredUser);
-    await _prefs.remove(_kCredPass);
-  }
+  Future<void> setCredentials(String user, String pass) =>
+      _updateAuth({_kCredUser: user, _kCredPass: pass});
+  Future<void> clearCredentials() =>
+      _updateAuth({_kCredUser: null, _kCredPass: null});
 
   Future<void> setCache(String key, Object data) async {
     final payload = jsonEncode({
@@ -189,20 +225,28 @@ class AppStorage {
   String? get updLatestVer => _prefs.getString(_kUpdLatestVer);
   String? get updApkUrl => _prefs.getString(_kUpdApkUrl);
   int? get updApkSize => _prefs.getInt(_kUpdApkSize);
+  String? get updSha256 => _prefs.getString(_kUpdSha256);
   Future<void> setUpdLatest({
     required String version,
     required String url,
     required int size,
+    String? sha256,
   }) async {
     await _prefs.setString(_kUpdLatestVer, version);
     await _prefs.setString(_kUpdApkUrl, url);
     await _prefs.setInt(_kUpdApkSize, size);
+    if (sha256 == null) {
+      await _prefs.remove(_kUpdSha256);
+    } else {
+      await _prefs.setString(_kUpdSha256, sha256);
+    }
   }
 
   Future<void> clearUpdLatest() async {
     await _prefs.remove(_kUpdLatestVer);
     await _prefs.remove(_kUpdApkUrl);
     await _prefs.remove(_kUpdApkSize);
+    await _prefs.remove(_kUpdSha256);
   }
 
   String? get updDownloadedVer => _prefs.getString(_kUpdDownloadedVer);
@@ -218,9 +262,16 @@ class AppStorage {
   }
 
   Future<void> clear({bool keepCredentials = true}) async {
-    await _prefs.remove(_kToken);
-    await _prefs.remove(_kUser);
+    final cleared = _updateAuth({
+      _kToken: null,
+      _kUser: null,
+      _kIntranetCookies: null,
+      _kIntranetUser: null,
+      if (!keepCredentials) _kCredUser: null,
+      if (!keepCredentials) _kCredPass: null,
+    });
     await clearCache();
-    if (!keepCredentials) await clearCredentials();
+    await _prefs.remove(_kGradeSnap);
+    await cleared;
   }
 }

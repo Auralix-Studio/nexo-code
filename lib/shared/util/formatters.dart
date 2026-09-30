@@ -49,9 +49,10 @@ abstract final class Fmt {
       '${d.day.toString().padLeft(2, '0')} '
       '${_l.monthShort(_monthKeys[d.month])} ${d.year}';
   static String time(String rawHm, {required bool h24}) {
-    if (h24) return rawHm;
     final parts = rawHm.split(':');
     if (parts.length < 2) return rawHm;
+    final cleanHm = '${parts[0]}:${parts[1]}';
+    if (h24) return cleanHm;
     final h = int.tryParse(parts[0]);
     final m = parts[1];
     if (h == null) return rawHm;
@@ -116,13 +117,20 @@ abstract final class Fmt {
   }
 
   static String formatAula(String rawAula) {
+    if (rawAula.contains('/')) {
+      return rawAula.split('/').map((e) => formatAula(e.trim())).join(' / ');
+    }
     final parsed = parseAula(rawAula);
     final pab = parsed['pabellon'];
     final aul = cleanRoom(rawAula);
     if (pab != null && aul.isNotEmpty) {
       return 'Pabellón $pab - Aula $aul';
     }
-    return aul.isEmpty ? '—' : aul;
+    if (aul.isEmpty) return '—';
+    if (RegExp(r'^(LABORATORIO|LAB)', caseSensitive: false).hasMatch(rawAula.trim())) {
+      return 'Laboratorio - $aul';
+    }
+    return aul;
   }
 
   static String cleanBuilding(String raw) {
@@ -134,7 +142,7 @@ abstract final class Fmt {
   static String cleanRoom(String raw) {
     final parsed = parseAula(raw);
     String s = parsed['aula'] ?? raw;
-    s = s.replaceAll(RegExp(r'^(LAB|LABORATORIO)\s*_?\s*', caseSensitive: false), '').trim();
+    s = s.replaceAll(RegExp(r'^(LABORATORIO|LAB)\s*_?\s*', caseSensitive: false), '').trim();
     if (s.isEmpty) return raw;
     return s;
   }

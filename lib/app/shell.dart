@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/data/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/data/connectivity_service.dart';
@@ -113,17 +114,25 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.initState();
     final isTeacher = widget.session.user?.isTeacher ?? false;
     if (!isTeacher) {
-      widget.store.loadHomeEssentials();
+      // Basta conocer la interfaz de red. Los diagnósticos de servidores
+      // continúan en paralelo y no retrasan las peticiones académicas.
+      _awaitConnectivityThenLoad();
     }
     _lastBoletaCheck = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     ShortcutService.instance.addListener(_handleShortcut);
-    _wasOnline = widget.connectivity.hasInternet;
     widget.connectivity.addListener(_onConnectivityChange);
     _handleShortcut();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) maybeShowWhatsappInvite(context);
     });
+  }
+
+  Future<void> _awaitConnectivityThenLoad() async {
+    await widget.connectivity.networkReady;
+    if (!mounted) return;
+    _wasOnline = widget.connectivity.hasInternet;
+    widget.store.loadHomeEssentials();
   }
 
   @override
@@ -140,6 +149,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    if (widget.session.isAuthenticated) {
+      NotificationService.instance.reschedule(
+        clases: widget.store.schedule.value,
+        installments: widget.store.pendingInstallments.value,
+        finishedSubjects: widget.store.finishedSubjectsThisTerm,
+      );
+    }
     if (widget.session.user?.isTeacher ?? false) return;
     final now = DateTime.now();
     if (_lastBoletaCheck != null &&

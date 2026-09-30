@@ -29,9 +29,10 @@ class SigmaRepository {
     // que _send() ya habría lanzado como Network/Timeout/ServerException. Esta
     // distinción es la que permite NO cerrar sesión ante caídas transitorias.
     if (!res.success || res.data == null) {
-      throw InvalidCredentialsException(res.mensaje ?? 'No se pudo iniciar sesión.');
+      throw InvalidCredentialsException(
+        res.mensaje ?? 'No se pudo iniciar sesión.',
+      );
     }
-    _api.setToken(res.data!.token);
     return res.data!;
   }
 

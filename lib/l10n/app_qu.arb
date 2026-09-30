@@ -208,7 +208,7 @@
   "termsItemPrivacyTitle": "Tus datos y privacidad",
   "termsItemPrivacyBody": "Credencialniykikuna hinaspa yachay willakuyniykikunaqa dispositivoykipillam waqaychakun. Nexoqa manam servidorninman nitaq hukkunamanpas apachinchu: UPLA servicionkunamanmi chawpillanpi rin.",
   "termsItemSecurityTitle": "Seguridad",
-  "termsItemSecurityBody": "El almacenamiento local no está cifrado a nivel de sistema. Úsala solo en dispositivos de tu confianza. Puedes cerrar sesión para borrar credenciales y caché en cualquier momento.",
+  "termsItemSecurityBody": "En móvil y escritorio, las credenciales se protegen con el almacén seguro del sistema. En el navegador, la sesión permanece en memoria y debes iniciar sesión de nuevo al recargar. Los datos académicos se guardan localmente sin cifrado adicional. Cerrar sesión elimina credenciales y caché.",
   "termsItemResponsibleTitle": "Uso responsable",
   "termsItemResponsibleBody": "Accede solo a tu propia información con tus propias credenciales. Es un proyecto educativo / de hackathon de ingeniería inversa para uso personal. Úsala conforme a los reglamentos de tu universidad.",
   "termsItemDisclaimerTitle": "Sin garantías",
@@ -771,5 +771,18 @@
     }
   },
   "termsItemRightsTitle": "Derechoykikuna",
-  "termsItemRightsBody": "Willasqaykikunata qawanki, allichanki utaq pichanki, hinaspa mayqin pachapipas Ajustespi permisoykita qichunki. Soporte sectionmanta qillqamuwayku."
+  "termsItemRightsBody": "Willasqaykikunata qawanki, allichanki utaq pichanki, hinaspa mayqin pachapipas Ajustespi permisoykita qichunki. Soporte sectionmanta qillqamuwayku.",
+  "dataSaved": "Waqaychasqa willakuy",
+  "dataServer": "Servidor nisqamanta willakuy",
+  "dataRefreshing": "Musuqyachispa…",
+  "dataRefreshFailed": "Mana musuqyachiy atikunchu",
+  "dataUnknownDate": "Musuqyachisqa pacha mana yachasqa",
+  "dataUpdatedAt": "Qhipa musuqyachiy: {date}",
+  "@dataUpdatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

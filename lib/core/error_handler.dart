@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:nexo/core/session_scope.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/connectivity_service.dart';
 import 'package:nexo/data/session.dart';
@@ -27,6 +28,8 @@ class ErrorHandler {
         );
       }
       return await _remoteWithRetry(remote, operationName);
+    } on StaleSessionException {
+      rethrow;
     } on SessionExpiredException {
       // El logout ya lo disparó ApiClient (onUnauthorized) como fuente única.
       // Aquí NO cerramos sesión otra vez: solo intentamos mostrar el caché

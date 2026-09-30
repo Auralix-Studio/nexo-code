@@ -613,7 +613,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemSecurityBody =>
-      'Local storage is not encrypted at the system level, so use Nexo only on devices you trust. You can sign out to wipe credentials and cache at any time.';
+      'On mobile and desktop, credentials are protected by the operating system secure storage. In the browser, the session stays in memory and requires signing in again after reloading. Academic data is cached locally without additional encryption. Signing out removes credentials and cached data.';
 
   @override
   String get termsItemResponsibleTitle => 'Responsible use';
@@ -1660,5 +1660,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String projectionAssume(String unit, String value) {
     return 'If you get $value in $unit:';
+  }
+
+  @override
+  String get dataSaved => 'Saved data';
+
+  @override
+  String get dataServer => 'Retrieved from server';
+
+  @override
+  String get dataRefreshing => 'Updating…';
+
+  @override
+  String get dataRefreshFailed => 'Could not update';
+
+  @override
+  String get dataUnknownDate => 'Update time unknown';
+
+  @override
+  String dataUpdatedAt(String date) {
+    return 'Last updated: $date';
   }
 }

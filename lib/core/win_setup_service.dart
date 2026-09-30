@@ -1,237 +1,185 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:nexo/core/storage.dart';
+import 'package:nexo/core/windows_process.dart';
+import 'package:nexo/core/install_transaction.dart';
 
 class WinSetupService {
-  static String get localAppData => Platform.environment['LOCALAPPDATA'] ?? '';
-  static String get appData => Platform.environment['APPDATA'] ?? '';
-  static String get userProfile => Platform.environment['USERPROFILE'] ?? '';
+  static String get localAppData {
+    final value = Platform.environment['LOCALAPPDATA'];
+    if (value == null || !p.isAbsolute(value)) {
+      throw StateError('LOCALAPPDATA inválido.');
+    }
+    return value;
+  }
+
   static String get officialInstallDir => p.join(localAppData, 'Nexo');
+  static String get databaseDirectory => p.join(officialInstallDir, 'data');
+  static Future<void> prepareDatabaseDirectory() async {
+    await databaseFactory.setDatabasesPath(databaseDirectory);
+    final destination = p.join(databaseDirectory, 'nexo_cache.db');
+    if (await File(destination).exists()) return;
+    for (final folder in ['bin', 'bin.previous']) {
+      final legacy = p.join(
+        officialInstallDir,
+        folder,
+        '.dart_tool',
+        'sqflite_common_ffi',
+        'databases',
+        'nexo_cache.db',
+      );
+      if (!await File(legacy).exists()) continue;
+      final resolved = await File(legacy).resolveSymbolicLinks();
+      if (!p.isWithin(p.canonicalize(officialInstallDir), resolved)) continue;
+      await Directory(databaseDirectory).create(recursive: true);
+      final database = await databaseFactory.openDatabase(
+        legacy,
+        options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+      );
+      try {
+        // SQLite takes a consistent snapshot, including any WAL transactions.
+        await database.execute('VACUUM INTO ?', [destination]);
+      } finally {
+        await database.close();
+      }
+      return;
+    }
+  }
+
   static String get officialExePath =>
       p.join(officialInstallDir, 'bin', 'nexo.exe');
-  static bool get isInstalledInstance {
-    if (!Platform.isWindows) return true;
-    final currentExe = p.canonicalize(Platform.resolvedExecutable);
-    final officialExe = p.canonicalize(officialExePath);
-    return currentExe == officialExe;
-  }
-
-  static Future<bool> checkIsAlreadyInstalled() async {
-    return await File(officialExePath).exists();
-  }
-
+  static bool get isInstalledInstance =>
+      !Platform.isWindows ||
+      p.equals(
+        p.canonicalize(Platform.resolvedExecutable).toLowerCase(),
+        p.canonicalize(officialExePath).toLowerCase(),
+      );
+  static Future<bool> checkIsAlreadyInstalled() =>
+      File(officialExePath).exists();
+  static String _q(String value) => WindowsProcess.literal(value);
+  static Future<void> _closeInstalledApp() => WindowsProcess.script('''
+    \$apps = @(Get-Process -Name nexo -ErrorAction SilentlyContinue | Where-Object { \$_.Id -ne $pid -and \$_.Path -eq ${_q(officialExePath)} })
+    foreach (\$app in \$apps) {
+      if (-not \$app.CloseMainWindow()) { throw 'Cierra Nexo antes de continuar.' }
+      if (-not \$app.WaitForExit(15000)) { throw 'Nexo sigue abierto.' }
+    }
+  ''');
   static Future<void> copyApplicationFiles({
-    required void Function(double progress) onProgress,
+    required void Function(double) onProgress,
   }) async {
-    final currentBinDir = p.dirname(Platform.resolvedExecutable);
-    final targetBinDir = p.join(officialInstallDir, 'bin');
-    final sourceDir = Directory(currentBinDir);
-    final targetDir = Directory(targetBinDir);
-    if (await targetDir.exists()) {
-      try {
-        await targetDir.delete(recursive: true);
-      } catch (_) {}
+    if (isInstalledInstance) {
+      throw StateError('Abre el instalador descargado para actualizar.');
     }
-    await targetDir.create(recursive: true);
-    final List<FileSystemEntity> entities = await sourceDir
-        .list(recursive: true)
-        .toList();
-    final total = entities.length;
-    if (total == 0) return;
-    int copied = 0;
-    for (final entity in entities) {
-      final relativePath = p.relative(entity.path, from: currentBinDir);
-      final destPath = p.join(targetBinDir, relativePath);
-      if (entity is Directory) {
-        await Directory(destPath).create(recursive: true);
-      } else if (entity is File) {
-        await Directory(p.dirname(destPath)).create(recursive: true);
-        await entity.copy(destPath);
-      }
-      copied++;
-      onProgress(copied / total);
-    }
+    await _closeInstalledApp();
+    await InstallTransaction.install(
+      source: Directory(p.dirname(Platform.resolvedExecutable)),
+      root: Directory(officialInstallDir),
+      onProgress: onProgress,
+    );
   }
 
-  static Future<void> registerUninstall({required String version}) async {
-    final uninstallString = '"$officialExePath" --uninstall';
-    final iconPath = '$officialExePath,0';
-
-    int estimatedSizeKB = 0;
-    try {
-      final binDir = Directory(p.join(officialInstallDir, 'bin'));
-      if (await binDir.exists()) {
-        int totalBytes = 0;
-        await for (final entity in binDir.list(recursive: true)) {
-          if (entity is File) {
-            totalBytes += await entity.length();
-          }
-        }
-        estimatedSizeKB = (totalBytes / 1024).ceil();
-      }
-    } catch (_) {
-      estimatedSizeKB = 0;
+  static const _uninstallKey =
+      r'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Nexo';
+  static const _runKey = r'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run';
+  static Future<void> registerUninstall({required String version}) =>
+      WindowsProcess.script('''
+    \$key = ${_q(_uninstallKey)}
+    New-Item -Path \$key -Force | Out-Null
+    \$values = @{
+      DisplayName = 'Nexo UPLA'; DisplayVersion = ${_q(version)}; Publisher = 'Auralix Studio';
+      UninstallString = ${_q('"$officialExePath" --uninstall')};
+      DisplayIcon = ${_q('$officialExePath,0')}; InstallLocation = ${_q(officialInstallDir)}
     }
-
-    final script =
-        '''
-      \$regPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Nexo"
-      New-Item -Path \$regPath -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "DisplayName" -Value "Nexo UPLA" -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "UninstallString" -Value '$uninstallString' -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "QuietUninstallString" -Value '$uninstallString' -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "DisplayIcon" -Value "$iconPath" -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "DisplayVersion" -Value "$version" -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "Publisher" -Value "Nexo Team" -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "InstallLocation" -Value "$officialInstallDir" -PropertyType String -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "NoModify" -Value 1 -PropertyType DWord -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "NoRepair" -Value 1 -PropertyType DWord -Force | Out-Null
-      New-ItemProperty -Path \$regPath -Name "EstimatedSize" -Value $estimatedSizeKB -PropertyType DWord -Force | Out-Null
-    ''';
-    await Process.run('powershell', ['-Command', script]);
-  }
-
+    foreach (\$name in \$values.Keys) { New-ItemProperty -LiteralPath \$key -Name \$name -Value \$values[\$name] -PropertyType String -Force | Out-Null }
+    foreach (\$name in @('NoModify','NoRepair')) { New-ItemProperty -LiteralPath \$key -Name \$name -Value 1 -PropertyType DWord -Force | Out-Null }
+  ''');
   static Future<void> createShortcuts({
     required bool desktop,
     required bool startMenu,
   }) async {
-    final workingDir = p.join(officialInstallDir, 'bin');
-    final parts = <String>[r'$WshShell = New-Object -ComObject WScript.Shell'];
-    if (desktop) {
-      parts.add(
-        r'''
-        $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
-        $Shortcut1 = $WshShell.CreateShortcut("$DesktopPath\Nexo UPLA.lnk")
-        $Shortcut1.TargetPath = "'''
-        '$officialExePath'
-        r'''"
-        $Shortcut1.WorkingDirectory = "'''
-        '$workingDir'
-        r'''"
-        $Shortcut1.IconLocation = "'''
-        '$officialExePath'
-        r''',0"
-        $Shortcut1.Save()
-      ''',
-      );
+    if (!desktop && !startMenu) return;
+    await WindowsProcess.script('''
+      \$shell = New-Object -ComObject WScript.Shell
+      \$folders = @(${[if (desktop) "[Environment]::GetFolderPath('Desktop')", if (startMenu) "[Environment]::GetFolderPath('Programs')"].join(',')})
+      foreach (\$folder in \$folders) {
+        \$link = \$shell.CreateShortcut((Join-Path \$folder 'Nexo UPLA.lnk'))
+        \$link.TargetPath = ${_q(officialExePath)}
+        \$link.WorkingDirectory = ${_q(p.dirname(officialExePath))}
+        \$link.IconLocation = ${_q('$officialExePath,0')}
+        \$link.Save()
+      }
+    ''');
+  }
+
+  static Future<void> registerAutoStart() => WindowsProcess.script('''
+    New-Item -Path ${_q(_runKey)} -Force | Out-Null
+    New-ItemProperty -LiteralPath ${_q(_runKey)} -Name NexoUPLA -Value ${_q('"$officialExePath"')} -PropertyType String -Force | Out-Null
+  ''');
+  static Future<void> removeAutoStart() => WindowsProcess.script('''
+    if (Get-ItemProperty -LiteralPath ${_q(_runKey)} -Name NexoUPLA -ErrorAction SilentlyContinue) {
+      Remove-ItemProperty -LiteralPath ${_q(_runKey)} -Name NexoUPLA
     }
-    if (startMenu) {
-      parts.add(
-        r'''
-        $StartMenuPath = [System.Environment]::GetFolderPath('StartMenu')
-        $ProgramsPath = Join-Path $StartMenuPath "Programs"
-        $Shortcut2 = $WshShell.CreateShortcut("$ProgramsPath\Nexo UPLA.lnk")
-        $Shortcut2.TargetPath = "'''
-        '$officialExePath'
-        r'''"
-        $Shortcut2.WorkingDirectory = "'''
-        '$workingDir'
-        r'''"
-        $Shortcut2.IconLocation = "'''
-        '$officialExePath'
-        r''',0"
-        $Shortcut2.Save()
-      ''',
-      );
-    }
-    if (parts.length == 1) return;
-    await Process.run('powershell', ['-Command', parts.join('\n')]);
-  }
-
-  static Future<void> registerAutoStart() async {
-    final script =
-        '''
-      \$regPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-      New-ItemProperty -Path \$regPath -Name "NexoUPLA" -Value '"$officialExePath"' -PropertyType String -Force | Out-Null
-    ''';
-    await Process.run('powershell', ['-Command', script]);
-  }
-
-  static Future<void> removeAutoStart() async {
-    await Process.run('powershell', [
-      '-Command',
-      r'Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "NexoUPLA" -ErrorAction SilentlyContinue',
-    ]);
-  }
-
+  ''');
   static Future<void> performUninstall({
     required bool purgeData,
-    required void Function(String message) onStepProgress,
+    required void Function(String) onStepProgress,
   }) async {
-    onStepProgress("Cerrando la aplicación...");
-    final currentPid = pid;
-    await Process.run('powershell', [
-      '-Command',
-      'Get-Process -Name "nexo" -ErrorAction SilentlyContinue | Where-Object { \$_.Id -ne $currentPid } | Stop-Process -Force -ErrorAction SilentlyContinue',
-    ]);
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    onStepProgress("Removiendo inicio automático...");
-    await removeAutoStart();
-
-    onStepProgress("Removiendo del Registro de Windows...");
-    await Process.run('powershell', [
-      '-Command',
-      'Remove-Item -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Nexo" -Recurse -ErrorAction SilentlyContinue',
-    ]);
-
-    onStepProgress("Eliminando accesos directos...");
-    const script = '''
-      \$DesktopPath = [System.Environment]::GetFolderPath('Desktop')
-      Remove-Item -Path (Join-Path \$DesktopPath "Nexo UPLA.lnk") -Force -ErrorAction SilentlyContinue
-      \$StartMenuPath = [System.Environment]::GetFolderPath('StartMenu')
-      \$ProgramsPath = Join-Path \$StartMenuPath "Programs"
-      Remove-Item -Path (Join-Path \$ProgramsPath "Nexo UPLA.lnk") -Force -ErrorAction SilentlyContinue
-    ''';
-    await Process.run('powershell', ['-Command', script]);
-
+    onStepProgress('Cerrando Nexo…');
+    await _closeInstalledApp();
     if (purgeData) {
-      onStepProgress("Purgando base de datos y configuraciones locales...");
-      final dbFile = File(p.join(localAppData, 'nexo_cache.db'));
-      if (await dbFile.exists()) {
-        try {
-          await dbFile.delete();
-        } catch (_) {}
+      onStepProgress('Eliminando credenciales y datos locales…');
+      await AppStorage.instance.clear(keepCredentials: false);
+      await deleteDatabase(p.join(await getDatabasesPath(), 'nexo_cache.db'));
+      await (await SharedPreferences.getInstance()).clear();
+    }
+    onStepProgress('Eliminando accesos directos y registro…');
+    await removeAutoStart();
+    await WindowsProcess.script('''
+      if (Test-Path -LiteralPath ${_q(_uninstallKey)}) { Remove-Item -LiteralPath ${_q(_uninstallKey)} -Recurse }
+      foreach (\$folder in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))) {
+        \$link = Join-Path \$folder 'Nexo UPLA.lnk'
+        if (Test-Path -LiteralPath \$link) { Remove-Item -LiteralPath \$link -Force }
       }
-      final roamingLegacy = Directory(p.join(appData, 'Nexo'));
-      if (await roamingLegacy.exists()) {
-        try {
-          await roamingLegacy.delete(recursive: true);
-        } catch (_) {}
-      }
-      final roamingActual = Directory(p.join(appData, 'pe.upla.nexo'));
-      if (await roamingActual.exists()) {
-        try {
-          await roamingActual.delete(recursive: true);
-        } catch (_) {}
+    ''');
+  }
+
+  static Future<void> _cleanupAfterExit(List<String> children) async {
+    final root = p.normalize(p.absolute(officialInstallDir));
+    for (final child in children) {
+      if (!p.isWithin(root, p.normalize(p.absolute(child)))) {
+        throw StateError('Ruta de limpieza inválida.');
       }
     }
-
-    onStepProgress("Removiendo archivos de programa...");
-    final binDir = Directory(p.join(officialInstallDir, 'bin'));
-    if (await binDir.exists()) {
-      final list = await binDir.list().toList();
-      for (final entity in list) {
-        if (entity is File &&
-            !p.canonicalize(entity.path).endsWith('nexo.exe')) {
-          try {
-            await entity.delete();
-          } catch (_) {}
-        } else if (entity is Directory) {
-          try {
-            await entity.delete(recursive: true);
-          } catch (_) {}
+    await WindowsProcess.script('''
+      \$parent = Get-Process -Id $pid -ErrorAction SilentlyContinue
+      if (\$parent) { \$parent.WaitForExit() }
+      \$root = [IO.Path]::GetFullPath(${_q(root)})
+      if ((Get-Item -LiteralPath \$root).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Ruta redirigida' }
+      foreach (\$path in @(${children.map(_q).join(',')})) {
+        \$full = [IO.Path]::GetFullPath(\$path)
+        if (-not \$full.StartsWith(\$root + '\\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Ruta fuera de Nexo' }
+        if (Test-Path -LiteralPath \$full) {
+          if ((Get-Item -LiteralPath \$full).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Ruta redirigida' }
+          if (Get-ChildItem -LiteralPath \$full -Recurse -Force | Where-Object { \$_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'La carpeta contiene enlaces' }
+          Remove-Item -LiteralPath \$full -Recurse -Force
         }
       }
-    }
+    ''', detached: true);
+  }
+
+  static Future<void> cleanupStaging() async {
+    final source = p.dirname(Platform.resolvedExecutable);
+    final stage = p.join(officialInstallDir, '_stage');
+    if (p.isWithin(stage, source)) await _cleanupAfterExit([source]);
   }
 
   static Future<void> triggerSelfDestruct() async {
-    final cleanupScript =
-        'ping -n 3 127.0.0.1 >nul && rmdir /s /q "$officialInstallDir"';
-    await Process.start('cmd.exe', [
-      '/c',
-      cleanupScript,
-    ], mode: ProcessStartMode.detached);
+    await _cleanupAfterExit([
+      p.join(officialInstallDir, 'bin'),
+      p.join(officialInstallDir, 'bin.previous'),
+    ]);
     exit(0);
   }
 }

@@ -28,6 +28,16 @@ ScheduleClass session(
 
 void main() {
   group('agrupación de clases (regresión: doble notificación)', () {
+    test('cuatro sesiones de dos asignaturas cuentan como dos clases', () {
+      final groups = ScheduleClassGroup.groupBy([
+        session('FÍSICA', weekday: 1, start: '09:00', end: '10:00'),
+        session('FÍSICA', weekday: 1, start: '10:00', end: '11:00', type: 'P'),
+        session('ÁLGEBRA', weekday: 1, start: '13:00', end: '14:00'),
+        session('ÁLGEBRA', weekday: 1, start: '14:00', end: '15:00', type: 'P'),
+      ]);
+      expect(groups, hasLength(2));
+      expect(groups.every((group) => group.sessions.length == 2), isTrue);
+    });
     test('teoría y práctica del mismo día son un solo bloque', () {
       // Es el caso real del horario: FÍSICA GENERAL de 9:15 a 10:00 (teoría)
       // y de 10:00 a 11:30 (práctica). Antes se programaba un aviso por cada

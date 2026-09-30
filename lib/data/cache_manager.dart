@@ -1,18 +1,39 @@
 import 'dart:convert';
+import 'package:nexo/core/session_scope.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
 class CacheManager {
-  CacheManager({Database? database}) : _db = database;
+  CacheManager({Database? database, SessionScope? scope})
+    : _db = database,
+      _scope = scope ?? SessionScope();
+  final SessionScope _scope;
+  String? _account;
+  static const _tables = [
+    'student_profile',
+    'boleta_cursos',
+    'boleta_legacy',
+    'schedule',
+    'periodos',
+    'promedios',
+    'pagos',
+    'docente_info',
+    'docente_cursos',
+    'docente_alumnos',
+    'unified_student',
+    'unified_teacher',
+  ];
   Database? _db;
   Future<void> init() async {
+    if (kIsWeb) return;
     if (_db != null) return;
     final path = join(await getDatabasesPath(), 'nexo_cache.db');
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createTables,
       onUpgrade: (db, oldVersion, newVersion) async {
         final tables = [
@@ -32,12 +53,16 @@ class CacheManager {
         for (final t in tables) {
           await db.execute('DROP TABLE IF EXISTS $t');
         }
+        await db.execute('DROP TABLE IF EXISTS cache_owner');
         await _createTables(db, newVersion);
       },
     );
   }
 
   Future<void> _createTables(Database db, int version) async {
+    await db.execute(
+      'CREATE TABLE cache_owner (id INTEGER PRIMARY KEY CHECK(id = 1), account TEXT NOT NULL)',
+    );
     await db.execute('''
       CREATE TABLE student_profile (
         id TEXT PRIMARY KEY,
@@ -128,7 +153,40 @@ class CacheManager {
     ''');
   }
 
+  /// Only one account is retained on this device. Binding and eviction are
+  /// atomic; legacy unowned data is never attributed to the next login.
+  Future<void> activateAccount(String account) async {
+    _scope.check();
+    if (kIsWeb) return;
+    await init();
+    _scope.check();
+    final database = _db!;
+    await database.transaction((txn) async {
+      _scope.check();
+      final rows = await txn.query(
+        'cache_owner',
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+      _scope.check();
+      if (rows.isEmpty || rows.first['account'] != account) {
+        for (final table in _tables) {
+          await txn.delete(table);
+        }
+        await txn.insert('cache_owner', {
+          'id': 1,
+          'account': account,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      _scope.check();
+    });
+    _scope.check();
+    _account = account;
+  }
+
   Database get db {
+    _scope.check();
+    if (_account == null) throw StateError('Cache has no authenticated owner.');
     final d = _db;
     if (d == null) {
       throw StateError('CacheManager not initialized. Call init() first.');
@@ -139,6 +197,46 @@ class CacheManager {
   /// ¿Hay base con la que trabajar? Durante el arranque puede que todavía no,
   /// y borrar un caché que no existe no es un error: ya está vacío.
   bool get isReady => _db != null;
+
+  /// Read the timestamp stored with the data, without refreshing its age.
+  Future<DateTime?> updatedAtFor(String operation) async {
+    if (!isReady) return null;
+    final table = switch (operation) {
+      'loadProfile' => 'unified_student',
+      'loadPeriodos' => 'periodos',
+      'loadHorarioActual' || 'loadDocenteHorario' => 'schedule',
+      'loadPromedios' => 'promedios',
+      'loadCuotasPendientes' => 'pagos',
+      'loadTeacherInfo' => 'docente_info',
+      'loadTeacherSubjects' => 'docente_cursos',
+      _ when operation.startsWith('loadBoleta:') => 'boleta_cursos',
+      _ when operation.startsWith('loadBoletaLegacy:') => 'boleta_legacy',
+      _ => null,
+    };
+    if (table == null) return null;
+    String? where;
+    List<Object?>? args;
+    if (operation.startsWith('loadBoleta')) {
+      final period = operation.split(':').last.split('-');
+      if (period.length != 2) return null;
+      where = 'year = ? AND periodo = ?';
+      args = period;
+    } else if (table == 'schedule') {
+      where = 'id = ?';
+      args = [
+        operation == 'loadDocenteHorario' ? 'docente_current' : 'current',
+      ];
+    }
+    final rows = await db.query(
+      table,
+      columns: ['updated_at'],
+      where: where,
+      whereArgs: args,
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return DateTime.fromMillisecondsSinceEpoch(rows.first['updated_at'] as int);
+  }
 
   Future<void> saveBoleta(
     String year,
@@ -260,6 +358,7 @@ class CacheManager {
   }
 
   Future<void> saveHorario(List<ScheduleClass> clases) async {
+    if (!isReady) return;
     await db.insert('schedule', {
       'id': 'current',
       'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
@@ -285,6 +384,7 @@ class CacheManager {
   }
 
   Future<void> saveDocenteHorario(List<ScheduleClass> clases) async {
+    if (!isReady) return;
     await db.insert('schedule', {
       'id': 'docente_current',
       'json_data': jsonEncode(clases.map((c) => c.toJson()).toList()),
@@ -310,6 +410,7 @@ class CacheManager {
   }
 
   Future<void> savePeriodos(List<Term> periodos) async {
+    if (!isReady) return;
     await db.insert('periodos', {
       'id': 'current',
       'json_data': jsonEncode(periodos.map((p) => p.toJson()).toList()),
@@ -333,6 +434,7 @@ class CacheManager {
   }
 
   Future<void> savePromedios(List<TermAverage> promedios) async {
+    if (!isReady) return;
     await db.insert('promedios', {
       'id': 'current',
       'json_data': jsonEncode(promedios.map((p) => p.toJson()).toList()),
@@ -358,6 +460,7 @@ class CacheManager {
   }
 
   Future<void> savePagos(List<Payment> pagos) async {
+    if (!isReady) return;
     await db.insert('pagos', {
       'id': 'current',
       'json_data': jsonEncode(pagos.map((p) => p.toJson()).toList()),
@@ -383,6 +486,7 @@ class CacheManager {
   }
 
   Future<void> saveDocenteInfo(TeacherInfo info) async {
+    if (!isReady) return;
     final data = {
       'codigo': info.code,
       'nombres': info.firstName,
@@ -413,6 +517,7 @@ class CacheManager {
   }
 
   Future<void> saveDocenteCursos(List<TeacherSubject> courses) async {
+    if (!isReady) return;
     final list = courses
         .map(
           (c) => {
@@ -489,6 +594,7 @@ class CacheManager {
   }
 
   Future<void> saveStudent(Student student) async {
+    if (!isReady) return;
     await db.insert('unified_student', {
       'id': student.id.isNotEmpty ? student.id : 'current',
       'json_data': jsonEncode(student.toJson()),
@@ -512,6 +618,7 @@ class CacheManager {
   }
 
   Future<void> saveTeacher(Teacher teacher) async {
+    if (!isReady) return;
     await db.insert('unified_teacher', {
       'id': teacher.id.isNotEmpty ? teacher.id : 'current',
       'json_data': jsonEncode(teacher.toJson()),
@@ -535,29 +642,19 @@ class CacheManager {
   }
 
   Future<void> clearAll() async {
-    final tables = [
-      'student_profile',
-      'boleta_cursos',
-      'boleta_legacy',
-      'schedule',
-      'periodos',
-      'promedios',
-      'pagos',
-      'docente_info',
-      'docente_cursos',
-      'docente_alumnos',
-      'unified_student',
-      'unified_teacher',
-    ];
-    // Cerrar sesión antes de que el caché termine de abrirse no debe reventar:
-    // si no hay base, no hay nada que borrar.
-    if (!isReady) return;
-    for (final table in tables) {
-      await db.delete(table);
-    }
+    _account = null;
+    final database = _db;
+    if (database == null) return;
+    await database.transaction((txn) async {
+      for (final table in _tables) {
+        await txn.delete(table);
+      }
+      await txn.delete('cache_owner');
+    });
   }
 
   Future<void> clearExpired(Duration maxAge) async {
+    if (!isReady) return;
     final cutoff =
         DateTime.now().millisecondsSinceEpoch - maxAge.inMilliseconds;
     final tables = [

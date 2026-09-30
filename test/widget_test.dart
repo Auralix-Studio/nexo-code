@@ -182,8 +182,8 @@ void main() {
     expect(parsedLab['pabellon'], null);
     expect(parsedLab['aula'], 'LABORATORIO DE COMPUTO 4');
 
-    expect(Fmt.formatAula('I 302'), 'Pab. I - Aula 302');
-    expect(Fmt.formatAula('LABORATORIO DE COMPUTO 4'), 'LABORATORIO DE COMPUTO 4');
+    expect(Fmt.formatAula('I 302'), 'Pabellón I - Aula 302');
+    expect(Fmt.formatAula('LABORATORIO DE COMPUTO 4'), 'Laboratorio - DE COMPUTO 4');
     expect(Fmt.formatAula('Virtual'), 'Virtual');
     expect(Fmt.formatAula(''), '—');
   });

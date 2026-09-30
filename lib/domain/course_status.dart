@@ -72,7 +72,7 @@ List<ScheduleClassGroup> remindableGroups({
   Set<String> finished = const {},
 }) {
   final delDia = classes.where((c) => c.weekday == weekday).toList();
-  final grupos = ScheduleClassGroup.groupBy(delDia);
+  final grupos = ScheduleClassGroup.groupBy(delDia, finishedSubjects: finished);
   if (finished.isEmpty) return grupos;
   return grupos
       .where((g) => !finished.contains(normalizeSubject(g.subject)))

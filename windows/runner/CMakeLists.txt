@@ -38,3 +38,9 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+add_executable(nexo_setup_helper WIN32 "setup_helper.cpp")
+apply_standard_settings(nexo_setup_helper)
+target_link_libraries(nexo_setup_helper PRIVATE shell32)
+set_property(TARGET nexo_setup_helper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+add_dependencies(${BINARY_NAME} nexo_setup_helper)

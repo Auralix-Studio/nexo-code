@@ -14,10 +14,21 @@ import 'package:nexo/domain/notification_prefs.dart';
 import 'package:nexo/domain/unified_models.dart';
 
 class NotificationService extends ChangeNotifier {
-  NotificationService._();
+  NotificationService._()
+    : _plugin = FlutterLocalNotificationsPlugin(),
+      _timezoneName = FlutterTimezone.getLocalTimezone;
+
+  @visibleForTesting
+  NotificationService.forTesting({
+    required FlutterLocalNotificationsPlugin plugin,
+    required Future<String> Function() timezoneName,
+  }) : _plugin = plugin,
+       _timezoneName = timezoneName;
   static final NotificationService instance = NotificationService._();
-  final _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin;
+  final Future<String> Function() _timezoneName;
   bool _ready = false;
+  bool _clearOnInit = false;
   NotificationPrefs _prefs = const NotificationPrefs();
   NotificationPrefs get prefs => _prefs;
   bool get _supported =>
@@ -28,7 +39,7 @@ class NotificationService extends ChangeNotifier {
           defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.windows);
   bool get _supportsScheduling =>
-      _supported && defaultTargetPlatform != TargetPlatform.windows;
+      _supported && defaultTargetPlatform != TargetPlatform.linux;
   static const _idClassBase = 10000;
   static const _idPaymentBase = 20000;
   static const _idGradeBase = 30000;
@@ -37,6 +48,7 @@ class NotificationService extends ChangeNotifier {
   Future<void> Function()? onInstallUpdateTap;
   AndroidScheduleMode _androidMode = AndroidScheduleMode.exactAllowWhileIdle;
   Future<void> init() async {
+    if (_ready) return;
     final raw = AppStorage.instance.notifPrefsJson;
     if (raw != null) {
       try {
@@ -48,9 +60,14 @@ class NotificationService extends ChangeNotifier {
     if (!_supported) return;
     try {
       tzdata.initializeTimeZones();
-      final name = await FlutterTimezone.getLocalTimezone();
+      final name = await _timezoneName();
       tz.setLocalLocation(tz.getLocation(name));
-    } catch (_) {}
+    } catch (e) {
+      // Los horarios académicos de UPLA usan la hora de Perú. Evitar UTC
+      // cuando el sistema devuelve un nombre de zona no reconocido.
+      tz.setLocalLocation(tz.getLocation('America/Lima'));
+      debugPrint('Notification timezone fallback (America/Lima): $e');
+    }
     const android = AndroidInitializationSettings('@mipmap/launcher_icon');
     const ios = DarwinInitializationSettings();
     const macos = DarwinInitializationSettings();
@@ -70,7 +87,14 @@ class NotificationService extends ChangeNotifier {
       ),
       onDidReceiveNotificationResponse: _onTap,
     );
+    if (_clearOnInit) {
+      await _plugin.cancelAll();
+      _clearOnInit = false;
+    }
     _ready = true;
+    if (_classes != null || _installments != null || !_prefs.enabled) {
+      await reschedule();
+    }
   }
 
   void _onTap(NotificationResponse r) {
@@ -138,16 +162,45 @@ class NotificationService extends ChangeNotifier {
         : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
+  Future<bool> hasExactAlarmsPermission() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return true;
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return false;
+    return await android.canScheduleExactNotifications() ?? false;
+  }
+
+  Future<void> requestExactAlarmsPermission() async {
+    _lastSnapshot = null;
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+    await android.requestExactAlarmsPermission();
+    await _ensureExactAlarms();
+    await reschedule();
+    notifyListeners();
+  }
+
   Future<void> updatePrefs(
     NotificationPrefs prefs, {
     List<ScheduleClass>? clases,
     List<Payment>? installments,
+    Set<String>? finishedSubjects,
   }) async {
     _prefs = prefs;
     await AppStorage.instance.setNotifPrefsJson(jsonEncode(prefs.toJson()));
     notifyListeners();
     if (prefs.enabled) await requestPermission();
-    await reschedule(clases: clases, installments: installments);
+    await reschedule(
+      clases: clases,
+      installments: installments,
+      finishedSubjects: finishedSubjects,
+    );
   }
 
   AndroidNotificationDetails _androidDetails(String channelId, String name) =>
@@ -165,29 +218,94 @@ class NotificationService extends ChangeNotifier {
         linux: const LinuxNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       );
-  Timer? _rescheduleDebounce;
+  Future<void> _scheduleWork = Future.value();
+  List<ScheduleClass>? _classes;
+  List<Payment>? _installments;
+  Set<String> _finishedSubjects = const {};
+  int _revision = 0;
+  Set<int>? _desiredIds;
+  String? _lastSnapshot;
+
+  Future<void> clearAccount() {
+    _lastSnapshot = null;
+    if (!_ready) _clearOnInit = true;
+    _revision++;
+    _classes = null;
+    _installments = null;
+    _finishedSubjects = const {};
+    final cleared = _scheduleWork.then((_) async {
+      if (_supported && _ready) await _plugin.cancelAll();
+    });
+    _scheduleWork = cleared.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return cleared;
+  }
 
   Future<void> reschedule({
     List<ScheduleClass>? clases,
     List<Payment>? installments,
-    Set<String> finishedSubjects = const {},
-  }) async {
-    if (!_supported || !_ready) return;
-    _rescheduleDebounce?.cancel();
-    _rescheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
-      if (_supportsScheduling) {
-        await _plugin.cancelAll();
-      }
-      if (!_prefs.enabled) return;
-      if (!_supportsScheduling) return;
-      await _ensureExactAlarms();
-      if (_prefs.classesEnabled && clases != null) {
-        await _scheduleClasses(clases, finishedSubjects);
-      }
-      if (_prefs.paymentsEnabled && installments != null) {
-        await _schedulePayments(installments);
-      }
-    });
+    Set<String>? finishedSubjects,
+  }) {
+    if (clases != null) _classes = List.of(clases);
+    if (installments != null) _installments = List.of(installments);
+    if (finishedSubjects != null) _finishedSubjects = Set.of(finishedSubjects);
+    final revision = ++_revision;
+    if (!_supported || !_ready) return Future.value();
+    _scheduleWork = _scheduleWork
+        .then((_) async {
+          if (revision != _revision || !_supportsScheduling) return;
+          final classes = _classes;
+          final payments = _installments;
+          final finished = _finishedSubjects;
+          await _ensureExactAlarms();
+          final snapshot = jsonEncode([
+            classes?.map((c) => c.toJson()).toList(),
+            payments?.map((p) => p.toJson()).toList(),
+            finished.toList()..sort(),
+            _prefs.toJson(),
+            _androidMode.name,
+            AppStorage.instance.localeCode,
+            DateTime.now().millisecondsSinceEpoch ~/ 60000,
+          ]);
+          if (snapshot == _lastSnapshot) return;
+          final previous = await _plugin.pendingNotificationRequests();
+          _desiredIds = <int>{};
+          try {
+            if (_prefs.enabled) {
+              if (_prefs.classesEnabled && classes != null) {
+                await _scheduleClasses(classes, finished);
+              }
+              if (_prefs.paymentsEnabled && payments != null) {
+                await _schedulePayments(payments);
+              }
+            }
+            // Conservar notas y avisos de actualización. Solo retirar los
+            // recordatorios obsoletos después de programar sus reemplazos.
+            for (final request in previous) {
+              final isClass = request.id < _idPaymentBase;
+              final categoryKnown = isClass
+                  ? classes != null || !_prefs.enabled || !_prefs.classesEnabled
+                  : payments != null ||
+                        !_prefs.enabled ||
+                        !_prefs.paymentsEnabled;
+              if (request.id >= _idClassBase &&
+                  request.id < _idGradeBase &&
+                  categoryKnown &&
+                  !_desiredIds!.contains(request.id)) {
+                await _plugin.cancel(request.id);
+              }
+            }
+            if (revision == _revision) _lastSnapshot = snapshot;
+          } finally {
+            _desiredIds = null;
+          }
+        })
+        .catchError((Object e) {
+          debugPrint('Notification scheduling failed: $e');
+        });
+    return _scheduleWork;
   }
 
   Future<void> _scheduleClasses(
@@ -196,8 +314,13 @@ class NotificationService extends ChangeNotifier {
   ) async {
     final now = tz.TZDateTime.now(tz.local);
     var id = _idClassBase;
-    for (var offset = 0; offset < 7; offset++) {
-      final day = now.add(Duration(days: offset));
+    for (var offset = 0; offset <= 7; offset++) {
+      final day = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + offset,
+      );
       final weekday = day.weekday;
       // Por GRUPO, no por sesión: teoría y práctica de la misma asignatura el
       // mismo día son dos `ScheduleClass`, y avisar de cada una daba dos
@@ -285,6 +408,7 @@ class NotificationService extends ChangeNotifier {
     String channelId,
     String channelName,
   ) async {
+    _desiredIds?.add(id);
     try {
       await _plugin.zonedSchedule(
         id,
@@ -295,23 +419,32 @@ class NotificationService extends ChangeNotifier {
         androidScheduleMode: _androidMode,
       );
     } catch (_) {
-      if (_androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
+      if (defaultTargetPlatform == TargetPlatform.android &&
+          _androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
         _androidMode = AndroidScheduleMode.inexactAllowWhileIdle;
-        try {
-          await _plugin.zonedSchedule(
-            id,
-            title,
-            body,
-            when,
-            _details(channelId, channelName),
-            androidScheduleMode: _androidMode,
-          );
-        } catch (_) {}
+        await _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          when,
+          _details(channelId, channelName),
+          androidScheduleMode: _androidMode,
+        );
+      } else {
+        rethrow;
       }
     }
   }
 
-  Future<void> showGradeChanged(String course, String grade) async {
+  Future<void> showGradeChanged(String course, String grade) {
+    final shown = _scheduleWork.then((_) => _showGradeChanged(course, grade));
+    _scheduleWork = shown.catchError((Object e) {
+      debugPrint('Grade notification failed: $e');
+    });
+    return _scheduleWork;
+  }
+
+  Future<void> _showGradeChanged(String course, String grade) async {
     if (!_supported || !_ready || !_prefs.enabled || !_prefs.gradesEnabled) {
       return;
     }

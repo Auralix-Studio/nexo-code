@@ -14,6 +14,8 @@
          actualizaciones las entrega la tienda. -->
 
     <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
         android:label="Nexo"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">

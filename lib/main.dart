@@ -60,6 +60,9 @@ Future<void> main(List<String> args) async {
 
   // Único paso del que no se puede prescindir: sin preferencias no hay sesión
   // ni tema. Si ni eso funciona, mejor decirlo que dejar la ventana vacía.
+  if (!kIsWeb && Platform.isWindows) {
+    await _startupStep('sqlite-path', WinSetupService.prepareDatabaseDirectory);
+  }
   if (!await _startupStep('storage', AppStorage.init)) {
     runApp(const _StartupErrorApp());
     return;
@@ -75,7 +78,10 @@ Future<void> main(List<String> args) async {
     final isInstalled = WinSetupService.isInstalledInstance;
     final isPortable = AppStorage.instance.runPortable;
     isSetup =
-        !StoreBuild.isStore && (isUninstall || (!isInstalled && !isPortable));
+        !StoreBuild.isStore &&
+        (isUninstall ||
+            args.contains('--setup') ||
+            (!isInstalled && !isPortable));
     final themeMode = AppStorage.instance.themeMode ?? 'system';
     bool isDark = false;
     if (themeMode == 'system') {
@@ -99,8 +105,8 @@ Future<void> main(List<String> args) async {
       });
     } else {
       final windowOptions = WindowOptions(
-        size: const Size(1280, 800),
-        minimumSize: const Size(800, 600),
+        size: const Size(1100, 680),
+        minimumSize: const Size(480, 500),
         titleBarStyle: TitleBarStyle.hidden,
         center: true,
         backgroundColor: initialBg,
@@ -132,42 +138,50 @@ Future<void> main(List<String> args) async {
   final repo = SigmaRepository(api);
   final session = SessionService(apiClient: api, repo: repo);
   final connectivity = ConnectivityService(httpClient: secureHttp);
-  final cache = CacheManager();
+  final cache = CacheManager(scope: api.scope);
   final errorHandler = ErrorHandler(
     connectivity: connectivity,
     session: session,
   );
-  final intranet = IntranetRepository(IntranetClient(transport: secureHttp));
+  final intranet = IntranetRepository(
+    IntranetClient(transport: secureHttp, scope: api.scope),
+  );
   final teacher = TeacherRepository(api);
-  final idiomas = IdiomasRepository();
+  final idiomas = IdiomasRepository(client: secureHttp, scope: api.scope);
   final store = AppStore(
     repo,
     cache: cache,
     errorHandler: errorHandler,
+    connectivity: connectivity,
     intranet: intranet,
     teacher: teacher,
     idiomas: idiomas,
+    scope: api.scope,
   );
   final theme = ThemeController()..load();
   final widgets = HomeWidgetService();
   final updater = UpdateService(httpClient: secureHttp);
   store.onGradeChange = (course, grade) =>
       NotificationService.instance.showGradeChanged(course, grade);
-  session.addListener(() {
-    if (!session.isAuthenticated) store.clear();
-  });
+  session.onSessionEnded = () async {
+    final cleared = store.clear(invalidateSession: false);
+    await Future.wait<void>([
+      cleared,
+      widgets.sync(store),
+      NotificationService.instance.clearAccount(),
+    ]);
+  };
+  session.onAccountReady = cache.activateAccount;
   store.addListener(() {
+    if (!session.isAuthenticated) return;
     if (!store.profile.loading && !store.schedule.loading) {
       widgets.sync(store);
-      if (NotificationService.instance.prefs.enabled &&
-          !store.pendingInstallments.loading) {
-        NotificationService.instance.reschedule(
-          clases: store.schedule.value,
-          installments: store.pendingInstallments.value,
-          finishedSubjects: store.finishedSubjectsThisTerm,
-        );
-      }
     }
+    NotificationService.instance.reschedule(
+      clases: store.schedule.value,
+      installments: store.pendingInstallments.value,
+      finishedSubjects: store.finishedSubjectsThisTerm,
+    );
   });
   // Pintar ANTES de tocar red o disco. La certificación de la Microsoft Store
   // rechazó la 1.6.3.0 (10.1.2.10 Functionality) con «the product does not
@@ -187,17 +201,18 @@ Future<void> main(List<String> args) async {
     ),
   );
 
-  unawaited(
-    _bootstrap(
-      cache: cache,
-      connectivity: connectivity,
-      session: session,
-      store: store,
-      widgets: widgets,
-      updater: updater,
-    ),
+  _startPortable = () => _bootstrap(
+    cache: cache,
+    connectivity: connectivity,
+    session: session,
+    store: store,
+    widgets: widgets,
+    updater: updater,
   );
+  if (!isSetup) unawaited(_startPortable!());
 }
+
+Future<void> Function()? _startPortable;
 
 /// Arranque en segundo plano.
 ///
@@ -232,6 +247,13 @@ Future<void> _bootstrap({
     _startupStep('widgets', widgets.init),
     _startupStep('notifications', NotificationService.instance.init),
   ]);
+  if (session.isAuthenticated) {
+    await NotificationService.instance.reschedule(
+      clases: store.schedule.value,
+      installments: store.pendingInstallments.value,
+      finishedSubjects: store.finishedSubjectsThisTerm,
+    );
+  }
 
   _startupStepSync('shortcuts', ShortcutService.instance.init);
 
@@ -307,7 +329,8 @@ class NexoApp extends StatelessWidget {
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (ctx, child) {
             final palette = theme.resolvedPalette(ctx);
-            final isTest = Platform.environment.containsKey('FLUTTER_TEST');
+            final isTest =
+                !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
             if (!kIsWeb && Platform.isWindows && !isTest) {
               windowManager.setBackgroundColor(palette.bg);
             }
@@ -409,11 +432,12 @@ class _GateState extends State<_Gate> {
                   await AppStorage.instance.setRunPortable(true);
                   await AppStorage.instance.setAcceptedTerms(true);
                   await AppStorage.instance.setSeenOnboarding(true);
+                  unawaited(_startPortable?.call() ?? Future<void>.value());
                   if (!kIsWeb && Platform.isWindows) {
-                    await windowManager.setMinimumSize(const Size(800, 600));
+                    await windowManager.setMinimumSize(const Size(480, 500));
                     await windowManager.setMaximumSize(const Size(9999, 9999));
                     await windowManager.setResizable(true);
-                    await windowManager.setSize(const Size(1280, 800));
+                    await windowManager.setSize(const Size(1100, 680));
                     await windowManager.center();
                   }
                   setState(() {
@@ -513,7 +537,8 @@ class _GateState extends State<_Gate> {
               FadeTransition(opacity: anim, child: c),
           child: KeyedSubtree(key: ValueKey(key), child: gated),
         );
-        final isTest = Platform.environment.containsKey('FLUTTER_TEST');
+        final isTest =
+            !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
         if (!kIsWeb && Platform.isWindows && !isTest) {
           child = Scaffold(
             backgroundColor: NexoTheme.bg,
@@ -551,7 +576,7 @@ class _BrokenScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.report_gmailerrorred_outlined,
                   size: 44,
                   color: NexoTheme.warning,
@@ -730,8 +755,8 @@ class _SplashScreenState extends State<_SplashScreen>
                                 color: Color(0xFFE2432A), // Rojo patrio
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const SizedBox(
+                            SizedBox(height: 12),
+                            SizedBox(
                               width: 160,
                               height: 80,
                               child: MarcaPeruEffect(

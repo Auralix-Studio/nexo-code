@@ -5,7 +5,7 @@
   static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
   static bool isWindowsAsset(String name) {
     final n = name.toLowerCase();
-    return n.endsWith('.exe') || n.endsWith('.msix') || n.endsWith('.zip');
+    return RegExp(r'^nexo-v\d+\.\d+\.\d+-setup-x64\.exe$').hasMatch(n);
   }
 
   static bool isUniversalApk(String name) =>
@@ -18,8 +18,8 @@ class StoreBuild {
 }
 
 class AppConfig {
-  static const String appVersion = '1.6.5';
-  static const int appBuild = 14;
+  static const String appVersion = '1.7.1';
+  static const int appBuild = 19;
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';
   static const Duration httpTimeout = Duration(seconds: 30);
