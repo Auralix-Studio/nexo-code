@@ -78,3 +78,9 @@ generada a partir de respuestas reales.
 ```sh
 flutter test
 ```
+
+## Tamaño de distribución
+
+Ver la [auditoría de tamaño](docs/size-audit.md) y ejecutar
+`./scripts/measure_size.ps1` para desglosar los artefactos de `dist/`.
+Los APK por arquitectura reducen la descarga frente al universal.

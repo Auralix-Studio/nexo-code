@@ -38,13 +38,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Excluimos x86_64 del APK universal. Solo lo necesitan emuladores
-        // y agregaba ~80 MB de native libs (incluyendo el LLM engine duplicado).
-        // Si en el futuro hay que dar build de emulador, generarlo aparte
-        // con `flutter build apk --target-platform android-x64`.
-        // ndk {
-        //     abiFilters += listOf("armeabi-v7a", "arm64-v8a")
-        // }
+        // El universal incluye todas las ABI solicitadas por Flutter.
+        // Distribuir los APK --split-per-abi para reducir la descarga sin
+        // excluir dispositivos compatibles; conservar el universal de respaldo.
     }
 
 
@@ -68,10 +64,7 @@ android {
                 signingConfigs.getByName("debug")
             }
 
-            // R8 minify + resource shrinking. Las reglas para preservar
-            // MediaPipe/Protobuf/TFLite viven en proguard-rules.pro.
-            // Sin esto, `proguardFiles` se cargaba pero R8 nunca corría
-            // (el default de AGP es isMinifyEnabled=false).
+            // Reducir codigo y recursos Android en las compilaciones release.
             isMinifyEnabled = true
             isShrinkResources = true
 
