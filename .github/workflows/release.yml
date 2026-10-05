@@ -60,6 +60,8 @@ jobs:
           flutter build windows --release
           mkdir -p dist
           ./installer/build_installer.ps1 -ReleaseDir "build/windows/x64/runner/Release" -OutFile "dist/nexo-${{ github.ref_name }}-setup-x64.exe" -ZipOutFile "dist/nexo-${{ github.ref_name }}-windows-x64.zip"
+          ./scripts/verify_windows_bundle.ps1 -Installer "dist/nexo-${{ github.ref_name }}-setup-x64.exe" -Zip "dist/nexo-${{ github.ref_name }}-windows-x64.zip"
+          ./scripts/scan_windows_release.ps1 -Path @("dist/nexo-${{ github.ref_name }}-setup-x64.exe", "dist/nexo-${{ github.ref_name }}-windows-x64.zip")
           Get-ChildItem dist -File | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
           } | Set-Content -Encoding ascii dist/SHA256SUMS-windows.txt

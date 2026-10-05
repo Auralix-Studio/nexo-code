@@ -12,6 +12,7 @@ import 'package:nexo/l10n/quechua_fallback.dart';
 import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/features/festivity/widgets/fiestas_patrias_effects.dart';
 import 'package:nexo/core/win_setup_service.dart';
+import 'package:nexo/core/windows_startup.dart';
 import 'package:nexo/features/settings/setup_view.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
 import 'package:nexo/widgets/custom_title_bar.dart';
@@ -64,14 +65,17 @@ Future<void> main(List<String> args) async {
     await _startupStep('sqlite-path', WinSetupService.prepareDatabaseDirectory);
   }
   if (!await _startupStep('storage', AppStorage.init)) {
+    if (!kIsWeb && Platform.isWindows) {
+      await WindowsStartup.prepare(backgroundColor: NexoColors.light.bg);
+    }
     runApp(const _StartupErrorApp());
+    _showWindowsAfterFirstFrame();
     return;
   }
 
   bool isSetup = false;
   bool isUninstall = false;
   if (!kIsWeb && Platform.isWindows) {
-    await _startupStep('window', windowManager.ensureInitialized);
     // En la build de Store, la instalación la gestiona Windows: no hay
     // asistente propio ni desinstalador embebido.
     isUninstall = !StoreBuild.isStore && args.contains('--uninstall');
@@ -91,30 +95,11 @@ Future<void> main(List<String> args) async {
       isDark = NexoColors.byId(themeMode).isDark;
     }
     final initialBg = isDark ? NexoColors.dark.bg : NexoColors.light.bg;
-    if (isSetup) {
-      final windowOptions = WindowOptions(
-        size: const Size(480, 380),
-        minimumSize: const Size(480, 340),
-        maximumSize: const Size(480, 700),
-        titleBarStyle: TitleBarStyle.hidden,
-        center: true,
-        backgroundColor: initialBg,
-      );
-      windowManager.waitUntilReadyToShow(windowOptions, () async {
-        await windowManager.show();
-      });
-    } else {
-      final windowOptions = WindowOptions(
-        size: const Size(1100, 680),
-        minimumSize: const Size(480, 500),
-        titleBarStyle: TitleBarStyle.hidden,
-        center: true,
-        backgroundColor: initialBg,
-      );
-      windowManager.waitUntilReadyToShow(windowOptions, () async {
-        await windowManager.show();
-      });
-    }
+    await WindowsStartup.prepare(
+      isSetup: isSetup,
+      isUninstall: isUninstall,
+      backgroundColor: initialBg,
+    );
   }
   if (isUninstall) {
     final mode = AppStorage.instance.themeMode ?? 'system';
@@ -128,6 +113,7 @@ Future<void> main(List<String> args) async {
       palette = NexoColors.byId(mode);
     }
     runApp(_UninstallApp(palette: palette));
+    _showWindowsAfterFirstFrame();
     return;
   }
   // Si falla la carga del bundle de certificados nos quedamos con las raíces
@@ -201,6 +187,7 @@ Future<void> main(List<String> args) async {
     ),
   );
 
+  _showWindowsAfterFirstFrame();
   _startPortable = () => _bootstrap(
     cache: cache,
     connectivity: connectivity,
@@ -210,6 +197,16 @@ Future<void> main(List<String> args) async {
     updater: updater,
   );
   if (!isSetup) unawaited(_startPortable!());
+}
+
+void _showWindowsAfterFirstFrame() {
+  if (!kIsWeb && Platform.isWindows) {
+    unawaited(
+      WindowsStartup.showAfterFrame(
+        WidgetsBinding.instance.waitUntilFirstFrameRasterized,
+      ),
+    );
+  }
 }
 
 Future<void> Function()? _startPortable;

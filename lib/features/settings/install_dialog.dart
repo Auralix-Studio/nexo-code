@@ -71,12 +71,6 @@ class _SetupWizardState extends State<SetupWizard> {
   int get _totalSteps => _isPortable ? 3 : 4;
   static const double _w = 480;
   static const Map<int, double> _heights = {0: 380, 1: 580, 2: 420, 3: 530};
-  @override
-  void initState() {
-    super.initState();
-    _resizeWindow(_step);
-  }
-
   Future<void> _resizeWindow(int step) async {
     if (kIsWeb || !Platform.isWindows) return;
     final double h;
