@@ -856,6 +856,10 @@ class TeacherSubject {
 
   /// Id de asignatura (asignID). Requerido por `Docente/GetAsistencia`.
   final String nrc;
+
+  /// Tipo de calificación de la sección (p. ej. 12). Es el `tipoCalificacion`
+  /// que piden `NotasEstudianteResumenV1` y `getTipoUnidadesV2`.
+  final int tipoCalif;
   const TeacherSubject({
     required this.id,
     required this.code,
@@ -865,23 +869,39 @@ class TeacherSubject {
     this.enrolledCount,
     this.plan = '',
     this.nrc = '',
+    this.tipoCalif = 0,
   });
 
   /// Alias semántico: en SIGMA la sección se identifica como `codSaltem`.
   String get codSaltem => id;
 
-  factory TeacherSubject.fromJson(Map<String, dynamic> j) => TeacherSubject(
-    id: _toStr(
-      j['cleAuto'] ?? j['id'] ?? j['codSaltem'] ?? j['saltemId'] ?? j['nrc'],
-    ),
-    code: _toStr(j['codigo'] ?? j['asg_Id']),
-    subject: _toStr(j['asignatura'] ?? j['nombreAsignatura']),
-    section: _toStr(j['seccion']),
-    periodo: _toStr(j['periodo'] ?? j['descripcionPeriodo']),
-    enrolledCount: _toInt(j['matriculados'] ?? j['cantMatriculados']),
-    plan: _toStr(j['plan'] ?? j['planId'] ?? j['planEstId'] ?? j['codPlan']),
-    nrc: _toStr(j['nrc'] ?? j['asignID'] ?? j['asignaturaId'] ?? j['asi_id']),
-  );
+  factory TeacherSubject.fromJson(Map<String, dynamic> j) {
+    final asignatura = _toStr(j['asignatura'] ?? j['nombreAsignatura']);
+    final nrc = _toStr(
+      j['nrc'] ?? j['asignID'] ?? j['asignaturaId'] ?? j['asi_id'],
+    );
+    // SIGMA no manda un código corto ni el periodo como campo propio: el código
+    // cae al NRC y el periodo se extrae del nombre, p. ej. "… (2026-2)".
+    final periodo = _toStr(j['periodo'] ?? j['descripcionPeriodo']);
+    final m = RegExp(r'\(([^)]*\d{4}[^)]*)\)').firstMatch(asignatura);
+    return TeacherSubject(
+      id: _toStr(
+        j['cleAuto'] ?? j['id'] ?? j['codSaltem'] ?? j['saltemId'] ?? j['nrc'],
+      ),
+      code: _toStr(j['codigo'] ?? j['asg_Id']).ifEmpty(nrc),
+      subject: asignatura,
+      section: _toStr(j['seccion']),
+      periodo: periodo.isNotEmpty ? periodo : (m?.group(1)?.trim() ?? ''),
+      enrolledCount: _toInt(j['matriculados'] ?? j['cantMatriculados']),
+      plan: _toStr(j['plan'] ?? j['planId'] ?? j['planEstId'] ?? j['codPlan']),
+      nrc: nrc,
+      tipoCalif: _toInt(j['tipoCalif'] ?? j['tipoCalificacion']) ?? 0,
+    );
+  }
+}
+
+extension on String {
+  String ifEmpty(String fallback) => trim().isEmpty ? fallback : this;
 }
 
 class EvaluationGrade {
@@ -909,13 +929,19 @@ class DailyAttendance {
   final DateTime date;
   final String state;
   const DailyAttendance({required this.date, required this.state});
-  bool get isPresent => state == 'P' || state == 'T';
+  // SIGMA usa un catálogo numérico: 1=Presente, 2=Falta, 3=Justificado.
+  // Se aceptan también las letras heredadas P/T por compatibilidad.
+  bool get isPresent => state == 'P' || state == 'T' || state == '1';
 }
 
 class TeacherStudent {
   final String code;
   final String firstName;
   final String lastName;
+
+  /// Nombre completo tal cual lo manda SIGMA (`nombreCompleto`, ya "APELLIDOS
+  /// NOMBRES"). `NotasEstudianteResumenV1` no separa nombres/apellidos.
+  final String? fullName;
   final String? attendance;
   final String? grade;
 
@@ -930,24 +956,35 @@ class TeacherStudent {
     required this.code,
     required this.firstName,
     required this.lastName,
+    this.fullName,
     this.attendance,
     this.grade,
     this.matriculaAsignaturaId,
     this.observacion,
   });
-  factory TeacherStudent.fromJson(Map<String, dynamic> j) => TeacherStudent(
-    code: _toStr(j['codigo'] ?? j['est_Id']),
-    firstName: _toStr(j['nombres']),
-    lastName: _toStr(j['apellidos']),
-    attendance: j['asistencia']?.toString(),
-    grade: j['nota']?.toString() ?? j['promedio']?.toString(),
-    matriculaAsignaturaId:
-        (j['matricula_asignatura_id'] ?? j['matriculaAsignaturaId'])
-            ?.toString(),
-    observacion: j['observacion']?.toString(),
-  );
-  String get displayName =>
-      [lastName, firstName].where((s) => s.trim().isNotEmpty).join(' ').trim();
+  factory TeacherStudent.fromJson(Map<String, dynamic> j) {
+    final notaFinal = j['notaFinal'] ?? j['nota'] ?? j['promedio'];
+    return TeacherStudent(
+      code: _toStr(j['codigo'] ?? j['est_Id']),
+      firstName: _toStr(j['nombres']),
+      lastName: _toStr(j['apellidos']),
+      fullName: (j['nombreCompleto'] ?? j['nombre_completo'])?.toString(),
+      attendance: j['asistencia']?.toString(),
+      grade: notaFinal?.toString(),
+      matriculaAsignaturaId:
+          (j['matricula_asignatura_id'] ?? j['matriculaAsignaturaId'])
+              ?.toString(),
+      observacion: j['observacion']?.toString(),
+    );
+  }
+  String get displayName {
+    final parts = [
+      lastName,
+      firstName,
+    ].where((s) => s.trim().isNotEmpty).join(' ').trim();
+    if (parts.isNotEmpty) return parts;
+    return (fullName ?? '').trim();
+  }
 }
 
 class PaymentSchedule {

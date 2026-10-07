@@ -30,7 +30,10 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
     if (!widget.store.alumnosDe(widget.course.id).hasValue) {
-      widget.store.loadDocenteAlumnos(widget.course.id);
+      widget.store.loadDocenteAlumnos(
+        widget.course.id,
+        tipoCalif: widget.course.tipoCalif,
+      );
     }
   }
 
@@ -467,10 +470,13 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
   String? raw,
 ) {
   final l = AppLocalizations.of(context);
+  // SIGMA usa ids numéricos: 1=Presente, 2=Falta, 3=Justificado. Se mantienen
+  // las letras P/T/F/J por compatibilidad con datos antiguos.
   switch ((raw ?? '').trim().toUpperCase()) {
     case '':
       return (label: '—', color: NexoTheme.textMuted);
     case 'P':
+    case '1':
       return (label: l.docenteAttendancePresentShort, color: NexoTheme.success);
     case 'T':
       return (
@@ -478,8 +484,10 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
         color: NexoTheme.warning,
       );
     case 'F':
+    case '2':
       return (label: l.docenteAttendanceFaltaShort, color: NexoTheme.danger);
     case 'J':
+    case '3':
       return (label: l.docenteAttendanceJustificada, color: NexoTheme.info);
     default:
       return (label: raw!, color: NexoTheme.info);

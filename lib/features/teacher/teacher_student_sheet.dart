@@ -697,8 +697,9 @@ class _DiaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // SIGMA: 1=Presente, 2=Falta, 3=Justificado (P/T/F legado).
     final (label, color, icon) = switch (reg.state) {
-      'P' => (
+      'P' || '1' => (
         l.docenteAttendancePresent,
         NexoTheme.success,
         Icons.check_circle_rounded,
@@ -708,7 +709,11 @@ class _DiaRow extends StatelessWidget {
         NexoTheme.warning,
         Icons.schedule_rounded,
       ),
-      'F' => (l.docenteAttendanceFalta, NexoTheme.danger, Icons.cancel_rounded),
+      'F' || '2' => (
+        l.docenteAttendanceFalta,
+        NexoTheme.danger,
+        Icons.cancel_rounded,
+      ),
       _ => (
         l.docenteAttendanceJustificada,
         NexoTheme.info,

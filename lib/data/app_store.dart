@@ -1094,14 +1094,18 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteHorario(v),
     operationName: 'loadDocenteHorario',
   );
-  Future<void> loadDocenteAlumnos(String cleAuto) => _scope.run(() async {
+  Future<void> loadDocenteAlumnos(String cleAuto, {int tipoCalif = 0}) =>
+      _scope.run(() async {
     _teacherStudents[cleAuto] = AsyncValue.loading(
       _teacherStudents[cleAuto]?.value,
     );
     _notify();
     try {
       final v = await _errorHandler.withFallback<List<TeacherStudent>>(
-        remote: () => _teacherReady().estudiantesSeccion(cleAuto),
+        remote: () => _teacherReady().estudiantesSeccion(
+          cleAuto: cleAuto,
+          tipoCalif: tipoCalif,
+        ),
         cached: () => _cache.getDocenteAlumnos(cleAuto),
         operationName: 'loadDocenteAlumnos($cleAuto)',
       );

@@ -32,6 +32,27 @@ Severidad y estado tras este cambio:
 > **no** se pueden implementar correctamente solo con el frontend: necesitan
 > catálogos numéricos que solo devuelve el backend con una sesión real (§9).
 
+## 0. Hallazgos verificados con cuenta real (octubre 2026)
+
+Capturas en `prototype-ts/responses/docente/` y `docente_full/` (y
+`prototype-ts/DOCENTE_API.md`). Lo que corrigen respecto a lo que suponía la app:
+
+- **El roster NO sale de `ListarEstudianteComple`** (devuelve `[]` siempre). La
+  lista real de alumnos sale de **`NotasEstudianteResumenV1?tipoCalificacion={tipoCalif}&cleAuto={id}`**,
+  con `nombreCompleto`, `codigo`, `notaFinal`, `asistencia` y `matriculaAsignaturaId`.
+  → la app ahora carga el roster desde ahí.
+- **El info del docente NO sale de `GetInfoDocenteV1`** (es admin, 400 sin `filtro`).
+  Sale de **`Login/GetDatosEntidad`** (`codigo`, `nombres`, `apellidos`,
+  `isDocente`, `dependencia.facultad/cargo`). → corregido.
+- `GetAsignaturaDocente` trae `tipoCalif` (p. ej. **12**), `plan`, `id`, `nrc`,
+  `ciclo`, `carrera`, `sede`; **no** trae `codigo` ni `periodo` (el periodo va
+  dentro del nombre, "… (2026-2)"). → modelo ajustado (code←nrc, periodo←nombre,
+  +`tipoCalif`).
+- Catálogo de **estado de asistencia**: `1`=Presente, `2`=Falta, `3`=Justificado.
+  → mapeo de la UI corregido.
+- Catálogos de notas: `getTipoUnidadesV2` → `tipo_unidad_id` (121…126);
+  `getTipoNota` → `tipo_nota_id` (11=EV, 12=DE, 13=PR). Disponibles para escritura.
+
 ---
 
 ## Contrato real (extraído del cliente oficial de SIGMA)

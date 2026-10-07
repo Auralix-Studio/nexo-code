@@ -7,16 +7,26 @@ class TeacherRepository {
   TeacherRepository(this._api);
   final ApiClient _api;
   Future<TeacherInfo?> infoDocente() async {
-    // SIGMA real: controlador `Docente/` (no `Teacher/`). Para el perfil del
-    // propio docente puede que la fuente sea `Login/GetDatosEntidad`; ver
-    // docs/evaluacion-endpoints-docente.md (nota 6) y verificar con cuenta real.
+    // El perfil del propio docente sale de `Login/GetDatosEntidad`.
+    // `Docente/GetInfoDocenteV1` es administrativo y exige `?filtro=` (400 sin él).
+    // GetDatosEntidad trae: codigo, nombres, apellidos, isDocente y un objeto
+    // `dependencia` con facultad/cargo/condicion/correoInstitucional.
     final res = await _api.get<TeacherInfo>(
-      'Docente/GetInfoDocenteV1',
+      'Login/GetDatosEntidad',
       decode: (raw) {
-        if (raw is Map) {
-          return TeacherInfo.fromJson(raw.cast<String, dynamic>());
+        if (raw is! Map) {
+          return const TeacherInfo(code: '', firstName: '', lastName: '');
         }
-        return const TeacherInfo(code: '', firstName: '', lastName: '');
+        final j = raw.cast<String, dynamic>();
+        final dep = j['dependencia'];
+        final depMap = dep is Map ? dep.cast<String, dynamic>() : const {};
+        return TeacherInfo(
+          code: (j['codigo'] ?? '').toString(),
+          firstName: (j['nombres'] ?? '').toString().trim(),
+          lastName: (j['apellidos'] ?? '').toString().trim(),
+          faculty: (depMap['facultad'])?.toString(),
+          specialty: (depMap['cargo'] ?? depMap['condicion'])?.toString(),
+        );
       },
     );
     return res.data;
@@ -103,19 +113,18 @@ class TeacherRepository {
     return out;
   }
 
-  Future<List<TeacherStudent>> estudiantesSeccion(String codSaltem) async {
-    final res = await _api.get<List<TeacherStudent>>(
-      'Docente/ListarEstudianteComple',
-      query: {'codSaltem': codSaltem},
-      decode: (raw) {
-        if (raw is! List) return const <TeacherStudent>[];
-        return raw
-            .whereType<Map>()
-            .map((e) => TeacherStudent.fromJson(e.cast<String, dynamic>()))
-            .toList();
-      },
+  /// Roster de la sección. OJO: `Docente/ListarEstudianteComple` devuelve `[]`
+  /// con cuenta real; la lista real de alumnos (con nombre, nota final,
+  /// asistencia y `matriculaAsignaturaId`) sale de `NotasEstudianteResumenV1`.
+  /// Por eso el roster se obtiene de ahí, usando el `tipoCalif` de la sección.
+  Future<List<TeacherStudent>> estudiantesSeccion({
+    required String cleAuto,
+    required int tipoCalif,
+  }) {
+    return notasResumen(
+      tipoCalificacion: tipoCalif == 0 ? '12' : tipoCalif.toString(),
+      cleAuto: cleAuto,
     );
-    return res.data ?? const [];
   }
 
   Future<List<TeacherStudent>> notasResumen({
