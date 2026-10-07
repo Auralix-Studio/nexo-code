@@ -1174,22 +1174,26 @@ class AppStore extends ChangeNotifier {
   });
 
   Future<List<DailyAttendance>> docenteAsistenciaAlumno({
-    required String cleAuto,
+    required TeacherSubject course,
     required String codigoAlumno,
   }) => _scope.run(() async {
     final result = await _teacherReady().asistenciaAlumno(
-      cleAuto: cleAuto,
+      plan: course.plan,
+      codSaltem: course.codSaltem,
+      asignID: course.nrc,
       codigoAlumno: codigoAlumno,
     );
     _scope.check();
     return result;
   });
   Future<Map<String, String>> docenteAsistenciaDia({
-    required String cleAuto,
+    required TeacherSubject course,
     required DateTime date,
   }) => _scope.run(() async {
     final result = await _teacherReady().asistenciaDelDia(
-      cleAuto: cleAuto,
+      plan: course.plan,
+      codSaltem: course.codSaltem,
+      asignID: course.nrc,
       date: date,
     );
     _scope.check();

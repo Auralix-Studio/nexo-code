@@ -841,12 +841,21 @@ class TeacherInfo {
 }
 
 class TeacherSubject {
+  /// Identificador de la sección (codSaltem en SIGMA). Es el handle que usan
+  /// `ListarEstudianteComple?codSaltem=` y la vista de detalle del curso.
   final String id;
   final String code;
   final String subject;
   final String section;
   final String periodo;
   final int? enrolledCount;
+
+  /// Plan de estudios de la sección. Requerido por
+  /// `Docente/GetAsistencia?plan=&codSaltem=&asignID=`.
+  final String plan;
+
+  /// Id de asignatura (asignID). Requerido por `Docente/GetAsistencia`.
+  final String nrc;
   const TeacherSubject({
     required this.id,
     required this.code,
@@ -854,14 +863,24 @@ class TeacherSubject {
     required this.section,
     required this.periodo,
     this.enrolledCount,
+    this.plan = '',
+    this.nrc = '',
   });
+
+  /// Alias semántico: en SIGMA la sección se identifica como `codSaltem`.
+  String get codSaltem => id;
+
   factory TeacherSubject.fromJson(Map<String, dynamic> j) => TeacherSubject(
-    id: _toStr(j['cleAuto'] ?? j['id'] ?? j['saltemId'] ?? j['nrc']),
+    id: _toStr(
+      j['cleAuto'] ?? j['id'] ?? j['codSaltem'] ?? j['saltemId'] ?? j['nrc'],
+    ),
     code: _toStr(j['codigo'] ?? j['asg_Id']),
     subject: _toStr(j['asignatura'] ?? j['nombreAsignatura']),
     section: _toStr(j['seccion']),
     periodo: _toStr(j['periodo'] ?? j['descripcionPeriodo']),
     enrolledCount: _toInt(j['matriculados'] ?? j['cantMatriculados']),
+    plan: _toStr(j['plan'] ?? j['planId'] ?? j['planEstId'] ?? j['codPlan']),
+    nrc: _toStr(j['nrc'] ?? j['asignID'] ?? j['asignaturaId'] ?? j['asi_id']),
   );
 }
 
@@ -899,12 +918,22 @@ class TeacherStudent {
   final String lastName;
   final String? attendance;
   final String? grade;
+
+  /// Id de matrícula-asignatura del alumno en la sección. Es la clave que piden
+  /// los guardados reales de notas y asistencia (`matricula_asignatura_id`).
+  /// Ver docs/evaluacion-endpoints-docente.md.
+  final String? matriculaAsignaturaId;
+
+  /// Observación/estado de riesgo que devuelve SIGMA (p. ej. propenso).
+  final String? observacion;
   const TeacherStudent({
     required this.code,
     required this.firstName,
     required this.lastName,
     this.attendance,
     this.grade,
+    this.matriculaAsignaturaId,
+    this.observacion,
   });
   factory TeacherStudent.fromJson(Map<String, dynamic> j) => TeacherStudent(
     code: _toStr(j['codigo'] ?? j['est_Id']),
@@ -912,6 +941,10 @@ class TeacherStudent {
     lastName: _toStr(j['apellidos']),
     attendance: j['asistencia']?.toString(),
     grade: j['nota']?.toString() ?? j['promedio']?.toString(),
+    matriculaAsignaturaId:
+        (j['matricula_asignatura_id'] ?? j['matriculaAsignaturaId'])
+            ?.toString(),
+    observacion: j['observacion']?.toString(),
   );
   String get displayName =>
       [lastName, firstName].where((s) => s.trim().isNotEmpty).join(' ').trim();

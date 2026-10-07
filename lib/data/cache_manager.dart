@@ -527,6 +527,8 @@ class CacheManager {
             'seccion': c.section,
             'periodo': c.periodo,
             'matriculados': c.enrolledCount,
+            'plan': c.plan,
+            'nrc': c.nrc,
           },
         )
         .toList();
@@ -566,6 +568,8 @@ class CacheManager {
             'apellidos': a.lastName,
             'asistencia': a.attendance,
             'nota': a.grade,
+            'matricula_asignatura_id': a.matriculaAsignaturaId,
+            'observacion': a.observacion,
           },
         )
         .toList();

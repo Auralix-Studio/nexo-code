@@ -1681,4 +1681,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String dataUpdatedAt(String date) {
     return 'Last updated: $date';
   }
+
+  @override
+  String get docenteSearchStudent => 'Search student…';
+
+  @override
+  String get docenteSearchNoResults => 'No results';
+
+  @override
+  String get docenteAttendanceComingSoon =>
+      'Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA.';
 }

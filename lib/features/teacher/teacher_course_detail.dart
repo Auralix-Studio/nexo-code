@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
-import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_student_sheet.dart';
@@ -159,14 +158,20 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _AlumnosTab extends StatelessWidget {
+class _AlumnosTab extends StatefulWidget {
   final AppStore store;
   final TeacherSubject course;
   const _AlumnosTab({required this.store, required this.course});
   @override
+  State<_AlumnosTab> createState() => _AlumnosTabState();
+}
+
+class _AlumnosTabState extends State<_AlumnosTab> {
+  String _q = '';
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final state = store.alumnosDe(course.id);
+    final state = widget.store.alumnosDe(widget.course.id);
     if (state.loading && !state.hasValue) {
       return const _SkeletonList();
     }
@@ -179,22 +184,40 @@ class _AlumnosTab extends StatelessWidget {
         ),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: alumnos.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, i) {
-        final a = alumnos[i];
-        return _AlumnoTile(
-          student: a,
-          onTap: () => showTeacherStudentSheet(
-            context: context,
-            store: store,
-            course: course,
-            student: a,
-          ),
-        );
-      },
+    final filtered = alumnos.where((a) => _matchesQuery(a, _q)).toList();
+    return Column(
+      children: [
+        _StudentSearchField(
+          count: filtered.length,
+          onChanged: (v) => setState(() => _q = v),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: l.docenteSearchNoResults,
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final a = filtered[i];
+                    return _AlumnoTile(
+                      student: a,
+                      onTap: () => showTeacherStudentSheet(
+                        context: context,
+                        store: widget.store,
+                        course: widget.course,
+                        student: a,
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -328,7 +351,6 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
   DateTime _fecha = DateTime.now();
   Map<String, String> _estados = {};
   bool _loading = true;
-  bool _saving = false;
   @override
   void initState() {
     super.initState();
@@ -337,36 +359,20 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final estados = await widget.store.docenteAsistenciaDia(
-      cleAuto: widget.course.id,
-      date: _fecha,
-    );
+    Map<String, String> estados = const {};
+    try {
+      estados = await widget.store.docenteAsistenciaDia(
+        course: widget.course,
+        date: _fecha,
+      );
+    } catch (_) {
+      // Lectura best-effort: si falla, mostramos la fecha sin estados.
+    }
     if (!mounted) return;
     setState(() {
       _estados = Map.of(estados);
       _loading = false;
     });
-  }
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    final err = await widget.store.guardarAsistenciaDia(
-      cleAuto: widget.course.id,
-      date: _fecha,
-      estados: _estados,
-    );
-    if (!mounted) return;
-    setState(() => _saving = false);
-    final l = AppLocalizations.of(context);
-    if (err == null) {
-      ClipboardHelper.showSuccess(context, l.docenteAttendanceSaved);
-    } else {
-      ClipboardHelper.showError(
-        context,
-        err,
-        fallback: l.docenteAttendanceError(err),
-      );
-    }
   }
 
   @override
@@ -378,6 +384,7 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
     final fmt =
         '${_fecha.day.toString().padLeft(2, '0')}/'
         '${_fecha.month.toString().padLeft(2, '0')}/${_fecha.year}';
+    final registrados = alumnos.where((a) => _estados[a.code] != null).length;
     return Column(
       children: [
         Container(
@@ -388,13 +395,30 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
               Icon(Icons.event_outlined, color: NexoTheme.primary),
               const Gap.h(AppSpacing.sm),
               Expanded(
-                child: Text(
-                  fmt,
-                  style: TextStyle(
-                    fontSize: AppFont.body,
-                    fontWeight: FontWeight.w700,
-                    color: NexoTheme.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fmt,
+                      style: TextStyle(
+                        fontSize: AppFont.body,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.textPrimary,
+                      ),
+                    ),
+                    if (!_loading)
+                      Text(
+                        l.docenteSessionsRegisteredCount(
+                          registrados.toString(),
+                          alumnos.length.toString(),
+                        ),
+                        style: TextStyle(
+                          fontSize: AppFont.small,
+                          color: NexoTheme.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               TextButton.icon(
@@ -425,55 +449,50 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
                   separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (_, i) {
                     final a = alumnos[i];
-                    final state = _estados[a.code] ?? 'P';
-                    return _AsistenciaRow(
-                      student: a,
-                      state: state,
-                      onChange: (s) => setState(() => _estados[a.code] = s),
-                    );
+                    return _AsistenciaRow(student: a, state: _estados[a.code]);
                   },
                 ),
         ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _saving || _loading ? null : _save,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.save_rounded),
-                label: Text(l.docenteSaveAttendance),
-              ),
-            ),
-          ),
-        ),
+        _ComingSoonBanner(text: l.docenteAttendanceComingSoon),
       ],
     );
   }
 }
 
+/// Resuelve el estado de asistencia a (etiqueta, color). Tolera tanto las
+/// letras P/T/F/J como ids numéricos de SIGMA aún sin mapear (se muestran como
+/// "registrado" neutro para no inventar un significado).
+({String label, Color color}) _attendanceState(
+  BuildContext context,
+  String? raw,
+) {
+  final l = AppLocalizations.of(context);
+  switch ((raw ?? '').trim().toUpperCase()) {
+    case '':
+      return (label: '—', color: NexoTheme.textMuted);
+    case 'P':
+      return (label: l.docenteAttendancePresentShort, color: NexoTheme.success);
+    case 'T':
+      return (
+        label: l.docenteAttendanceTardanzaShort,
+        color: NexoTheme.warning,
+      );
+    case 'F':
+      return (label: l.docenteAttendanceFaltaShort, color: NexoTheme.danger);
+    case 'J':
+      return (label: l.docenteAttendanceJustificada, color: NexoTheme.info);
+    default:
+      return (label: raw!, color: NexoTheme.info);
+  }
+}
+
 class _AsistenciaRow extends StatelessWidget {
   final TeacherStudent student;
-  final String state;
-  final ValueChanged<String> onChange;
-  const _AsistenciaRow({
-    required this.student,
-    required this.state,
-    required this.onChange,
-  });
+  final String? state;
+  const _AsistenciaRow({required this.student, required this.state});
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
+    final st = _attendanceState(context, state);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm + 2),
       decoration: BoxDecoration(
@@ -508,34 +527,63 @@ class _AsistenciaRow extends StatelessWidget {
               ],
             ),
           ),
-          _stateChip('P', l.docenteAttendancePresentShort, NexoTheme.success),
-          const SizedBox(width: 4),
-          _stateChip('T', l.docenteAttendanceTardanzaShort, NexoTheme.warning),
-          const SizedBox(width: 4),
-          _stateChip('F', l.docenteAttendanceFaltaShort, NexoTheme.danger),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: st.color.withValues(alpha: 0.14),
+              borderRadius: AppRadii.rPill,
+            ),
+            child: Text(
+              st.label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: st.color,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _stateChip(String code, String label, Color color) {
-    final active = state == code;
-    return GestureDetector(
-      onTap: () => onChange(code),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? color : Colors.transparent,
-          borderRadius: AppRadii.rPill,
-          border: Border.all(color: active ? color : NexoTheme.border),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: active ? Colors.white : NexoTheme.textSecondary,
+class _ComingSoonBanner extends StatelessWidget {
+  final String text;
+  const _ComingSoonBanner({required this.text});
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: NexoTheme.info.withValues(alpha: 0.10),
+            borderRadius: AppRadii.rLg,
+            border: Border.all(color: NexoTheme.info.withValues(alpha: 0.30)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: NexoTheme.info,
+              ),
+              const Gap.h(AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: AppFont.small,
+                    color: NexoTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -543,14 +591,20 @@ class _AsistenciaRow extends StatelessWidget {
   }
 }
 
-class _NotasTab extends StatelessWidget {
+class _NotasTab extends StatefulWidget {
   final AppStore store;
   final TeacherSubject course;
   const _NotasTab({required this.store, required this.course});
   @override
+  State<_NotasTab> createState() => _NotasTabState();
+}
+
+class _NotasTabState extends State<_NotasTab> {
+  String _q = '';
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final state = store.alumnosDe(course.id);
+    final state = widget.store.alumnosDe(widget.course.id);
     if (state.loading && !state.hasValue) return const _SkeletonList();
     final alumnos = state.value ?? const <TeacherStudent>[];
     if (alumnos.isEmpty) {
@@ -565,10 +619,16 @@ class _NotasTab extends StatelessWidget {
       final n = double.tryParse((a.grade ?? '').replaceAll(',', '.'));
       return PassingRule.standard.passes(n);
     }).length;
+    final filtered = alumnos.where((a) => _matchesQuery(a, _q)).toList();
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
           color: NexoTheme.surface,
           child: Row(
             children: [
@@ -595,27 +655,106 @@ class _NotasTab extends StatelessWidget {
             ],
           ),
         ),
+        _StudentSearchField(
+          count: filtered.length,
+          onChanged: (v) => setState(() => _q = v),
+        ),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: alumnos.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 6),
-            itemBuilder: (_, i) {
-              final a = alumnos[i];
-              return _AlumnoTile(
-                student: a,
-                onTap: () => showTeacherStudentSheet(
-                  context: context,
-                  store: store,
-                  course: course,
-                  student: a,
-                  initialTab: 1,
+          child: filtered.isEmpty
+              ? Center(
+                  child: EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: l.docenteSearchNoResults,
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  itemBuilder: (_, i) {
+                    final a = filtered[i];
+                    return _AlumnoTile(
+                      student: a,
+                      onTap: () => showTeacherStudentSheet(
+                        context: context,
+                        store: widget.store,
+                        course: widget.course,
+                        student: a,
+                        initialTab: 1,
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
+    );
+  }
+}
+
+/// Filtro case-insensitive por nombre o código.
+bool _matchesQuery(TeacherStudent s, String q) {
+  final t = q.trim().toLowerCase();
+  if (t.isEmpty) return true;
+  return s.displayName.toLowerCase().contains(t) ||
+      s.code.toLowerCase().contains(t);
+}
+
+class _StudentSearchField extends StatelessWidget {
+  final int count;
+  final ValueChanged<String> onChanged;
+  const _StudentSearchField({required this.count, required this.onChanged});
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        0,
+      ),
+      child: TextField(
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        style: TextStyle(color: NexoTheme.textPrimary, fontSize: AppFont.body),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: l.docenteSearchStudent,
+          hintStyle: TextStyle(color: NexoTheme.textMuted),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: NexoTheme.textMuted,
+            size: 20,
+          ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Align(
+              alignment: Alignment.centerRight,
+              widthFactor: 1,
+              child: Text(
+                l.docenteMetricAlumnosCount(count),
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  color: NexoTheme.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0),
+          filled: true,
+          fillColor: NexoTheme.card,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppRadii.rLg,
+            borderSide: BorderSide(color: NexoTheme.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppRadii.rLg,
+            borderSide: BorderSide(color: NexoTheme.primary, width: 1.5),
+          ),
+        ),
+      ),
     );
   }
 }

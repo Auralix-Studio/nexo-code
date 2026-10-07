@@ -1689,4 +1689,14 @@ class AppLocalizationsQu extends AppLocalizations {
   String dataUpdatedAt(String date) {
     return 'Qhipa musuqyachiy: $date';
   }
+
+  @override
+  String get docenteSearchStudent => 'Yachachiqta maskay…';
+
+  @override
+  String get docenteSearchNoResults => 'Mana tariytaqa';
+
+  @override
+  String get docenteAttendanceComingSoon =>
+      'Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.';
 }

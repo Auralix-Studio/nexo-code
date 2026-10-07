@@ -67,7 +67,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
       codigoAlumno: widget.student.code,
     );
     _futAsis = widget.store.docenteAsistenciaAlumno(
-      cleAuto: widget.course.id,
+      course: widget.course,
       codigoAlumno: widget.student.code,
     );
   }
