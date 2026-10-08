@@ -843,5 +843,17 @@
   },
   "docenteSearchStudent": "Search student…",
   "docenteSearchNoResults": "No results",
-  "docenteAttendanceComingSoon": "Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA."
+  "docenteAttendanceComingSoon": "Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA.",
+  "tabMarcacion": "Clock-in",
+  "titleMarcacion": "My clock-ins",
+  "marcacionSubtitlePlural": "{count,plural, =0{No punches (30 days)} =1{1 punch · last 30 days} other{{count} punches · last 30 days}}",
+  "@marcacionSubtitlePlural": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "marcacionEmpty": "No clock-ins in the last 30 days.",
+  "marcacionVirtual": "Virtual",
+  "marcacionCountDay": "{count,plural, =1{1 punch} other{{count} punches}}",
+  "@marcacionCountDay": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

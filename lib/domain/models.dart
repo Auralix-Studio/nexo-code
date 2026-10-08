@@ -1065,6 +1065,37 @@ class TeacherStudent {
   }
 }
 
+/// Una marca de asistencia del propio docente (huella/virtual), de
+/// `Docente/getHistorialMarcacion`.
+class TeacherPunch {
+  final DateTime date;
+  final String time;
+  final int weekday;
+  final String dayName;
+  final String mode;
+  final String location;
+  const TeacherPunch({
+    required this.date,
+    required this.time,
+    required this.weekday,
+    required this.dayName,
+    required this.mode,
+    required this.location,
+  });
+  bool get isVirtual => location.trim().toUpperCase().startsWith('VIRTUAL');
+  factory TeacherPunch.fromJson(Map<String, dynamic> j) {
+    final fecha = DateTime.tryParse(_toStr(j['fecha'])) ?? DateTime.now();
+    return TeacherPunch(
+      date: DateTime(fecha.year, fecha.month, fecha.day),
+      time: _toStr(j['hora']),
+      weekday: _toInt(j['idDia']) ?? fecha.weekday,
+      dayName: _toStr(j['dia']),
+      mode: _toStr(j['modo']),
+      location: _toStr(j['ubcacionMarcador'] ?? j['ubicacionMarcador']).trim(),
+    );
+  }
+}
+
 class PaymentSchedule {
   final double totalAmount;
   final List<PaymentInstallment> installments;

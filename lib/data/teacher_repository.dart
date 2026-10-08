@@ -412,4 +412,71 @@ class TeacherRepository {
       );
     }
   }
+
+  // ── Marcación del propio docente ──────────────────────────
+
+  Future<dynamic> getAsistenciaDocente() async {
+    final res = await _api.get<dynamic>('Docente/getAsistenciaDocente', decode: (j) => j);
+    return res.data;
+  }
+
+  Future<void> marcarAsistenciaDocente(String codigo) async {
+    final result = await _api.post<void>(
+      'Docente/InsertaRegistroAsistenciaDocente?codigo=$codigo',
+      body: {},
+      decode: (_) {},
+    );
+    _requireSaved(result);
+  }
+
+  Future<dynamic> getAsistenciaDiariaDocente(DateTime inicio, DateTime fin, int pagina) async {
+    final i = '${inicio.year}-${inicio.month.toString().padLeft(2, '0')}-${inicio.day.toString().padLeft(2, '0')}';
+    final f = '${fin.year}-${fin.month.toString().padLeft(2, '0')}-${fin.day.toString().padLeft(2, '0')}';
+    final res = await _api.get<dynamic>(
+      'Docente/getAsistenciaDiaria?fechaInicio=$i&fechaFin=$f&pagina=$pagina',
+      decode: (j) => j,
+    );
+    return res.data;
+  }
+
+  Future<dynamic> getHistorialMarcacionDocente(DateTime inicio, DateTime fin, int pagina) async {
+    final i = '${inicio.year}-${inicio.month.toString().padLeft(2, '0')}-${inicio.day.toString().padLeft(2, '0')}';
+    final f = '${fin.year}-${fin.month.toString().padLeft(2, '0')}-${fin.day.toString().padLeft(2, '0')}';
+    final res = await _api.get<dynamic>(
+      'Docente/getHistorialMarcacion?fechaInicio=$i&fechaFin=$f&pagina=$pagina',
+      decode: (j) => j,
+    );
+    return res.data;
+  }
+
+  /// Historial de marcación del docente (huella/virtual), tipado.
+  Future<List<TeacherPunch>> historialMarcacion({
+    required DateTime inicio,
+    required DateTime fin,
+    int pagina = 1,
+  }) async {
+    String f(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final res = await _api.get<List<TeacherPunch>>(
+      'Docente/getHistorialMarcacion',
+      query: {
+        'fechaInicio': f(inicio),
+        'fechaFin': f(fin),
+        'pagina': '$pagina',
+      },
+      decode: (raw) {
+        if (raw is! List) return const <TeacherPunch>[];
+        return raw
+            .whereType<Map>()
+            .map((e) => TeacherPunch.fromJson(e.cast<String, dynamic>()))
+            .toList();
+      },
+    );
+    return res.data ?? const [];
+  }
+
+  Future<dynamic> getHoraServer() async {
+    final res = await _api.get<dynamic>('Docente/GetHora', decode: (j) => j);
+    return res.data;
+  }
 }

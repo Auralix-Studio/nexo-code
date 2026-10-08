@@ -294,6 +294,7 @@ class AppStore extends ChangeNotifier {
   AsyncValue<TeacherInfo> teacherInfo = const AsyncValue.idle();
   AsyncValue<List<TeacherSubject>> teacherSubjects = const AsyncValue.idle();
   AsyncValue<List<ScheduleClass>> teacherSchedule = const AsyncValue.idle();
+  AsyncValue<List<TeacherPunch>> teacherMarcacion = const AsyncValue.idle();
   final Map<String, AsyncValue<List<TeacherStudent>>> _teacherStudents = {};
   AsyncValue<List<TeacherStudent>> alumnosDe(String cleAuto) =>
       _teacherStudents[cleAuto] ?? const AsyncValue.idle();
@@ -1094,6 +1095,18 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteHorario(v),
     operationName: 'loadDocenteHorario',
   );
+  Future<List<TeacherPunch>?> loadTeacherMarcacion() => _wrap(
+    () {
+      final now = DateTime.now();
+      return _teacherReady().historialMarcacion(
+        inicio: now.subtract(const Duration(days: 30)),
+        fin: now,
+      );
+    },
+    () => teacherMarcacion,
+    (v) => teacherMarcacion = v,
+    operationName: 'loadTeacherMarcacion',
+  );
   Future<void> loadDocenteAlumnos(String cleAuto, {int tipoCalif = 0}) =>
       _scope.run(() async {
     _teacherStudents[cleAuto] = AsyncValue.loading(
@@ -1305,6 +1318,7 @@ class AppStore extends ChangeNotifier {
     teacherInfo = const AsyncValue.idle();
     teacherSubjects = const AsyncValue.idle();
     teacherSchedule = const AsyncValue.idle();
+    teacherMarcacion = const AsyncValue.idle();
     _teacherStudents.clear();
     _intranet?.invalidate();
     _idiomas?.invalidate();

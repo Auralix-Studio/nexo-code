@@ -2943,6 +2943,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.'**
   String get docenteAttendanceComingSoon;
+
+  /// No description provided for @tabMarcacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcación'**
+  String get tabMarcacion;
+
+  /// No description provided for @titleMarcacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Mi marcación'**
+  String get titleMarcacion;
+
+  /// No description provided for @marcacionSubtitlePlural.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =0{Sin marcas (30 días)} =1{1 marca · últimos 30 días} other{{count} marcas · últimos 30 días}}'**
+  String marcacionSubtitlePlural(int count);
+
+  /// No description provided for @marcacionEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin marcaciones en los últimos 30 días.'**
+  String get marcacionEmpty;
+
+  /// No description provided for @marcacionVirtual.
+  ///
+  /// In es, this message translates to:
+  /// **'Virtual'**
+  String get marcacionVirtual;
+
+  /// No description provided for @marcacionCountDay.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{1 marca} other{{count} marcas}}'**
+  String marcacionCountDay(int count);
 }
 
 class _AppLocalizationsDelegate

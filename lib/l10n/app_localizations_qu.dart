@@ -1699,4 +1699,39 @@ class AppLocalizationsQu extends AppLocalizations {
   @override
   String get docenteAttendanceComingSoon =>
       'Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.';
+
+  @override
+  String get tabMarcacion => 'Marcación';
+
+  @override
+  String get titleMarcacion => 'Ñuqap marcaciónniy';
+
+  @override
+  String marcacionSubtitlePlural(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count marcakuna · q(ipa 30 p\'unchaw',
+      one: '1 marca · q(ipa 30 p\'unchaw',
+      zero: 'Mana marcakuna (30 p\'unchaw)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get marcacionEmpty => 'Q(ipa 30 p\'unchawpi mana marcakuna.';
+
+  @override
+  String get marcacionVirtual => 'Virtual';
+
+  @override
+  String marcacionCountDay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count marcakuna',
+      one: '1 marca',
+    );
+    return '$_temp0';
+  }
 }

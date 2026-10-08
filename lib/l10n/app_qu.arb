@@ -787,5 +787,17 @@
   },
   "docenteSearchStudent": "Yachachiqta maskay…",
   "docenteSearchNoResults": "Mana tariytaqa",
-  "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki."
+  "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.",
+  "tabMarcacion": "Marcación",
+  "titleMarcacion": "Ñuqap marcaciónniy",
+  "marcacionSubtitlePlural": "{count,plural, =0{Mana marcakuna (30 p'unchaw)} =1{1 marca · q(ipa 30 p'unchaw} other{{count} marcakuna · q(ipa 30 p'unchaw}}",
+  "@marcacionSubtitlePlural": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "marcacionEmpty": "Q(ipa 30 p'unchawpi mana marcakuna.",
+  "marcacionVirtual": "Virtual",
+  "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcakuna}}",
+  "@marcacionCountDay": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

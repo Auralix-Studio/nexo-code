@@ -931,5 +931,17 @@
   },
   "docenteSearchStudent": "Buscar alumno…",
   "docenteSearchNoResults": "Sin resultados",
-  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA."
+  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.",
+  "tabMarcacion": "Marcación",
+  "titleMarcacion": "Mi marcación",
+  "marcacionSubtitlePlural": "{count,plural, =0{Sin marcas (30 días)} =1{1 marca · últimos 30 días} other{{count} marcas · últimos 30 días}}",
+  "@marcacionSubtitlePlural": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "marcacionEmpty": "Sin marcaciones en los últimos 30 días.",
+  "marcacionVirtual": "Virtual",
+  "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcas}}",
+  "@marcacionCountDay": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

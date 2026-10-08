@@ -1691,4 +1691,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get docenteAttendanceComingSoon =>
       'Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA.';
+
+  @override
+  String get tabMarcacion => 'Clock-in';
+
+  @override
+  String get titleMarcacion => 'My clock-ins';
+
+  @override
+  String marcacionSubtitlePlural(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count punches · last 30 days',
+      one: '1 punch · last 30 days',
+      zero: 'No punches (30 days)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get marcacionEmpty => 'No clock-ins in the last 30 days.';
+
+  @override
+  String get marcacionVirtual => 'Virtual';
+
+  @override
+  String marcacionCountDay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count punches',
+      one: '1 punch',
+    );
+    return '$_temp0';
+  }
 }

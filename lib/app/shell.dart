@@ -11,7 +11,7 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/features/festivity/festivity_overlay.dart';
 import 'package:nexo/features/teacher/teacher_courses_screen.dart';
-import 'package:nexo/features/teacher/teacher_schedule_screen.dart';
+import 'package:nexo/features/teacher/teacher_marcacion_screen.dart';
 import 'package:nexo/features/teacher/teacher_profile_screen.dart';
 import 'package:nexo/features/teacher/teacher_screen.dart';
 import 'package:nexo/features/grades/grades_screen.dart';
@@ -48,11 +48,7 @@ List<_Tab> _studentTabs(AppLocalizations l) => [
 List<_Tab> _teacherTabs(AppLocalizations l) => [
   _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
   _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
-  _Tab(
-    l.tabSchedule,
-    Icons.calendar_today_rounded,
-    Icons.calendar_today_outlined,
-  ),
+  _Tab(l.tabMarcacion, Icons.fingerprint_rounded, Icons.fingerprint_outlined),
   _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
 ];
 
@@ -196,7 +192,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       pages = <Widget>[
         wrap(TeacherScreen(store: widget.store)),
         wrap(TeacherCoursesScreen(store: widget.store)),
-        wrap(TeacherScheduleScreen(store: widget.store)),
+        wrap(TeacherMarcacionScreen(store: widget.store)),
         wrap(
           TeacherProfileScreen(
             store: widget.store,

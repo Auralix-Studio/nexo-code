@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
-import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-import 'package:nexo/shared/util/formatters.dart';
-import 'package:nexo/features/schedule/schedule_detail_screen.dart';
+import 'package:nexo/features/teacher/teacher_course_detail.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -29,7 +26,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
     final s = widget.store;
     if (!s.teacherInfo.hasValue) s.loadTeacherInfo();
     if (!s.teacherSubjects.hasValue) s.loadTeacherSubjects();
-    if (!s.teacherSchedule.hasValue) s.loadDocenteHorario();
+    if (!s.teacherMarcacion.hasValue) s.loadTeacherMarcacion();
   }
 
   @override
@@ -42,7 +39,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
             await Future.wait([
               widget.store.loadTeacherInfo(),
               widget.store.loadTeacherSubjects(),
-              widget.store.loadDocenteHorario(),
+              widget.store.loadTeacherMarcacion(),
             ]);
           },
           child: CustomScrollView(
@@ -66,11 +63,14 @@ class _TeacherScreenState extends State<TeacherScreen> {
                         child: _HeroInfoCard(state: widget.store.teacherInfo),
                       ),
                       const Gap(AppSpacing.lg),
-                      Reveal(index: 1, child: _TodayCard(store: widget.store)),
+                      Reveal(
+                        index: 1,
+                        child: _MetricsGrid(store: widget.store),
+                      ),
                       const Gap(AppSpacing.lg),
                       Reveal(
                         index: 2,
-                        child: _MetricsGrid(store: widget.store),
+                        child: _MisCursosCard(store: widget.store),
                       ),
                     ],
                   ),
@@ -300,49 +300,41 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _TodayCard extends StatelessWidget {
+/// Acceso rápido a las asignaturas del docente desde el dashboard. Reemplaza al
+/// antiguo "hoy" por horario, que SIGMA no expone para el docente.
+class _MisCursosCard extends StatelessWidget {
   final AppStore store;
-  const _TodayCard({required this.store});
+  const _MisCursosCard({required this.store});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final today = DateTime.now().weekday;
-    final state = store.teacherSchedule;
+    final state = store.teacherSubjects;
     if (state.loading && !state.hasValue) {
-      return const Skeleton(height: 140, radius: 22);
+      return const Skeleton(height: 180, radius: 22);
     }
-    final clases =
-        (state.value ?? const <ScheduleClass>[])
-            .where((c) => c.weekday == today)
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    final h24 = AppStorage.instance.use24h;
-    final isToday = today >= 1 && today <= 7;
+    final cursos = state.value ?? const <TeacherSubject>[];
     return SectionCard(
-      title: l.docenteToday,
-      subtitle: isToday ? Fmt.dayLabel(today) : '',
-      icon: Icons.today_rounded,
+      title: l.titleCourses,
+      subtitle: l.docenteCoursesCountPlural(cursos.length),
+      icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
-      trailing: clases.isEmpty
+      trailing: cursos.isEmpty
           ? null
-          : StatusChip(
-              text: l.docenteClassCount(clases.length),
-              color: NexoTheme.primary,
-            ),
-      child: clases.isEmpty
+          : StatusChip(text: '${cursos.length}', color: NexoTheme.primary),
+      child: cursos.isEmpty
           ? Container(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
               alignment: Alignment.center,
               child: Column(
                 children: [
                   Icon(
-                    Icons.coffee_outlined,
+                    Icons.menu_book_outlined,
                     size: 32,
                     color: NexoTheme.textSecondary,
                   ),
                   const Gap(AppSpacing.sm),
                   Text(
-                    l.docenteNoClassesToday,
+                    l.docenteNoCoursesPeriod,
                     style: TextStyle(
                       fontSize: AppFont.body,
                       color: NexoTheme.textSecondary,
@@ -354,9 +346,9 @@ class _TodayCard extends StatelessWidget {
             )
           : Column(
               children: [
-                for (var i = 0; i < clases.length; i++) ...[
-                  _TodaySessionRow(c: clases[i], h24: h24),
-                  if (i < clases.length - 1) const Gap(AppSpacing.sm),
+                for (var i = 0; i < cursos.length; i++) ...[
+                  _CursoRow(store: store, course: cursos[i]),
+                  if (i < cursos.length - 1) const Gap(AppSpacing.sm),
                 ],
               ],
             ),
@@ -364,26 +356,22 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
-class _TodaySessionRow extends StatelessWidget {
-  final ScheduleClass c;
-  final bool h24;
-  const _TodaySessionRow({required this.c, required this.h24});
+class _CursoRow extends StatelessWidget {
+  final AppStore store;
+  final TeacherSubject course;
+  const _CursoRow({required this.store, required this.course});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isTeoria = c.typeCode.toUpperCase() == 'T';
-    final color = isTeoria ? NexoTheme.info : NexoTheme.success;
-    final hi = Fmt.time(c.startTime, h24: h24);
-    final hf = Fmt.time(c.endTime, h24: h24);
-    final grupo = ScheduleClassGroup(
-      subject: c.subject,
-      weekday: c.weekday,
-      sessions: [c],
-    );
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => ScheduleDetailScreen.open(context, grupo),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                TeacherCourseDetailScreen(store: store, course: course),
+          ),
+        ),
         borderRadius: AppRadii.rLg,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md + 2),
@@ -395,11 +383,16 @@ class _TodaySessionRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 4,
-                height: 46,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(2),
+                  color: NexoTheme.primary.withValues(alpha: 0.12),
+                  borderRadius: AppRadii.rMd,
+                ),
+                child: Icon(
+                  Icons.class_rounded,
+                  color: NexoTheme.primary,
+                  size: 20,
                 ),
               ),
               const Gap.h(AppSpacing.md),
@@ -408,7 +401,7 @@ class _TodaySessionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      c.subject,
+                      course.subject,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -419,60 +412,21 @@ class _TodaySessionRow extends StatelessWidget {
                       ),
                     ),
                     const Gap(AppSpacing.xs),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 13, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$hi – $hf',
-                          style: TextStyle(
-                            fontSize: AppFont.small,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 13,
-                          color: NexoTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            Fmt.formatAula(c.room),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: AppFont.small,
-                              color: NexoTheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${l.detailSection} ${course.section}'
+                      '${course.nrc.isNotEmpty ? ' · NRC ${course.nrc}' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: AppFont.small,
+                        color: NexoTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: AppRadii.rPill,
-                ),
-                child: Text(
-                  isTeoria ? l.docenteTypeTeoria : l.docenteTypePractica,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
+              Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
             ],
           ),
         ),
