@@ -65,7 +65,11 @@ class PendingPaymentsWidget extends StatelessWidget {
           ? _empty(context)
           : Column(
               children: [
-                for (var i = 0; i < sorted.length.clamp(0, isCompact ? 2 : 4); i++) ...[
+                for (
+                  var i = 0;
+                  i < sorted.length.clamp(0, isCompact ? 2 : 4);
+                  i++
+                ) ...[
                   _CuotaRow(cuota: sorted[i], now: now),
                   if (i < sorted.length.clamp(0, isCompact ? 2 : 4) - 1)
                     const SizedBox(height: 10),
@@ -74,7 +78,9 @@ class PendingPaymentsWidget extends StatelessWidget {
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      AppLocalizations.of(context).homePendingPaymentsMore(sorted.length - (isCompact ? 2 : 4)),
+                      AppLocalizations.of(context).homePendingPaymentsMore(
+                        sorted.length - (isCompact ? 2 : 4),
+                      ),
                       style: TextStyle(
                         color: NexoTheme.textSecondary,
                         fontSize: 13,

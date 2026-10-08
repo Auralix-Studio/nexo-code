@@ -1,4 +1,7 @@
 import 'package:nexo/domain/passing_rule.dart';
+import 'package:nexo/domain/teacher_models.dart';
+
+export 'package:nexo/domain/teacher_models.dart';
 
 int? _toInt(Object? v) {
   if (v == null) return null;
@@ -860,6 +863,18 @@ class TeacherSubject {
   /// Tipo de calificación de la sección (p. ej. 12). Es el `tipoCalificacion`
   /// que piden `NotasEstudianteResumenV1` y `getTipoUnidadesV2`.
   final int tipoCalif;
+
+  /// `id` de la misma sección en `GetAsignaturaDocente?modo=Asistencia`
+  /// ("419329, 419321"). Es el `codSaltem` que SIGMA manda a
+  /// `Docente/GetAsistencia`; el `id` de `modo=Notas` devuelve una lista vacía.
+  final String asistenciaId;
+  final String carrera;
+  final String modalidad;
+  final String sede;
+  final String local;
+  final String aula;
+  final String ciclo;
+  final List<TeacherBlock> blocks;
   const TeacherSubject({
     required this.id,
     required this.code,
@@ -870,10 +885,75 @@ class TeacherSubject {
     this.plan = '',
     this.nrc = '',
     this.tipoCalif = 0,
+    this.asistenciaId = '',
+    this.carrera = '',
+    this.modalidad = '',
+    this.sede = '',
+    this.local = '',
+    this.aula = '',
+    this.ciclo = '',
+    this.blocks = const [],
   });
 
   /// Alias semántico: en SIGMA la sección se identifica como `codSaltem`.
   String get codSaltem => id;
+
+  /// `codSaltem` para asistencia (cae al id de notas si no se pudo cruzar).
+  String get attendanceCodSaltem => asistenciaId.isNotEmpty ? asistenciaId : id;
+
+  /// Nombre sin el periodo final, p. ej. "BASE DE DATOS I".
+  String get shortName =>
+      subject.replaceAll(RegExp(r'\s*\([^)]*\d{4}[^)]*\)\s*$'), '').trim();
+
+  /// Bloque en curso ahora, si lo hay.
+  TeacherBlock? ongoingBlock(DateTime now) {
+    for (final b in blocks) {
+      if (b.isOngoing(now)) return b;
+    }
+    return null;
+  }
+
+  /// Completa esta sección (de `modo=Notas`) con los datos de la misma sección
+  /// en `modo=Asistencia`: id de asistencia, horario, aula, modalidad…
+  TeacherSubject mergeAttendance(Map<String, dynamic> a) => TeacherSubject(
+    id: id,
+    code: code,
+    subject: subject,
+    section: section,
+    periodo: periodo,
+    enrolledCount: enrolledCount,
+    plan: plan.isNotEmpty ? plan : _toStr(a['plan']),
+    nrc: nrc,
+    tipoCalif: tipoCalif,
+    asistenciaId: _toStr(a['id']).trim(),
+    carrera: _toStr(a['carrera']).ifEmpty(carrera),
+    modalidad: _toStr(a['modalidad']).ifEmpty(modalidad),
+    sede: _toStr(a['sede']).ifEmpty(sede),
+    local: _toStr(a['local']).ifEmpty(local),
+    aula: _toStr(a['aula']).ifEmpty(aula),
+    ciclo: _toStr(a['ciclo']).ifEmpty(ciclo),
+    blocks: TeacherBlock.parse(a['horario']?.toString(), _toStr(a['id'])),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'cleAuto': id,
+    'codigo': code,
+    'asignatura': subject,
+    'seccion': section,
+    'periodo': periodo,
+    'matriculados': enrolledCount,
+    'plan': plan,
+    'nrc': nrc,
+    'tipoCalif': tipoCalif,
+    'asistenciaId': asistenciaId,
+    'carrera': carrera,
+    'modalidad': modalidad,
+    'sede': sede,
+    'local': local,
+    'aula': aula,
+    'ciclo': ciclo,
+    'blocks': [for (final b in blocks) b.toJson()],
+  };
 
   factory TeacherSubject.fromJson(Map<String, dynamic> j) {
     final asignatura = _toStr(j['asignatura'] ?? j['nombreAsignatura']);
@@ -896,6 +976,19 @@ class TeacherSubject {
       plan: _toStr(j['plan'] ?? j['planId'] ?? j['planEstId'] ?? j['codPlan']),
       nrc: nrc,
       tipoCalif: _toInt(j['tipoCalif'] ?? j['tipoCalificacion']) ?? 0,
+      asistenciaId: _toStr(j['asistenciaId']),
+      carrera: _toStr(j['carrera']),
+      modalidad: _toStr(j['modalidad']),
+      sede: _toStr(j['sede']),
+      local: _toStr(j['local']),
+      aula: _toStr(j['aula']),
+      ciclo: _toStr(j['ciclo']),
+      blocks: j['blocks'] is List
+          ? (j['blocks'] as List)
+                .whereType<Map>()
+                .map((e) => TeacherBlock.fromJson(e.cast<String, dynamic>()))
+                .toList()
+          : const [],
     );
   }
 }
@@ -935,15 +1028,6 @@ class EvaluationGrade {
       double.tryParse((grade ?? '').replaceAll(',', '.').trim());
 }
 
-class DailyAttendance {
-  final DateTime date;
-  final String state;
-  const DailyAttendance({required this.date, required this.state});
-  // SIGMA usa un catálogo numérico: 1=Presente, 2=Falta, 3=Justificado.
-  // Se aceptan también las letras heredadas P/T por compatibilidad.
-  bool get isPresent => state == 'P' || state == 'T' || state == '1';
-}
-
 class TeacherUnit {
   final String name;
   final double weight;
@@ -963,7 +1047,9 @@ class TeacherUnit {
     if (groups is List) {
       for (final g in groups.whereType<Map>()) {
         final notasArr = g['notas'] as List?;
-        final notaIdObj = (notasArr != null && notasArr.isNotEmpty) ? notasArr.first['idNota'] : null;
+        final notaIdObj = (notasArr != null && notasArr.isNotEmpty)
+            ? notasArr.first['idNota']
+            : null;
         final isPending = notasArr == null || notasArr.isEmpty;
         gradesList.add(
           EvaluationGrade(
@@ -971,10 +1057,10 @@ class TeacherUnit {
             description: _toStr(g['tipoNotaAbr']) == 'EV'
                 ? 'Evidencia de Conocimiento'
                 : _toStr(g['tipoNotaAbr']) == 'DE'
-                    ? 'Evidencia de Desempeño'
-                    : _toStr(g['tipoNotaAbr']) == 'PR'
-                        ? 'Evidencia de Producto'
-                        : _toStr(g['tipoNotaAbr']),
+                ? 'Evidencia de Desempeño'
+                : _toStr(g['tipoNotaAbr']) == 'PR'
+                ? 'Evidencia de Producto'
+                : _toStr(g['tipoNotaAbr']),
             weight: _toDouble(g['peso']) ?? 0,
             grade: isPending ? null : g['promedio']?.toString(),
             tipoUnidadId: _toInt(j['unidadId']),
@@ -1021,6 +1107,12 @@ class TeacherStudent {
   final String? observacion;
   final List<TeacherUnit> units;
 
+  /// Cada nota registrada con su `idNota`, para editar/insertar por columna.
+  final List<GradeCell> cells;
+
+  /// `unidades` crudas de SIGMA; se guardan para reconstruir todo offline.
+  final List<dynamic> rawUnits;
+
   const TeacherStudent({
     required this.code,
     required this.firstName,
@@ -1031,7 +1123,34 @@ class TeacherStudent {
     this.matriculaAsignaturaId,
     this.observacion,
     this.units = const [],
+    this.cells = const [],
+    this.rawUnits = const [],
   });
+
+  /// Nota registrada en la columna dada, si existe.
+  GradeCell? cellFor(int unidadId, int tipoNotaId, [int ordinal = 0]) {
+    for (final c in cells) {
+      if (c.unidadId == unidadId &&
+          c.tipoNotaId == tipoNotaId &&
+          c.ordinal == ordinal) {
+        return c;
+      }
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'codigo': code,
+    'nombres': firstName,
+    'apellidos': lastName,
+    'nombreCompleto': fullName,
+    'asistencia': attendance,
+    'notaFinal': grade,
+    'matriculaAsignaturaId': matriculaAsignaturaId,
+    'observacion': observacion,
+    'unidades': rawUnits,
+  };
+
   factory TeacherStudent.fromJson(Map<String, dynamic> j) {
     final notaFinal = j['notaFinal'] ?? j['nota'] ?? j['promedio'];
     final unids = j['unidades'];
@@ -1053,6 +1172,8 @@ class TeacherStudent {
               ?.toString(),
       observacion: j['observacion']?.toString(),
       units: unitsList,
+      cells: GradeCell.fromUnidades(unids),
+      rawUnits: unids is List ? unids : const [],
     );
   }
   String get displayName {
@@ -1094,6 +1215,106 @@ class TeacherPunch {
       location: _toStr(j['ubcacionMarcador'] ?? j['ubicacionMarcador']).trim(),
     );
   }
+}
+
+/// Estado de marcación de un extremo (inicio/fin) de una clase programada,
+/// según `Docente/getAsistenciaDiaria` (`statusInicio`/`statusFin`).
+///
+/// Valores observados con cuenta real: `1` en clases ya dictadas y marcadas,
+/// `X` en clases ya pasadas sin marca y `0` en la clase en curso/por venir.
+enum PunchStatus { marked, missing, pending, unknown }
+
+PunchStatus _punchStatus(Object? raw) =>
+    switch (_toStr(raw).trim().toUpperCase()) {
+      '1' => PunchStatus.marked,
+      'X' => PunchStatus.missing,
+      '0' || '' => PunchStatus.pending,
+      _ => PunchStatus.unknown,
+    };
+
+/// Una clase programada del docente con el estado de su marcación de entrada
+/// y salida. Fuente: `Docente/getAsistenciaDiaria`.
+class TeacherClassCompliance {
+  final DateTime date;
+  final int weekday;
+  final String dayName;
+  final String startTime;
+  final String endTime;
+  final String subject;
+  final String level;
+  final String section;
+  final String modality;
+  final PunchStatus start;
+  final PunchStatus end;
+  const TeacherClassCompliance({
+    required this.date,
+    required this.weekday,
+    required this.dayName,
+    required this.startTime,
+    required this.endTime,
+    required this.subject,
+    required this.level,
+    required this.section,
+    required this.modality,
+    required this.start,
+    required this.end,
+  });
+
+  bool get isComplete =>
+      start == PunchStatus.marked && end == PunchStatus.marked;
+  bool get hasMissing =>
+      start == PunchStatus.missing || end == PunchStatus.missing;
+
+  /// SIGMA manda `fecha` como `MM/dd/yyyy HH:mm:ss`; se acepta también ISO.
+  static DateTime? parseFecha(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return null;
+    final iso = DateTime.tryParse(s);
+    if (iso != null) return DateTime(iso.year, iso.month, iso.day);
+    final p = s.split(' ').first.split('/');
+    if (p.length != 3) return null;
+    final m = int.tryParse(p[0]);
+    final d = int.tryParse(p[1]);
+    final y = int.tryParse(p[2]);
+    if (m == null || d == null || y == null) return null;
+    return DateTime(y, m, d);
+  }
+
+  factory TeacherClassCompliance.fromJson(Map<String, dynamic> j) {
+    final date = parseFecha(_toStr(j['fecha'])) ?? DateTime.now();
+    return TeacherClassCompliance(
+      date: DateTime(date.year, date.month, date.day),
+      weekday: _toInt(j['idDia']) ?? date.weekday,
+      dayName: _toStr(j['dia']),
+      startTime: _toStr(j['horaInicio']),
+      endTime: _toStr(j['horaFin']),
+      subject: _toStr(j['asignatura']),
+      level: _toStr(j['nivel']),
+      section: _toStr(j['seccion']),
+      modality: _toStr(j['modalidad']),
+      start: _punchStatus(j['statusInicio']),
+      end: _punchStatus(j['statusFin']),
+    );
+  }
+}
+
+/// Unidad de evaluación de una sección (`Asignatura/getTipoUnidadesV2`).
+/// `enabled` indica si SIGMA permite registrar notas en ella ahora mismo.
+class TeacherUnitCatalog {
+  final int id;
+  final String name;
+  final bool enabled;
+  const TeacherUnitCatalog({
+    required this.id,
+    required this.name,
+    required this.enabled,
+  });
+  factory TeacherUnitCatalog.fromJson(Map<String, dynamic> j) =>
+      TeacherUnitCatalog(
+        id: _toInt(j['tipo_unidad_id'] ?? j['tipoUnidadId']) ?? 0,
+        name: _toStr(j['descripcion'] ?? j['nombre']).trim(),
+        enabled: j['habilitado'] == true || _toStr(j['habilitado']) == '1',
+      );
 }
 
 class PaymentSchedule {

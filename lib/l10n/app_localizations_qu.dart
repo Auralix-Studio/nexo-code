@@ -1734,4 +1734,419 @@ class AppLocalizationsQu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get docenteTabReporte => 'Reporte';
+
+  @override
+  String get docenteReportLoadError =>
+      'No se pudo cargar el reporte de asistencia.';
+
+  @override
+  String get docenteReportEmpty =>
+      'Aún no hay asistencias registradas en esta sección.';
+
+  @override
+  String get docenteReportAll => 'Todos';
+
+  @override
+  String get docenteReportAtRisk => 'En riesgo';
+
+  @override
+  String get docenteReportNoRisk => 'Ningún alumno en riesgo por faltas.';
+
+  @override
+  String get docenteReportSessions => 'Sesiones';
+
+  @override
+  String get docenteReportAverage => 'Asistencia prom.';
+
+  @override
+  String get docenteReportRiskHint =>
+      'En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.';
+
+  @override
+  String docenteReportCounts(
+    String presentes,
+    String faltas,
+    String justificadas,
+  ) {
+    return '$presentes P · $faltas F · $justificadas J';
+  }
+
+  @override
+  String get docenteNoUnitEnabled =>
+      'No hay una unidad habilitada en SIGMA para registrar asistencia.';
+
+  @override
+  String get docenteUnitLocked =>
+      'Esta unidad no está habilitada en SIGMA para registrar notas.';
+
+  @override
+  String get docenteGradeMissingIds =>
+      'Faltan datos de SIGMA para guardar esta nota. Actualiza la lista e inténtalo de nuevo.';
+
+  @override
+  String get docenteNoGrades => 'No hay notas registradas';
+
+  @override
+  String get marcacionViewPunches => 'Marcas';
+
+  @override
+  String get marcacionViewClasses => 'Por clase';
+
+  @override
+  String marcacionClassesSubtitle(String completas, String total) {
+    return '$completas de $total clases con marca completa · 14 días';
+  }
+
+  @override
+  String get marcacionClassesEmpty =>
+      'Sin clases programadas en las últimas dos semanas.';
+
+  @override
+  String marcacionMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clases con marca faltante',
+      one: '1 clase con marca faltante',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get marcacionIn => 'Entrada';
+
+  @override
+  String get marcacionOut => 'Salida';
+
+  @override
+  String get marcacionMarked => 'Marcó';
+
+  @override
+  String get marcacionMissing => 'Sin marca';
+
+  @override
+  String get marcacionPending => 'Pendiente';
+
+  @override
+  String tchAndMore(int count) {
+    return '… y $count más';
+  }
+
+  @override
+  String get tchAttAllPresent => 'Todos presentes';
+
+  @override
+  String get tchAttAlreadyRegistered =>
+      'Ya hay asistencia registrada este día en esta unidad. Si es otra sesión, continúa; para corregir, vuelve y abre la sesión.';
+
+  @override
+  String get tchAttConfirmTitle => '¿Registrar asistencia?';
+
+  @override
+  String get tchAttLoadError => 'No se pudo cargar la lista de asistencia.';
+
+  @override
+  String tchAttLowAttendance(int pct) {
+    return 'Asistencia $pct%';
+  }
+
+  @override
+  String get tchAttModeList => 'Ver como lista';
+
+  @override
+  String get tchAttModeOneByOne => 'Pase de lista uno por uno';
+
+  @override
+  String get tchAttNoStudents => 'SIGMA no devolvió alumnos para esta sección.';
+
+  @override
+  String tchAttPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Faltan marcar $count alumnos.',
+      one: 'Falta marcar 1 alumno.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchAttPosition(int current, int total) {
+    return '$current de $total';
+  }
+
+  @override
+  String tchAttProgress(int done, int total) {
+    return '$done/$total marcados';
+  }
+
+  @override
+  String get tchAttRegister => 'Registrar';
+
+  @override
+  String get tchAttRestPresent => 'Resto presentes';
+
+  @override
+  String tchAttSummary(int present, int absent) {
+    return '$present asistieron · $absent faltaron';
+  }
+
+  @override
+  String tchAttSuspendedCount(int count) {
+    return '$count con matrícula suspendida (se registran como suspensión)';
+  }
+
+  @override
+  String get tchAttSwipeHint =>
+      'Al marcar pasa al siguiente. Desliza para volver.';
+
+  @override
+  String get tchAttTake => 'Tomar asistencia';
+
+  @override
+  String get tchAttTakeAnother => 'Tomar otra sesión';
+
+  @override
+  String get tchAttTitle => 'Tomar asistencia';
+
+  @override
+  String get tchAuxReport => 'Registro auxiliar';
+
+  @override
+  String get tchAuxReportPdf => 'Registro auxiliar (PDF)';
+
+  @override
+  String get tchAuxReportXlsx => 'Registro auxiliar (Excel)';
+
+  @override
+  String get tchAverage => 'Promedio';
+
+  @override
+  String tchCycle(String ciclo) {
+    return 'Ciclo $ciclo';
+  }
+
+  @override
+  String get tchDownloadError => 'No se pudo descargar el archivo de SIGMA.';
+
+  @override
+  String get tchFailing => 'Desaprobados';
+
+  @override
+  String tchFileSaved(String path) {
+    return 'Guardado en $path';
+  }
+
+  @override
+  String get tchFix => 'Corregir';
+
+  @override
+  String tchGradeAverage(String value) {
+    return 'Prom. $value';
+  }
+
+  @override
+  String get tchGradeConfirmTitle => '¿Guardar notas en SIGMA?';
+
+  @override
+  String tchGradeFilled(int filled, int total) {
+    return '$filled/$total con nota';
+  }
+
+  @override
+  String tchGradeInvalidCount(int count, String max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Hay $count notas inválidas',
+      one: 'Hay 1 nota inválida',
+    );
+    return '$_temp0 (0 a $max, hasta 2 decimales).';
+  }
+
+  @override
+  String tchGradeMissingIds(int count) {
+    return '$count sin datos de matrícula: no se guardarán.';
+  }
+
+  @override
+  String tchGradeNewCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notas nuevas',
+      one: '1 nota nueva',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchGradePassed(int passed, int total) {
+    return '$passed/$total aprobados';
+  }
+
+  @override
+  String tchGradeUpdatedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notas modificadas',
+      one: '1 nota modificada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchGradesHint(int count) {
+    return 'Según la nota final que calcula SIGMA. $count sin nota aún.';
+  }
+
+  @override
+  String get tchKpiAbsent => 'Faltas';
+
+  @override
+  String get tchKpiGeneral => 'Asistencia';
+
+  @override
+  String get tchKpiJustified => 'Justificadas';
+
+  @override
+  String get tchKpiPresent => 'Asistencias';
+
+  @override
+  String get tchKpiTotal => 'Registros';
+
+  @override
+  String tchOngoingNow(String start, String end) {
+    return 'En curso · $start–$end';
+  }
+
+  @override
+  String get tchPassed => 'Aprobados';
+
+  @override
+  String get tchRiskHint70 =>
+      'En riesgo: 70% de asistencia o menos, el mismo criterio que resalta SIGMA.';
+
+  @override
+  String tchSaveChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Guardar $count cambios',
+      one: 'Guardar 1 cambio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tchSaved => 'Guardado en SIGMA';
+
+  @override
+  String get tchSessionConfirmTitle => '¿Corregir la asistencia?';
+
+  @override
+  String get tchSessionEmpty => 'No hay marcas en esta sesión.';
+
+  @override
+  String get tchSessionLocked =>
+      'La unidad de esta sesión no está habilitada en SIGMA: solo lectura.';
+
+  @override
+  String tchSessionsTitle(int count) {
+    return 'Sesiones registradas ($count)';
+  }
+
+  @override
+  String get tchShowAll => 'Ver todas';
+
+  @override
+  String get tchShowLess => 'Ver menos';
+
+  @override
+  String tchSpecialUnit(String unit) {
+    return 'Las notas de $unit se registran solo para los alumnos aptos; hazlo desde SIGMA web.';
+  }
+
+  @override
+  String get tchStateAbsent => 'Faltó';
+
+  @override
+  String get tchStateJustified => 'Justificado';
+
+  @override
+  String get tchStateNone => 'Sin registro';
+
+  @override
+  String get tchStatePresent => 'Asistió';
+
+  @override
+  String get tchStateSuspended => 'Suspensión';
+
+  @override
+  String get tchTodayNotRegistered => 'Aún no registras asistencia hoy.';
+
+  @override
+  String tchTodayRegistered(String time, int present, int absent) {
+    return 'Hoy a las $time: $present asistieron, $absent faltaron.';
+  }
+
+  @override
+  String get tchTypesLoadError =>
+      'No se pudieron cargar las evaluaciones de la unidad.';
+
+  @override
+  String get tchUnitsLoadError =>
+      'No se pudieron cargar las unidades de SIGMA.';
+
+  @override
+  String get tchVirtualConfirmIn => '¿Marcar ENTRADA?';
+
+  @override
+  String get tchVirtualConfirmOut => '¿Marcar SALIDA?';
+
+  @override
+  String get tchVirtualDone => 'Presente';
+
+  @override
+  String get tchVirtualEmpty =>
+      'No tienes clases pendientes de marcación virtual hoy.';
+
+  @override
+  String get tchVirtualExactTime => 'Se registrará la hora exacta de SIGMA.';
+
+  @override
+  String get tchVirtualHelp =>
+      'Marca primero la entrada; luego podrás marcar la salida.';
+
+  @override
+  String get tchVirtualLoadError => 'No se pudieron cargar tus clases de hoy.';
+
+  @override
+  String get tchVirtualMarkIn => 'Entrada';
+
+  @override
+  String get tchVirtualMarkOut => 'Salida';
+
+  @override
+  String tchVirtualMarkedAt(String time) {
+    return 'Marcó $time';
+  }
+
+  @override
+  String get tchVirtualPartial => 'Parcial';
+
+  @override
+  String get tchVirtualSubtitle => 'Marcación virtual de hoy';
+
+  @override
+  String get tchVirtualTab => 'Virtual';
+
+  @override
+  String tchVirtualTolerance(int minutes) {
+    return 'Tolerancia +$minutes min';
+  }
 }

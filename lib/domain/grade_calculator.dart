@@ -37,12 +37,14 @@ class GradeCalculator {
     int? activeNumber,
   }) {
     return promedioPonderado(
-      courses.where((c) {
-        if (activeYear != null && activeNumber != null) {
-          return c.year == activeYear && c.periodNum == activeNumber;
-        }
-        return true;
-      }).map((c) => (c.currentGradeNum, c.credit)),
+      courses
+          .where((c) {
+            if (activeYear != null && activeNumber != null) {
+              return c.year == activeYear && c.periodNum == activeNumber;
+            }
+            return true;
+          })
+          .map((c) => (c.currentGradeNum, c.credit)),
     );
   }
 

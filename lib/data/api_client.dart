@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/errors.dart';
@@ -83,10 +84,89 @@ class ApiClient {
   Future<ApiEnvelope<T>> post<T>(
     String path, {
     Object? body,
+    Map<String, String>? query,
     bool authorize = true,
     required T Function(Object? raw) decode,
-  }) =>
-      _send<T>('POST', path, body: body, authorize: authorize, decode: decode);
+  }) => _send<T>(
+    'POST',
+    path,
+    query: query,
+    body: body,
+    authorize: authorize,
+    decode: decode,
+  );
+
+  /// Descarga un archivo binario autenticado (p. ej. reportes PDF/XLSX).
+  /// Devuelve los bytes y el nombre sugerido por `content-disposition`.
+  Future<({Uint8List bytes, String? filename, String? contentType})> getBytes(
+    String path, {
+    Map<String, String>? query,
+    bool isRetry = false,
+  }) => scope.run(() async {
+    final uri = _buildUri(path, query);
+    final headers = <String, String>{'User-Agent': AppConfig.userAgent};
+    if (_token != null) headers['Authorization'] = 'Bearer $_token';
+    http.Response res;
+    try {
+      res = await _http
+          .get(uri, headers: headers)
+          .timeout(AppConfig.httpTimeout * 3);
+      scope.check();
+    } on StaleSessionException {
+      rethrow;
+    } on TimeoutException {
+      throw const TimeoutException('El servidor no respondió a tiempo.');
+    } catch (e) {
+      throw NetworkException('Error de red: $e');
+    }
+    final type = res.headers['content-type'];
+    final looksHtml = (type ?? '').contains('text/html');
+    if ((res.statusCode == 401 || looksHtml) &&
+        !isRetry &&
+        reauthenticate != null) {
+      final outcome = await reauthenticate!();
+      scope.check();
+      if (outcome == ReauthOutcome.refreshed) {
+        return getBytes(path, query: query, isRetry: true);
+      }
+      if (outcome == ReauthOutcome.invalidCredentials) {
+        onUnauthorized?.call();
+        throw const SessionExpiredException('Sesión expirada.');
+      }
+      throw const AuthUnavailableException();
+    }
+    if (res.statusCode >= 400 || looksHtml) {
+      String? msg;
+      try {
+        final j = jsonDecode(utf8.decode(res.bodyBytes));
+        if (j is Map) msg = j['mensaje']?.toString();
+      } catch (_) {}
+      throw ServerException(
+        msg ?? 'No se pudo descargar el archivo.',
+        status: res.statusCode,
+      );
+    }
+    return (
+      bytes: res.bodyBytes,
+      filename: _filenameFrom(res.headers['content-disposition']),
+      contentType: type,
+    );
+  });
+
+  static String? _filenameFrom(String? disposition) {
+    if (disposition == null) return null;
+    final star = RegExp(
+      r"filename\*=UTF-8''([^;]+)",
+      caseSensitive: false,
+    ).firstMatch(disposition);
+    if (star != null) return Uri.decodeComponent(star.group(1)!.trim());
+    final plain = RegExp(
+      r'filename="?([^";]+)"?',
+      caseSensitive: false,
+    ).firstMatch(disposition);
+    return plain?.group(1)?.trim();
+  }
+
   Future<ApiEnvelope<T>> _send<T>(
     String method,
     String path, {

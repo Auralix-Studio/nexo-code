@@ -943,5 +943,188 @@
   "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcas}}",
   "@marcacionCountDay": {
     "placeholders": { "count": { "type": "int" } }
+  },
+  "docenteTabReporte": "Reporte",
+  "docenteReportLoadError": "No se pudo cargar el reporte de asistencia.",
+  "docenteReportEmpty": "Aún no hay asistencias registradas en esta sección.",
+  "docenteReportAll": "Todos",
+  "docenteReportAtRisk": "En riesgo",
+  "docenteReportNoRisk": "Ningún alumno en riesgo por faltas.",
+  "docenteReportSessions": "Sesiones",
+  "docenteReportAverage": "Asistencia prom.",
+  "docenteReportRiskHint": "En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.",
+  "docenteReportCounts": "{presentes} P · {faltas} F · {justificadas} J",
+  "@docenteReportCounts": {
+    "placeholders": { "presentes": { "type": "String" }, "faltas": { "type": "String" }, "justificadas": { "type": "String" } }
+  },
+  "docenteNoUnitEnabled": "No hay una unidad habilitada en SIGMA para registrar asistencia.",
+  "docenteUnitLocked": "Esta unidad no está habilitada en SIGMA para registrar notas.",
+  "docenteGradeMissingIds": "Faltan datos de SIGMA para guardar esta nota. Actualiza la lista e inténtalo de nuevo.",
+  "docenteNoGrades": "No hay notas registradas",
+  "marcacionViewPunches": "Marcas",
+  "marcacionViewClasses": "Por clase",
+  "marcacionClassesSubtitle": "{completas} de {total} clases con marca completa · 14 días",
+  "@marcacionClassesSubtitle": {
+    "placeholders": { "completas": { "type": "String" }, "total": { "type": "String" } }
+  },
+  "marcacionClassesEmpty": "Sin clases programadas en las últimas dos semanas.",
+  "marcacionMissingCount": "{count,plural, =1{1 clase con marca faltante} other{{count} clases con marca faltante}}",
+  "@marcacionMissingCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "marcacionIn": "Entrada",
+  "marcacionOut": "Salida",
+  "marcacionMarked": "Marcó",
+  "marcacionMissing": "Sin marca",
+  "marcacionPending": "Pendiente",
+  "tchAndMore": "… y {count} más",
+  "@tchAndMore": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttAllPresent": "Todos presentes",
+  "tchAttAlreadyRegistered": "Ya hay asistencia registrada este día en esta unidad. Si es otra sesión, continúa; para corregir, vuelve y abre la sesión.",
+  "tchAttConfirmTitle": "¿Registrar asistencia?",
+  "tchAttLoadError": "No se pudo cargar la lista de asistencia.",
+  "tchAttLowAttendance": "Asistencia {pct}%",
+  "@tchAttLowAttendance": {
+    "placeholders": { "pct": { "type": "int" } }
+  },
+  "tchAttModeList": "Ver como lista",
+  "tchAttModeOneByOne": "Pase de lista uno por uno",
+  "tchAttNoStudents": "SIGMA no devolvió alumnos para esta sección.",
+  "tchAttPending": "{count,plural, =1{Falta marcar 1 alumno.} other{Faltan marcar {count} alumnos.}}",
+  "@tchAttPending": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttPosition": "{current} de {total}",
+  "@tchAttPosition": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchAttProgress": "{done}/{total} marcados",
+  "@tchAttProgress": {
+    "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchAttRegister": "Registrar",
+  "tchAttRestPresent": "Resto presentes",
+  "tchAttSummary": "{present} asistieron · {absent} faltaron",
+  "@tchAttSummary": {
+    "placeholders": { "present": { "type": "int" }, "absent": { "type": "int" } }
+  },
+  "tchAttSuspendedCount": "{count} con matrícula suspendida (se registran como suspensión)",
+  "@tchAttSuspendedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttSwipeHint": "Al marcar pasa al siguiente. Desliza para volver.",
+  "tchAttTake": "Tomar asistencia",
+  "tchAttTakeAnother": "Tomar otra sesión",
+  "tchAttTitle": "Tomar asistencia",
+  "tchAuxReport": "Registro auxiliar",
+  "tchAuxReportPdf": "Registro auxiliar (PDF)",
+  "tchAuxReportXlsx": "Registro auxiliar (Excel)",
+  "tchAverage": "Promedio",
+  "tchCycle": "Ciclo {ciclo}",
+  "@tchCycle": {
+    "placeholders": { "ciclo": { "type": "String" } }
+  },
+  "tchDownloadError": "No se pudo descargar el archivo de SIGMA.",
+  "tchFailing": "Desaprobados",
+  "tchFileSaved": "Guardado en {path}",
+  "@tchFileSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
+  "tchFix": "Corregir",
+  "tchGradeAverage": "Prom. {value}",
+  "@tchGradeAverage": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "tchGradeConfirmTitle": "¿Guardar notas en SIGMA?",
+  "tchGradeFilled": "{filled}/{total} con nota",
+  "@tchGradeFilled": {
+    "placeholders": { "filled": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchGradeInvalidCount": "{count,plural, =1{Hay 1 nota inválida} other{Hay {count} notas inválidas}} (0 a {max}, hasta 2 decimales).",
+  "@tchGradeInvalidCount": {
+    "placeholders": { "count": { "type": "int" }, "max": { "type": "String" } }
+  },
+  "tchGradeMissingIds": "{count} sin datos de matrícula: no se guardarán.",
+  "@tchGradeMissingIds": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradeNewCount": "{count,plural, =1{1 nota nueva} other{{count} notas nuevas}}",
+  "@tchGradeNewCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradePassed": "{passed}/{total} aprobados",
+  "@tchGradePassed": {
+    "placeholders": { "passed": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchGradeUpdatedCount": "{count,plural, =1{1 nota modificada} other{{count} notas modificadas}}",
+  "@tchGradeUpdatedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradesHint": "Según la nota final que calcula SIGMA. {count} sin nota aún.",
+  "@tchGradesHint": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchKpiAbsent": "Faltas",
+  "tchKpiGeneral": "Asistencia",
+  "tchKpiJustified": "Justificadas",
+  "tchKpiPresent": "Asistencias",
+  "tchKpiTotal": "Registros",
+  "tchOngoingNow": "En curso · {start}–{end}",
+  "@tchOngoingNow": {
+    "placeholders": { "start": { "type": "String" }, "end": { "type": "String" } }
+  },
+  "tchPassed": "Aprobados",
+  "tchRiskHint70": "En riesgo: 70% de asistencia o menos, el mismo criterio que resalta SIGMA.",
+  "tchSaveChanges": "{count,plural, =1{Guardar 1 cambio} other{Guardar {count} cambios}}",
+  "@tchSaveChanges": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchSaved": "Guardado en SIGMA",
+  "tchSessionConfirmTitle": "¿Corregir la asistencia?",
+  "tchSessionEmpty": "No hay marcas en esta sesión.",
+  "tchSessionLocked": "La unidad de esta sesión no está habilitada en SIGMA: solo lectura.",
+  "tchSessionsTitle": "Sesiones registradas ({count})",
+  "@tchSessionsTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchShowAll": "Ver todas",
+  "tchShowLess": "Ver menos",
+  "tchSpecialUnit": "Las notas de {unit} se registran solo para los alumnos aptos; hazlo desde SIGMA web.",
+  "@tchSpecialUnit": {
+    "placeholders": { "unit": { "type": "String" } }
+  },
+  "tchStateAbsent": "Faltó",
+  "tchStateJustified": "Justificado",
+  "tchStateNone": "Sin registro",
+  "tchStatePresent": "Asistió",
+  "tchStateSuspended": "Suspensión",
+  "tchTodayNotRegistered": "Aún no registras asistencia hoy.",
+  "tchTodayRegistered": "Hoy a las {time}: {present} asistieron, {absent} faltaron.",
+  "@tchTodayRegistered": {
+    "placeholders": { "time": { "type": "String" }, "present": { "type": "int" }, "absent": { "type": "int" } }
+  },
+  "tchTypesLoadError": "No se pudieron cargar las evaluaciones de la unidad.",
+  "tchUnitsLoadError": "No se pudieron cargar las unidades de SIGMA.",
+  "tchVirtualConfirmIn": "¿Marcar ENTRADA?",
+  "tchVirtualConfirmOut": "¿Marcar SALIDA?",
+  "tchVirtualDone": "Presente",
+  "tchVirtualEmpty": "No tienes clases pendientes de marcación virtual hoy.",
+  "tchVirtualExactTime": "Se registrará la hora exacta de SIGMA.",
+  "tchVirtualHelp": "Marca primero la entrada; luego podrás marcar la salida.",
+  "tchVirtualLoadError": "No se pudieron cargar tus clases de hoy.",
+  "tchVirtualMarkIn": "Entrada",
+  "tchVirtualMarkOut": "Salida",
+  "tchVirtualMarkedAt": "Marcó {time}",
+  "@tchVirtualMarkedAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "tchVirtualPartial": "Parcial",
+  "tchVirtualSubtitle": "Marcación virtual de hoy",
+  "tchVirtualTab": "Virtual",
+  "tchVirtualTolerance": "Tolerancia +{minutes} min",
+  "@tchVirtualTolerance": {
+    "placeholders": { "minutes": { "type": "int" } }
   }
 }

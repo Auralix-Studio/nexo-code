@@ -47,6 +47,11 @@ List<_Tab> _studentTabs(AppLocalizations l) => [
 ];
 List<_Tab> _teacherTabs(AppLocalizations l) => [
   _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
+  _Tab(
+    l.tabSchedule,
+    Icons.calendar_today_rounded,
+    Icons.calendar_today_outlined,
+  ),
   _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
   _Tab(l.tabMarcacion, Icons.fingerprint_rounded, Icons.fingerprint_outlined),
   _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
@@ -191,6 +196,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       tabs = _teacherTabs(l);
       pages = <Widget>[
         wrap(TeacherScreen(store: widget.store)),
+        wrap(ScheduleScreen(store: widget.store, teacher: true)),
         wrap(TeacherCoursesScreen(store: widget.store)),
         wrap(TeacherMarcacionScreen(store: widget.store)),
         wrap(

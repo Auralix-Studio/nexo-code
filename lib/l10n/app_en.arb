@@ -855,5 +855,188 @@
   "marcacionCountDay": "{count,plural, =1{1 punch} other{{count} punches}}",
   "@marcacionCountDay": {
     "placeholders": { "count": { "type": "int" } }
+  },
+  "docenteTabReporte": "Report",
+  "docenteReportLoadError": "Couldn't load the attendance report.",
+  "docenteReportEmpty": "No attendance has been recorded for this section yet.",
+  "docenteReportAll": "All",
+  "docenteReportAtRisk": "At risk",
+  "docenteReportNoRisk": "No students at risk from absences.",
+  "docenteReportSessions": "Sessions",
+  "docenteReportAverage": "Avg. attendance",
+  "docenteReportRiskHint": "At risk: 30% or more unexcused absences over recorded sessions.",
+  "docenteReportCounts": "{presentes} P · {faltas} A · {justificadas} E",
+  "@docenteReportCounts": {
+    "placeholders": { "presentes": { "type": "String" }, "faltas": { "type": "String" }, "justificadas": { "type": "String" } }
+  },
+  "docenteNoUnitEnabled": "There is no unit enabled in SIGMA to record attendance.",
+  "docenteUnitLocked": "This unit is not enabled in SIGMA for grade entry.",
+  "docenteGradeMissingIds": "SIGMA data needed to save this grade is missing. Refresh the list and try again.",
+  "docenteNoGrades": "No grades recorded",
+  "marcacionViewPunches": "Punches",
+  "marcacionViewClasses": "By class",
+  "marcacionClassesSubtitle": "{completas} of {total} classes fully punched · 14 days",
+  "@marcacionClassesSubtitle": {
+    "placeholders": { "completas": { "type": "String" }, "total": { "type": "String" } }
+  },
+  "marcacionClassesEmpty": "No scheduled classes in the last two weeks.",
+  "marcacionMissingCount": "{count,plural, =1{1 class with a missing punch} other{{count} classes with a missing punch}}",
+  "@marcacionMissingCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "marcacionIn": "In",
+  "marcacionOut": "Out",
+  "marcacionMarked": "Punched",
+  "marcacionMissing": "Missing",
+  "marcacionPending": "Pending",
+  "tchAndMore": "… and {count} more",
+  "@tchAndMore": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttAllPresent": "All present",
+  "tchAttAlreadyRegistered": "Attendance is already recorded for this day and unit. If this is another session, continue; to fix it, go back and open the session.",
+  "tchAttConfirmTitle": "Record attendance?",
+  "tchAttLoadError": "Couldn't load the attendance list.",
+  "tchAttLowAttendance": "Attendance {pct}%",
+  "@tchAttLowAttendance": {
+    "placeholders": { "pct": { "type": "int" } }
+  },
+  "tchAttModeList": "List view",
+  "tchAttModeOneByOne": "One-by-one roll call",
+  "tchAttNoStudents": "SIGMA returned no students for this section.",
+  "tchAttPending": "{count,plural, =1{1 student left to mark.} other{{count} students left to mark.}}",
+  "@tchAttPending": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttPosition": "{current} of {total}",
+  "@tchAttPosition": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchAttProgress": "{done}/{total} marked",
+  "@tchAttProgress": {
+    "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchAttRegister": "Record",
+  "tchAttRestPresent": "Rest present",
+  "tchAttSummary": "{present} present · {absent} absent",
+  "@tchAttSummary": {
+    "placeholders": { "present": { "type": "int" }, "absent": { "type": "int" } }
+  },
+  "tchAttSuspendedCount": "{count} with suspended enrollment (recorded as suspension)",
+  "@tchAttSuspendedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchAttSwipeHint": "Marking moves to the next one. Swipe to go back.",
+  "tchAttTake": "Take attendance",
+  "tchAttTakeAnother": "Take another session",
+  "tchAttTitle": "Take attendance",
+  "tchAuxReport": "Grade register",
+  "tchAuxReportPdf": "Grade register (PDF)",
+  "tchAuxReportXlsx": "Grade register (Excel)",
+  "tchAverage": "Average",
+  "tchCycle": "Term {ciclo}",
+  "@tchCycle": {
+    "placeholders": { "ciclo": { "type": "String" } }
+  },
+  "tchDownloadError": "Couldn't download the file from SIGMA.",
+  "tchFailing": "Failing",
+  "tchFileSaved": "Saved to {path}",
+  "@tchFileSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
+  "tchFix": "Fix",
+  "tchGradeAverage": "Avg. {value}",
+  "@tchGradeAverage": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "tchGradeConfirmTitle": "Save grades to SIGMA?",
+  "tchGradeFilled": "{filled}/{total} graded",
+  "@tchGradeFilled": {
+    "placeholders": { "filled": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchGradeInvalidCount": "{count,plural, =1{1 invalid grade} other{{count} invalid grades}} (0 to {max}, up to 2 decimals).",
+  "@tchGradeInvalidCount": {
+    "placeholders": { "count": { "type": "int" }, "max": { "type": "String" } }
+  },
+  "tchGradeMissingIds": "{count} without enrollment data: they will not be saved.",
+  "@tchGradeMissingIds": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradeNewCount": "{count,plural, =1{1 new grade} other{{count} new grades}}",
+  "@tchGradeNewCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradePassed": "{passed}/{total} passing",
+  "@tchGradePassed": {
+    "placeholders": { "passed": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "tchGradeUpdatedCount": "{count,plural, =1{1 grade changed} other{{count} grades changed}}",
+  "@tchGradeUpdatedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchGradesHint": "Based on the final grade computed by SIGMA. {count} without a grade yet.",
+  "@tchGradesHint": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchKpiAbsent": "Absences",
+  "tchKpiGeneral": "Attendance",
+  "tchKpiJustified": "Excused",
+  "tchKpiPresent": "Present",
+  "tchKpiTotal": "Records",
+  "tchOngoingNow": "In progress · {start}–{end}",
+  "@tchOngoingNow": {
+    "placeholders": { "start": { "type": "String" }, "end": { "type": "String" } }
+  },
+  "tchPassed": "Passing",
+  "tchRiskHint70": "At risk: 70% attendance or less, the same threshold SIGMA highlights.",
+  "tchSaveChanges": "{count,plural, =1{Save 1 change} other{Save {count} changes}}",
+  "@tchSaveChanges": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchSaved": "Saved to SIGMA",
+  "tchSessionConfirmTitle": "Fix attendance?",
+  "tchSessionEmpty": "No records in this session.",
+  "tchSessionLocked": "This session's unit is not enabled in SIGMA: read only.",
+  "tchSessionsTitle": "Recorded sessions ({count})",
+  "@tchSessionsTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "tchShowAll": "Show all",
+  "tchShowLess": "Show less",
+  "tchSpecialUnit": "{unit} grades are recorded only for eligible students; use SIGMA web.",
+  "@tchSpecialUnit": {
+    "placeholders": { "unit": { "type": "String" } }
+  },
+  "tchStateAbsent": "Absent",
+  "tchStateJustified": "Excused",
+  "tchStateNone": "No record",
+  "tchStatePresent": "Present",
+  "tchStateSuspended": "Suspended",
+  "tchTodayNotRegistered": "You haven't recorded attendance today.",
+  "tchTodayRegistered": "Today at {time}: {present} present, {absent} absent.",
+  "@tchTodayRegistered": {
+    "placeholders": { "time": { "type": "String" }, "present": { "type": "int" }, "absent": { "type": "int" } }
+  },
+  "tchTypesLoadError": "Couldn't load the unit's assessments.",
+  "tchUnitsLoadError": "Couldn't load the units from SIGMA.",
+  "tchVirtualConfirmIn": "Clock IN?",
+  "tchVirtualConfirmOut": "Clock OUT?",
+  "tchVirtualDone": "Present",
+  "tchVirtualEmpty": "No classes pending virtual clock-in today.",
+  "tchVirtualExactTime": "SIGMA's exact time will be recorded.",
+  "tchVirtualHelp": "Clock in first; then you can clock out.",
+  "tchVirtualLoadError": "Couldn't load today's classes.",
+  "tchVirtualMarkIn": "Clock in",
+  "tchVirtualMarkOut": "Clock out",
+  "tchVirtualMarkedAt": "Clocked {time}",
+  "@tchVirtualMarkedAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "tchVirtualPartial": "Partial",
+  "tchVirtualSubtitle": "Today's virtual clock-in",
+  "tchVirtualTab": "Virtual",
+  "tchVirtualTolerance": "Tolerance +{minutes} min",
+  "@tchVirtualTolerance": {
+    "placeholders": { "minutes": { "type": "int" } }
   }
 }

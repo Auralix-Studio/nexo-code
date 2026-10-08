@@ -3,6 +3,8 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/features/teacher/teacher_compliance_view.dart';
+import 'package:nexo/features/teacher/teacher_virtual_view.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -12,8 +14,11 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
 
-/// Marcación de asistencia del propio docente (huella / virtual), de los
-/// últimos 30 días. Fuente: `Docente/getHistorialMarcacion`.
+/// Marcación de asistencia del propio docente. Dos vistas:
+/// - Marcas: huella / virtual de los últimos 30 días
+///   (`Docente/getHistorialMarcacion`).
+/// - Por clase: cada clase programada con su marca de entrada y salida
+///   (`Docente/getAsistenciaDiaria`), como el reporte diario de SIGMA.
 class TeacherMarcacionScreen extends StatefulWidget {
   const TeacherMarcacionScreen({super.key, required this.store});
   final AppStore store;
@@ -22,6 +27,16 @@ class TeacherMarcacionScreen extends StatefulWidget {
 }
 
 class _TeacherMarcacionScreenState extends State<TeacherMarcacionScreen> {
+  /// 0 Virtual · 1 Marcas · 2 Por clase.
+  int _view = 0;
+
+  void _setView(int v) {
+    setState(() => _view = v);
+    if (v == 2 && !widget.store.teacherCumplimiento.hasValue) {
+      widget.store.loadTeacherCumplimiento();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +66,22 @@ class _TeacherMarcacionScreenState extends State<TeacherMarcacionScreen> {
         }
         final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
         final today = DateTime.now();
+        final toggle = SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: [
+            ButtonSegment(value: 0, label: Text(l.tchVirtualTab)),
+            ButtonSegment(value: 1, label: Text(l.marcacionViewPunches)),
+            ButtonSegment(value: 2, label: Text(l.marcacionViewClasses)),
+          ],
+          selected: {_view},
+          onSelectionChanged: (v) => _setView(v.first),
+        );
+        if (_view == 0) {
+          return TeacherVirtualView(store: widget.store, toggle: toggle);
+        }
+        if (_view == 2) {
+          return TeacherComplianceView(store: widget.store, toggle: toggle);
+        }
         return RefreshIndicator(
           onRefresh: () => widget.store.loadTeacherMarcacion().then((_) {}),
           child: CustomScrollView(
@@ -64,6 +95,14 @@ class _TeacherMarcacionScreenState extends State<TeacherMarcacionScreen> {
                   subtitle: loading
                       ? l.docenteLoadingClasses
                       : l.marcacionSubtitlePlural(punches.length),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: PageBody(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: SizedBox(width: double.infinity, child: toggle),
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
@@ -130,7 +169,8 @@ class _DayCard extends StatelessWidget {
     final l = AppLocalizations.of(context);
     return SectionCard(
       title: Fmt.dayLabel(day.weekday),
-      subtitle: '${Fmt.shortDate(day)} · ${l.marcacionCountDay(punches.length)}',
+      subtitle:
+          '${Fmt.shortDate(day)} · ${l.marcacionCountDay(punches.length)}',
       icon: isToday ? Icons.today_rounded : Icons.fingerprint_rounded,
       iconColor: isToday ? NexoTheme.primary : NexoTheme.accent,
       trailing: isToday

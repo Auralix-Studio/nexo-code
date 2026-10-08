@@ -73,7 +73,11 @@ abstract final class FestivityCalendar {
       id: 'dia_del_maestro',
       enabled: false,
       decor: FestivityDecor.confetti,
-      decorColors: const [Color(0xFF42A5F5), Color(0xFF66BB6A), Color(0xFFFFFFFF)],
+      decorColors: const [
+        Color(0xFF42A5F5),
+        Color(0xFF66BB6A),
+        Color(0xFFFFFFFF),
+      ],
       priority: 85,
       leadDays: 1,
       tailDays: 1,

@@ -518,21 +518,7 @@ class CacheManager {
 
   Future<void> saveDocenteCursos(List<TeacherSubject> courses) async {
     if (!isReady) return;
-    final list = courses
-        .map(
-          (c) => {
-            'cleAuto': c.id,
-            'codigo': c.code,
-            'asignatura': c.subject,
-            'seccion': c.section,
-            'periodo': c.periodo,
-            'matriculados': c.enrolledCount,
-            'plan': c.plan,
-            'nrc': c.nrc,
-            'tipoCalif': c.tipoCalif,
-          },
-        )
-        .toList();
+    final list = courses.map((c) => c.toJson()).toList();
     await db.insert('docente_cursos', {
       'id': 'current',
       'json_data': jsonEncode(list),
@@ -561,20 +547,7 @@ class CacheManager {
     String cursoId,
     List<TeacherStudent> alumnos,
   ) async {
-    final list = alumnos
-        .map(
-          (a) => {
-            'codigo': a.code,
-            'nombres': a.firstName,
-            'apellidos': a.lastName,
-            'nombreCompleto': a.fullName,
-            'asistencia': a.attendance,
-            'nota': a.grade,
-            'matricula_asignatura_id': a.matriculaAsignaturaId,
-            'observacion': a.observacion,
-          },
-        )
-        .toList();
+    final list = alumnos.map((a) => a.toJson()).toList();
     await db.insert('docente_alumnos', {
       'curso_id': cursoId,
       'json_data': jsonEncode(list),

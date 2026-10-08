@@ -3,14 +3,19 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/features/teacher/teacher_course_detail.dart';
+import 'package:nexo/features/teacher/teacher_take_attendance.dart';
+import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
+import 'package:nexo/shared/widgets/next_class_widget.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
+import 'package:nexo/shared/widgets/today_classes_widget.dart';
 
 class TeacherScreen extends StatefulWidget {
   const TeacherScreen({super.key, required this.store});
@@ -27,6 +32,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
     if (!s.teacherInfo.hasValue) s.loadTeacherInfo();
     if (!s.teacherSubjects.hasValue) s.loadTeacherSubjects();
     if (!s.teacherMarcacion.hasValue) s.loadTeacherMarcacion();
+    if (!s.teacherSchedule.hasValue) s.loadDocenteHorario();
   }
 
   @override
@@ -40,6 +46,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
               widget.store.loadTeacherInfo(),
               widget.store.loadTeacherSubjects(),
               widget.store.loadTeacherMarcacion(),
+              widget.store.loadDocenteHorario(),
             ]);
           },
           child: CustomScrollView(
@@ -58,6 +65,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _NowCard(store: widget.store),
                       Reveal(
                         index: 0,
                         child: _HeroInfoCard(state: widget.store.teacherInfo),
@@ -70,6 +78,10 @@ class _TeacherScreenState extends State<TeacherScreen> {
                       const Gap(AppSpacing.lg),
                       Reveal(
                         index: 2,
+                        child: _ClasesBlock(store: widget.store),
+                      ),
+                      Reveal(
+                        index: 3,
                         child: _MisCursosCard(store: widget.store),
                       ),
                     ],
@@ -191,6 +203,142 @@ class _HeroInfoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Próxima clase y clases de hoy, a partir del horario derivado de las
+/// asignaturas del docente. Se oculta si SIGMA no trae horario programado.
+class _ClasesBlock extends StatelessWidget {
+  final AppStore store;
+  const _ClasesBlock({required this.store});
+  @override
+  Widget build(BuildContext context) {
+    final state = store.teacherSchedule;
+    if (state.loading && !state.hasValue) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: AppSpacing.lg),
+        child: Skeleton(height: 140, radius: 20),
+      );
+    }
+    final all = (state.value ?? const <ScheduleClass>[])
+        .where((c) => c.startTime.isNotEmpty && c.endTime.isNotEmpty)
+        .toList();
+    if (all.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NextClassWidget(all: all),
+          const Gap(AppSpacing.lg),
+          TodayClassesWidget(all: all),
+        ],
+      ),
+    );
+  }
+}
+
+/// Clase en curso según el horario de SIGMA, con acceso directo a tomar
+/// asistencia o registrar notas. Se oculta si no hay ninguna ahora.
+class _NowCard extends StatelessWidget {
+  final AppStore store;
+  const _NowCard({required this.store});
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final now = DateTime.now();
+    final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
+    TeacherSubject? course;
+    TeacherBlock? block;
+    for (final c in courses) {
+      final b = c.ongoingBlock(now);
+      if (b != null) {
+        course = c;
+        block = b;
+        break;
+      }
+    }
+    if (course == null || block == null) return const SizedBox.shrink();
+    final c = course;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: NexoTheme.card,
+          borderRadius: AppRadii.rXxl,
+          border: Border.all(color: NexoTheme.success, width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TeacherPill(
+              text: l.tchOngoingNow(block.start, block.end),
+              color: NexoTheme.success,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              c.shortName,
+              style: TextStyle(
+                fontSize: AppFont.h3,
+                fontWeight: FontWeight.w800,
+                color: NexoTheme.textPrimary,
+              ),
+            ),
+            Text(
+              [
+                '${l.detailSection} ${c.section}',
+                if (c.aula.isNotEmpty) ScheduleRoom.parse(c.aula),
+              ].join(' · '),
+              style: TextStyle(
+                fontSize: AppFont.small,
+                color: NexoTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      backgroundColor: NexoTheme.primary,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadii.rLg,
+                      ),
+                    ),
+                    onPressed: () => TeacherTakeAttendanceScreen.open(
+                      context,
+                      store: store,
+                      course: c,
+                    ),
+                    icon: const Icon(Icons.how_to_reg_rounded),
+                    label: Text(l.tchAttTake),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadii.rLg,
+                    ),
+                  ),
+                  onPressed: () => TeacherCourseDetailScreen.open(
+                    context,
+                    store: store,
+                    course: c,
+                    initialTab: 1,
+                  ),
+                  icon: const Icon(Icons.grading_rounded, size: 18),
+                  label: Text(l.docenteTabNotas),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

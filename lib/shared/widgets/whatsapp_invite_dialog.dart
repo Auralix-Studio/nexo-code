@@ -91,7 +91,9 @@ class _WhatsappInviteDialog extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _open(context),
                   icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: Text(AppLocalizations.of(context).whatsappBannerFollow),
+                  label: Text(
+                    AppLocalizations.of(context).whatsappBannerFollow,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: whatsappGreen,
                     foregroundColor: Colors.white,

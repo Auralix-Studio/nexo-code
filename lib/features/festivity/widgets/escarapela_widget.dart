@@ -8,15 +8,23 @@ class EscarapelaWidget extends StatefulWidget {
   State<EscarapelaWidget> createState() => _EscarapelaWidgetState();
 }
 
-class _EscarapelaWidgetState extends State<EscarapelaWidget> with SingleTickerProviderStateMixin {
+class _EscarapelaWidgetState extends State<EscarapelaWidget>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1200),
   );
   late final Animation<double> _fade = Tween<double>(begin: 0.0, end: 1.0)
-      .animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5, curve: Curves.easeIn)));
-  late final Animation<double> _scale = Tween<double>(begin: 0.5, end: 1.0)
-      .animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
+      .animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+        ),
+      );
+  late final Animation<double> _scale = Tween<double>(
+    begin: 0.5,
+    end: 1.0,
+  ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
 
   @override
   void initState() {
@@ -45,10 +53,7 @@ class _EscarapelaWidgetState extends State<EscarapelaWidget> with SingleTickerPr
       builder: (context, child) {
         return Opacity(
           opacity: _fade.value,
-          child: Transform.scale(
-            scale: _scale.value,
-            child: child,
-          ),
+          child: Transform.scale(scale: _scale.value, child: child),
         );
       },
       child: CustomPaint(
@@ -63,18 +68,25 @@ class _EscarapelaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    
+
     // Escalar la caja original del SVG (500x600) al size proporcionado por el parent
     final scaleX = size.width / 500.0;
     final scaleY = size.height / 600.0;
-    final scale = scaleX < scaleY ? scaleX : scaleY; 
-    
+    final scale = scaleX < scaleY ? scaleX : scaleY;
+
     // Centrar el dibujo en el canvas disponible
-    canvas.translate((size.width - 500.0 * scale) / 2, (size.height - 600.0 * scale) / 2);
+    canvas.translate(
+      (size.width - 500.0 * scale) / 2,
+      (size.height - 600.0 * scale) / 2,
+    );
     canvas.scale(scale);
 
-    final paintRed = Paint()..color = const Color(0xFFC8102E)..style = PaintingStyle.fill;
-    final paintWhite = Paint()..color = const Color(0xFFFFFFFF)..style = PaintingStyle.fill;
+    final paintRed = Paint()
+      ..color = const Color(0xFFC8102E)
+      ..style = PaintingStyle.fill;
+    final paintWhite = Paint()
+      ..color = const Color(0xFFFFFFFF)
+      ..style = PaintingStyle.fill;
 
     void drawPoly(List<double> points, Paint paint) {
       final path = Path();
@@ -137,7 +149,7 @@ class _EscarapelaPainter extends CustomPainter {
       canvas.drawCircle(const Offset(250, 170), 35, paintRed);
       canvas.restore();
     }
-    
+
     canvas.restore();
   }
 

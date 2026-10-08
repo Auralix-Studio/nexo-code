@@ -137,45 +137,48 @@ class _SetupWizardState extends State<SetupWizard> {
         return installerButtonScope(
           context,
           Scaffold(
-          backgroundColor: NexoTheme.bg,
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 14),
-                  if (_step > 0) ...[
-                    _buildStepIndicator(),
-                    const SizedBox(height: 16),
-                  ],
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position:
-                            Tween<Offset>(
-                              begin: const Offset(0.05, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: anim,
-                                curve: Curves.easeOutCubic,
+            backgroundColor: NexoTheme.bg,
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 14),
+                    if (_step > 0) ...[
+                      _buildStepIndicator(),
+                      const SizedBox(height: 16),
+                    ],
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position:
+                              Tween<Offset>(
+                                begin: const Offset(0.05, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: anim,
+                                  curve: Curves.easeOutCubic,
+                                ),
                               ),
-                            ),
-                        child: child,
+                          child: child,
+                        ),
                       ),
+                      child: _buildCurrentStep(),
                     ),
-                    child: _buildCurrentStep(),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         );
       },
