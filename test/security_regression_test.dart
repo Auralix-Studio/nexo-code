@@ -338,15 +338,18 @@ void main() {
       for (final operation in <Future<void> Function()>[
         () => repo.updateNota(cleAuto: 'c', codigoAlumno: 's', grade: '15'),
         () => repo.updateEvaluacion(
-          cleAuto: 'c',
-          codigoAlumno: 's',
-          codigoEvaluacion: 'e',
+          matriculaAsignaturaId: 'm',
+          tipoUnidadId: 1,
+          tipoNotaId: 1,
+          notaId: null,
           grade: '15',
         ),
         () => repo.guardarAsistenciaDelDia(
           cleAuto: 'c',
           date: DateTime(2026, 9, 25),
           estados: {'s': 'P'},
+          students: [],
+          tipoUnidadId: 1,
         ),
       ]) {
         await expectLater(operation(), throwsA(isA<BadRequestException>()));

@@ -289,8 +289,10 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     if (result == null) return;
     final err = await widget.store.updateDocenteEvaluacion(
       cleAuto: widget.course.id,
-      codigoAlumno: widget.student.code,
-      codigoEvaluacion: eval.code,
+      matriculaAsignaturaId: widget.student.matriculaAsignaturaId ?? '',
+      tipoUnidadId: eval.tipoUnidadId ?? 0,
+      tipoNotaId: eval.tipoNotaId ?? 0,
+      notaId: eval.notaId,
       grade: result,
     );
     if (!mounted) return;

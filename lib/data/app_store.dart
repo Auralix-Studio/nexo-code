@@ -1156,15 +1156,18 @@ class AppStore extends ChangeNotifier {
   });
   Future<String?> updateDocenteEvaluacion({
     required String cleAuto,
-    required String codigoAlumno,
-    required String codigoEvaluacion,
+    required String matriculaAsignaturaId,
+    required int tipoUnidadId,
+    required int tipoNotaId,
+    required int? notaId,
     required String grade,
   }) => _scope.run(() async {
     try {
       await _teacherReady().updateEvaluacion(
-        cleAuto: cleAuto,
-        codigoAlumno: codigoAlumno,
-        codigoEvaluacion: codigoEvaluacion,
+        matriculaAsignaturaId: matriculaAsignaturaId,
+        tipoUnidadId: tipoUnidadId,
+        tipoNotaId: tipoNotaId,
+        notaId: notaId,
         grade: grade,
       );
       if (!_scope.isCurrent) return const StaleSessionException().toString();
@@ -1207,12 +1210,16 @@ class AppStore extends ChangeNotifier {
     required String cleAuto,
     required DateTime date,
     required Map<String, String> estados,
+    required List<TeacherStudent> students,
+    required int? tipoUnidadId,
   }) => _scope.run(() async {
     try {
       await _teacherReady().guardarAsistenciaDelDia(
         cleAuto: cleAuto,
         date: date,
         estados: estados,
+        students: students,
+        tipoUnidadId: tipoUnidadId,
       );
       if (!_scope.isCurrent) return const StaleSessionException().toString();
       return null;

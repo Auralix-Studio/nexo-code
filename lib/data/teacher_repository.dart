@@ -247,18 +247,25 @@ class TeacherRepository {
   }
 
   Future<void> updateEvaluacion({
-    required String cleAuto,
-    required String codigoAlumno,
-    required String codigoEvaluacion,
+    required String matriculaAsignaturaId,
+    required int tipoUnidadId,
+    required int tipoNotaId,
+    required int? notaId,
     required String grade,
   }) async {
+    final endpoint = notaId == null ? 'Docente/InsertarNotas' : 'Docente/UpdateNota';
     final result = await _api.post<void>(
-      'Docente/InsertarNotas',
+      endpoint,
       body: {
-        'cleAuto': cleAuto,
-        'codigoAlumno': codigoAlumno,
-        'codigoEvaluacion': codigoEvaluacion,
-        'nota': grade,
+        'Notas': [
+          {
+            'matricula_asignatura_id': matriculaAsignaturaId,
+            'tipo_unidad_id': tipoUnidadId,
+            'tipo_nota_id': tipoNotaId,
+            'nota_id': ?notaId,
+            'nota': num.tryParse(grade) ?? grade,
+          }
+        ]
       },
       decode: (_) {},
     );
@@ -325,25 +332,35 @@ class TeacherRepository {
     return map;
   }
 
-  /// ⚠ NO IMPLEMENTADO con datos verificados. El guardado real de asistencia
-  /// (`Docente/InsertaRegistroAsistencia`) tiene la forma:
-  ///   { fecha_asistencia, asistencia: [ { matricula_asignatura_id,
-  ///     estado_asist_id, cod_cursal, tipo_unidad_id } ] }
-  /// Requiere el catálogo numérico de estados (`estado_asist_id`), el
-  /// `tipo_unidad_id` y el `cod_cursal`, que solo se obtienen de respuestas
-  /// reales (GetAsistencia + getTipoUnidadesV2). Enviar una forma adivinada
-  /// podría registrar asistencia incorrecta, así que se bloquea a propósito.
-  /// Ver docs/evaluacion-endpoints-docente.md.
   Future<void> guardarAsistenciaDelDia({
     required String cleAuto,
     required DateTime date,
     required Map<String, String> estados,
+    required List<TeacherStudent> students,
+    required int? tipoUnidadId,
   }) async {
-    throw const BadRequestException(
-      'El registro de asistencia desde la app aún no está disponible: '
-      'requiere verificar el catálogo de estados de SIGMA.',
-      status: 501,
+    final payload = {
+      'fecha_asistencia': '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} 00:00:00',
+      'asistencia': students.where((s) => estados.containsKey(s.code)).map((s) {
+        final stateCode = estados[s.code]!;
+        int estadoId = 1;
+        if (stateCode == 'F' || stateCode == '2') estadoId = 2;
+        if (stateCode == 'T' || stateCode == '3') estadoId = 3;
+
+        return {
+          'matricula_asignatura_id': s.matriculaAsignaturaId ?? '',
+          'estado_asist_id': estadoId,
+          'cod_cursal': cleAuto,
+          'tipo_unidad_id': tipoUnidadId ?? 121,
+        };
+      }).toList(),
+    };
+    final result = await _api.post<void>(
+      'Docente/InsertaRegistroAsistencia',
+      body: payload,
+      decode: (_) {},
     );
+    _requireSaved(result);
   }
 
   // ── Helpers de parseo del detalle de asistencia ──────────────────────────

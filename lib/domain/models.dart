@@ -948,11 +948,13 @@ class TeacherUnit {
   final String name;
   final double weight;
   final double? average;
+  final int? tipoUnidadId;
   final List<EvaluationGrade> grades;
   const TeacherUnit({
     required this.name,
     required this.weight,
     this.average,
+    this.tipoUnidadId,
     required this.grades,
   });
   factory TeacherUnit.fromJson(Map<String, dynamic> j) {
@@ -993,6 +995,7 @@ class TeacherUnit {
       name: _toStr(j['nombre']),
       weight: _toDouble(j['porcentaje']) ?? 0,
       average: _toDouble(j['promedioUnidad']),
+      tipoUnidadId: _toInt(j['unidadId']),
       grades: gradesList,
     );
   }
