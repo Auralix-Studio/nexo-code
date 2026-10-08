@@ -5,8 +5,10 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_student_sheet.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/domain/passing_rule.dart';
 
 class TeacherCourseDetailScreen extends StatefulWidget {
@@ -58,7 +60,14 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
       body: SafeArea(
         child: Column(
           children: [
-            _Header(course: widget.course),
+            ListenableBuilder(
+              listenable: widget.store,
+              builder: (context, _) => _Header(
+                course: widget.course,
+                studentCount:
+                    widget.store.alumnosDe(widget.course.id).value?.length,
+              ),
+            ),
             ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
@@ -97,10 +106,12 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
 
 class _Header extends StatelessWidget {
   final TeacherSubject course;
-  const _Header({required this.course});
+  final int? studentCount;
+  const _Header({required this.course, this.studentCount});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final count = studentCount ?? course.enrolledCount;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
@@ -137,24 +148,25 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: NexoTheme.primary.withValues(alpha: 0.12),
-              borderRadius: AppRadii.rPill,
-            ),
-            child: Text(
-              l.docenteMetricAlumnosCount(course.enrolledCount ?? 0),
-              style: TextStyle(
-                fontSize: AppFont.small,
-                fontWeight: FontWeight.w700,
-                color: NexoTheme.primary,
+          if (count != null && count > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: NexoTheme.primary.withValues(alpha: 0.12),
+                borderRadius: AppRadii.rPill,
+              ),
+              child: Text(
+                l.docenteMetricAlumnosCount(count),
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  fontWeight: FontWeight.w700,
+                  color: NexoTheme.primary,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -247,17 +259,10 @@ class _AlumnoTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
-                child: Text(
-                  _initials(student),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: NexoTheme.primary,
-                  ),
-                ),
+              StudentAvatar(
+                code: student.code,
+                name: student.displayName,
+                size: 44,
               ),
               const Gap.h(AppSpacing.md),
               Expanded(
@@ -309,14 +314,6 @@ class _AlumnoTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _initials(TeacherStudent a) {
-    final first = (a.firstName.split(' ').firstOrNull ?? '').trim();
-    final last = (a.lastName.split(' ').firstOrNull ?? '').trim();
-    String pick(String s) => s.isEmpty ? '' : s[0].toUpperCase();
-    final ini = pick(first) + pick(last);
-    return ini.isEmpty ? '?' : ini;
   }
 
   Widget _gradePill(String grade) {
@@ -376,6 +373,27 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
       _estados = Map.of(estados);
       _loading = false;
     });
+  }
+  bool _saving = false;
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final alumnos = widget.store.alumnosDe(widget.course.id).value ?? [];
+    final err = await widget.store.guardarAsistenciaDia(
+      cleAuto: widget.course.id,
+      date: _fecha,
+      estados: _estados,
+      students: alumnos,
+      tipoUnidadId: alumnos.firstOrNull?.units.firstOrNull?.tipoUnidadId ?? 121,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (err == null) {
+      ClipboardHelper.showSuccess(context, 'Asistencia registrada');
+      _load();
+    } else {
+      ClipboardHelper.showError(context, err);
+    }
   }
 
   @override
@@ -452,11 +470,53 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
                   separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (_, i) {
                     final a = alumnos[i];
-                    return _AsistenciaRow(student: a, state: _estados[a.code]);
+                    return _AsistenciaRow(
+                      student: a,
+                      state: _estados[a.code],
+                      onChanged: (v) {
+                        setState(() {
+                          if (v == null) {
+                            _estados.remove(a.code);
+                          } else {
+                            _estados[a.code] = v;
+                          }
+                        });
+                      },
+                    );
                   },
                 ),
         ),
-        _ComingSoonBanner(text: l.docenteAttendanceComingSoon),
+        SafeArea(
+          minimum: const EdgeInsets.all(AppSpacing.lg),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NexoTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                shape: const RoundedRectangleBorder(borderRadius: AppRadii.rLg),
+              ),
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Guardar asistencia',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: AppFont.body,
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -497,7 +557,12 @@ class _AsistenciaTabState extends State<_AsistenciaTab> {
 class _AsistenciaRow extends StatelessWidget {
   final TeacherStudent student;
   final String? state;
-  const _AsistenciaRow({required this.student, required this.state});
+  final ValueChanged<String?>? onChanged;
+  const _AsistenciaRow({
+    required this.student,
+    required this.state,
+    this.onChanged,
+  });
   @override
   Widget build(BuildContext context) {
     final st = _attendanceState(context, state);
@@ -535,69 +600,96 @@ class _AsistenciaRow extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: st.color.withValues(alpha: 0.14),
-              borderRadius: AppRadii.rPill,
-            ),
-            child: Text(
-              st.label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: st.color,
+          if (onChanged == null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: st.color.withValues(alpha: 0.14),
+                borderRadius: AppRadii.rPill,
               ),
+              child: Text(
+                st.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: st.color,
+                ),
+              ),
+            )
+          else
+            // Catálogo real de SIGMA: 1=Presente, 2=Falta, 3=Justificado.
+            // (No existe "tardanza" como estado propio.)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _AttButton(
+                  label: 'P',
+                  color: NexoTheme.success,
+                  selected: state == 'P' || state == '1',
+                  onTap: () => onChanged?.call('1'),
+                ),
+                const SizedBox(width: 4),
+                _AttButton(
+                  label: 'F',
+                  color: NexoTheme.danger,
+                  selected: state == 'F' || state == '2',
+                  onTap: () => onChanged?.call('2'),
+                ),
+                const SizedBox(width: 4),
+                _AttButton(
+                  label: 'J',
+                  color: NexoTheme.info,
+                  selected: state == 'J' || state == '3',
+                  onTap: () => onChanged?.call('3'),
+                ),
+              ],
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _ComingSoonBanner extends StatelessWidget {
-  final String text;
-  const _ComingSoonBanner({required this.text});
+class _AttButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _AttButton({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: NexoTheme.info.withValues(alpha: 0.10),
-            borderRadius: AppRadii.rLg,
-            border: Border.all(color: NexoTheme.info.withValues(alpha: 0.30)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? color : NexoTheme.border,
           ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 18,
-                color: NexoTheme.info,
-              ),
-              const Gap.h(AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: AppFont.small,
-                    color: NexoTheme.textSecondary,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                  ),
-                ),
-              ),
-            ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: selected ? Colors.white : NexoTheme.textMuted,
           ),
         ),
       ),
     );
   }
 }
+
+
 
 class _NotasTab extends StatefulWidget {
   final AppStore store;

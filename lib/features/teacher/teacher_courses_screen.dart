@@ -202,14 +202,23 @@ class _CursoTile extends StatelessWidget {
                     label: '${l.detailSection} ${course.section}',
                     color: NexoTheme.info,
                   ),
-                  const Gap.h(AppSpacing.sm),
-                  _pill(
-                    icon: Icons.groups_rounded,
-                    label: l.docenteMetricAlumnosCount(
-                      course.enrolledCount ?? 0,
+                  if (course.nrc.isNotEmpty) ...[
+                    const Gap.h(AppSpacing.sm),
+                    _pill(
+                      icon: Icons.numbers_rounded,
+                      label: 'NRC ${course.nrc}',
+                      color: NexoTheme.accent,
                     ),
-                    color: NexoTheme.accent,
-                  ),
+                  ],
+                  if (course.enrolledCount != null &&
+                      course.enrolledCount! > 0) ...[
+                    const Gap.h(AppSpacing.sm),
+                    _pill(
+                      icon: Icons.groups_rounded,
+                      label: l.docenteMetricAlumnosCount(course.enrolledCount!),
+                      color: NexoTheme.success,
+                    ),
+                  ],
                   const Spacer(),
                   Text(
                     course.periodo,

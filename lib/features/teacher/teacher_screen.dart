@@ -203,10 +203,10 @@ class _MetricsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
-    final totalAlumnos = courses.fold<int>(
-      0,
-      (a, c) => a + (c.enrolledCount ?? 0),
-    );
+    // El conteo de alumnos por sección sólo se conoce al abrir cada curso; si
+    // ninguna sección lo trae aún, mostramos "—" en vez de un 0 engañoso.
+    final counted = courses.where((c) => (c.enrolledCount ?? 0) > 0);
+    final totalAlumnos = counted.fold<int>(0, (a, c) => a + c.enrolledCount!);
     final stats = <_StatData>[
       _StatData(
         label: l.docenteMetricCursos,
@@ -216,7 +216,7 @@ class _MetricsGrid extends StatelessWidget {
       ),
       _StatData(
         label: l.docenteMetricAlumnos,
-        value: '$totalAlumnos',
+        value: counted.isEmpty ? '—' : '$totalAlumnos',
         icon: Icons.groups_rounded,
         color: NexoTheme.accent,
       ),

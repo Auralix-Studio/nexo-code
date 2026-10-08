@@ -9,6 +9,7 @@ import 'package:nexo/features/teacher/teacher_course_detail.dart'
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 
 Future<void> showTeacherStudentSheet({
   required BuildContext context,
@@ -320,17 +321,10 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
-            child: Text(
-              _initials(student),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: NexoTheme.primary,
-              ),
-            ),
+          StudentAvatar(
+            code: student.code,
+            name: student.displayName,
+            size: 52,
           ),
           const Gap.h(AppSpacing.md),
           Expanded(
@@ -380,15 +374,6 @@ class _Header extends StatelessWidget {
       ),
     );
   }
-
-  String _initials(TeacherStudent a) {
-    String pick(String s) => s.trim().isEmpty ? '' : s.trim()[0].toUpperCase();
-    return (pick(a.firstName) + pick(a.lastName)).ifEmpty('?');
-  }
-}
-
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
 class _NotasTab extends StatelessWidget {
