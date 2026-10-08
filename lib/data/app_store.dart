@@ -1094,14 +1094,18 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteHorario(v),
     operationName: 'loadDocenteHorario',
   );
-  Future<void> loadDocenteAlumnos(String cleAuto) => _scope.run(() async {
+  Future<void> loadDocenteAlumnos(String cleAuto, {int tipoCalif = 0}) =>
+      _scope.run(() async {
     _teacherStudents[cleAuto] = AsyncValue.loading(
       _teacherStudents[cleAuto]?.value,
     );
     _notify();
     try {
       final v = await _errorHandler.withFallback<List<TeacherStudent>>(
-        remote: () => _teacherReady().estudiantesSeccion(cleAuto),
+        remote: () => _teacherReady().estudiantesSeccion(
+          cleAuto: cleAuto,
+          tipoCalif: tipoCalif,
+        ),
         cached: () => _cache.getDocenteAlumnos(cleAuto),
         operationName: 'loadDocenteAlumnos($cleAuto)',
       );
@@ -1174,22 +1178,26 @@ class AppStore extends ChangeNotifier {
   });
 
   Future<List<DailyAttendance>> docenteAsistenciaAlumno({
-    required String cleAuto,
+    required TeacherSubject course,
     required String codigoAlumno,
   }) => _scope.run(() async {
     final result = await _teacherReady().asistenciaAlumno(
-      cleAuto: cleAuto,
+      plan: course.plan,
+      codSaltem: course.codSaltem,
+      asignID: course.nrc,
       codigoAlumno: codigoAlumno,
     );
     _scope.check();
     return result;
   });
   Future<Map<String, String>> docenteAsistenciaDia({
-    required String cleAuto,
+    required TeacherSubject course,
     required DateTime date,
   }) => _scope.run(() async {
     final result = await _teacherReady().asistenciaDelDia(
-      cleAuto: cleAuto,
+      plan: course.plan,
+      codSaltem: course.codSaltem,
+      asignID: course.nrc,
       date: date,
     );
     _scope.check();

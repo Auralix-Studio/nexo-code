@@ -241,6 +241,14 @@ if ($Publish) {
   Write-Host "[8/8] Publicando release $tag en $repo..." -ForegroundColor Yellow
 
   if (-not $DryRun) {
+    # Also validate reused artifacts (-SkipBuild) before creating a tag or upload.
+    $windowsArtifacts = @(Get-ChildItem -LiteralPath $dist -File |
+      Where-Object { $_.Name -match '-setup-x64\.exe$|-windows-x64\.zip$' } |
+      ForEach-Object { $_.FullName })
+    if ($windowsArtifacts.Count -gt 0) {
+      & (Join-Path $scriptsDir 'scan_windows_release.ps1') -Path $windowsArtifacts
+    }
+
     # Verificar gh CLI
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
       throw 'gh (GitHub CLI) no está instalado. Instalarlo con: winget install GitHub.cli ; luego gh auth login'

@@ -1,7 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/win_setup_service.dart';
@@ -331,20 +329,6 @@ class _UninstallViewState extends State<UninstallView> {
   bool _purgeData = true;
   String _currentStep = "";
   String _errorMessage = "";
-  static const double _w = 480;
-  @override
-  void initState() {
-    super.initState();
-    _resizeWindow(460);
-  }
-
-  Future<void> _resizeWindow(double h) async {
-    if (kIsWeb || !Platform.isWindows) return;
-    await windowManager.setMinimumSize(const Size(_w, 340));
-    await windowManager.setMaximumSize(const Size(_w, 700));
-    await windowManager.setSize(Size(_w, h));
-  }
-
   Future<void> _startUninstall() async {
     setState(() {
       _state = UninstallViewState.uninstalling;

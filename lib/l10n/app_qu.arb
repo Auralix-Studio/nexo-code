@@ -784,5 +784,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "docenteSearchStudent": "Yachachiqta maskay…",
+  "docenteSearchNoResults": "Mana tariytaqa",
+  "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki."
 }

@@ -7,21 +7,38 @@ class TeacherRepository {
   TeacherRepository(this._api);
   final ApiClient _api;
   Future<TeacherInfo?> infoDocente() async {
+    // El perfil del propio docente sale de `Login/GetDatosEntidad`.
+    // `Docente/GetInfoDocenteV1` es administrativo y exige `?filtro=` (400 sin él).
+    // GetDatosEntidad trae: codigo, nombres, apellidos, isDocente y un objeto
+    // `dependencia` con facultad/cargo/condicion/correoInstitucional.
     final res = await _api.get<TeacherInfo>(
-      'Teacher/GetInfoDocenteV1',
+      'Login/GetDatosEntidad',
       decode: (raw) {
-        if (raw is Map) {
-          return TeacherInfo.fromJson(raw.cast<String, dynamic>());
+        if (raw is! Map) {
+          return const TeacherInfo(code: '', firstName: '', lastName: '');
         }
-        return const TeacherInfo(code: '', firstName: '', lastName: '');
+        final j = raw.cast<String, dynamic>();
+        final dep = j['dependencia'];
+        final depMap = dep is Map ? dep.cast<String, dynamic>() : const {};
+        return TeacherInfo(
+          code: (j['codigo'] ?? '').toString(),
+          firstName: (j['nombres'] ?? '').toString().trim(),
+          lastName: (j['apellidos'] ?? '').toString().trim(),
+          faculty: (depMap['facultad'])?.toString(),
+          specialty: (depMap['cargo'] ?? depMap['condicion'])?.toString(),
+        );
       },
     );
     return res.data;
   }
 
   Future<List<TeacherSubject>> asignaturas() async {
+    // SIGMA real: `Docente/GetAsignaturaDocente?modo=Notas|Asistencia`.
+    // `GetAsignaturaDocenteV1?filtro=` es del módulo administrativo, no del
+    // propio docente. Cada ítem trae plan/id(codSaltem)/nrc(asignID)/horario[].
     final res = await _api.get<List<TeacherSubject>>(
-      'Teacher/GetAsignaturaDocenteV1',
+      'Docente/GetAsignaturaDocente',
+      query: const {'modo': 'Notas'},
       decode: (raw) {
         if (raw is! List) return const <TeacherSubject>[];
         return raw
@@ -34,32 +51,80 @@ class TeacherRepository {
   }
 
   Future<List<ScheduleClass>> getHorario() async {
+    // `Schedule/getListaHorario` NO existe en SIGMA. El horario del docente se
+    // deriva del arreglo `horario[]` que trae cada asignatura de
+    // `Docente/GetAsignaturaDocente`. Ver docs/evaluacion-endpoints-docente.md.
+    //
+    // Adaptador tolerante: aplana los bloques de cada asignatura a
+    // `ScheduleClass`, probando variantes de nombre de campo. Si la respuesta
+    // real difiere, degrada a vacío (nunca genera filas basura). ⚠ Los nombres
+    // exactos de los campos del bloque deben confirmarse con una respuesta real.
     final res = await _api.get<List<ScheduleClass>>(
-      'Schedule/getListaHorario',
-      decode: (raw) {
-        if (raw is! List) return const <ScheduleClass>[];
-        return raw
-            .whereType<Map>()
-            .map((e) => ScheduleClass.fromSigmaJson(e.cast<String, dynamic>()))
-            .toList();
-      },
+      'Docente/GetAsignaturaDocente',
+      query: const {'modo': 'Asistencia'},
+      decode: (raw) => _flattenHorario(raw),
     );
     return res.data ?? const [];
   }
 
-  Future<List<TeacherStudent>> estudiantesSeccion(String codSaltem) async {
-    final res = await _api.get<List<TeacherStudent>>(
-      'Teacher/ListarEstudianteComple',
-      query: {'codSaltem': codSaltem},
-      decode: (raw) {
-        if (raw is! List) return const <TeacherStudent>[];
-        return raw
-            .whereType<Map>()
-            .map((e) => TeacherStudent.fromJson(e.cast<String, dynamic>()))
-            .toList();
-      },
+  /// Aplana las asignaturas del docente (`GetAsignaturaDocente`) en bloques de
+  /// horario individuales. Solo emite un `ScheduleClass` por bloque que tenga
+  /// día y hora reconocibles.
+  List<ScheduleClass> _flattenHorario(Object? raw) {
+    if (raw is! List) return const <ScheduleClass>[];
+    String s(Object? v) => v?.toString() ?? '';
+    int i(Object? v) =>
+        v is int ? v : (v is num ? v.toInt() : int.tryParse(s(v)) ?? 0);
+    final out = <ScheduleClass>[];
+    for (final asg in raw.whereType<Map>()) {
+      final a = asg.cast<String, dynamic>();
+      final bloques = (a['horario'] ?? a['horarios'] ?? a['horarioSelect']);
+      if (bloques is! List) continue;
+      for (final b in bloques.whereType<Map>()) {
+        final h = b.cast<String, dynamic>();
+        final ini = s(h['horaInicio'] ?? h['startTime'] ?? h['horaIni']);
+        final fin = s(h['horaFin'] ?? h['endTime']);
+        final dia = s(h['dia'] ?? h['diaSemana']);
+        final idDia = i(h['idDia'] ?? h['diaSemanaID'] ?? h['dia']);
+        if (ini.isEmpty && dia.isEmpty && idDia == 0) continue;
+        out.add(
+          ScheduleClass(
+            id: s(a['id'] ?? a['cleAuto'] ?? a['saltemId']),
+            nrc: s(a['nrc'] ?? a['asignID'] ?? a['asignaturaId']),
+            subject: s(a['asignatura'] ?? a['nombreAsignatura']),
+            modality: s(h['modalidad'] ?? h['idModalidad']),
+            section: s(a['seccion']),
+            level: s(a['nivel']),
+            campus: s(a['sede']),
+            building: s(h['local'] ?? a['local']),
+            room: s(h['aula'] ?? a['aula']),
+            capacity: i(a['capacidad'] ?? a['capacity']),
+            note: s(a['observacion']),
+            teacher: s(a['docente'] ?? a['teacher']),
+            weekday: idDia,
+            dayName: dia,
+            startTime: ini,
+            endTime: fin,
+            typeCode: s(h['idTipo'] ?? h['tipo']),
+          ),
+        );
+      }
+    }
+    return out;
+  }
+
+  /// Roster de la sección. OJO: `Docente/ListarEstudianteComple` devuelve `[]`
+  /// con cuenta real; la lista real de alumnos (con nombre, nota final,
+  /// asistencia y `matriculaAsignaturaId`) sale de `NotasEstudianteResumenV1`.
+  /// Por eso el roster se obtiene de ahí, usando el `tipoCalif` de la sección.
+  Future<List<TeacherStudent>> estudiantesSeccion({
+    required String cleAuto,
+    required int tipoCalif,
+  }) {
+    return notasResumen(
+      tipoCalificacion: tipoCalif == 0 ? '12' : tipoCalif.toString(),
+      cleAuto: cleAuto,
     );
-    return res.data ?? const [];
   }
 
   Future<List<TeacherStudent>> notasResumen({
@@ -67,7 +132,7 @@ class TeacherRepository {
     required String cleAuto,
   }) async {
     final res = await _api.get<List<TeacherStudent>>(
-      'Teacher/NotasEstudianteResumenV1',
+      'Docente/NotasEstudianteResumenV1',
       query: {'tipoCalificacion': tipoCalificacion, 'cleAuto': cleAuto},
       decode: (raw) {
         if (raw is! List) return const <TeacherStudent>[];
@@ -86,7 +151,7 @@ class TeacherRepository {
     required String grade,
   }) async {
     final result = await _api.post<void>(
-      'Teacher/UpdateNota',
+      'Docente/UpdateNota',
       body: {'cleAuto': cleAuto, 'codigoAlumno': codigoAlumno, 'nota': grade},
       decode: (_) {},
     );
@@ -188,7 +253,7 @@ class TeacherRepository {
     required String grade,
   }) async {
     final result = await _api.post<void>(
-      'Teacher/InsertarNotas',
+      'Docente/InsertarNotas',
       body: {
         'cleAuto': cleAuto,
         'codigoAlumno': codigoAlumno,
@@ -200,89 +265,126 @@ class TeacherRepository {
     _requireSaved(result);
   }
 
+  /// Lista de asistencias registradas (historial) de un alumno en la sección.
+  /// SIGMA real: `Docente/GetAsistencia?plan=&codSaltem=&asignID=` devuelve la
+  /// lista de alumnos; cada uno con un `detalle[]` de marcas por fecha.
   Future<List<DailyAttendance>> asistenciaAlumno({
-    required String cleAuto,
+    required String plan,
+    required String codSaltem,
+    required String asignID,
     required String codigoAlumno,
   }) async {
-    final res = await _api.get<List<DailyAttendance>>(
-      'Teacher/GetAsistencia',
-      query: {'cleAuto': cleAuto, 'codigoAlumno': codigoAlumno},
-      decode: (raw) {
-        if (raw is! List) return const [];
-        return raw.whereType<Map>().map((e) {
-          final fStr = e['fecha']?.toString() ?? '';
-          DateTime? date;
-          try {
-            final parts = fStr.split('-');
-            if (parts.length == 3) {
-              date = DateTime(
-                int.parse(parts[2]),
-                int.parse(parts[1]),
-                int.parse(parts[0]),
-              );
-            }
-          } catch (_) {}
-          return DailyAttendance(
-            date: date ?? DateTime.now(),
-            state: e['estado']?.toString() ?? 'P',
-          );
-        }).toList();
-      },
+    final res = await _api.get<List<dynamic>>(
+      'Docente/GetAsistencia',
+      query: {'plan': plan, 'codSaltem': codSaltem, 'asignID': asignID},
+      decode: (raw) => raw is List ? raw : const [],
     );
-    return res.data ?? const [];
+    final list = res.data ?? const [];
+    for (final e in list.whereType<Map>()) {
+      final cod = _codigoDe(e);
+      if (cod != codigoAlumno) continue;
+      final detalle = _detalleDe(e);
+      return detalle
+          .map((d) {
+            final date = _parseFecha(_fechaDe(d));
+            if (date == null) return null;
+            return DailyAttendance(date: date, state: _estadoDe(d));
+          })
+          .whereType<DailyAttendance>()
+          .toList();
+    }
+    return const [];
   }
 
+  /// Estados de asistencia de todos los alumnos para una fecha concreta.
+  /// Devuelve `codigo → estado`. Filtra el `detalle[]` de cada alumno por fecha.
   Future<Map<String, String>> asistenciaDelDia({
-    required String cleAuto,
+    required String plan,
+    required String codSaltem,
+    required String asignID,
     required DateTime date,
   }) async {
     final res = await _api.get<List<dynamic>>(
-      'Teacher/GetAsistencia',
-      query: {'cleAuto': cleAuto},
+      'Docente/GetAsistencia',
+      query: {'plan': plan, 'codSaltem': codSaltem, 'asignID': asignID},
       decode: (raw) => raw is List ? raw : const [],
     );
     final list = res.data ?? const [];
     final map = <String, String>{};
-    final targetFmt =
-        '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-    for (final e in list) {
-      if (e is Map) {
-        final fStr = e['fecha']?.toString() ?? '';
-        if (fStr == targetFmt) {
-          final cod = (e['codigoAlumno'] ?? e['est_Id'] ?? '').toString();
-          final est = (e['estado'] ?? 'P').toString();
-          if (cod.isNotEmpty) {
-            map[cod] = est;
-          }
+    for (final e in list.whereType<Map>()) {
+      final cod = _codigoDe(e);
+      if (cod.isEmpty) continue;
+      for (final d in _detalleDe(e)) {
+        final f = _parseFecha(_fechaDe(d));
+        if (f != null && _mismoDia(f, date)) {
+          map[cod] = _estadoDe(d);
+          break;
         }
       }
     }
     return map;
   }
 
+  /// ⚠ NO IMPLEMENTADO con datos verificados. El guardado real de asistencia
+  /// (`Docente/InsertaRegistroAsistencia`) tiene la forma:
+  ///   { fecha_asistencia, asistencia: [ { matricula_asignatura_id,
+  ///     estado_asist_id, cod_cursal, tipo_unidad_id } ] }
+  /// Requiere el catálogo numérico de estados (`estado_asist_id`), el
+  /// `tipo_unidad_id` y el `cod_cursal`, que solo se obtienen de respuestas
+  /// reales (GetAsistencia + getTipoUnidadesV2). Enviar una forma adivinada
+  /// podría registrar asistencia incorrecta, así que se bloquea a propósito.
+  /// Ver docs/evaluacion-endpoints-docente.md.
   Future<void> guardarAsistenciaDelDia({
     required String cleAuto,
     required DateTime date,
     required Map<String, String> estados,
   }) async {
-    final targetFmt =
-        '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-    final payload = estados.entries
-        .map(
-          (entry) => {
-            'cleAuto': cleAuto,
-            'fecha': targetFmt,
-            'codigoAlumno': entry.key,
-            'estado': entry.value,
-          },
-        )
-        .toList();
-    final result = await _api.post<void>(
-      'Teacher/InsertaRegistroAsistencia',
-      body: payload,
-      decode: (_) {},
+    throw const BadRequestException(
+      'El registro de asistencia desde la app aún no está disponible: '
+      'requiere verificar el catálogo de estados de SIGMA.',
+      status: 501,
     );
-    _requireSaved(result);
+  }
+
+  // ── Helpers de parseo del detalle de asistencia ──────────────────────────
+  String _codigoDe(Map e) =>
+      (e['codigo'] ?? e['est_Id'] ?? e['codigoAlumno'] ?? '').toString();
+
+  List<Map> _detalleDe(Map e) {
+    final d = e['detalle'] ?? e['detalles'] ?? e['asistencia'];
+    return d is List ? d.whereType<Map>().toList() : const <Map>[];
+  }
+
+  String _fechaDe(Map d) =>
+      (d['fecha_asistencia'] ?? d['fecha'] ?? d['fechaAsistencia'] ?? '')
+          .toString();
+
+  String _estadoDe(Map d) =>
+      (d['estado'] ?? d['estado_asist_id'] ?? d['estadoAsistId'] ?? '')
+          .toString();
+
+  bool _mismoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  /// Acepta `YYYY-MM-DD[ hh:mm:ss]` y `DD-MM-YYYY`.
+  DateTime? _parseFecha(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return null;
+    final datePart = s.split(' ').first;
+    final p = datePart.split(RegExp(r'[-/]'));
+    if (p.length != 3) return null;
+    final a = int.tryParse(p[0]);
+    final b = int.tryParse(p[1]);
+    final c = int.tryParse(p[2]);
+    if (a == null || b == null || c == null) return null;
+    // Si el primer campo tiene 4 dígitos es YYYY-MM-DD; si no, DD-MM-YYYY.
+    try {
+      return p[0].length == 4
+          ? DateTime(a, b, c)
+          : DateTime(c, b, a);
+    } catch (_) {
+      return null;
+    }
   }
 
   void _requireSaved(ApiEnvelope<void> result) {

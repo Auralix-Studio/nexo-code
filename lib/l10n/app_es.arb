@@ -928,5 +928,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "docenteSearchStudent": "Buscar alumno…",
+  "docenteSearchNoResults": "Sin resultados",
+  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA."
 }

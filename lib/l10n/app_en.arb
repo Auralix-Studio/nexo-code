@@ -840,5 +840,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "docenteSearchStudent": "Search student…",
+  "docenteSearchNoResults": "No results",
+  "docenteAttendanceComingSoon": "Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA."
 }

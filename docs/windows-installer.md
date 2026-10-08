@@ -34,6 +34,28 @@ El generador aplica Authenticode con timestamp; un fallo de firma aborta la
 publicación. Sin certificado produce un EXE sin firma y lo advierte. No se
 promete evitar advertencias de SmartScreen o de todos los antivirus.
 
+Antes de publicar, el flujo local (incluido `-SkipBuild`) y GitHub Actions
+ejecutan `scripts/scan_windows_release.ps1` sobre el EXE y el ZIP. Una detección,
+un error del escáner o la ausencia de Defender interrumpe la publicación de
+Windows. El análisis no agrega exclusiones ni cambia la configuración de
+Defender; `-DisableRemediation` conserva los archivos analizados para revisión.
+Un resultado limpio solo representa ese análisis, no garantiza futuros
+veredictos de Defender ni de otros antivirus.
+
+La versión 1.7.1 fue detectada localmente como `Trojan:Win32/Sabsik.EN.D!ml`.
+El EXE sin firma tiene SHA-256
+`e48e93b1fb5382a245f4d54d48f37acc678ca578ce1a17c54ad95bf03df5da8b`.
+El ZIP pasó el análisis y su hash coincide con el recurso incrustado en el EXE.
+Esto no confirma un falso positivo. El binario original debe revisarse mediante
+el [portal de Microsoft Security Intelligence](https://www.microsoft.com/en-us/wdsi/filesubmission)
+como desarrollador de software; no se debe desactivar el antivirus ni presentar
+una firma de editor como solución garantizada a una detección.
+
+La ventana nativa de Flutter permanece oculta durante el arranque.
+`WindowsStartup.prepare` termina de configurar tamaño, tema y posición antes
+de `runApp`; se muestra una sola vez después del primer frame rasterizado.
+Este flujo también cubre el desinstalador y el error de carga de preferencias.
+
 Validación de paquete sin instalarlo:
 
 ```powershell

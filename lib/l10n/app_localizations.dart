@@ -2925,6 +2925,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Última actualización: {date}'**
   String dataUpdatedAt(String date);
+
+  /// No description provided for @docenteSearchStudent.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar alumno…'**
+  String get docenteSearchStudent;
+
+  /// No description provided for @docenteSearchNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados'**
+  String get docenteSearchNoResults;
+
+  /// No description provided for @docenteAttendanceComingSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.'**
+  String get docenteAttendanceComingSoon;
 }
 
 class _AppLocalizationsDelegate

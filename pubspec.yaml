@@ -1,7 +1,7 @@
 ﻿name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
-version: 1.7.1+19
+version: 1.7.2+20
 
 environment:
   sdk: ^3.10.1
@@ -12,7 +12,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-  cupertino_icons: ^1.0.8
   # Cliente HTTP base oficial del equipo Dart (no SDK de terceros).
   # Lo usamos como transporte; la autenticación, sesión y manejo
   # de respuestas son 100% propios (ver lib/data/api_client.dart).
@@ -44,12 +43,6 @@ dependencies:
   url_launcher: ^6.3.2
   window_manager: ^0.4.3
   path_provider: ^2.1.4
-
-  # Autoupdater: lanza el instalador del sistema para el APK descargado.
-  # En Android usa ACTION_VIEW + FileProvider (el plugin lo configura por
-  # nosotros, sin tocar AndroidManifest manualmente). Ver lib/data/update_service.dart.
-  open_filex: ^4.5.0
-  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:

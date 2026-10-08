@@ -27,13 +27,9 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
-  });
-
-  // Flutter can complete the first frame before the "show window" callback is
-  // registered. The following call ensures a frame is pending to ensure the
-  // window is shown. It is a no-op if the first frame hasn't completed yet.
+  // Dart owns visibility: WindowsStartup first applies the final geometry and
+  // waits for the first rasterized frame. Showing here races that setup and
+  // briefly exposes the default native window before it moves to the center.
   flutter_controller_->ForceRedraw();
 
   return true;
