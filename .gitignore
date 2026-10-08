@@ -60,3 +60,6 @@ _backup_diseno_instalador_*/
 android/key.properties
 *.jks
 *.keystore
+
+# Prototipo de endpoinds extractor
+prototype-ts

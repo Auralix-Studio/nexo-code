@@ -48,7 +48,6 @@ class _AlumnoSheet extends StatefulWidget {
 class _AlumnoSheetState extends State<_AlumnoSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
-  late Future<List<EvaluationGrade>> _futNotas;
   late Future<List<DailyAttendance>> _futAsis;
   @override
   void initState() {
@@ -62,10 +61,6 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
   }
 
   void _loadAll() {
-    _futNotas = widget.store.docenteNotasDetalle(
-      cleAuto: widget.course.id,
-      codigoAlumno: widget.student.code,
-    );
     _futAsis = widget.store.docenteAsistenciaAlumno(
       course: widget.course,
       codigoAlumno: widget.student.code,
@@ -119,7 +114,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                 controller: _tabs,
                 children: [
                   _NotasTab(
-                    future: _futNotas,
+                    units: widget.student.units,
                     onEdit: _editEval,
                     scrollController: controller,
                   ),
@@ -395,59 +390,60 @@ extension on String {
 }
 
 class _NotasTab extends StatelessWidget {
-  final Future<List<EvaluationGrade>> future;
+  final List<TeacherUnit> units;
   final ValueChanged<EvaluationGrade> onEdit;
   final ScrollController scrollController;
   const _NotasTab({
-    required this.future,
+    required this.units,
     required this.onEdit,
     required this.scrollController,
   });
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<EvaluationGrade>>(
-      future: future,
-      builder: (_, snap) {
-        if (!snap.hasData) {
-          return const _SkeletonList();
-        }
-        final evals = snap.data!;
-        var sum = 0.0;
-        var pesoTotal = 0.0;
-        for (final e in evals) {
-          final n = e.gradeNum;
-          if (n != null) {
-            sum += n * e.weight / 100;
-            pesoTotal += e.weight;
-          }
-        }
-        final prom = pesoTotal > 0 ? sum * 100 / pesoTotal : null;
-        return ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          children: [
-            if (prom != null) _PromedioCard(average: prom, weight: pesoTotal),
-            const SizedBox(height: 12),
-            for (final e in evals)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _EvalRow(eval: e, onEdit: () => onEdit(e)),
-              ),
-          ],
-        );
-      },
+    if (units.isEmpty) {
+      return Center(
+        child: Text(
+          'No hay notas registradas',
+          style: TextStyle(color: NexoTheme.textMuted),
+        ),
+      );
+    }
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        for (final u in units) ...[
+          _PromedioCard(
+            title: u.name,
+            average: u.average,
+            weight: u.weight,
+          ),
+          const SizedBox(height: 12),
+          for (final e in u.grades)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _EvalRow(eval: e, onEdit: () => onEdit(e)),
+            ),
+          const SizedBox(height: 16),
+        ],
+      ],
     );
   }
 }
 
 class _PromedioCard extends StatelessWidget {
-  final double average;
+  final String title;
+  final double? average;
   final double weight;
-  const _PromedioCard({required this.average, required this.weight});
+  const _PromedioCard({
+    required this.title,
+    this.average,
+    required this.weight,
+  });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = gradeColor(average.toStringAsFixed(1));
+    final color = average != null ? gradeColor(average!.toStringAsFixed(1)) : NexoTheme.textMuted;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -462,7 +458,7 @@ class _PromedioCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l.docentePromedioParcial,
+                  title,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -472,7 +468,7 @@ class _PromedioCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  average.toStringAsFixed(2),
+                  average != null ? average!.toStringAsFixed(2) : '—',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
@@ -531,12 +527,13 @@ class _EvalRow extends StatelessWidget {
                       color: NexoTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
-                    'Peso ${eval.weight.toStringAsFixed(0)}% · ${eval.code}',
+                    eval.code,
                     style: TextStyle(
                       fontSize: AppFont.small,
                       color: NexoTheme.textMuted,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],

@@ -909,17 +909,27 @@ class EvaluationGrade {
   final String description;
   final double weight;
   final String? grade;
+  final int? tipoUnidadId;
+  final int? tipoNotaId;
+  final int? notaId;
+
   const EvaluationGrade({
     required this.code,
     required this.description,
     required this.weight,
     this.grade,
+    this.tipoUnidadId,
+    this.tipoNotaId,
+    this.notaId,
   });
   EvaluationGrade copyWith({String? grade}) => EvaluationGrade(
     code: code,
     description: description,
     weight: weight,
     grade: grade ?? this.grade,
+    tipoUnidadId: tipoUnidadId,
+    tipoNotaId: tipoNotaId,
+    notaId: notaId,
   );
   double? get gradeNum =>
       double.tryParse((grade ?? '').replaceAll(',', '.').trim());
@@ -932,6 +942,60 @@ class DailyAttendance {
   // SIGMA usa un catálogo numérico: 1=Presente, 2=Falta, 3=Justificado.
   // Se aceptan también las letras heredadas P/T por compatibilidad.
   bool get isPresent => state == 'P' || state == 'T' || state == '1';
+}
+
+class TeacherUnit {
+  final String name;
+  final double weight;
+  final double? average;
+  final List<EvaluationGrade> grades;
+  const TeacherUnit({
+    required this.name,
+    required this.weight,
+    this.average,
+    required this.grades,
+  });
+  factory TeacherUnit.fromJson(Map<String, dynamic> j) {
+    final groups = j['grupos'];
+    final gradesList = <EvaluationGrade>[];
+    if (groups is List) {
+      for (final g in groups.whereType<Map>()) {
+        final notasArr = g['notas'] as List?;
+        final notaIdObj = (notasArr != null && notasArr.isNotEmpty) ? notasArr.first['idNota'] : null;
+        final isPending = notasArr == null || notasArr.isEmpty;
+        gradesList.add(
+          EvaluationGrade(
+            code: _toStr(g['tipoNotaAbr']),
+            description: _toStr(g['tipoNotaAbr']) == 'EV'
+                ? 'Evidencia de Conocimiento'
+                : _toStr(g['tipoNotaAbr']) == 'DE'
+                    ? 'Evidencia de Desempeño'
+                    : _toStr(g['tipoNotaAbr']) == 'PR'
+                        ? 'Evidencia de Producto'
+                        : _toStr(g['tipoNotaAbr']),
+            weight: _toDouble(g['peso']) ?? 0,
+            grade: isPending ? null : g['promedio']?.toString(),
+            tipoUnidadId: _toInt(j['unidadId']),
+            tipoNotaId: _toInt(g['idTipoNota']),
+            notaId: _toInt(notaIdObj),
+          ),
+        );
+      }
+    }
+    // Ordenar: EV, DE, PR
+    gradesList.sort((a, b) {
+      const order = {'EV': 1, 'DE': 2, 'PR': 3};
+      final o1 = order[a.code] ?? 99;
+      final o2 = order[b.code] ?? 99;
+      return o1.compareTo(o2);
+    });
+    return TeacherUnit(
+      name: _toStr(j['nombre']),
+      weight: _toDouble(j['porcentaje']) ?? 0,
+      average: _toDouble(j['promedioUnidad']),
+      grades: gradesList,
+    );
+  }
 }
 
 class TeacherStudent {
@@ -952,6 +1016,8 @@ class TeacherStudent {
 
   /// Observación/estado de riesgo que devuelve SIGMA (p. ej. propenso).
   final String? observacion;
+  final List<TeacherUnit> units;
+
   const TeacherStudent({
     required this.code,
     required this.firstName,
@@ -961,9 +1027,17 @@ class TeacherStudent {
     this.grade,
     this.matriculaAsignaturaId,
     this.observacion,
+    this.units = const [],
   });
   factory TeacherStudent.fromJson(Map<String, dynamic> j) {
     final notaFinal = j['notaFinal'] ?? j['nota'] ?? j['promedio'];
+    final unids = j['unidades'];
+    final unitsList = <TeacherUnit>[];
+    if (unids is List) {
+      for (final u in unids.whereType<Map>()) {
+        unitsList.add(TeacherUnit.fromJson(u.cast<String, dynamic>()));
+      }
+    }
     return TeacherStudent(
       code: _toStr(j['codigo'] ?? j['est_Id']),
       firstName: _toStr(j['nombres']),
@@ -975,6 +1049,7 @@ class TeacherStudent {
           (j['matricula_asignatura_id'] ?? j['matriculaAsignaturaId'])
               ?.toString(),
       observacion: j['observacion']?.toString(),
+      units: unitsList,
     );
   }
   String get displayName {
