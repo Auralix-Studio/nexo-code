@@ -561,20 +561,9 @@ class CacheManager {
     String cursoId,
     List<TeacherStudent> alumnos,
   ) async {
-    final list = alumnos
-        .map(
-          (a) => {
-            'codigo': a.code,
-            'nombres': a.firstName,
-            'apellidos': a.lastName,
-            'nombreCompleto': a.fullName,
-            'asistencia': a.attendance,
-            'nota': a.grade,
-            'matricula_asignatura_id': a.matriculaAsignaturaId,
-            'observacion': a.observacion,
-          },
-        )
-        .toList();
+    // Incluye las unidades/notas por evaluación: sin ellas, la ficha del
+    // alumno abierta desde caché (sin conexión) mostraba "sin notas".
+    final list = alumnos.map((a) => a.toCacheJson()).toList();
     await db.insert('docente_alumnos', {
       'curso_id': cursoId,
       'json_data': jsonEncode(list),

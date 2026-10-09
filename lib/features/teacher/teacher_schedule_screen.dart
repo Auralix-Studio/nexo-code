@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/domain/course_roster_stats.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
@@ -43,10 +44,12 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
           byDay.putIfAbsent(c.weekday, () => []).add(c);
         }
         for (final list in byDay.values) {
-          list.sort((a, b) => a.startTime.compareTo(b.startTime));
+          list.sort((a, b) => compareHm(a.startTime, b.startTime));
         }
         final today = DateTime.now().weekday;
-        final days = byDay.keys.toList()..sort();
+        // Día 0 = no reconocido; no lo mostramos como tarjeta sin nombre.
+        final days = byDay.keys.where((d) => d >= 1 && d <= 7).toList()
+          ..sort();
         return RefreshIndicator(
           onRefresh: () => widget.store.loadDocenteHorario(),
           child: CustomScrollView(

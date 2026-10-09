@@ -24,7 +24,8 @@ Severidad y estado tras este cambio:
 | 2 | `GetAsignaturaDocenteV1` sin params → `GetAsignaturaDocente?modo=` | 🔴 Bloqueante | ✅ Corregido |
 | 3 | Horario docente: `Schedule/getListaHorario` no existe | 🔴 Bloqueante | ✅ Corregido (adaptador que aplana `horario[]`) |
 | 4 | `GetAsistencia` params `{cleAuto,codigoAlumno}` → `{plan,codSaltem,asignID}` | 🟠 Alto | ✅ Corregido (lectura) + modelo lleva plan/nrc |
-| 5 | **Escritura de notas y asistencia con forma de API imaginada** | 🔴 Bloqueante | ⛔ Bloqueado a propósito (ver §9) |
+| 5a | Escritura de **notas** con forma de API imaginada | 🔴 Bloqueante | ✅ Corregido (forma real `{"Notas":[…]}`, ver §11) |
+| 5b | Escritura de **asistencia** | 🔴 Bloqueante | ⛔ Bloqueado a propósito (ver §9) |
 | 6 | Fuente del "info docente" propio sin confirmar | 🟡 Medio | Documentado |
 
 > Las **lecturas** (asignaturas, estudiantes, notas, asistencia, horario) quedan
@@ -221,3 +222,30 @@ de estados. Con eso se completan ambas escrituras con certeza.
 - Modelo `TeacherSubject` ahora expone `plan`, `codSaltem` y `nrc`; `TeacherStudent`
   expone `matriculaAsignaturaId` y `observacion` (persistidos en caché), dejando
   todo listo para completar las escrituras cuando se tenga el catálogo.
+
+## 11. Guardado de notas (octubre 2026)
+
+Con los catálogos ya verificados (§0), el guardado de notas usa la forma real
+del cliente oficial. Todos los ids salen de la propia respuesta de
+`NotasEstudianteResumenV1`, nada se adivina:
+
+| Campo enviado | Origen |
+|---|---|
+| `matricula_asignatura_id` | `matriculaAsignaturaId` del alumno |
+| `tipo_unidad_id` | `unidades[].unidadId` |
+| `tipo_nota_id` | `unidades[].grupos[].idTipoNota` |
+| `nota_id` (solo `UpdateNota`) | `unidades[].grupos[].notas[0].idNota` |
+
+- Sin nota previa → `POST Docente/InsertarNotas`; con nota → `POST Docente/UpdateNota`.
+- **Salvaguardas** (`TeacherRepository.guardarNota`): no envía nada si falta
+  algún id, si la nota está fuera de 0–20, o si el componente agrupa **más de
+  una nota** (su valor es un promedio y escribirlo pisaría notas reales; en la
+  app aparece con candado).
+- La app pide confirmación mostrando nota anterior → nueva antes de enviar, y
+  tras guardar recarga el roster para mostrar lo que quedó en SIGMA.
+
+> ⚠ Antes de publicar: probar con una cuenta docente real sobre **una** nota
+> de prueba (insertar y luego corregir) y confirmar en SIGMA web que quedó bien.
+> El tipo numérico de `nota` (decimal) es el único detalle no capturado aún de
+> una petición real.
+

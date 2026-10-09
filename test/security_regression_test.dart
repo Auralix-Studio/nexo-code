@@ -18,6 +18,7 @@ import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/data/teacher_repository.dart';
+import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
 http.Response loginResponse(String user) => http.Response(
@@ -274,9 +275,11 @@ void main() {
         refreshes++;
         return ReauthOutcome.refreshed;
       };
-      final pending = TeacherRepository(
-        api,
-      ).updateNota(cleAuto: 'c', codigoAlumno: 's', grade: '15');
+      final pending = TeacherRepository(api).guardarNota(
+        matriculaAsignaturaId: '501',
+        evaluacion: _editableEval,
+        nota: 15,
+      );
       final rejected = expectLater(
         pending,
         throwsA(isA<StaleSessionException>()),
@@ -336,12 +339,15 @@ void main() {
       addTearDown(api.close);
       final repo = TeacherRepository(api);
       for (final operation in <Future<void> Function()>[
-        () => repo.updateNota(cleAuto: 'c', codigoAlumno: 's', grade: '15'),
-        () => repo.updateEvaluacion(
-          cleAuto: 'c',
-          codigoAlumno: 's',
-          codigoEvaluacion: 'e',
-          grade: '15',
+        () => repo.guardarNota(
+          matriculaAsignaturaId: '501',
+          evaluacion: _editableEval,
+          nota: 15,
+        ),
+        () => repo.guardarNota(
+          matriculaAsignaturaId: '501',
+          evaluacion: _editableEvalWithId,
+          nota: 15,
         ),
         () => repo.guardarAsistenciaDelDia(
           cleAuto: 'c',
@@ -362,10 +368,31 @@ void main() {
     );
     addTearDown(api.close);
     await expectLater(
-      TeacherRepository(
-        api,
-      ).updateNota(cleAuto: 'c', codigoAlumno: 's', grade: '15'),
+      TeacherRepository(api).guardarNota(
+        matriculaAsignaturaId: '501',
+        evaluacion: _editableEval,
+        nota: 15,
+      ),
       completes,
     );
   });
 }
+
+const _editableEval = EvaluationGrade(
+  code: 'EV',
+  description: 'Evidencia de Conocimiento',
+  weight: 30,
+  tipoUnidadId: 121,
+  tipoNotaId: 11,
+);
+
+const _editableEvalWithId = EvaluationGrade(
+  code: 'EV',
+  description: 'Evidencia de Conocimiento',
+  weight: 30,
+  grade: '12',
+  tipoUnidadId: 121,
+  tipoNotaId: 11,
+  notaId: 9001,
+  noteCount: 1,
+);
