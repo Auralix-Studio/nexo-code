@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
@@ -71,10 +72,17 @@ class _TeacherReportTabState extends State<TeacherReportTab>
               }),
             ),
             const SizedBox(height: AppSpacing.lg),
-            if (_grades)
-              _GradesSummary(roster: roster)
-            else
-              _AttendanceSummary(sheet: sheet),
+            FadeSwitch(
+              child: _grades
+                  ? _GradesSummary(
+                      key: const ValueKey('grades'),
+                      roster: roster,
+                    )
+                  : _AttendanceSummary(
+                      key: const ValueKey('attendance'),
+                      sheet: sheet,
+                    ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: 8,
@@ -165,7 +173,7 @@ class _Row {
 
 class _AttendanceSummary extends StatelessWidget {
   final AttendanceSheet sheet;
-  const _AttendanceSummary({required this.sheet});
+  const _AttendanceSummary({super.key, required this.sheet});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -193,7 +201,7 @@ class _AttendanceSummary extends StatelessWidget {
 
 class _GradesSummary extends StatelessWidget {
   final List<TeacherStudent> roster;
-  const _GradesSummary({required this.roster});
+  const _GradesSummary({super.key, required this.roster});
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -237,7 +245,7 @@ class _GradesSummary extends StatelessWidget {
               border: Border.all(color: NexoTheme.border),
             ),
             child: SizedBox(
-              height: 120,
+              height: 160,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

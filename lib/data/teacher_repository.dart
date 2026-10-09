@@ -102,99 +102,39 @@ class TeacherRepository {
     return out;
   }
 
-  Future<List<ScheduleClass>> getHorario() async {
-    // `Schedule/getListaHorario` NO existe en SIGMA. El horario del docente se
-    // deriva de `Docente/GetAsignaturaDocente?modo=Asistencia`, donde cada
-    // asignatura trae su `horario` como texto. Ver [parseHorarioDocente].
-    final res = await _api.get<List<ScheduleClass>>(
-      'Docente/GetAsignaturaDocente',
-      query: const {'modo': 'Asistencia'},
-      decode: parseHorarioDocente,
-    );
-    return res.data ?? const [];
-  }
-
-  static const _dias = {
-    'LUNES': 1,
-    'MARTES': 2,
-    'MIERCOLES': 3,
-    'MIÉRCOLES': 3,
-    'JUEVES': 4,
-    'VIERNES': 5,
-    'SABADO': 6,
-    'SÁBADO': 6,
-    'DOMINGO': 7,
-  };
-
-  /// Aplana las asignaturas de `GetAsignaturaDocente?modo=Asistencia` en
-  /// bloques de horario. Con cuenta real, `horario` llega como texto:
-  /// `"Jueves 11:30:00 13:00:00 P, Miércoles 10:45:00 11:30:00 T"`
-  /// (día, inicio, fin, tipo T/P). También tolera una lista de objetos.
-  @visibleForTesting
-  static List<ScheduleClass> parseHorarioDocente(Object? raw) {
-    if (raw is! List) return const <ScheduleClass>[];
-    String s(Object? v) => v?.toString().trim() ?? '';
-    int i(Object? v) =>
-        v is int ? v : (v is num ? v.toInt() : int.tryParse(s(v)) ?? 0);
-    String hm(String t) {
-      final p = t.split(':');
-      return p.length >= 2 ? '${p[0].padLeft(2, '0')}:${p[1]}' : t;
-    }
-
+  /// Horario del docente. SIGMA no tiene un endpoint propio (y
+  /// `Schedule/getListaHorario` no existe): cada asignatura de
+  /// `GetAsignaturaDocente?modo=Asistencia` trae su `horario` como texto, que
+  /// [asignaturas] ya convierte en [TeacherSubject.blocks]. Se arma desde ahí
+  /// para no volver a pedir la misma lista.
+  static List<ScheduleClass> scheduleFromSubjects(
+    List<TeacherSubject> subjects,
+  ) {
     final out = <ScheduleClass>[];
-    for (final asg in raw.whereType<Map>()) {
-      final a = asg.cast<String, dynamic>();
-      final loc = ScheduleClass.parseLocation(s(a['aula']));
-      final subject = s(
-        a['asignatura'],
-      ).replaceAll(RegExp(r'\s*\([^)]*\d{4}[^)]*\)\s*$'), '');
-      ScheduleClass block(
-        int weekday,
-        String day,
-        String ini,
-        String fin,
-        String tipo,
-      ) => ScheduleClass(
-        id: s(a['nrc']),
-        nrc: s(a['nrc']),
-        subject: subject,
-        modality: s(a['modalidad']),
-        section: s(a['seccion']),
-        level: s(a['ciclo'] ?? a['nivel']),
-        campus: s(a['sede']),
-        building: loc.building.isNotEmpty ? loc.building : s(a['local']),
-        room: loc.room,
-        capacity: loc.capacity,
-        note: s(a['carrera']),
-        teacher: '',
-        weekday: weekday,
-        dayName: day,
-        startTime: hm(ini),
-        endTime: hm(fin),
-        typeCode: tipo.toUpperCase(),
-      );
-
-      final h = a['horario'];
-      if (h is String) {
-        for (final part in h.split(',')) {
-          final t = part.trim().split(RegExp(r'\s+'));
-          if (t.length < 3) continue;
-          final day = t[0];
-          final wd = _dias[day.toUpperCase()];
-          if (wd == null) continue;
-          out.add(block(wd, day, t[1], t[2], t.length > 3 ? t[3] : ''));
-        }
-      } else if (h is List) {
-        for (final b in h.whereType<Map>()) {
-          final m = b.cast<String, dynamic>();
-          final day = s(m['dia']);
-          final wd = i(m['idDia']) != 0
-              ? i(m['idDia'])
-              : (_dias[day.toUpperCase()] ?? 0);
-          final ini = s(m['horaInicio']);
-          if (wd == 0 || ini.isEmpty) continue;
-          out.add(block(wd, day, ini, s(m['horaFin']), s(m['idTipo'])));
-        }
+    for (final c in subjects) {
+      final loc = ScheduleClass.parseLocation(c.aula);
+      for (final b in c.blocks) {
+        out.add(
+          ScheduleClass(
+            id: c.nrc,
+            nrc: c.nrc,
+            subject: c.displayName,
+            modality: c.modalidad,
+            section: c.section,
+            level: c.ciclo,
+            campus: c.sede,
+            building: loc.building.isNotEmpty ? loc.building : c.local,
+            room: loc.room,
+            capacity: loc.capacity,
+            note: c.carrera,
+            teacher: '',
+            weekday: b.weekday,
+            dayName: b.dayName,
+            startTime: b.start,
+            endTime: b.end,
+            typeCode: b.type,
+          ),
+        );
       }
     }
     return out;

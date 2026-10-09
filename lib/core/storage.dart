@@ -209,6 +209,8 @@ class AppStorage {
     }
   }
 
+  Future<void> removeCache(String key) => _prefs.remove('$_kCachePrefix$key');
+
   Future<void> clearCache() async {
     final keys = _prefs
         .getKeys()

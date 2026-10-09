@@ -18,6 +18,61 @@ double? _double(Object? v) {
 
 String _str(Object? v) => v?.toString() ?? '';
 
+/// Palabras que van en minúscula dentro de un nombre ("Base de Datos I").
+const _minorWords = {
+  'a',
+  'al',
+  'con',
+  'de',
+  'del',
+  'e',
+  'el',
+  'en',
+  'la',
+  'las',
+  'lo',
+  'los',
+  'o',
+  'para',
+  'por',
+  'sin',
+  'sobre',
+  'su',
+  'sus',
+  'u',
+  'y',
+};
+
+final _roman = RegExp(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$');
+
+String _capitalizeWord(String w) {
+  final lower = w.toLowerCase();
+  return lower.isEmpty
+      ? lower
+      : '${lower[0].toUpperCase()}${lower.substring(1)}';
+}
+
+/// Nombre legible de una asignatura o carrera de SIGMA: sin los paréntesis
+/// ("(2026-2)", "(ELECTIVO)") y en mayúsculas y minúsculas, con los números
+/// romanos intactos. "BASE DE DATOS I (2026-2)" → "Base de Datos I".
+String readableName(String raw) {
+  final clean = raw
+      .replaceAll(RegExp(r'\s*\([^)]*\)'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  final words = clean.split(' ');
+  return [
+    for (var i = 0; i < words.length; i++)
+      if (_roman.hasMatch(words[i].toUpperCase()))
+        words[i].toUpperCase()
+      else if (i > 0 && _minorWords.contains(words[i].toLowerCase()))
+        words[i].toLowerCase()
+      else
+        // "TEORÍA-PRÁCTICA" → "Teoría-Práctica".
+        words[i].split('-').map(_capitalizeWord).join('-'),
+  ].join(' ');
+}
+
 /// Día de SIGMA → `DateTime.weekday` (lunes = 1 … domingo = 7).
 const _weekdays = {
   'LUNES': 1,

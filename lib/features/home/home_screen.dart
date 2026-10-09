@@ -569,66 +569,119 @@ class _StatData {
 class _StatTile extends StatelessWidget {
   final _StatData data;
   const _StatTile({required this.data});
+
+  /// Por debajo de este ancho la tarjeta usa ícono y márgenes más chicos.
+  static const double compactBelow = 168;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: NexoTheme.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: NexoTheme.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: data.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(data.icon, color: data.color, size: 20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < compactBelow;
+        final box = compact ? 32.0 : 40.0;
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 14,
+            vertical: 12,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: NexoTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
+          decoration: BoxDecoration(
+            color: NexoTheme.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: NexoTheme.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: box,
+                height: box,
+                decoration: BoxDecoration(
+                  color: data.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
                 ),
-                const SizedBox(height: 2),
-                data.loading
-                    ? const Skeleton(height: 18, width: 56)
-                    : Text(
-                        data.value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: NexoTheme.textPrimary,
-                          letterSpacing: -0.4,
-                          height: 1.1,
-                        ),
+                child: Icon(
+                  data.icon,
+                  color: data.color,
+                  size: compact ? 17 : 20,
+                ),
+              ),
+              SizedBox(width: compact ? 8 : 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      data.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: NexoTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
-              ],
-            ),
+                    ),
+                    const SizedBox(height: 2),
+                    data.loading
+                        ? const Skeleton(height: 18, width: 56)
+                        // Un monto largo ("S/ 2,090.00") se achica para
+                        // caber completo en vez de cortarse con "…".
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              data.value,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: NexoTheme.textPrimary,
+                                letterSpacing: -0.4,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
+
+/// Ancho mínimo de una métrica: con esto caben dos por fila desde pantallas
+/// de 320 dp, y la tarjeta se compacta por debajo de [_StatTile.compactBelow].
+const double metricMinWidth = 132;
+
+/// Ancho de una tarjeta del inicio que ocupa [span] de 4 columnas.
+///
+/// Si con ese ancho no cabe su contenido ([minWidth]), se ponen menos
+/// tarjetas por fila y cada una se estira para llenarla, en vez de quedarse
+/// en el mínimo y bajar sola a otra fila dejando medio renglón vacío.
+@visibleForTesting
+double dashboardItemWidth({
+  required double availableWidth,
+  required int span,
+  required double minWidth,
+  double spacing = 12,
+}) {
+  final s = span.clamp(1, 4);
+  double widthFor(int perRow) => (availableWidth + spacing) / perRow - spacing;
+  var width = (availableWidth + spacing) * s / 4 - spacing;
+  if (width < minWidth) {
+    var perRow = 4 ~/ s;
+    while (perRow > 1 && widthFor(perRow) < minWidth) {
+      perRow--;
+    }
+    width = widthFor(perRow);
+  }
+  // Una décima menos: el redondeo de punto flotante no debe mandar la última
+  // tarjeta de la fila al renglón siguiente.
+  return ((width * 10).floorToDouble() / 10).clamp(0.0, availableWidth);
 }
 
 class _DashboardWidgetWrapper extends StatelessWidget {
@@ -742,16 +795,16 @@ class _DashboardWidgetWrapper extends StatelessWidget {
     final child = _buildChild(context);
     if (child is SizedBox) return child;
 
-    const totalSpacing = 12.0;
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final isMetric = config.id.startsWith('stats_');
-    final minWidth = (isMetric ? 180.0 : 360.0) * textScale;
-    final desiredWidth =
-        (availableWidth + totalSpacing) * config.span.clamp(1, 4) / 4 -
-        totalSpacing;
-    final itemWidth = desiredWidth
-        .clamp(minWidth, double.infinity)
-        .clamp(0.0, availableWidth);
+    final itemWidth = dashboardItemWidth(
+      availableWidth: availableWidth,
+      span: config.span,
+      // Las métricas van de a dos por fila (2 × 2) aun en celulares angostos
+      // o con letra grande: la tarjeta se compacta en vez de bajar sola a
+      // otra fila. Las tarjetas grandes sí necesitan su ancho.
+      minWidth: isMetric ? metricMinWidth : 360.0 * textScale,
+    );
 
     final isEditing = store.editingDashboardWidgetId == config.id;
 

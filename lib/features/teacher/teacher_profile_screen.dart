@@ -12,6 +12,7 @@ import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/settings/settings_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -121,14 +122,13 @@ class _HeroCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white.withValues(alpha: 0.18),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 36,
-            ),
+          // Foto institucional del docente (PhotD de SIGMA); si no hay,
+          // sus iniciales.
+          StudentAvatar(
+            code: info.code,
+            name: info.displayName,
+            size: 64,
+            radius: 20,
           ),
           const Gap.h(AppSpacing.lg),
           Expanded(

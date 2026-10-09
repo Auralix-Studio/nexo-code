@@ -46,7 +46,7 @@ class _TeacherVirtualViewState extends State<TeacherVirtualView> {
       icon: entry ? Icons.login_rounded : Icons.logout_rounded,
       color: entry ? NexoTheme.success : NexoTheme.info,
       lines: [
-        c.subject,
+        readableName(c.subject),
         '${_hm(c.start)} – ${_hm(c.end)}',
         l.tchVirtualExactTime,
       ],
@@ -263,7 +263,7 @@ class _VirtualCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  c.subject,
+                  readableName(c.subject),
                   style: TextStyle(
                     fontSize: AppFont.subtitle,
                     fontWeight: FontWeight.w800,
@@ -279,7 +279,7 @@ class _VirtualCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             [
-              if (c.section.isNotEmpty) '${l.detailSection} ${c.section}',
+              if (c.section.isNotEmpty) l.tchSectionLabel(c.section),
               if (c.level.isNotEmpty) l.tchCycle(c.level),
               if (c.career.isNotEmpty) c.career,
             ].join(' · '),

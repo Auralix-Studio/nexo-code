@@ -1094,8 +1094,20 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteCursos(v),
     operationName: 'loadTeacherSubjects',
   );
+
+  /// El horario sale de las mismas asignaturas: se reutiliza su carga (y su
+  /// single-flight) en vez de volver a pedir `GetAsignaturaDocente`.
   Future<List<ScheduleClass>?> loadDocenteHorario() => _wrap(
-    () => _teacherReady().getHorario(),
+    () async {
+      _teacherReady();
+      final subjects = await loadTeacherSubjects();
+      // Sin asignaturas (ni en caché): el horario cae a su propio caché.
+      if (subjects == null) {
+        throw teacherSubjects.error ??
+            const NetworkException('Sin asignaturas del docente.');
+      }
+      return TeacherRepository.scheduleFromSubjects(subjects);
+    },
     () => teacherSchedule,
     (v) => teacherSchedule = v,
     cached: () => _cache.getDocenteHorario(),
@@ -1297,33 +1309,144 @@ class AppStore extends ChangeNotifier {
     return res;
   }
 
-  Future<void> loadDocenteAlumnos(String cleAuto, {int tipoCalif = 0}) =>
-      _scope.run(() async {
-        _teacherStudents[cleAuto] = AsyncValue.loading(
-          _teacherStudents[cleAuto]?.value,
-        );
-        _notify();
-        try {
-          final v = await _errorHandler.withFallback<List<TeacherStudent>>(
-            remote: () => _teacherReady().estudiantesSeccion(
-              cleAuto: cleAuto,
-              tipoCalif: tipoCalif,
-            ),
-            cached: () => _cache.getDocenteAlumnos(cleAuto),
-            operationName: 'loadDocenteAlumnos($cleAuto)',
-          );
-          if (!_scope.isCurrent) return;
-          _teacherStudents[cleAuto] = AsyncValue.data(v);
-          await _cache.saveDocenteAlumnos(cleAuto, v);
-        } catch (e) {
-          if (!_scope.isCurrent) return;
-          _teacherStudents[cleAuto] = AsyncValue.failure(
-            e,
-            _teacherStudents[cleAuto]?.value,
-          );
+  Future<void> loadDocenteAlumnos(
+    String cleAuto, {
+    int tipoCalif = 0,
+  }) => _scope.run(() async {
+    _teacherStudents[cleAuto] = AsyncValue.loading(
+      _teacherStudents[cleAuto]?.value,
+    );
+    _notify();
+    try {
+      final v = await _errorHandler.withFallback<List<TeacherStudent>>(
+        remote: () => _teacherReady().estudiantesSeccion(
+          cleAuto: cleAuto,
+          tipoCalif: tipoCalif,
+        ),
+        // Versiones anteriores guardaban `[]` (leían ListarEstudianteComple,
+        // que siempre viene vacío). Un roster vacío no sirve de caché: así
+        // se intenta la red aunque el arranque crea que no hay internet.
+        cached: () async {
+          final c = await _cache.getDocenteAlumnos(cleAuto);
+          return (c == null || c.isEmpty) ? null : c;
+        },
+        operationName: 'loadDocenteAlumnos($cleAuto)',
+      );
+      if (!_scope.isCurrent) return;
+      _teacherStudents[cleAuto] = AsyncValue.data(v);
+      if (v.isNotEmpty) await _cache.saveDocenteAlumnos(cleAuto, v);
+    } catch (e) {
+      if (!_scope.isCurrent) return;
+      _teacherStudents[cleAuto] = AsyncValue.failure(
+        e,
+        _teacherStudents[cleAuto]?.value,
+      );
+    }
+    _notify();
+  });
+
+  /// Hojas de asistencia ya cargadas, por sección.
+  Map<String, AttendanceSheet> get docenteHojas => {
+    for (final e in _attendance.entries)
+      if (e.value.value != null) e.key: e.value.value!,
+  };
+
+  /// Rosters (con notas y % de asistencia) ya cargados, por sección.
+  Map<String, List<TeacherStudent>> get docenteRosters => {
+    for (final e in _teacherStudents.entries)
+      if (e.value.value != null) e.key: e.value.value!,
+  };
+
+  bool _resumenLoading = false;
+
+  /// Hay secciones del resumen docente cargándose.
+  bool get docenteResumenLoading => _resumenLoading;
+
+  /// Roster y hoja de asistencia de todas las secciones, para el tablero
+  /// (agenda, clases sin asistencia y alumnos en riesgo). De a dos secciones a
+  /// la vez para no saturar SIGMA; [force] recarga lo ya cargado.
+  Future<void> loadDocenteResumen({bool force = false}) async {
+    if (_resumenLoading) return;
+    final courses = teacherSubjects.value ?? await loadTeacherSubjects();
+    if (courses == null || courses.isEmpty) return;
+    _resumenLoading = true;
+    _notify();
+    try {
+      final queue = [...courses];
+      Future<void> worker() async {
+        while (queue.isNotEmpty) {
+          final c = queue.removeAt(0);
+          await Future.wait([
+            if (force || !alumnosDe(c.id).hasValue)
+              loadDocenteAlumnos(c.id, tipoCalif: c.tipoCalif),
+            if (force || !asistenciaDe(c.id).hasValue) loadDocenteAsistencia(c),
+          ]);
         }
-        _notify();
-      });
+      }
+
+      await Future.wait([worker(), worker()]);
+    } finally {
+      _resumenLoading = false;
+      _notify();
+    }
+  }
+
+  static const _ckDismissed = 'tch.dismissedMissing';
+
+  /// Clases sin asistencia que el docente marcó como "no hubo clase".
+  Set<String> get docenteClasesDescartadas {
+    final raw = AppStorage.instance.getCache(_ckDismissed);
+    return raw is List ? raw.map((e) => '$e').toSet() : <String>{};
+  }
+
+  Future<void> descartarClaseSinAsistencia(String key) async {
+    // Solo importan las últimas semanas: se guardan las 60 más recientes.
+    final keys = [...docenteClasesDescartadas, key]..sort();
+    final keep = keys.length > 60 ? keys.sublist(keys.length - 60) : keys;
+    await _setStorageCache(_ckDismissed, keep);
+    _notify();
+  }
+
+  // ── Borradores de asistencia ────────────────────────────────────────────
+  // Lo marcado se guarda en el dispositivo mientras se pasa lista: si la app
+  // se cierra o el wifi del aula falla al enviar, nada se pierde. Se borra al
+  // registrar con éxito y con el resto del caché al cerrar sesión.
+
+  static String _draftKey(String courseId, DateTime day, int unitId) =>
+      'tch.draftAtt.$courseId.${day.year}-${day.month}-${day.day}.$unitId';
+
+  Map<String, int> docenteBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+  ) {
+    final raw = AppStorage.instance.getCache(
+      _draftKey(courseId, day, unitId),
+      maxAge: const Duration(days: 2),
+    );
+    if (raw is! Map) return {};
+    return {
+      for (final e in raw.entries)
+        if (e.value is int) '${e.key}': e.value as int,
+    };
+  }
+
+  Future<void> guardarBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+    Map<String, int> marks,
+  ) {
+    final key = _draftKey(courseId, day, unitId);
+    if (marks.isEmpty) return AppStorage.instance.removeCache(key);
+    return _setStorageCache(key, marks);
+  }
+
+  Future<void> borrarBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+  ) => AppStorage.instance.removeCache(_draftKey(courseId, day, unitId));
 
   bool get tieneDocente => _teacher != null;
   Future<void> changePassword(String actual, String nueva) =>

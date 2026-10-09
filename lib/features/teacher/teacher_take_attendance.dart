@@ -23,17 +23,27 @@ class TeacherTakeAttendanceScreen extends StatefulWidget {
     super.key,
     required this.store,
     required this.course,
+    this.initialDate,
   });
   final AppStore store;
   final TeacherSubject course;
+
+  /// Fecha de la sesión a registrar (p. ej. una clase pasada que quedó sin
+  /// asistencia). Por defecto, hoy según la hora de SIGMA.
+  final DateTime? initialDate;
 
   static Future<bool?> open(
     BuildContext context, {
     required AppStore store,
     required TeacherSubject course,
+    DateTime? initialDate,
   }) => Navigator.of(context).push<bool>(
     MaterialPageRoute(
-      builder: (_) => TeacherTakeAttendanceScreen(store: store, course: course),
+      builder: (_) => TeacherTakeAttendanceScreen(
+        store: store,
+        course: course,
+        initialDate: initialDate,
+      ),
     ),
   );
 
@@ -58,11 +68,14 @@ class _TeacherTakeAttendanceScreenState
   final _pager = PageController();
   int _page = 0;
 
+  /// Se recuperó un borrador guardado en el dispositivo.
+  bool _draftRestored = false;
+
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _date = DateTime(now.year, now.month, now.day);
+    final start = widget.initialDate ?? DateTime.now();
+    _date = DateTime(start.year, start.month, start.day);
     final s = widget.store;
     if (!s.asistenciaDe(widget.course.id).hasValue) {
       s.loadDocenteAsistencia(widget.course);
@@ -72,9 +85,51 @@ class _TeacherTakeAttendanceScreenState
       if (!mounted) return;
       setState(() {
         _serverNow = t;
-        _date = DateTime(t.year, t.month, t.day);
+        if (widget.initialDate == null) {
+          _date = DateTime(t.year, t.month, t.day);
+        }
       });
+      _restoreDraft();
     });
+  }
+
+  /// Recupera lo marcado en esta misma fecha y unidad si la pantalla se cerró
+  /// (o falló el envío) antes de registrar.
+  void _restoreDraft() {
+    final unit = _unit;
+    if (unit == null || _marks.isNotEmpty) return;
+    final draft = widget.store.docenteBorradorAsistencia(
+      widget.course.id,
+      _date,
+      unit.id,
+    );
+    if (draft.isEmpty) return;
+    setState(() {
+      _marks.addAll(draft);
+      _draftRestored = true;
+    });
+  }
+
+  void _persistDraft() {
+    final unit = _unit;
+    if (unit == null) return;
+    widget.store.guardarBorradorAsistencia(
+      widget.course.id,
+      _date,
+      unit.id,
+      Map.of(_marks),
+    );
+  }
+
+  void _discardDraft() {
+    final unit = _unit;
+    setState(() {
+      _marks.clear();
+      _draftRestored = false;
+    });
+    if (unit != null) {
+      widget.store.borrarBorradorAsistencia(widget.course.id, _date, unit.id);
+    }
   }
 
   @override
@@ -96,6 +151,7 @@ class _TeacherTakeAttendanceScreenState
         _unit = units.where((u) => u.enabled).firstOrNull;
         _loadingUnits = false;
       });
+      _restoreDraft();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -113,6 +169,7 @@ class _TeacherTakeAttendanceScreenState
   void _mark(AttendanceStudent s, int state) {
     HapticFeedback.selectionClick();
     setState(() => _marks[s.code] = state);
+    _persistDraft();
   }
 
   void _markRestPresent(List<AttendanceStudent> students) {
@@ -124,6 +181,7 @@ class _TeacherTakeAttendanceScreenState
         }
       }
     });
+    _persistDraft();
   }
 
   Future<void> _pickDate() async {
@@ -135,8 +193,29 @@ class _TeacherTakeAttendanceScreenState
       firstDate: today.subtract(const Duration(days: 150)),
       lastDate: today,
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked == null || picked == _date) return;
+    _persistDraft();
+    setState(() {
+      _date = picked;
+      _marks.clear();
+      _draftRestored = false;
+    });
+    _restoreDraft();
   }
+
+  void _pickUnit(TeacherUnitCatalog u) {
+    if (u.id == _unit?.id) return;
+    _persistDraft();
+    setState(() {
+      _unit = u;
+      _marks.clear();
+      _draftRestored = false;
+    });
+    _restoreDraft();
+  }
+
+  int _count(List<AttendanceStudent> active, int state) =>
+      active.where((s) => _marks[s.code] == state).length;
 
   Future<void> _save(List<AttendanceStudent> students) async {
     final l = AppLocalizations.of(context);
@@ -149,13 +228,10 @@ class _TeacherTakeAttendanceScreenState
       ClipboardHelper.showError(context, l.tchAttPending(pending));
       return;
     }
-    final present = _marks.values
-        .where((v) => v == AttendanceCode.present)
-        .length;
-    final absent = _marks.values
-        .where((v) => v == AttendanceCode.absent)
-        .length;
-    final suspended = students.where((s) => s.isSuspended).length;
+    final active = students.where((s) => !s.isSuspended).toList();
+    final present = _count(active, AttendanceCode.present);
+    final absent = _count(active, AttendanceCode.absent);
+    final suspended = students.length - active.length;
     final now = await widget.store.docenteHoraServidor();
     if (!mounted) return;
     // Fecha elegida + hora actual del servidor, como el cliente oficial.
@@ -199,9 +275,11 @@ class _TeacherTakeAttendanceScreenState
     if (!mounted) return;
     setState(() => _saving = false);
     if (res.error != null) {
+      // El borrador sigue en el dispositivo: se puede reintentar luego.
       ClipboardHelper.showError(context, res.error!);
       return;
     }
+    widget.store.borrarBorradorAsistencia(widget.course.id, _date, unit.id);
     HapticFeedback.heavyImpact();
     ClipboardHelper.showSuccess(
       context,
@@ -254,8 +332,16 @@ class _TeacherTakeAttendanceScreenState
                   units: _units,
                   unit: _unit,
                   loadingUnits: _loadingUnits,
-                  onUnit: (u) => setState(() => _unit = u),
+                  onUnit: _pickUnit,
                 ),
+                if (_draftRestored)
+                  TeacherBanner(
+                    color: NexoTheme.info,
+                    icon: Icons.restore_rounded,
+                    text: l.tchDraftRestored,
+                    action: l.tchDraftDiscard,
+                    onAction: _discardDraft,
+                  ),
                 if (alreadyToday)
                   TeacherBanner(
                     color: NexoTheme.warning,
@@ -267,12 +353,8 @@ class _TeacherTakeAttendanceScreenState
                   _BottomBar(
                     done: done,
                     total: active.length,
-                    present: _marks.values
-                        .where((v) => v == AttendanceCode.present)
-                        .length,
-                    absent: _marks.values
-                        .where((v) => v == AttendanceCode.absent)
-                        .length,
+                    present: _count(active, AttendanceCode.present),
+                    absent: _count(active, AttendanceCode.absent),
                     saving: _saving,
                     onRestPresent: done < active.length
                         ? () => _markRestPresent(students)
@@ -443,7 +525,7 @@ class _ContextBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            course.shortName,
+            course.displayName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -467,7 +549,7 @@ class _ContextBar extends StatelessWidget {
                 if (block != null) ...[
                   const SizedBox(width: 6),
                   Chip(
-                    avatar: Icon(
+                    avatar: const Icon(
                       Icons.play_circle_fill_rounded,
                       size: 16,
                       color: NexoTheme.success,
@@ -544,7 +626,10 @@ class _StudentRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
+                // Wrap: con letra grande en un celular angosto el código y el
+                // porcentaje pasan a otra línea en vez de desbordar.
+                Wrap(
+                  spacing: 6,
                   children: [
                     Text(
                       '$index · ${s.code}',
@@ -554,7 +639,6 @@ class _StudentRow extends StatelessWidget {
                       ),
                     ),
                     if (s.percent != null) ...[
-                      const SizedBox(width: 6),
                       Text(
                         '${s.percent!.round()}%',
                         style: TextStyle(
@@ -743,17 +827,20 @@ class _BottomBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              TeacherPill(
-                text: l.tchAttProgress(done, total),
-                color: NexoTheme.primary,
-              ),
-              const SizedBox(width: 6),
-              TeacherPill(text: '✓ $present', color: NexoTheme.success),
-              const SizedBox(width: 6),
-              TeacherPill(text: '✕ $absent', color: NexoTheme.danger),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                TeacherPill(
+                  text: l.tchAttProgress(done, total),
+                  color: NexoTheme.primary,
+                ),
+                TeacherPill(text: '✓ $present', color: NexoTheme.success),
+                TeacherPill(text: '✕ $absent', color: NexoTheme.danger),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.sm + 2),
           Row(

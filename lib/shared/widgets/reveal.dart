@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/tokens.dart';
 
 class Reveal extends StatelessWidget {
@@ -17,6 +18,8 @@ class Reveal extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    // Con "reducir movimiento" el contenido aparece directo.
+    if (Motion.reduced(context)) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration:

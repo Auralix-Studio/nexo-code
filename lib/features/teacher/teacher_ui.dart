@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/passing_rule.dart';
+import 'package:nexo/domain/teacher_insights.dart';
+import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 
 /// Piezas visuales compartidas por las pantallas del módulo docente.
@@ -28,13 +32,16 @@ Future<bool?> showTeacherConfirm(
     context: context,
     backgroundColor: NexoTheme.surface,
     showDragHandle: true,
+    // Con letra grande el resumen no cabe en el alto por defecto (9/16 de la
+    // pantalla): la hoja crece lo necesario y, si aun así no cabe, se desplaza.
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (ctx) {
       final l = AppLocalizations.of(ctx);
       return SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.xl,
             0,
@@ -303,4 +310,34 @@ Color gradeColor(String? raw) {
   if (n >= 14) return NexoTheme.success;
   if (n >= PassingRule.standard.threshold) return NexoTheme.info;
   return NexoTheme.danger;
+}
+
+// ── Cómo se describe una sección, en palabras y no en códigos ─────────────
+
+/// "Sección A1 · Ciclo 4 · Presencial".
+String courseFactsLine(AppLocalizations l, TeacherSubject c) => [
+  if (c.section.isNotEmpty) l.tchSectionLabel(c.section),
+  if (c.ciclo.trim().isNotEmpty) l.tchCycle(c.cycleLabel),
+  if (c.modalidad.isNotEmpty) readableName(c.modalidad),
+].join(' · ');
+
+/// "Miércoles 10:45–13:00 · Jueves 11:30–13:00" ([short]: "Mié …").
+String courseScheduleLine(TeacherSubject c, {bool short = false}) =>
+    weeklySlots(c)
+        .map((s) {
+          final day = Fmt.dayLabel(s.weekday);
+          final d = short && day.length > 3 ? day.substring(0, 3) : day;
+          return '$d ${s.start}–${s.end}';
+        })
+        .join(' · ');
+
+/// "Pabellón H · H 302", o solo "Virtual".
+String courseRoomLine(TeacherSubject c) {
+  final loc = ScheduleClass.parseLocation(c.aula);
+  final parts = <String>{
+    for (final p in [loc.building, loc.room])
+      if (p.trim().isNotEmpty)
+        readableName(p.replaceAll('PABELLON', 'PABELLÓN')),
+  };
+  return parts.join(' · ');
 }

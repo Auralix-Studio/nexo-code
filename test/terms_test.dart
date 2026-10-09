@@ -85,6 +85,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cambiamos algo'), findsOneWidget);
-    expect(find.textContaining('Actualizamos estos términos'), findsOneWidget);
+    expect(
+      find.textContaining('Actualizamos nuestros documentos'),
+      findsOneWidget,
+    );
   });
 }

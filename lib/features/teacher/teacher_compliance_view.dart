@@ -236,7 +236,7 @@ class _ClassRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.subject,
+                  readableName(item.subject),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

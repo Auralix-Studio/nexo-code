@@ -1617,7 +1617,7 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get termsUpdatedNotice =>
-      'Actualizamos estos términos para explicar mejor qué se queda en tu dispositivo y cómo te avisaremos de futuros cambios. Léelos de nuevo antes de continuar.';
+      'Actualizamos nuestros documentos: ahora hay Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con la ley peruana aplicable y los límites de responsabilidad. Léelos antes de continuar.';
 
   @override
   String get termsItemDeviceTitle => 'Lo que queda en tu dispositivo';
@@ -2149,4 +2149,283 @@ class AppLocalizationsQu extends AppLocalizations {
   String tchVirtualTolerance(int minutes) {
     return 'Tolerancia +$minutes min';
   }
+
+  @override
+  String get tchAttTodayTitle => 'Asistencia de hoy';
+
+  @override
+  String get tchDraftRestored =>
+      'Recuperamos lo que marcaste antes. Revísalo y registra.';
+
+  @override
+  String get tchDraftDiscard => 'Descartar';
+
+  @override
+  String get tchAgendaTitle => 'Agenda de hoy';
+
+  @override
+  String get tchAgendaEmpty => 'Hoy no tienes clases.';
+
+  @override
+  String get tchAgendaHoliday => 'Hoy es feriado nacional: no hay clases.';
+
+  @override
+  String tchAgendaNext(String when, String course) {
+    return 'Próxima clase: $when · $course';
+  }
+
+  @override
+  String get tchPhaseUpcoming => 'Más tarde';
+
+  @override
+  String get tchPhaseOngoing => 'En curso';
+
+  @override
+  String get tchPhaseFinished => 'Terminó';
+
+  @override
+  String get tchAgendaChecking => 'Revisando asistencia…';
+
+  @override
+  String get tchAgendaRegistered => 'Asistencia registrada';
+
+  @override
+  String get tchAgendaPending => 'Falta la asistencia';
+
+  @override
+  String get tchMissingSubtitle =>
+      'Últimas dos semanas. Aún puedes registrarlas.';
+
+  @override
+  String get tchMissingRegister => 'Registrar';
+
+  @override
+  String get tchMissingDismiss => 'No hubo clase';
+
+  @override
+  String get tchMissingDismissed => 'Listo, esa clase ya no se mostrará.';
+
+  @override
+  String get tchAlertsTitle => 'Alumnos que necesitan atención';
+
+  @override
+  String get tchAlertsNone => 'Ningún alumno en riesgo por ahora.';
+
+  @override
+  String get tchAlertsChecking => 'Revisando tus secciones…';
+
+  @override
+  String tchAlertAttCritical(int pct) {
+    return 'Asistencia $pct% · crítica';
+  }
+
+  @override
+  String tchAlertAttWarning(int pct) {
+    return 'Asistencia $pct% · cerca del límite';
+  }
+
+  @override
+  String tchAlertFailing(String grade) {
+    return 'Promedio $grade · desaprobando';
+  }
+
+  @override
+  String get tchAlertsHint =>
+      'Asistencia crítica: 70 % o menos (30 % o más de faltas). Cerca del límite: hasta 80 %, para actuar antes. Notas: nota final a la fecha por debajo del aprobatorio, según SIGMA.';
+
+  @override
+  String get tchPasteAction => 'Pegar desde Excel';
+
+  @override
+  String get tchPasteNothing =>
+      'Copia primero las notas en Excel: una columna en el orden de la lista, o dos columnas con código y nota.';
+
+  @override
+  String get tchPasteTitle => '¿Pegar estas notas?';
+
+  @override
+  String tchPasteByCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notas emparejadas por código de alumno',
+      one: '1 nota emparejada por código de alumno',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteByOrder(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notas en el orden de la lista',
+      one: '1 nota en el orden de la lista',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filas se ignoran (código desconocido o nota inválida)',
+      one: '1 fila se ignora (código desconocido o nota inválida)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteReplaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reemplaza $count notas ya escritas',
+      one: 'Reemplaza 1 nota ya escrita',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteMismatch(int rows, int students) {
+    return 'Copiaste $rows filas pero la lista tiene $students alumnos. Copia también la columna de códigos para emparejarlas.';
+  }
+
+  @override
+  String get tchPasteApply => 'Pegar';
+
+  @override
+  String get tchPasteDone => 'Notas pegadas. Revísalas y guarda.';
+
+  @override
+  String get tchViewGrid => 'Tabla de notas';
+
+  @override
+  String get tchViewCards => 'Por evaluación';
+
+  @override
+  String get tchGridStudent => 'Alumno';
+
+  @override
+  String get tchGridFinal => 'Final';
+
+  @override
+  String get tchGridUnitAvg => 'Prom.';
+
+  @override
+  String get tchGridEmpty => 'Aún no hay notas registradas en esta sección.';
+
+  @override
+  String get tchGridHint =>
+      'Toca el encabezado de una evaluación para registrarla.';
+
+  @override
+  String get tchPendingTitle => 'Pendientes';
+
+  @override
+  String get tchPendingNone =>
+      'Todo al día: no hay clases sin asistencia ni alumnos en riesgo.';
+
+  @override
+  String tchMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clases sin asistencia',
+      one: '1 clase sin asistencia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchAlertsRow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alumnos necesitan atención',
+      one: '1 alumno necesita atención',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tchAlertsSubtitle =>
+      'Asistencia baja o desaprobando, en todas tus secciones.';
+
+  @override
+  String tchAlertsCriticalCount(int count) {
+    return '$count asistencia crítica';
+  }
+
+  @override
+  String tchAlertsNearCount(int count) {
+    return '$count cerca del límite';
+  }
+
+  @override
+  String tchAlertsFailingCount(int count) {
+    return '$count desaprobando';
+  }
+
+  @override
+  String tchCourseAtRisk(int count) {
+    return '$count en riesgo';
+  }
+
+  @override
+  String tchClassesToday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clases hoy',
+      one: '1 clase hoy',
+      zero: 'sin clases hoy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get termsItemLawTitle => 'Marco legal';
+
+  @override
+  String get termsItemLawBody =>
+      'Estos documentos se rigen por las leyes del Perú, en especial la Ley N.º 29733 de Protección de Datos Personales y su Reglamento (D. S. N.º 016-2024-JUS), la Ley N.º 30096 de Delitos Informáticos y el Código de Protección y Defensa del Consumidor (Ley N.º 29571).';
+
+  @override
+  String get legalDocsTitle => 'Documentos completos';
+
+  @override
+  String get legalTermsTitle => 'Términos y Condiciones';
+
+  @override
+  String get legalTermsSubtitle => 'Uso, responsabilidades y ley aplicable';
+
+  @override
+  String get legalPrivacyTitle => 'Política de Privacidad';
+
+  @override
+  String get legalPrivacySubtitle =>
+      'Qué datos se tratan, dónde y tus derechos';
+
+  @override
+  String get legalCookiesTitle => 'Política de Cookies';
+
+  @override
+  String get legalCookiesSubtitle =>
+      'Qué se guarda en tu dispositivo y cómo borrarlo';
+
+  @override
+  String get legalLoadError => 'No se pudo abrir el documento.';
+
+  @override
+  String tchSectionLabel(String section) {
+    return 'Sección $section';
+  }
+
+  @override
+  String get tchElective => 'Electivo';
+
+  @override
+  String get tchCopyNrc => 'Copiar NRC';
 }

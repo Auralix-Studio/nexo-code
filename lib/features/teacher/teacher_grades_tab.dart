@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_grade_entry.dart';
+import 'package:nexo/features/teacher/teacher_grades_grid.dart';
 import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
@@ -27,6 +29,9 @@ class _TeacherGradesTabState extends State<TeacherGradesTab>
     with AutomaticKeepAliveClientMixin {
   late Future<List<TeacherUnitCatalog>> _units;
   TeacherUnitCatalog? _unit;
+
+  /// Vista de tabla (todas las notas de la sección) en vez de por evaluación.
+  bool _grid = false;
 
   /// Unidades que SIGMA registra con un flujo aparte (solo alumnos aptos).
   static const _special = {'COMPLEMENTARIO', 'SUSTITUTORIO'};
@@ -87,54 +92,91 @@ class _TeacherGradesTabState extends State<TeacherGradesTab>
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final u in units) ...[
-                          ChoiceChip(
-                            avatar: u.enabled
-                                ? null
-                                : const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 14,
-                                  ),
-                            label: Text(u.name),
-                            selected: u.id == unit.id,
-                            onSelected: (_) => setState(() => _unit = u),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                      ],
-                    ),
+                  SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment(
+                        value: false,
+                        icon: const Icon(Icons.view_agenda_outlined, size: 18),
+                        label: Text(l.tchViewCards),
+                      ),
+                      ButtonSegment(
+                        value: true,
+                        icon: const Icon(Icons.table_chart_outlined, size: 18),
+                        label: Text(l.tchViewGrid),
+                      ),
+                    ],
+                    selected: {_grid},
+                    onSelectionChanged: (v) => setState(() => _grid = v.first),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _UnitSummary(unit: unit, roster: roster),
-                  if (!unit.enabled)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        l.docenteUnitLocked,
-                        style: TextStyle(
-                          fontSize: AppFont.small,
-                          color: NexoTheme.textMuted,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (_special.contains(unit.name.toUpperCase()))
-                    EmptyState(
-                      icon: Icons.web_rounded,
-                      title: l.tchSpecialUnit(unit.name),
-                    )
-                  else
-                    _TypesList(
-                      key: ValueKey(unit.id),
-                      store: widget.store,
-                      course: widget.course,
-                      unit: unit,
-                      roster: roster,
-                    ),
+                  FadeSwitch(
+                    child: _grid
+                        ? TeacherGradesGrid(
+                            key: const ValueKey('grid'),
+                            store: widget.store,
+                            course: widget.course,
+                            units: units,
+                            roster: roster,
+                          )
+                        : Column(
+                            key: const ValueKey('cards'),
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    for (final u in units) ...[
+                                      ChoiceChip(
+                                        avatar: u.enabled
+                                            ? null
+                                            : const Icon(
+                                                Icons.lock_outline_rounded,
+                                                size: 14,
+                                              ),
+                                        label: Text(u.name),
+                                        selected: u.id == unit.id,
+                                        onSelected: (_) =>
+                                            setState(() => _unit = u),
+                                      ),
+                                      const SizedBox(width: 6),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              _UnitSummary(unit: unit, roster: roster),
+                              if (!unit.enabled)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpacing.sm,
+                                  ),
+                                  child: Text(
+                                    l.docenteUnitLocked,
+                                    style: TextStyle(
+                                      fontSize: AppFont.small,
+                                      color: NexoTheme.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: AppSpacing.md),
+                              if (_special.contains(unit.name.toUpperCase()))
+                                EmptyState(
+                                  icon: Icons.web_rounded,
+                                  title: l.tchSpecialUnit(unit.name),
+                                )
+                              else
+                                _TypesList(
+                                  key: ValueKey(unit.id),
+                                  store: widget.store,
+                                  course: widget.course,
+                                  unit: unit,
+                                  roster: roster,
+                                ),
+                            ],
+                          ),
+                  ),
                 ],
               ),
             );

@@ -107,6 +107,9 @@ flutter:
     # el servidor omite el intermedio. Ver lib/data/secure_http.dart.
     - assets/certs/cacert.pem
 
+    # Términos, Política de Privacidad y Política de Cookies, uno por idioma.
+    - assets/legal/
+
   fonts:
     - family: SuperMindset
       fonts:

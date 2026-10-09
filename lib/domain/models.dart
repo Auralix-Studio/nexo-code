@@ -905,6 +905,29 @@ class TeacherSubject {
   String get shortName =>
       subject.replaceAll(RegExp(r'\s*\([^)]*\d{4}[^)]*\)\s*$'), '').trim();
 
+  /// Nombre para mostrar al docente: sin paréntesis y fácil de leer,
+  /// p. ej. "Base de Datos I". Ver [readableName].
+  String get displayName => readableName(subject);
+
+  /// SIGMA marca las electivas en el nombre: "INTERNET DE LAS COSAS (ELECTIVO)".
+  bool get isElective =>
+      RegExp(r'\(\s*ELECTIV', caseSensitive: false).hasMatch(subject);
+
+  /// Carrera sin la modalidad que SIGMA le añade al final
+  /// ("… - PRESENCIAL"), legible.
+  String get careerName => readableName(
+    carrera.replaceAll(
+      RegExp(
+        r'\s*-\s*(PRESENCIAL|DISTANCIA|SEMIPRESENCIAL|VIRTUAL)\s*$',
+        caseSensitive: false,
+      ),
+      '',
+    ),
+  );
+
+  /// Ciclo sin ceros a la izquierda ("04" → "4").
+  String get cycleLabel => '${int.tryParse(ciclo.trim()) ?? ciclo.trim()}';
+
   /// Bloque en curso ahora, si lo hay.
   TeacherBlock? ongoingBlock(DateTime now) {
     for (final b in blocks) {

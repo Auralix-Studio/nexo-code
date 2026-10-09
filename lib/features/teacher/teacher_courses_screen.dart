@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/teacher_insights.dart';
 import 'package:nexo/features/teacher/teacher_course_detail.dart';
+import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
@@ -25,6 +28,8 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
     if (!widget.store.teacherSubjects.hasValue) {
       widget.store.loadTeacherSubjects();
     }
+    // Alumnos y asistencia de cada sección para los números de las tarjetas.
+    widget.store.loadDocenteResumen();
   }
 
   @override
@@ -36,7 +41,10 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
         final courses = state.value ?? const <TeacherSubject>[];
         final l = AppLocalizations.of(context);
         return RefreshIndicator(
-          onRefresh: () => widget.store.loadTeacherSubjects().then((_) {}),
+          onRefresh: () async {
+            await widget.store.loadTeacherSubjects();
+            await widget.store.loadDocenteResumen(force: true);
+          },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
@@ -45,13 +53,27 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
               SliverToBoxAdapter(
                 child: PageHeader(
                   title: l.titleCourses,
-                  subtitle: state.hasValue
-                      ? l.docenteCoursesCountPlural(courses.length)
+                  subtitle: state.hasValue && courses.isNotEmpty
+                      ? '${l.docenteCoursesCountPlural(courses.length)}'
+                            ' · ${courses.first.periodo}'
                       : l.subtitleCourses,
                 ),
               ),
               SliverToBoxAdapter(
-                child: PageBody(child: _body(context, state, courses)),
+                child: PageBody(
+                  child: FadeSwitch(
+                    child: KeyedSubtree(
+                      key: ValueKey(
+                        state.loading && !state.hasValue
+                            ? 'loading'
+                            : courses.isEmpty
+                            ? 'empty'
+                            : 'data',
+                      ),
+                      child: _body(context, state, courses),
+                    ),
+                  ),
+                ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
@@ -70,11 +92,11 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
     if (state.loading && !state.hasValue) {
       return const Column(
         children: [
-          Skeleton(height: 90, radius: 16),
+          Skeleton(height: 150, radius: 16),
           SizedBox(height: 12),
-          Skeleton(height: 90, radius: 16),
+          Skeleton(height: 150, radius: 16),
           SizedBox(height: 12),
-          Skeleton(height: 90, radius: 16),
+          Skeleton(height: 150, radius: 16),
         ],
       );
     }
@@ -102,13 +124,20 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
         ),
       );
     }
+    final rosters = widget.store.docenteRosters;
+    final alerts = studentAlerts(courses, rosters);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < courses.length; i++) ...[
           Reveal(
             index: i,
-            child: _CursoTile(course: courses[i], store: widget.store),
+            child: _CursoCard(
+              course: courses[i],
+              store: widget.store,
+              roster: rosters[courses[i].id],
+              atRisk: alerts.where((a) => a.course.id == courses[i].id).length,
+            ),
           ),
           const Gap(AppSpacing.md),
         ],
@@ -117,154 +146,146 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
   }
 }
 
-class _CursoTile extends StatelessWidget {
+/// Una sección a cargo: qué es, cuándo y dónde se dicta, y cómo va.
+class _CursoCard extends StatelessWidget {
   final TeacherSubject course;
   final AppStore store;
-  const _CursoTile({required this.course, required this.store});
+  final List<TeacherStudent>? roster;
+  final int atRisk;
+  const _CursoCard({
+    required this.course,
+    required this.store,
+    required this.roster,
+    required this.atRisk,
+  });
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final c = course;
+    final schedule = courseScheduleLine(c, short: true);
+    final room = courseRoomLine(c);
+    final r = roster;
+    final pcts = [
+      for (final s in r ?? const <TeacherStudent>[])
+        double.tryParse((s.attendance ?? '').replaceAll(',', '.')),
+    ].whereType<double>().toList();
+    final avg = pcts.isEmpty
+        ? null
+        : pcts.reduce((a, b) => a + b) / pcts.length;
+    final ongoing = c.ongoingBlock(DateTime.now());
+
+    Widget line(IconData icon, String text) => Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs + 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 15, color: NexoTheme.textMuted),
+          ),
+          const Gap.h(AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: AppFont.small,
+                color: NexoTheme.textSecondary,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: AppRadii.rXl,
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) =>
-                TeacherCourseDetailScreen(store: store, course: course),
-          ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+        onTap: () =>
+            TeacherCourseDetailScreen.open(context, store: store, course: c),
+        child: Ink(
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: NexoTheme.card,
             borderRadius: AppRadii.rXl,
-            border: Border.all(color: NexoTheme.border),
+            border: Border.all(
+              color: ongoing != null ? NexoTheme.success : NexoTheme.border,
+              width: ongoing != null ? 1.5 : 1,
+            ),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: NexoTheme.primary.withValues(alpha: 0.12),
-                      borderRadius: AppRadii.rLg,
-                    ),
-                    child: Icon(
-                      Icons.class_rounded,
-                      color: NexoTheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const Gap.h(AppSpacing.md),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          course.code,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: NexoTheme.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          course.subject,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: AppFont.subtitle + 1,
-                            fontWeight: FontWeight.w800,
-                            color: NexoTheme.textPrimary,
-                            height: 1.2,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      c.displayName,
+                      style: TextStyle(
+                        fontSize: AppFont.title,
+                        fontWeight: FontWeight.w800,
+                        color: NexoTheme.textPrimary,
+                        height: 1.25,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
+                  const Gap.h(AppSpacing.sm),
                   Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
                 ],
               ),
-              const Gap(AppSpacing.md),
-              Divider(height: 1, color: NexoTheme.border),
-              const Gap(AppSpacing.md),
-              Row(
-                children: [
-                  _pill(
-                    icon: Icons.tag_rounded,
-                    label: '${l.detailSection} ${course.section}',
-                    color: NexoTheme.info,
-                  ),
-                  if (course.nrc.isNotEmpty) ...[
-                    const Gap.h(AppSpacing.sm),
-                    _pill(
-                      icon: Icons.numbers_rounded,
-                      label: 'NRC ${course.nrc}',
-                      color: NexoTheme.accent,
-                    ),
-                  ],
-                  if (course.enrolledCount != null &&
-                      course.enrolledCount! > 0) ...[
-                    const Gap.h(AppSpacing.sm),
-                    _pill(
-                      icon: Icons.groups_rounded,
-                      label: l.docenteMetricAlumnosCount(course.enrolledCount!),
-                      color: NexoTheme.success,
-                    ),
-                  ],
-                  const Spacer(),
-                  Text(
-                    course.periodo,
-                    style: TextStyle(
-                      fontSize: AppFont.small,
-                      color: NexoTheme.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              const Gap(2),
+              Text(
+                courseFactsLine(l, c),
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  fontWeight: FontWeight.w600,
+                  color: NexoTheme.textPrimary,
+                ),
               ),
+              if (schedule.isNotEmpty) line(Icons.schedule_rounded, schedule),
+              if (room.isNotEmpty) line(Icons.place_outlined, room),
+              if (ongoing != null ||
+                  c.isElective ||
+                  (r != null && r.isNotEmpty)) ...[
+                const Gap(AppSpacing.md),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (ongoing != null)
+                      TeacherPill(
+                        text: l.tchOngoingNow(ongoing.start, ongoing.end),
+                        color: NexoTheme.success,
+                      ),
+                    if (c.isElective)
+                      TeacherPill(text: l.tchElective, color: NexoTheme.info),
+                    if (r != null && r.isNotEmpty)
+                      TeacherPill(
+                        text: l.docenteMetricAlumnosCount(r.length),
+                        color: NexoTheme.primary,
+                      ),
+                    if (avg != null)
+                      TeacherPill(
+                        text: l.docenteAsisPercent('${avg.round()}'),
+                        color: avg <= AttendanceRisk.critical
+                            ? NexoTheme.danger
+                            : NexoTheme.success,
+                      ),
+                    if (atRisk > 0)
+                      TeacherPill(
+                        text: l.tchCourseAtRisk(atRisk),
+                        color: NexoTheme.danger,
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _pill({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm + 2,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: AppRadii.rPill,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: AppFont.small,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

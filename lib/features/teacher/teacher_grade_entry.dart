@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/domain/grade_paste.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
@@ -49,14 +50,8 @@ class TeacherGradeEntryScreen extends StatefulWidget {
 
   /// Valida una nota escrita: número entre 0 y [max] con hasta 2 decimales
   /// (SIGMA recorta a 2 decimales). Devuelve el valor o `null` si es inválida.
-  static double? parseGrade(String raw, double max) {
-    final t = raw.trim().replaceAll(',', '.');
-    if (t.isEmpty) return null;
-    if (!RegExp(r'^\d{1,2}(\.\d{1,2})?$').hasMatch(t)) return null;
-    final v = double.parse(t);
-    if (v < 0 || v > max) return null;
-    return v;
-  }
+  static double? parseGrade(String raw, double max) =>
+      parseGradeValue(raw, max);
 
   @override
   State<TeacherGradeEntryScreen> createState() =>
@@ -139,6 +134,62 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
     return (writes: writes, invalid: invalid, missingIds: missing);
   }
 
+  /// Pega notas copiadas de Excel (una columna en el orden de la lista, o
+  /// código + nota). Solo llena los campos: guardar sigue siendo explícito.
+  Future<void> _paste(List<TeacherStudent> students) async {
+    final l = AppLocalizations.of(context);
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+    final paste = parseGradePaste(data?.text ?? '', [
+      for (final s in students) s.code,
+    ], max: widget.type.maxValue);
+    if (paste == null) {
+      ClipboardHelper.showError(context, l.tchPasteNothing);
+      return;
+    }
+    if (paste.mismatchRows != null) {
+      ClipboardHelper.showError(
+        context,
+        l.tchPasteMismatch(paste.mismatchRows!, students.length),
+      );
+      return;
+    }
+    if (paste.isEmpty) {
+      ClipboardHelper.showError(context, l.tchPasteNothing);
+      return;
+    }
+    final byCode = {for (final s in students) s.code: s};
+    var replaces = 0;
+    for (final e in paste.values.entries) {
+      final current = _ctrl(byCode[e.key]!).text.trim();
+      if (current.isNotEmpty &&
+          TeacherGradeEntryScreen.parseGrade(current, widget.type.maxValue) !=
+              e.value) {
+        replaces++;
+      }
+    }
+    final ok = await showTeacherConfirm(
+      context,
+      title: l.tchPasteTitle,
+      icon: Icons.content_paste_rounded,
+      lines: [
+        paste.byCode
+            ? l.tchPasteByCode(paste.values.length)
+            : l.tchPasteByOrder(paste.values.length),
+        if (paste.skipped > 0) l.tchPasteSkipped(paste.skipped),
+        if (replaces > 0) l.tchPasteReplaces(replaces),
+      ],
+      confirm: l.tchPasteApply,
+    );
+    if (ok != true || !mounted) return;
+    setState(() {
+      for (final e in paste.values.entries) {
+        _ctrl(byCode[e.key]!).text = _fmt(e.value);
+      }
+    });
+    ClipboardHelper.showSuccess(context, l.tchPasteDone);
+  }
+
   Future<void> _save(List<TeacherStudent> students) async {
     final l = AppLocalizations.of(context);
     final r = _collect(students);
@@ -214,6 +265,14 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
           backgroundColor: NexoTheme.bg,
           appBar: AppBar(
             title: Text('${widget.type.abbr} · ${widget.unit.name}'),
+            actions: [
+              if (!locked && students.isNotEmpty)
+                IconButton(
+                  tooltip: l.tchPasteAction,
+                  icon: const Icon(Icons.content_paste_rounded),
+                  onPressed: _saving ? null : () => _paste(students),
+                ),
+            ],
           ),
           body: SafeArea(
             child: Column(

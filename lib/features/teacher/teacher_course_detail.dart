@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
@@ -107,7 +108,11 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
     return Scaffold(
       backgroundColor: NexoTheme.bg,
       appBar: AppBar(
-        title: Text(c.shortName, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          c.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           if (_downloading)
             const Padding(
@@ -179,6 +184,9 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
   }
 }
 
+/// Cabecera del curso en palabras, no en códigos: carrera, "Sección A1 ·
+/// Ciclo 4 · Presencial", dónde y cuándo se dicta. El NRC queda al final,
+/// discreto y copiable, para trámites con la universidad.
 class _Header extends StatelessWidget {
   final TeacherSubject course;
   const _Header({required this.course});
@@ -187,36 +195,26 @@ class _Header extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final c = course;
     final ongoing = c.ongoingBlock(DateTime.now());
-    final days = <String, List<TeacherBlock>>{};
-    for (final b in [
-      ...c.blocks,
-    ]..sort((a, b) => a.weekday.compareTo(b.weekday))) {
-      days.putIfAbsent(b.dayName, () => []).add(b);
-    }
-    Widget chip(IconData icon, String text) => Padding(
-      padding: const EdgeInsets.only(right: 6, bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: NexoTheme.card,
-          borderRadius: AppRadii.rPill,
-          border: Border.all(color: NexoTheme.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: NexoTheme.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: NexoTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
+    final facts = courseFactsLine(l, c);
+    final room = courseRoomLine(c);
+    final schedule = courseScheduleLine(c);
+    final muted = TextStyle(
+      fontSize: AppFont.small,
+      color: NexoTheme.textSecondary,
+      height: 1.3,
+    );
+    Widget line(IconData icon, String text) => Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs + 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 15, color: NexoTheme.textMuted),
+          ),
+          const Gap.h(AppSpacing.sm),
+          Expanded(child: Text(text, style: muted)),
+        ],
       ),
     );
     return Container(
@@ -224,50 +222,93 @@ class _Header extends StatelessWidget {
       color: NexoTheme.surface,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.sm,
+        AppSpacing.xs,
         AppSpacing.lg,
-        AppSpacing.sm,
+        AppSpacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (ongoing != null)
+          if (ongoing != null || c.isElective)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: TeacherPill(
-                text: l.tchOngoingNow(ongoing.start, ongoing.end),
-                color: NexoTheme.success,
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  if (ongoing != null)
+                    TeacherPill(
+                      text: l.tchOngoingNow(ongoing.start, ongoing.end),
+                      color: NexoTheme.success,
+                    ),
+                  if (c.isElective)
+                    TeacherPill(text: l.tchElective, color: NexoTheme.info),
+                ],
               ),
             ),
-          Wrap(
-            children: [
-              chip(
-                Icons.tag_rounded,
-                'NRC ${c.nrc} · ${l.detailSection} ${c.section}',
+          if (c.careerName.isNotEmpty)
+            Text(
+              c.careerName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: NexoTheme.textMuted,
               ),
-              if (c.ciclo.isNotEmpty)
-                chip(Icons.layers_rounded, l.tchCycle(c.ciclo)),
-              if (c.modalidad.isNotEmpty)
-                chip(Icons.devices_rounded, c.modalidad),
-              if (c.aula.isNotEmpty)
-                chip(Icons.meeting_room_rounded, _shortRoom(c.aula)),
-              for (final e in days.entries)
-                chip(
-                  Icons.schedule_rounded,
-                  '${e.key.substring(0, 3)} '
-                  '${e.value.map((b) => '${b.start}–${b.end}').join(', ')}',
+            ),
+          // "Sección A1 · Ciclo 4 · Presencial" y, a la derecha, el NRC
+          // discreto y copiable para trámites con la universidad.
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    facts,
+                    style: TextStyle(
+                      fontSize: AppFont.body,
+                      fontWeight: FontWeight.w700,
+                      color: NexoTheme.textPrimary,
+                    ),
+                  ),
                 ),
-            ],
+                if (c.nrc.isNotEmpty)
+                  Tooltip(
+                    message: l.tchCopyNrc,
+                    child: InkWell(
+                      borderRadius: AppRadii.rSm,
+                      onTap: () => ClipboardHelper.copyAndShow(
+                        context,
+                        c.nrc,
+                        label: 'NRC',
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          'NRC ${c.nrc}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: NexoTheme.textMuted,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
+          if (schedule.isNotEmpty) line(Icons.schedule_rounded, schedule),
+          if (room.isNotEmpty) line(Icons.place_outlined, room),
         ],
       ),
     );
-  }
-
-  /// "PABELLON H - H 302 - AFORO: 60" → "H 302".
-  static String _shortRoom(String aula) {
-    final loc = ScheduleRoom.parse(aula);
-    return loc.isEmpty ? aula : loc;
   }
 }
 
@@ -299,86 +340,90 @@ class _AlumnosTabState extends State<_AlumnosTab> {
     final l = AppLocalizations.of(context);
     return ListenableBuilder(
       listenable: widget.store,
-      builder: (context, _) {
-        final state = widget.store.alumnosDe(widget.course.id);
-        if (state.loading && !state.hasValue) {
-          return const TeacherListSkeleton();
-        }
-        final alumnos = [...(state.value ?? const <TeacherStudent>[])]
-          ..sort((a, b) => a.displayName.compareTo(b.displayName));
-        if (alumnos.isEmpty) {
-          return Center(
-            child: EmptyState(
-              icon: Icons.groups_outlined,
-              title: l.docenteNoAlumnosRegistered,
-              onRetry: () => widget.store.loadDocenteAlumnos(
-                widget.course.id,
-                tipoCalif: widget.course.tipoCalif,
-              ),
-            ),
-          );
-        }
-        final sheet = widget.store.asistenciaDe(widget.course.id).value;
-        final pct = {
-          for (final s in sheet?.students ?? const <AttendanceStudent>[])
-            s.code: s.percent,
-        };
-        final t = _q.trim().toLowerCase();
-        final filtered = alumnos
-            .where(
-              (a) =>
-                  t.isEmpty ||
-                  a.displayName.toLowerCase().contains(t) ||
-                  a.code.toLowerCase().contains(t),
-            )
-            .toList();
-        return RefreshIndicator(
-          onRefresh: () => widget.store.loadDocenteAlumnos(
+      builder: (context, _) => FadeSwitch(child: _content(context, l)),
+    );
+  }
+
+  Widget _content(BuildContext context, AppLocalizations l) {
+    final state = widget.store.alumnosDe(widget.course.id);
+    if (state.loading && !state.hasValue) {
+      return const TeacherListSkeleton(key: ValueKey('loading'));
+    }
+    final alumnos = [...(state.value ?? const <TeacherStudent>[])]
+      ..sort((a, b) => a.displayName.compareTo(b.displayName));
+    if (alumnos.isEmpty) {
+      return Center(
+        key: const ValueKey('empty'),
+        child: EmptyState(
+          icon: Icons.groups_outlined,
+          title: l.docenteNoAlumnosRegistered,
+          onRetry: () => widget.store.loadDocenteAlumnos(
             widget.course.id,
             tipoCalif: widget.course.tipoCalif,
           ),
-          child: ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: filtered.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (_, i) {
-              if (i == 0) {
-                return TextField(
-                  onChanged: (v) => setState(() => _q = v),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: l.docenteSearchStudent,
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    suffixText: l.docenteMetricAlumnosCount(filtered.length),
-                    filled: true,
-                    fillColor: NexoTheme.card,
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadii.rLg,
-                      borderSide: BorderSide(color: NexoTheme.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppRadii.rLg,
-                      borderSide: BorderSide(color: NexoTheme.border),
-                    ),
-                  ),
-                );
-              }
-              final a = filtered[i - 1];
-              return _AlumnoTile(
-                student: a,
-                attendance: pct[a.code],
-                onTap: () => showTeacherStudentSheet(
-                  context: context,
-                  store: widget.store,
-                  course: widget.course,
-                  student: a,
+        ),
+      );
+    }
+    final sheet = widget.store.asistenciaDe(widget.course.id).value;
+    final pct = {
+      for (final s in sheet?.students ?? const <AttendanceStudent>[])
+        s.code: s.percent,
+    };
+    final t = _q.trim().toLowerCase();
+    final filtered = alumnos
+        .where(
+          (a) =>
+              t.isEmpty ||
+              a.displayName.toLowerCase().contains(t) ||
+              a.code.toLowerCase().contains(t),
+        )
+        .toList();
+    return RefreshIndicator(
+      key: const ValueKey('data'),
+      onRefresh: () => widget.store.loadDocenteAlumnos(
+        widget.course.id,
+        tipoCalif: widget.course.tipoCalif,
+      ),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        itemCount: filtered.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemBuilder: (_, i) {
+          if (i == 0) {
+            return TextField(
+              onChanged: (v) => setState(() => _q = v),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l.docenteSearchStudent,
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                suffixText: l.docenteMetricAlumnosCount(filtered.length),
+                filled: true,
+                fillColor: NexoTheme.card,
+                border: OutlineInputBorder(
+                  borderRadius: AppRadii.rLg,
+                  borderSide: BorderSide(color: NexoTheme.border),
                 ),
-              );
-            },
-          ),
-        );
-      },
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppRadii.rLg,
+                  borderSide: BorderSide(color: NexoTheme.border),
+                ),
+              ),
+            );
+          }
+          final a = filtered[i - 1];
+          return _AlumnoTile(
+            student: a,
+            attendance: pct[a.code],
+            onTap: () => showTeacherStudentSheet(
+              context: context,
+              store: widget.store,
+              course: widget.course,
+              student: a,
+            ),
+          );
+        },
+      ),
     );
   }
 }

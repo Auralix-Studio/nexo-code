@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
@@ -55,91 +56,95 @@ class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
     final l = AppLocalizations.of(context);
     return ListenableBuilder(
       listenable: widget.store,
-      builder: (context, _) {
-        final state = widget.store.asistenciaDe(widget.course.id);
-        if (state.loading && !state.hasValue) {
-          return const TeacherListSkeleton(height: 90);
-        }
-        if (state.error != null && !state.hasValue) {
-          return Center(
-            child: EmptyState(
-              icon: Icons.cloud_off_outlined,
-              title: l.tchAttLoadError,
-              subtitle: humanizeError(state.error),
-              color: NexoTheme.danger,
-              onRetry: () => widget.store.loadDocenteAsistencia(widget.course),
+      builder: (context, _) => FadeSwitch(child: _content(context, l)),
+    );
+  }
+
+  Widget _content(BuildContext context, AppLocalizations l) {
+    final state = widget.store.asistenciaDe(widget.course.id);
+    if (state.loading && !state.hasValue) {
+      return const TeacherListSkeleton(key: ValueKey('loading'), height: 90);
+    }
+    if (state.error != null && !state.hasValue) {
+      return Center(
+        key: const ValueKey('error'),
+        child: EmptyState(
+          icon: Icons.cloud_off_outlined,
+          title: l.tchAttLoadError,
+          subtitle: humanizeError(state.error),
+          color: NexoTheme.danger,
+          onRetry: () => widget.store.loadDocenteAsistencia(widget.course),
+        ),
+      );
+    }
+    final sheet = state.value ?? const AttendanceSheet([]);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final sessions = sheet.sessions().reversed.toList();
+    final todaySessions = sessions
+        .where((d) => DateTime(d.year, d.month, d.day) == today)
+        .toList();
+    final visible = _showAll ? sessions : sessions.take(8).toList();
+    return RefreshIndicator(
+      key: const ValueKey('data'),
+      onRefresh: () => widget.store.loadDocenteAsistencia(widget.course),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          _TakeCard(
+            course: widget.course,
+            todaySessions: todaySessions,
+            sheet: sheet,
+            onTake: () => TeacherTakeAttendanceScreen.open(
+              context,
+              store: widget.store,
+              course: widget.course,
             ),
-          );
-        }
-        final sheet = state.value ?? const AttendanceSheet([]);
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final sessions = sheet.sessions().reversed.toList();
-        final todaySessions = sessions
-            .where((d) => DateTime(d.year, d.month, d.day) == today)
-            .toList();
-        final visible = _showAll ? sessions : sessions.take(8).toList();
-        return RefreshIndicator(
-          onRefresh: () => widget.store.loadDocenteAsistencia(widget.course),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            onFix: todaySessions.isEmpty
+                ? null
+                : () => _openSession(todaySessions.first),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _Kpis(sheet: sheet),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
             children: [
-              _TakeCard(
-                course: widget.course,
-                todaySessions: todaySessions,
-                sheet: sheet,
-                onTake: () => TeacherTakeAttendanceScreen.open(
-                  context,
-                  store: widget.store,
-                  course: widget.course,
+              Expanded(
+                child: Text(
+                  l.tchSessionsTitle(sessions.length),
+                  style: TextStyle(
+                    fontSize: AppFont.subtitle,
+                    fontWeight: FontWeight.w800,
+                    color: NexoTheme.textPrimary,
+                  ),
                 ),
-                onFix: todaySessions.isEmpty
-                    ? null
-                    : () => _openSession(todaySessions.first),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              _Kpis(sheet: sheet),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l.tchSessionsTitle(sessions.length),
-                      style: TextStyle(
-                        fontSize: AppFont.subtitle,
-                        fontWeight: FontWeight.w800,
-                        color: NexoTheme.textPrimary,
-                      ),
-                    ),
-                  ),
-                  if (sessions.length > 8)
-                    TextButton(
-                      onPressed: () => setState(() => _showAll = !_showAll),
-                      child: Text(_showAll ? l.tchShowLess : l.tchShowAll),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (sessions.isEmpty)
-                EmptyState(
-                  icon: Icons.event_note_outlined,
-                  title: l.docenteReportEmpty,
-                )
-              else
-                for (final d in visible) ...[
-                  _SessionTile(
-                    session: d,
-                    sheet: sheet,
-                    unitName: _unitName(_unitOf(sheet, d)),
-                    onTap: () => _openSession(d),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+              if (sessions.length > 8)
+                TextButton(
+                  onPressed: () => setState(() => _showAll = !_showAll),
+                  child: Text(_showAll ? l.tchShowLess : l.tchShowAll),
+                ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: AppSpacing.sm),
+          if (sessions.isEmpty)
+            EmptyState(
+              icon: Icons.event_note_outlined,
+              title: l.docenteReportEmpty,
+            )
+          else
+            for (final d in visible) ...[
+              _SessionTile(
+                session: d,
+                sheet: sheet,
+                unitName: _unitName(_unitOf(sheet, d)),
+                onTap: () => _openSession(d),
+              ),
+              const SizedBox(height: 8),
+            ],
+        ],
+      ),
     );
   }
 
@@ -220,7 +225,7 @@ class _TakeCard extends StatelessWidget {
                 child: Text(
                   ongoing != null
                       ? l.tchOngoingNow(ongoing.start, ongoing.end)
-                      : l.tchAttTitle,
+                      : l.tchAttTodayTitle,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -291,7 +296,7 @@ class _Kpis extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final t = sheet.totals();
     final pct = t.total == 0 ? null : (t.present * 100 / t.total).round();
-    Widget kpi(String value, String label, Color color) => Expanded(
+    Widget kpi(Object value, String label, Color color) => Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
@@ -301,14 +306,24 @@ class _Kpis extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: AppFont.h3,
-                fontWeight: FontWeight.w900,
-                color: color,
+            if (value is int)
+              AnimatedCount(
+                value: value,
+                style: TextStyle(
+                  fontSize: AppFont.h3,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              )
+            else
+              Text(
+                '$value',
+                style: TextStyle(
+                  fontSize: AppFont.h3,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
               ),
-            ),
             const SizedBox(height: 2),
             Text(
               label,
@@ -330,20 +345,20 @@ class _Kpis extends StatelessWidget {
           children: [
             kpi(pct == null ? '—' : '$pct%', l.tchKpiGeneral, NexoTheme.info),
             const SizedBox(width: 6),
-            kpi('${t.present}', l.tchKpiPresent, NexoTheme.success),
+            kpi(t.present, l.tchKpiPresent, NexoTheme.success),
             const SizedBox(width: 6),
-            kpi('${t.absent}', l.tchKpiAbsent, NexoTheme.danger),
+            kpi(t.absent, l.tchKpiAbsent, NexoTheme.danger),
           ],
         ),
         const SizedBox(height: 6),
         Row(
           children: [
-            kpi('${t.justified}', l.tchKpiJustified, NexoTheme.warning),
+            kpi(t.justified, l.tchKpiJustified, NexoTheme.warning),
             const SizedBox(width: 6),
-            kpi('${t.total}', l.tchKpiTotal, NexoTheme.textSecondary),
+            kpi(t.total, l.tchKpiTotal, NexoTheme.textSecondary),
             const SizedBox(width: 6),
             kpi(
-              '${sheet.students.where((s) => s.atRisk).length}',
+              sheet.students.where((s) => s.atRisk).length,
               l.docenteReportAtRisk,
               NexoTheme.danger,
             ),

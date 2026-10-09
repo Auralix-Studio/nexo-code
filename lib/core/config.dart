@@ -1,4 +1,4 @@
-﻿class UpdateConfig {
+class UpdateConfig {
   static const String repo = 'auralix-studio/nexo';
   static const String latestReleaseApi =
       'https://api.github.com/repos/$repo/releases/latest';
@@ -26,11 +26,21 @@ class AppConfig {
   static const String userAgent =
       'Nexo-UPLA/$appVersion (Flutter; multiplatform)';
   static const String tipDI = '12';
-  static String photoUrlFor(String code) =>
-      'https://academico.upla.edu.pe/FotosAlum/037000$code.jpg';
+
+  /// Foto institucional. Igual que el cliente oficial de SIGMA: los códigos
+  /// de alumno (7 caracteres, p. ej. U01025B) están en `FotosAlum/037000…`;
+  /// los de docente (DNI de 8 dígitos) en `PhotD/…`.
+  static String photoUrlFor(String code) {
+    final c = code.trim();
+    return c.length == 7
+        ? 'https://academico.upla.edu.pe/FotosAlum/037000$c.jpg'
+        : 'https://academico.upla.edu.pe/PhotD/$c.jpg';
+  }
 }
 
 class LegalTerms {
-  static const int version = 3;
-  static final DateTime updatedAt = DateTime(2026, 8, 10);
+  // v4: documentos formales (Términos y Condiciones, Política de Privacidad y
+  // Política de Cookies) con ley aplicable y límites de responsabilidad.
+  static const int version = 4;
+  static final DateTime updatedAt = DateTime(2026, 10, 8);
 }

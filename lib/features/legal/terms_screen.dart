@@ -3,6 +3,7 @@ import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
+import 'package:nexo/features/legal/legal_document_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
@@ -58,6 +59,12 @@ List<_Item> _items(AppLocalizations l) => <_Item>[
     l.termsItemDisclaimerTitle,
     l.termsItemDisclaimerBody,
     NexoTheme.warning,
+  ),
+  _Item(
+    Icons.balance_outlined,
+    l.termsItemLawTitle,
+    l.termsItemLawBody,
+    NexoTheme.textSecondary,
   ),
   _Item(
     Icons.update_outlined,
@@ -196,6 +203,9 @@ class _Content extends StatelessWidget {
                 _SectionCard(item: it),
                 const Gap(AppSpacing.md),
               ],
+              const Gap(AppSpacing.sm),
+              const _DocumentsCard(),
+              const Gap(AppSpacing.md),
               const Gap(AppSpacing.sm),
               Center(
                 child: Text(
@@ -386,6 +396,65 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Acceso a los documentos completos: el resumen de arriba no los reemplaza.
+class _DocumentsCard extends StatelessWidget {
+  const _DocumentsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: NexoTheme.surface,
+        borderRadius: AppRadii.rXl,
+        border: Border.all(color: NexoTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.xs,
+            ),
+            child: Text(
+              l.legalDocsTitle,
+              style: TextStyle(
+                fontSize: AppFont.title,
+                fontWeight: FontWeight.w800,
+                color: NexoTheme.textPrimary,
+              ),
+            ),
+          ),
+          for (final doc in LegalDoc.values)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+              ),
+              leading: Icon(doc.icon, color: NexoTheme.primary),
+              title: Text(
+                doc.title(l),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: NexoTheme.textPrimary,
+                ),
+              ),
+              subtitle: Text(doc.subtitle(l)),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: NexoTheme.textMuted,
+              ),
+              onTap: () => LegalDocumentScreen.open(context, doc),
+            ),
+          const Gap(AppSpacing.sm),
         ],
       ),
     );

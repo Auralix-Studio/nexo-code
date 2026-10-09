@@ -582,7 +582,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Read them carefully and accept to continue.';
 
   @override
-  String get termsAcceptNote => 'By continuing you accept these terms.';
+  String get termsAcceptNote =>
+      'By continuing you accept the Terms and Conditions and the Privacy Policy, and acknowledge the Cookies Policy.';
 
   @override
   String get termsAcceptButton => 'Accept and continue';
@@ -606,7 +607,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemPrivacyBody =>
-      'Your credentials and academic data are stored only on your device. Nexo does not send your information to its own servers or to third parties: requests go straight to UPLA services, just like the official portal.';
+      'Your credentials and academic data are stored on your device. Nexo has no servers of its own: requests go straight to UPLA services, just like the official portal. GitHub is only queried to look for updates, without sending academic data. There is no advertising or analytics.';
 
   @override
   String get termsItemSecurityTitle => 'Security';
@@ -620,14 +621,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemResponsibleBody =>
-      'Access only your own information, with your own credentials. This is an educational, personal-use project: use it in line with your university\'s rules.';
+      'Access only your own information, with your own credentials. Using someone else\'s credentials may be a crime (Law No. 30096). If you are a teacher, your students\' data is confidential and may only be used for academic purposes (Law No. 29733).';
 
   @override
   String get termsItemDisclaimerTitle => 'No guarantees';
 
   @override
   String get termsItemDisclaimerBody =>
-      'The service is provided \"as is\", without warranties. For official procedures, always consult the institutional portal.';
+      'Nexo is provided \"as is\", without warranties. We are not responsible for misuse of the app or the credentials, nor for decisions made based on the information shown. For official procedures, always check UPLA\'s systems.';
 
   @override
   String get aboutFeatureAllInOneTitle => 'Your university in one place';
@@ -1602,14 +1603,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemRightsBody =>
-      'Your data lives on your device, so you are in control: you can review it, update it from the intranet, or delete it by signing out. Write to us from the support section with any question about how your data is handled.';
+      'Your data lives on your device, so you are in control: you can review it, update it in UPLA\'s systems, or delete it by signing out. To exercise your rights of access, rectification, cancellation and objection, write to us from Support; you can also turn to Peru\'s National Personal Data Protection Authority.';
 
   @override
   String get termsHeaderUpdatedPre => 'Something changed';
 
   @override
   String get termsUpdatedNotice =>
-      'We updated these terms to explain better what stays on your device and how we will tell you about future changes. Please read them again before continuing.';
+      'We updated our documents: there are now full Terms and Conditions, a Privacy Policy and a Cookies Policy, with the applicable Peruvian law and the limits of liability. Please read them before continuing.';
 
   @override
   String get termsItemDeviceTitle => 'What stays on your device';
@@ -2136,4 +2137,281 @@ class AppLocalizationsEn extends AppLocalizations {
   String tchVirtualTolerance(int minutes) {
     return 'Tolerance +$minutes min';
   }
+
+  @override
+  String get tchAttTodayTitle => 'Today\'s attendance';
+
+  @override
+  String get tchDraftRestored =>
+      'We restored what you marked earlier. Review it and record.';
+
+  @override
+  String get tchDraftDiscard => 'Discard';
+
+  @override
+  String get tchAgendaTitle => 'Today\'s schedule';
+
+  @override
+  String get tchAgendaEmpty => 'No classes today.';
+
+  @override
+  String get tchAgendaHoliday => 'Today is a national holiday: no classes.';
+
+  @override
+  String tchAgendaNext(String when, String course) {
+    return 'Next class: $when · $course';
+  }
+
+  @override
+  String get tchPhaseUpcoming => 'Later';
+
+  @override
+  String get tchPhaseOngoing => 'In progress';
+
+  @override
+  String get tchPhaseFinished => 'Ended';
+
+  @override
+  String get tchAgendaChecking => 'Checking attendance…';
+
+  @override
+  String get tchAgendaRegistered => 'Attendance recorded';
+
+  @override
+  String get tchAgendaPending => 'Attendance missing';
+
+  @override
+  String get tchMissingSubtitle => 'Last two weeks. You can still record them.';
+
+  @override
+  String get tchMissingRegister => 'Record';
+
+  @override
+  String get tchMissingDismiss => 'No class was held';
+
+  @override
+  String get tchMissingDismissed => 'Done, that class won\'t show again.';
+
+  @override
+  String get tchAlertsTitle => 'Students who need attention';
+
+  @override
+  String get tchAlertsNone => 'No students at risk right now.';
+
+  @override
+  String get tchAlertsChecking => 'Checking your sections…';
+
+  @override
+  String tchAlertAttCritical(int pct) {
+    return 'Attendance $pct% · critical';
+  }
+
+  @override
+  String tchAlertAttWarning(int pct) {
+    return 'Attendance $pct% · near the limit';
+  }
+
+  @override
+  String tchAlertFailing(String grade) {
+    return 'Average $grade · failing';
+  }
+
+  @override
+  String get tchAlertsHint =>
+      'Critical attendance: 70% or less (30% or more absences). Near the limit: up to 80%, so you can act early. Grades: final grade to date below passing, as computed by SIGMA.';
+
+  @override
+  String get tchPasteAction => 'Paste from Excel';
+
+  @override
+  String get tchPasteNothing =>
+      'First copy the grades in Excel: one column in list order, or two columns with code and grade.';
+
+  @override
+  String get tchPasteTitle => 'Paste these grades?';
+
+  @override
+  String tchPasteByCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grades matched by student code',
+      one: '1 grade matched by student code',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteByOrder(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grades in list order',
+      one: '1 grade in list order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows skipped (unknown code or invalid grade)',
+      one: '1 row skipped (unknown code or invalid grade)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteReplaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Replaces $count grades already entered',
+      one: 'Replaces 1 grade already entered',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchPasteMismatch(int rows, int students) {
+    return 'You copied $rows rows but the list has $students students. Copy the code column too so they can be matched.';
+  }
+
+  @override
+  String get tchPasteApply => 'Paste';
+
+  @override
+  String get tchPasteDone => 'Grades pasted. Review them and save.';
+
+  @override
+  String get tchViewGrid => 'Grade table';
+
+  @override
+  String get tchViewCards => 'By assessment';
+
+  @override
+  String get tchGridStudent => 'Student';
+
+  @override
+  String get tchGridFinal => 'Final';
+
+  @override
+  String get tchGridUnitAvg => 'Avg.';
+
+  @override
+  String get tchGridEmpty => 'No grades recorded in this section yet.';
+
+  @override
+  String get tchGridHint => 'Tap an assessment header to record it.';
+
+  @override
+  String get tchPendingTitle => 'To do';
+
+  @override
+  String get tchPendingNone =>
+      'All caught up: no classes without attendance and no students at risk.';
+
+  @override
+  String tchMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count classes without attendance',
+      one: '1 class without attendance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tchAlertsRow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count students need attention',
+      one: '1 student needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tchAlertsSubtitle =>
+      'Low attendance or failing, across all your sections.';
+
+  @override
+  String tchAlertsCriticalCount(int count) {
+    return '$count critical attendance';
+  }
+
+  @override
+  String tchAlertsNearCount(int count) {
+    return '$count near the limit';
+  }
+
+  @override
+  String tchAlertsFailingCount(int count) {
+    return '$count failing';
+  }
+
+  @override
+  String tchCourseAtRisk(int count) {
+    return '$count at risk';
+  }
+
+  @override
+  String tchClassesToday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count classes today',
+      one: '1 class today',
+      zero: 'no classes today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get termsItemLawTitle => 'Legal framework';
+
+  @override
+  String get termsItemLawBody =>
+      'These documents are governed by Peruvian law, in particular Law No. 29733 on Personal Data Protection and its Regulation (Supreme Decree No. 016-2024-JUS), Law No. 30096 on Computer Crimes and the Consumer Protection and Defense Code (Law No. 29571).';
+
+  @override
+  String get legalDocsTitle => 'Full documents';
+
+  @override
+  String get legalTermsTitle => 'Terms and Conditions';
+
+  @override
+  String get legalTermsSubtitle => 'Use, responsibilities and governing law';
+
+  @override
+  String get legalPrivacyTitle => 'Privacy Policy';
+
+  @override
+  String get legalPrivacySubtitle =>
+      'What data is processed, where, and your rights';
+
+  @override
+  String get legalCookiesTitle => 'Cookies Policy';
+
+  @override
+  String get legalCookiesSubtitle =>
+      'What is stored on your device and how to delete it';
+
+  @override
+  String get legalLoadError => 'The document could not be opened.';
+
+  @override
+  String tchSectionLabel(String section) {
+    return 'Section $section';
+  }
+
+  @override
+  String get tchElective => 'Elective';
+
+  @override
+  String get tchCopyNrc => 'Copy NRC';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nexo/core/config.dart';
 import 'package:nexo/data/teacher_repository.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_grade_entry.dart';
@@ -88,13 +89,21 @@ void main() {
     });
   });
 
-  test('horario docente para la pestaña Horario', () {
-    final out = TeacherRepository.parseHorarioDocente([asistenciaRow]);
+  test('horario docente para la pestaña Horario sale de las asignaturas', () {
+    final merged = TeacherRepository.mergeAsignaturas(
+      [notasRow],
+      [asistenciaRow],
+    );
+    final out = TeacherRepository.scheduleFromSubjects(merged);
     expect(out, hasLength(3));
-    expect(out.first.weekday, 4);
-    expect(out.first.startTime, '11:30');
+    expect(out.first.weekday, 3);
+    expect(out.first.startTime, '10:45');
+    expect(out.first.typeCode, 'T');
     expect(out.first.room, 'H 302');
-    expect(TeacherRepository.parseHorarioDocente([notasRow]), isEmpty);
+    expect(out.first.subject, 'Base de Datos I');
+    // Sin cruce con `modo=Asistencia` no hay bloques.
+    final soloNotas = TeacherRepository.mergeAsignaturas([notasRow], const []);
+    expect(TeacherRepository.scheduleFromSubjects(soloNotas), isEmpty);
   });
 
   group('asistencia', () {
@@ -340,6 +349,47 @@ void main() {
       expect(
         TeacherRepository.parseServerTime('2026-10-07T12:59:09.93-05:00'),
         DateTime(2026, 10, 7, 12, 59, 9),
+      );
+    });
+  });
+
+  group('nombres legibles para el docente', () {
+    test('sin paréntesis, en mayúsculas y minúsculas y con romanos', () {
+      expect(readableName('BASE DE DATOS I (2026-2)'), 'Base de Datos I');
+      expect(
+        readableName('INTERNET DE LAS COSAS (ELECTIVO) (2026-2)'),
+        'Internet de las Cosas',
+      );
+      expect(readableName('PROGRAMACIÓN II'), 'Programación II');
+      expect(
+        readableName('TEORÍA-PRÁCTICA Y ÉTICA'),
+        'Teoría-Práctica y Ética',
+      );
+      expect(readableName('DE LA TIERRA'), 'De la Tierra');
+    });
+
+    test('electiva, carrera sin modalidad y ciclo sin ceros', () {
+      final c = TeacherSubject.fromJson({
+        'id': '1',
+        'nrc': '333196',
+        'asignatura': 'INTERNET DE LAS COSAS (ELECTIVO) (2026-2)',
+        'carrera': 'INGENIERÍA DE SISTEMAS Y COMPUTACIÓN - PRESENCIAL',
+        'ciclo': '09',
+      });
+      expect(c.displayName, 'Internet de las Cosas');
+      expect(c.isElective, isTrue);
+      expect(c.careerName, 'Ingeniería de Sistemas y Computación');
+      expect(c.cycleLabel, '9');
+    });
+
+    test('foto: alumnos en FotosAlum y docentes (DNI) en PhotD', () {
+      expect(
+        AppConfig.photoUrlFor('U01025B'),
+        'https://academico.upla.edu.pe/FotosAlum/037000U01025B.jpg',
+      );
+      expect(
+        AppConfig.photoUrlFor('46996068'),
+        'https://academico.upla.edu.pe/PhotD/46996068.jpg',
       );
     });
   });
