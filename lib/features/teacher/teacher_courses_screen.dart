@@ -124,6 +124,8 @@ class _CursoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final enrolled =
+        store.alumnosDe(course.id).value?.length ?? course.enrolledCount;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -195,30 +197,34 @@ class _CursoTile extends StatelessWidget {
               const Gap(AppSpacing.md),
               Divider(height: 1, color: NexoTheme.border),
               const Gap(AppSpacing.md),
-              Row(
+              // Wrap en vez de Row: en pantallas angostas el periodo se
+              // desbordaba a la derecha.
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _pill(
-                    icon: Icons.tag_rounded,
-                    label: '${l.detailSection} ${course.section}',
-                    color: NexoTheme.info,
-                  ),
-                  const Gap.h(AppSpacing.sm),
-                  _pill(
-                    icon: Icons.groups_rounded,
-                    label: l.docenteMetricAlumnosCount(
-                      course.enrolledCount ?? 0,
+                  if (course.section.isNotEmpty)
+                    _pill(
+                      icon: Icons.tag_rounded,
+                      label: '${l.detailSection} ${course.section}',
+                      color: NexoTheme.info,
                     ),
-                    color: NexoTheme.accent,
-                  ),
-                  const Spacer(),
-                  Text(
-                    course.periodo,
-                    style: TextStyle(
-                      fontSize: AppFont.small,
-                      color: NexoTheme.textSecondary,
-                      fontWeight: FontWeight.w600,
+                  if (enrolled != null)
+                    _pill(
+                      icon: Icons.groups_rounded,
+                      label: l.docenteMetricAlumnosCount(enrolled),
+                      color: NexoTheme.accent,
                     ),
-                  ),
+                  if (course.periodo.isNotEmpty)
+                    Text(
+                      course.periodo,
+                      style: TextStyle(
+                        fontSize: AppFont.small,
+                        color: NexoTheme.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               ),
             ],

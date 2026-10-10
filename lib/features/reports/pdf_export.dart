@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:printing/printing.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/reports/certificate_pdf.dart';
+import 'package:nexo/features/reports/course_roster_pdf.dart';
 import 'package:nexo/features/reports/schedule_pdf.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 
@@ -60,5 +62,41 @@ abstract final class PdfExport {
       name: 'Cronograma_${code}_$periodLabel.pdf',
       onLayout: (_) => doc.save(),
     );
+  }
+
+  /// Lista de alumnos de una sección del docente (nota final y asistencia).
+  static Future<void> courseRoster(
+    BuildContext context,
+    AppStore store,
+    TeacherSubject course,
+  ) async {
+    final l = AppLocalizations.of(context);
+    final alumnos = store.alumnosDe(course.id).value;
+    if (alumnos == null) {
+      ClipboardHelper.showError(
+        context,
+        store.alumnosDe(course.id).error,
+        fallback: l.docenteExportError,
+      );
+      return;
+    }
+    try {
+      final doc = await buildCourseRosterPdf(
+        course: course,
+        alumnos: alumnos,
+        teacher: store.teacherInfo.value,
+      );
+      final safe = course.subject
+          .replaceAll(RegExp(r'[^A-Za-z0-9áéíóúÁÉÍÓÚñÑ ]'), '')
+          .trim()
+          .replaceAll(RegExp(r'\s+'), '_');
+      await Printing.layoutPdf(
+        name: 'Lista_${safe.isEmpty ? course.id : safe}_${course.section}.pdf',
+        onLayout: (_) => doc.save(),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ClipboardHelper.showError(context, e, fallback: l.docenteExportError);
+    }
   }
 }

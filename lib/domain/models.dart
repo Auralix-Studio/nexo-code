@@ -913,6 +913,11 @@ class EvaluationGrade {
   final int? tipoNotaId;
   final int? notaId;
 
+  /// Cuántas notas individuales tiene registradas este componente en SIGMA.
+  /// Si hay más de una, [grade] es un promedio y no se puede editar como una
+  /// sola nota sin pisar las demás.
+  final int noteCount;
+
   const EvaluationGrade({
     required this.code,
     required this.description,
@@ -921,6 +926,7 @@ class EvaluationGrade {
     this.tipoUnidadId,
     this.tipoNotaId,
     this.notaId,
+    this.noteCount = 0,
   });
   EvaluationGrade copyWith({String? grade}) => EvaluationGrade(
     code: code,
@@ -930,9 +936,15 @@ class EvaluationGrade {
     tipoUnidadId: tipoUnidadId,
     tipoNotaId: tipoNotaId,
     notaId: notaId,
+    noteCount: noteCount,
   );
   double? get gradeNum =>
       double.tryParse((grade ?? '').replaceAll(',', '.').trim());
+
+  /// `true` si hay datos suficientes para escribir esta nota en SIGMA sin
+  /// adivinar ids: unidad, tipo de nota y como mucho una nota individual.
+  bool get isEditable =>
+      tipoUnidadId != null && tipoNotaId != null && noteCount <= 1;
 }
 
 class DailyAttendance {
@@ -942,6 +954,8 @@ class DailyAttendance {
   // SIGMA usa un catálogo numérico: 1=Presente, 2=Falta, 3=Justificado.
   // Se aceptan también las letras heredadas P/T por compatibilidad.
   bool get isPresent => state == 'P' || state == 'T' || state == '1';
+  bool get isAbsent => state == 'F' || state == '2';
+  bool get isJustified => state == 'J' || state == '3';
 }
 
 class TeacherUnit {
@@ -949,35 +963,45 @@ class TeacherUnit {
   final double weight;
   final double? average;
   final List<EvaluationGrade> grades;
+  final int? unidadId;
   const TeacherUnit({
     required this.name,
     required this.weight,
     this.average,
     required this.grades,
+    this.unidadId,
   });
+
+  static String _describe(String abr) => switch (abr) {
+    'EV' => 'Evidencia de Conocimiento',
+    'DE' => 'Evidencia de Desempeño',
+    'PR' => 'Evidencia de Producto',
+    _ => abr,
+  };
+
   factory TeacherUnit.fromJson(Map<String, dynamic> j) {
+    final unidadId = _toInt(j['unidadId']);
     final groups = j['grupos'];
     final gradesList = <EvaluationGrade>[];
     if (groups is List) {
       for (final g in groups.whereType<Map>()) {
-        final notasArr = g['notas'] as List?;
-        final notaIdObj = (notasArr != null && notasArr.isNotEmpty) ? notasArr.first['idNota'] : null;
-        final isPending = notasArr == null || notasArr.isEmpty;
+        final notasRaw = g['notas'];
+        final notasArr = notasRaw is List
+            ? notasRaw.whereType<Map>().toList()
+            : const <Map>[];
+        final notaIdObj = notasArr.isNotEmpty ? notasArr.first['idNota'] : null;
+        final isPending = notasArr.isEmpty;
+        final abr = _toStr(g['tipoNotaAbr']);
         gradesList.add(
           EvaluationGrade(
-            code: _toStr(g['tipoNotaAbr']),
-            description: _toStr(g['tipoNotaAbr']) == 'EV'
-                ? 'Evidencia de Conocimiento'
-                : _toStr(g['tipoNotaAbr']) == 'DE'
-                    ? 'Evidencia de Desempeño'
-                    : _toStr(g['tipoNotaAbr']) == 'PR'
-                        ? 'Evidencia de Producto'
-                        : _toStr(g['tipoNotaAbr']),
+            code: abr,
+            description: _describe(abr),
             weight: _toDouble(g['peso']) ?? 0,
             grade: isPending ? null : g['promedio']?.toString(),
-            tipoUnidadId: _toInt(j['unidadId']),
+            tipoUnidadId: unidadId,
             tipoNotaId: _toInt(g['idTipoNota']),
             notaId: _toInt(notaIdObj),
+            noteCount: notasArr.length,
           ),
         );
       }
@@ -994,8 +1018,38 @@ class TeacherUnit {
       weight: _toDouble(j['porcentaje']) ?? 0,
       average: _toDouble(j['promedioUnidad']),
       grades: gradesList,
+      unidadId: unidadId,
     );
   }
+
+  /// Serializa con la misma forma que devuelve SIGMA, para que la caché
+  /// offline se lea con [TeacherUnit.fromJson] sin perder notas.
+  Map<String, dynamic> toJson() => {
+    'unidadId': unidadId ?? grades.map((g) => g.tipoUnidadId).nonNulls.firstOrNull,
+    'nombre': name,
+    'porcentaje': weight,
+    'promedioUnidad': average,
+    'grupos': [
+      for (final g in grades)
+        {
+          'tipoNotaAbr': g.code,
+          'peso': g.weight,
+          'promedio': g.grade,
+          'idTipoNota': g.tipoNotaId,
+          // Conserva el número de notas: si no hay nota, la lista va vacía
+          // (pendiente); si las hay, una entrada por nota.
+          'notas': [
+            for (var i = 0; i < _cachedNoteCount(g); i++)
+              {'idNota': i == 0 ? g.notaId : null},
+          ],
+        },
+    ],
+  };
+}
+
+int _cachedNoteCount(EvaluationGrade g) {
+  if (g.grade == null) return 0;
+  return g.noteCount < 1 ? 1 : g.noteCount;
 }
 
 class TeacherStudent {
@@ -1052,6 +1106,20 @@ class TeacherStudent {
       units: unitsList,
     );
   }
+
+  /// Forma de caché: compatible con [TeacherStudent.fromJson].
+  Map<String, dynamic> toCacheJson() => {
+    'codigo': code,
+    'nombres': firstName,
+    'apellidos': lastName,
+    'nombreCompleto': fullName,
+    'asistencia': attendance,
+    'nota': grade,
+    'matricula_asignatura_id': matriculaAsignaturaId,
+    'observacion': observacion,
+    'unidades': [for (final u in units) u.toJson()],
+  };
+
   String get displayName {
     final parts = [
       lastName,
@@ -1059,6 +1127,42 @@ class TeacherStudent {
     ].where((s) => s.trim().isNotEmpty).join(' ').trim();
     if (parts.isNotEmpty) return parts;
     return (fullName ?? '').trim();
+  }
+
+  /// Iniciales para el avatar. SIGMA suele mandar solo `nombreCompleto`
+  /// ("APELLIDO1 APELLIDO2 NOMBRE1 …"), así que se usa como respaldo:
+  /// primera letra del primer apellido + primera del primer nombre.
+  String get initials {
+    String pick(String s) {
+      final t = s.trim();
+      return t.isEmpty ? '' : t.substring(0, 1).toUpperCase();
+    }
+
+    final first = pick(firstName.trim().split(RegExp(r'\s+')).first);
+    final last = pick(lastName.trim().split(RegExp(r'\s+')).first);
+    if ((first + last).isNotEmpty) return first + last;
+    final parts = (fullName ?? '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return pick(parts.first);
+    // "APELLIDO1 APELLIDO2 NOMBRE" → A + N; con 2 palabras, ambas.
+    final nombre = parts.length >= 3 ? parts[2] : parts[1];
+    return pick(parts.first) + pick(nombre);
+  }
+
+  /// Nota final numérica (acepta coma decimal). `null` si no hay nota.
+  double? get gradeNum {
+    final t = (grade ?? '').trim().replaceAll(',', '.');
+    return t.isEmpty ? null : double.tryParse(t);
+  }
+
+  /// Porcentaje de asistencia (0–100). Tolera "85", "85.5", "85%".
+  double? get attendancePct {
+    final t = (attendance ?? '').replaceAll('%', '').replaceAll(',', '.').trim();
+    return t.isEmpty ? null : double.tryParse(t);
   }
 }
 

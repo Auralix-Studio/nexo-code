@@ -82,10 +82,15 @@ class TeacherRepository {
       if (bloques is! List) continue;
       for (final b in bloques.whereType<Map>()) {
         final h = b.cast<String, dynamic>();
-        final ini = s(h['horaInicio'] ?? h['startTime'] ?? h['horaIni']);
-        final fin = s(h['horaFin'] ?? h['endTime']);
+        final ini = _normHm(
+          s(h['horaInicio'] ?? h['startTime'] ?? h['horaIni']),
+        );
+        final fin = _normHm(s(h['horaFin'] ?? h['endTime']));
         final dia = s(h['dia'] ?? h['diaSemana']);
-        final idDia = i(h['idDia'] ?? h['diaSemanaID'] ?? h['dia']);
+        var idDia = i(h['idDia'] ?? h['diaSemanaID'] ?? h['dia']);
+        // Si SIGMA manda el día solo como nombre ("LUNES"), lo traducimos;
+        // con 0 la clase nunca aparecía en "Hoy" ni en su día del horario.
+        if (idDia < 1 || idDia > 7) idDia = _diaDesdeNombre(dia);
         if (ini.isEmpty && dia.isEmpty && idDia == 0) continue;
         out.add(
           ScheduleClass(
@@ -111,6 +116,34 @@ class TeacherRepository {
       }
     }
     return out;
+  }
+
+  /// "8:0" / "8:00:00" → "08:00:00"-compatible "HH:MM[:SS]" con ceros a la
+  /// izquierda, para que ordenar y comparar horas como texto sea correcto.
+  static String _normHm(String raw) {
+    final t = raw.trim();
+    final p = t.split(':');
+    if (p.length < 2) return t;
+    final h = int.tryParse(p[0]);
+    final m = int.tryParse(p[1]);
+    if (h == null || m == null) return t;
+    final base = '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    return p.length > 2 ? '$base:${p[2].padLeft(2, '0')}' : base;
+  }
+
+  static int _diaDesdeNombre(String nombre) {
+    final n = nombre
+        .trim()
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i');
+    if (n.isEmpty) return 0;
+    const dias = ['lu', 'ma', 'mi', 'ju', 'vi', 'sa', 'do'];
+    for (var k = 0; k < dias.length; k++) {
+      if (n.startsWith(dias[k])) return k + 1;
+    }
+    return 0;
   }
 
   /// Roster de la sección. OJO: `Docente/ListarEstudianteComple` devuelve `[]`
@@ -145,120 +178,59 @@ class TeacherRepository {
     return res.data ?? const [];
   }
 
-  Future<void> updateNota({
-    required String cleAuto,
-    required String codigoAlumno,
-    required String grade,
+  /// Registra o corrige una nota en SIGMA con la forma real del cliente
+  /// oficial (ver docs/evaluacion-endpoints-docente.md §9):
+  ///
+  /// ```json
+  /// { "Notas": [ { "matricula_asignatura_id", "tipo_unidad_id",
+  ///                "tipo_nota_id", "nota_id" (solo UpdateNota), "nota" } ] }
+  /// ```
+  ///
+  /// - Sin `nota_id` previo → `Docente/InsertarNotas`.
+  /// - Con `nota_id` → `Docente/UpdateNota`.
+  ///
+  /// Se niega a enviar nada si falta algún id o si el componente agrupa más de
+  /// una nota (su valor es un promedio y escribirlo pisaría notas reales).
+  Future<void> guardarNota({
+    required String? matriculaAsignaturaId,
+    required EvaluationGrade evaluacion,
+    required double nota,
   }) async {
-    final result = await _api.post<void>(
-      'Docente/UpdateNota',
-      body: {'cleAuto': cleAuto, 'codigoAlumno': codigoAlumno, 'nota': grade},
-      decode: (_) {},
-    );
-    _requireSaved(result);
-  }
-
-  Future<List<EvaluationGrade>> notasDetalle({
-    required String cleAuto,
-    required String codigoAlumno,
-  }) async {
-    List<EvaluationGrade> tipos = [];
-    try {
-      final t1 = await _getTipoNota('1');
-      final t2 = await _getTipoNota('2');
-      tipos = [...t1, ...t2];
-    } catch (_) {}
-    if (tipos.isEmpty) {
-      tipos = const [
-        EvaluationGrade(
-          code: 'U1-P1',
-          description: 'Práctica calificada 1',
-          weight: 10.0,
-        ),
-        EvaluationGrade(
-          code: 'U1-P2',
-          description: 'Práctica calificada 2',
-          weight: 10.0,
-        ),
-        EvaluationGrade(
-          code: 'U1-EX',
-          description: 'Examen parcial 1',
-          weight: 20.0,
-        ),
-        EvaluationGrade(
-          code: 'U2-P1',
-          description: 'Práctica calificada 3',
-          weight: 10.0,
-        ),
-        EvaluationGrade(
-          code: 'U2-P2',
-          description: 'Práctica calificada 4',
-          weight: 10.0,
-        ),
-        EvaluationGrade(
-          code: 'U2-PY',
-          description: 'Proyecto integrador',
-          weight: 15.0,
-        ),
-        EvaluationGrade(
-          code: 'U2-EX',
-          description: 'Examen final',
-          weight: 25.0,
-        ),
-      ];
+    final matricula = int.tryParse((matriculaAsignaturaId ?? '').trim());
+    final unidad = evaluacion.tipoUnidadId;
+    final tipoNota = evaluacion.tipoNotaId;
+    if (matricula == null || unidad == null || tipoNota == null) {
+      throw const BadRequestException(
+        'Faltan datos de SIGMA para registrar esta nota. '
+        'Actualiza la lista de alumnos e inténtalo de nuevo.',
+        status: 422,
+      );
     }
-    String? notaU1;
-    String? notaU2;
-    try {
-      final res1 = await notasResumen(tipoCalificacion: '1', cleAuto: cleAuto);
-      final alu1 = res1.firstWhere((a) => a.code == codigoAlumno);
-      notaU1 = alu1.grade;
-    } catch (_) {}
-    try {
-      final res2 = await notasResumen(tipoCalificacion: '2', cleAuto: cleAuto);
-      final alu2 = res2.firstWhere((a) => a.code == codigoAlumno);
-      notaU2 = alu2.grade;
-    } catch (_) {}
-    return tipos.map((t) {
-      if (t.code.startsWith('U1') || t.code.contains('1')) {
-        return t.copyWith(grade: notaU1);
-      } else {
-        return t.copyWith(grade: notaU2);
-      }
-    }).toList();
-  }
-
-  Future<List<EvaluationGrade>> _getTipoNota(String tipoUnidad) async {
-    final res = await _api.get<List<EvaluationGrade>>(
-      'Asignatura/getTipoNota',
-      query: {'tipoUnidad': tipoUnidad},
-      decode: (raw) {
-        if (raw is! List) return const [];
-        return raw.whereType<Map>().map((e) {
-          return EvaluationGrade(
-            code: (e['codigo'] ?? e['id'] ?? '').toString(),
-            description: (e['descripcion'] ?? e['nombre'] ?? '').toString(),
-            weight: double.tryParse((e['peso'] ?? '').toString()) ?? 0.0,
-          );
-        }).toList();
-      },
-    );
-    return res.data ?? const [];
-  }
-
-  Future<void> updateEvaluacion({
-    required String cleAuto,
-    required String codigoAlumno,
-    required String codigoEvaluacion,
-    required String grade,
-  }) async {
+    if (evaluacion.noteCount > 1) {
+      throw const BadRequestException(
+        'Este componente tiene varias notas; su valor es un promedio. '
+        'Edítalo desde SIGMA para no sobrescribir notas individuales.',
+        status: 422,
+      );
+    }
+    if (nota.isNaN || nota < 0 || nota > 20) {
+      throw const BadRequestException(
+        'La nota debe estar entre 0 y 20.',
+        status: 422,
+      );
+    }
+    final notaId = evaluacion.notaId;
+    final item = <String, Object>{
+      'matricula_asignatura_id': matricula,
+      'tipo_unidad_id': unidad,
+      'tipo_nota_id': tipoNota,
+      if (notaId != null) 'nota_id': notaId,
+      'nota': nota,
+    };
     final result = await _api.post<void>(
-      'Docente/InsertarNotas',
+      notaId == null ? 'Docente/InsertarNotas' : 'Docente/UpdateNota',
       body: {
-        'cleAuto': cleAuto,
-        'codigoAlumno': codigoAlumno,
-        'codigoEvaluacion': codigoEvaluacion,
-        'nota': grade,
+        'Notas': [item],
       },
       decode: (_) {},
     );
