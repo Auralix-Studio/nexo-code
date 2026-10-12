@@ -2,7 +2,7 @@
 
 All notable changes to Nexo will be documented in this file.
 
-## [Sin publicar]
+## [1.8.0] - 2026-10-12
 
 ### Cambio rápido de cuenta
 - Hasta 5 cuentas guardadas en el dispositivo (almacén seguro del sistema); se cambia con un toque desde Perfil, la barra lateral o Ctrl/Cmd + Shift + A
