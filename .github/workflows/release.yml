@@ -208,6 +208,23 @@ jobs:
           python3 scripts/release_assets.py notes dist "${TAG}"
           cat dist/RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Copias con nombre fijo (sin versión) para enlazar desde la web:
+      # https://github.com/Auralix-Studio/nexo/releases/latest/download/nexo-android.apk
+      # siempre descarga la última versión, sin pasar por la API de GitHub.
+      - name: Copias con nombre estable
+        run: |
+          mkdir -p dist/latest
+          copy() { [ -f "dist/nexo-${TAG}-$1" ] && cp "dist/nexo-${TAG}-$1" "dist/latest/$2" || echo "::warning::Falta nexo-${TAG}-$1"; }
+          copy universal.apk      nexo-android.apk
+          copy arm64.apk          nexo-android-arm64.apk
+          copy armv7.apk          nexo-android-armv7.apk
+          copy x86_64.apk         nexo-android-x86_64.apk
+          copy setup-x64.exe      nexo-windows-setup.exe
+          copy windows-x64.zip    nexo-windows-x64.zip
+          copy macos.zip          nexo-macos.zip
+          copy linux-x64.tar.gz   nexo-linux-x64.tar.gz
+          ls -la dist/latest
+
       - name: Crear release
         uses: softprops/action-gh-release@v2
         with:
@@ -217,6 +234,7 @@ jobs:
           body_path: dist/RELEASE_NOTES.md
           make_latest: true
           files: |
+            dist/latest/*
             dist/*.apk
             dist/*.exe
             dist/*.zip
