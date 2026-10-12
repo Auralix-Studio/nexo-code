@@ -32,6 +32,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from auto_version import changelog_section  # noqa: E402
 
 META_FILES = {"SHA256SUMS.txt", "RELEASE_NOTES.md", "release-meta.json"}
+# Se compilan pero no se publican (solo pruebas internas).
+NOT_PUBLISHED = (".ipa",)
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -62,7 +64,8 @@ def artifacts(dist: pathlib.Path) -> list[pathlib.Path]:
     Windows primero, como en la página de descargas)."""
     return sorted(
         (p for p in dist.iterdir()
-         if p.is_file() and p.name not in META_FILES and not p.name.startswith("SHA256SUMS")),
+         if p.is_file() and p.name not in META_FILES and not p.name.startswith("SHA256SUMS")
+         and not p.name.lower().endswith(NOT_PUBLISHED)),
         key=_rank,
     )
 
