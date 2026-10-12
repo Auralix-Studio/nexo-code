@@ -145,26 +145,29 @@ class AccountTile extends StatelessWidget {
       account.user,
       if (!account.canQuickSwitch && !isCurrent) l.accountNeedsPassword,
     ].join(' · ');
+    // El color va en el Material para que el efecto al tocar se vea.
     return Material(
-      color: Colors.transparent,
+      color: isCurrent
+          ? Color.alphaBlend(
+              NexoTheme.primary.withValues(alpha: 0.08),
+              NexoTheme.card,
+            )
+          : NexoTheme.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.rLg,
+        side: BorderSide(
+          color: isCurrent
+              ? NexoTheme.primary.withValues(alpha: 0.45)
+              : NexoTheme.border,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: AppRadii.rLg,
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm + 2,
-          ),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? NexoTheme.primary.withValues(alpha: 0.08)
-                : NexoTheme.card,
-            borderRadius: AppRadii.rLg,
-            border: Border.all(
-              color: isCurrent
-                  ? NexoTheme.primary.withValues(alpha: 0.45)
-                  : NexoTheme.border,
-            ),
           ),
           child: Row(
             children: [

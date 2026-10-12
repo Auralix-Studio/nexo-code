@@ -409,12 +409,16 @@ class _DocumentsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: NexoTheme.surface,
+    // Material (no DecoratedBox): los ListTile pintan su fondo y el efecto al
+    // tocar en el Material más cercano; con un DecoratedBox de color encima
+    // quedaban ocultos y Flutter lo marca como error.
+    return Material(
+      color: NexoTheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: AppRadii.rXl,
-        border: Border.all(color: NexoTheme.border),
+        side: BorderSide(color: NexoTheme.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
