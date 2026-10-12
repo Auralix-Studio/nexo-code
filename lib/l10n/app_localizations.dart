@@ -2943,6 +2943,211 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.'**
   String get docenteAttendanceComingSoon;
+  /// No description provided for @docenteTabResumen.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen'**
+  String get docenteTabResumen;
+
+  /// No description provided for @docenteStatAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio del curso'**
+  String get docenteStatAverage;
+
+  /// No description provided for @docenteStatApproved.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobados'**
+  String get docenteStatApproved;
+
+  /// No description provided for @docenteStatFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Desaprobados'**
+  String get docenteStatFailed;
+
+  /// No description provided for @docenteStatNoGrade.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin nota'**
+  String get docenteStatNoGrade;
+
+  /// No description provided for @docenteStatAttendanceAvg.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia promedio'**
+  String get docenteStatAttendanceAvg;
+
+  /// No description provided for @docenteGradeDistribution.
+  ///
+  /// In es, this message translates to:
+  /// **'Distribución de notas'**
+  String get docenteGradeDistribution;
+
+  /// No description provided for @docenteAtRiskTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Alumnos en riesgo'**
+  String get docenteAtRiskTitle;
+
+  /// No description provided for @docenteAtRiskSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Desaprobados o con asistencia menor a {percent}%'**
+  String docenteAtRiskSubtitle(String percent);
+
+  /// No description provided for @docenteAtRiskNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Ningún alumno en riesgo por ahora'**
+  String get docenteAtRiskNone;
+
+  /// No description provided for @docenteRiskLowGrade.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota baja'**
+  String get docenteRiskLowGrade;
+
+  /// No description provided for @docenteRiskLowAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'Poca asistencia'**
+  String get docenteRiskLowAttendance;
+
+  /// No description provided for @docenteExportPdf.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar lista en PDF'**
+  String get docenteExportPdf;
+
+  /// No description provided for @docenteExportError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo generar el PDF'**
+  String get docenteExportError;
+
+  /// No description provided for @docenteSortLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Ordenar'**
+  String get docenteSortLabel;
+
+  /// No description provided for @docenteSortName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre (A-Z)'**
+  String get docenteSortName;
+
+  /// No description provided for @docenteSortGradeDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Mayor nota'**
+  String get docenteSortGradeDesc;
+
+  /// No description provided for @docenteSortGradeAsc.
+  ///
+  /// In es, this message translates to:
+  /// **'Menor nota'**
+  String get docenteSortGradeAsc;
+
+  /// No description provided for @docenteSortAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'Menor asistencia'**
+  String get docenteSortAttendance;
+
+  /// No description provided for @docenteOnlyAtRisk.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo en riesgo'**
+  String get docenteOnlyAtRisk;
+
+  /// No description provided for @docenteAttendanceDaySummary.
+  ///
+  /// In es, this message translates to:
+  /// **'{presentes} presentes · {faltas} faltas · {justificadas} justif.'**
+  String docenteAttendanceDaySummary(String presentes, String faltas, String justificadas);
+
+  /// No description provided for @docenteNoClassThatDay.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay asistencia registrada para esta fecha'**
+  String get docenteNoClassThatDay;
+
+  /// No description provided for @docenteNoGradesRegistered.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay notas registradas'**
+  String get docenteNoGradesRegistered;
+
+  /// No description provided for @docenteAttendanceLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la asistencia'**
+  String get docenteAttendanceLoadError;
+
+  /// No description provided for @docenteEvalReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Este componente agrupa varias notas. Edítalo desde SIGMA para no sobrescribirlas.'**
+  String get docenteEvalReadOnly;
+
+  /// No description provided for @docenteEvalMissingIds.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan datos para editar esta nota. Actualiza la lista de alumnos.'**
+  String get docenteEvalMissingIds;
+
+  /// No description provided for @docenteConfirmGradeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Guardar en SIGMA?'**
+  String get docenteConfirmGradeTitle;
+
+  /// No description provided for @docenteConfirmGradeBody.
+  ///
+  /// In es, this message translates to:
+  /// **'{evaluacion} de {alumno}: {anterior} → {nueva}. El cambio se registra directamente en SIGMA.'**
+  String docenteConfirmGradeBody(String evaluacion, String alumno, String anterior, String nueva);
+
+  /// No description provided for @docenteGradeSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota guardada en SIGMA'**
+  String get docenteGradeSaved;
+
+  /// No description provided for @docenteSessionsAttendedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{presentes} de {total}
+sesiones asistidas'**
+  String docenteSessionsAttendedCount(String presentes, String total);
+
+  /// No description provided for @docenteTodayOngoing.
+  ///
+  /// In es, this message translates to:
+  /// **'EN CURSO'**
+  String get docenteTodayOngoing;
+
+  /// No description provided for @docenteTodayNext.
+  ///
+  /// In es, this message translates to:
+  /// **'SIGUIENTE'**
+  String get docenteTodayNext;
+
+  /// No description provided for @docenteTodayDone.
+  ///
+  /// In es, this message translates to:
+  /// **'TERMINÓ'**
+  String get docenteTodayDone;
+
+  /// No description provided for @docenteGradeDistributionHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Según la nota final actual de cada alumno'**
+  String get docenteGradeDistributionHint;
+
 }
 
 class _AppLocalizationsDelegate

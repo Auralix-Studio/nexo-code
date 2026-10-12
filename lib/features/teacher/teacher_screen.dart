@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/domain/course_roster_stats.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/storage.dart';
@@ -203,9 +204,10 @@ class _MetricsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
+    // Si SIGMA no manda `matriculados`, usamos el roster ya cargado del curso.
     final totalAlumnos = courses.fold<int>(
       0,
-      (a, c) => a + (c.enrolledCount ?? 0),
+      (a, c) => a + (store.alumnosDe(c.id).value?.length ?? c.enrolledCount ?? 0),
     );
     final stats = <_StatData>[
       _StatData(
@@ -315,7 +317,7 @@ class _TodayCard extends StatelessWidget {
         (state.value ?? const <ScheduleClass>[])
             .where((c) => c.weekday == today)
             .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+          ..sort((a, b) => compareHm(a.startTime, b.startTime));
     final h24 = AppStorage.instance.use24h;
     final isToday = today >= 1 && today <= 7;
     return SectionCard(
@@ -355,7 +357,11 @@ class _TodayCard extends StatelessWidget {
           : Column(
               children: [
                 for (var i = 0; i < clases.length; i++) ...[
-                  _TodaySessionRow(c: clases[i], h24: h24),
+                  _TodaySessionRow(
+                    c: clases[i],
+                    h24: h24,
+                    status: _statusOf(clases, i),
+                  ),
                   if (i < clases.length - 1) const Gap(AppSpacing.sm),
                 ],
               ],
@@ -364,15 +370,63 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
+enum _SessionStatus { done, ongoing, next, later }
+
+/// Estado de la clase [i] de hoy respecto a la hora actual. Solo la primera
+/// clase que aún no empieza se marca como "siguiente".
+_SessionStatus _statusOf(List<ScheduleClass> clases, int i) {
+  final now = DateTime.now();
+  final nowMin = now.hour * 60 + now.minute;
+  int? ini(ScheduleClass c) => hmToMinutes(c.startTime);
+  int? fin(ScheduleClass c) => hmToMinutes(c.endTime);
+  final c = clases[i];
+  final a = ini(c), b = fin(c);
+  if (a == null || b == null) return _SessionStatus.later;
+  if (nowMin >= b) return _SessionStatus.done;
+  if (nowMin >= a) return _SessionStatus.ongoing;
+  final firstUpcoming = clases.indexWhere((x) {
+    final s = ini(x);
+    return s != null && s > nowMin;
+  });
+  final anyOngoing = clases.any((x) {
+    final s = ini(x), e = fin(x);
+    return s != null && e != null && nowMin >= s && nowMin < e;
+  });
+  return !anyOngoing && firstUpcoming == i
+      ? _SessionStatus.next
+      : _SessionStatus.later;
+}
+
 class _TodaySessionRow extends StatelessWidget {
   final ScheduleClass c;
   final bool h24;
-  const _TodaySessionRow({required this.c, required this.h24});
+  final _SessionStatus status;
+  const _TodaySessionRow({
+    required this.c,
+    required this.h24,
+    this.status = _SessionStatus.later,
+  });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final isTeoria = c.typeCode.toUpperCase() == 'T';
-    final color = isTeoria ? NexoTheme.info : NexoTheme.success;
+    final done = status == _SessionStatus.done;
+    final color = done
+        ? NexoTheme.textMuted
+        : isTeoria
+        ? NexoTheme.info
+        : NexoTheme.success;
+    final statusLabel = switch (status) {
+      _SessionStatus.ongoing => l.docenteTodayOngoing,
+      _SessionStatus.next => l.docenteTodayNext,
+      _SessionStatus.done => l.docenteTodayDone,
+      _SessionStatus.later => null,
+    };
+    final statusColor = switch (status) {
+      _SessionStatus.ongoing => NexoTheme.success,
+      _SessionStatus.next => NexoTheme.primary,
+      _ => NexoTheme.textMuted,
+    };
     final hi = Fmt.time(c.startTime, h24: h24);
     final hf = Fmt.time(c.endTime, h24: h24);
     final grupo = ScheduleClassGroup(
@@ -407,6 +461,19 @@ class _TodaySessionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (statusLabel != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
                     Text(
                       c.subject,
                       maxLines: 1,
@@ -414,7 +481,9 @@ class _TodaySessionRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
-                        color: NexoTheme.textPrimary,
+                        color: done
+                            ? NexoTheme.textSecondary
+                            : NexoTheme.textPrimary,
                         height: 1.2,
                       ),
                     ),

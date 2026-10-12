@@ -931,5 +931,85 @@
   },
   "docenteSearchStudent": "Buscar alumno…",
   "docenteSearchNoResults": "Sin resultados",
-  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA."
+  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.",
+  "docenteTabResumen": "Resumen",
+  "docenteStatAverage": "Promedio del curso",
+  "docenteStatApproved": "Aprobados",
+  "docenteStatFailed": "Desaprobados",
+  "docenteStatNoGrade": "Sin nota",
+  "docenteStatAttendanceAvg": "Asistencia promedio",
+  "docenteGradeDistribution": "Distribución de notas",
+  "docenteAtRiskTitle": "Alumnos en riesgo",
+  "docenteAtRiskSubtitle": "Desaprobados o con asistencia menor a {percent}%",
+  "@docenteAtRiskSubtitle": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteAtRiskNone": "Ningún alumno en riesgo por ahora",
+  "docenteRiskLowGrade": "Nota baja",
+  "docenteRiskLowAttendance": "Poca asistencia",
+  "docenteExportPdf": "Exportar lista en PDF",
+  "docenteExportError": "No se pudo generar el PDF",
+  "docenteSortLabel": "Ordenar",
+  "docenteSortName": "Nombre (A-Z)",
+  "docenteSortGradeDesc": "Mayor nota",
+  "docenteSortGradeAsc": "Menor nota",
+  "docenteSortAttendance": "Menor asistencia",
+  "docenteOnlyAtRisk": "Solo en riesgo",
+  "docenteAttendanceDaySummary": "{presentes} presentes · {faltas} faltas · {justificadas} justif.",
+  "@docenteAttendanceDaySummary": {
+    "placeholders": {
+      "presentes": {
+        "type": "String"
+      },
+      "faltas": {
+        "type": "String"
+      },
+      "justificadas": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteNoClassThatDay": "No hay asistencia registrada para esta fecha",
+  "docenteNoGradesRegistered": "No hay notas registradas",
+  "docenteAttendanceLoadError": "No se pudo cargar la asistencia",
+  "docenteEvalReadOnly": "Este componente agrupa varias notas. Edítalo desde SIGMA para no sobrescribirlas.",
+  "docenteEvalMissingIds": "Faltan datos para editar esta nota. Actualiza la lista de alumnos.",
+  "docenteConfirmGradeTitle": "¿Guardar en SIGMA?",
+  "docenteConfirmGradeBody": "{evaluacion} de {alumno}: {anterior} → {nueva}. El cambio se registra directamente en SIGMA.",
+  "@docenteConfirmGradeBody": {
+    "placeholders": {
+      "evaluacion": {
+        "type": "String"
+      },
+      "alumno": {
+        "type": "String"
+      },
+      "anterior": {
+        "type": "String"
+      },
+      "nueva": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteGradeSaved": "Nota guardada en SIGMA",
+  "docenteSessionsAttendedCount": "{presentes} de {total}\nsesiones asistidas",
+  "@docenteSessionsAttendedCount": {
+    "placeholders": {
+      "presentes": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "docenteTodayOngoing": "EN CURSO",
+  "docenteTodayNext": "SIGUIENTE",
+  "docenteTodayDone": "TERMINÓ",
+  "docenteGradeDistributionHint": "Según la nota final actual de cada alumno"
 }

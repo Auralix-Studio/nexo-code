@@ -1122,60 +1122,40 @@ class AppStore extends ChangeNotifier {
     _notify();
   });
 
-  Future<String?> updateDocenteNota({
-    required String cleAuto,
-    required String codigoAlumno,
-    required String grade,
+  /// Registra/corrige una nota en SIGMA y recarga el roster del curso para
+  /// que la ficha y los promedios reflejen lo que guardó el servidor.
+  /// Devuelve `null` si todo salió bien, o un mensaje legible si no.
+  Future<String?> guardarNotaDocente({
+    required TeacherSubject course,
+    required TeacherStudent student,
+    required EvaluationGrade evaluacion,
+    required double nota,
   }) => _scope.run(() async {
     try {
-      await _teacherReady().updateNota(
-        cleAuto: cleAuto,
-        codigoAlumno: codigoAlumno,
-        grade: grade,
+      await _teacherReady().guardarNota(
+        matriculaAsignaturaId: student.matriculaAsignaturaId,
+        evaluacion: evaluacion,
+        nota: nota,
       );
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      await loadDocenteAlumnos(cleAuto);
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
+      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
+      await loadDocenteAlumnos(course.id, tipoCalif: course.tipoCalif);
+      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
       return null;
     } catch (e) {
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      return e.toString();
+      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
+      return humanizeError(e);
     }
   });
 
-  Future<List<EvaluationGrade>> docenteNotasDetalle({
-    required String cleAuto,
-    required String codigoAlumno,
-  }) => _scope.run(() async {
-    final result = await _teacherReady().notasDetalle(
-      cleAuto: cleAuto,
-      codigoAlumno: codigoAlumno,
-    );
-    _scope.check();
-    return result;
-  });
-  Future<String?> updateDocenteEvaluacion({
-    required String cleAuto,
-    required String codigoAlumno,
-    required String codigoEvaluacion,
-    required String grade,
-  }) => _scope.run(() async {
-    try {
-      await _teacherReady().updateEvaluacion(
-        cleAuto: cleAuto,
-        codigoAlumno: codigoAlumno,
-        codigoEvaluacion: codigoEvaluacion,
-        grade: grade,
-      );
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      await loadDocenteAlumnos(cleAuto);
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      return null;
-    } catch (e) {
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      return e.toString();
+  /// Alumno actualizado del roster en memoria (tras recargar), o `null`.
+  TeacherStudent? alumnoDe(String cleAuto, String codigo) {
+    final list = _teacherStudents[cleAuto]?.value;
+    if (list == null) return null;
+    for (final a in list) {
+      if (a.code == codigo) return a;
     }
-  });
+    return null;
+  }
 
   Future<List<DailyAttendance>> docenteAsistenciaAlumno({
     required TeacherSubject course,

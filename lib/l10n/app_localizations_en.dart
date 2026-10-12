@@ -1691,4 +1691,114 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get docenteAttendanceComingSoon =>
       'Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA.';
+
+  @override
+  String get docenteTabResumen => 'Summary';
+
+  @override
+  String get docenteStatAverage => 'Course average';
+
+  @override
+  String get docenteStatApproved => 'Passing';
+
+  @override
+  String get docenteStatFailed => 'Failing';
+
+  @override
+  String get docenteStatNoGrade => 'No grade';
+
+  @override
+  String get docenteStatAttendanceAvg => 'Average attendance';
+
+  @override
+  String get docenteGradeDistribution => 'Grade distribution';
+
+  @override
+  String get docenteAtRiskTitle => 'Students at risk';
+
+  @override
+  String docenteAtRiskSubtitle(String percent) {
+    return 'Failing or with attendance below $percent%';
+  }
+
+  @override
+  String get docenteAtRiskNone => 'No students at risk right now';
+
+  @override
+  String get docenteRiskLowGrade => 'Low grade';
+
+  @override
+  String get docenteRiskLowAttendance => 'Low attendance';
+
+  @override
+  String get docenteExportPdf => 'Export list as PDF';
+
+  @override
+  String get docenteExportError => 'Could not generate the PDF';
+
+  @override
+  String get docenteSortLabel => 'Sort';
+
+  @override
+  String get docenteSortName => 'Name (A-Z)';
+
+  @override
+  String get docenteSortGradeDesc => 'Highest grade';
+
+  @override
+  String get docenteSortGradeAsc => 'Lowest grade';
+
+  @override
+  String get docenteSortAttendance => 'Lowest attendance';
+
+  @override
+  String get docenteOnlyAtRisk => 'At risk only';
+
+  @override
+  String docenteAttendanceDaySummary(String presentes, String faltas, String justificadas) {
+    return '$presentes present · $faltas absent · $justificadas excused';
+  }
+
+  @override
+  String get docenteNoClassThatDay => 'No attendance recorded for this date';
+
+  @override
+  String get docenteNoGradesRegistered => 'No grades recorded';
+
+  @override
+  String get docenteAttendanceLoadError => 'Could not load attendance';
+
+  @override
+  String get docenteEvalReadOnly => 'This component groups several grades. Edit it in SIGMA so none are overwritten.';
+
+  @override
+  String get docenteEvalMissingIds => 'Some data is missing to edit this grade. Refresh the student list.';
+
+  @override
+  String get docenteConfirmGradeTitle => 'Save to SIGMA?';
+
+  @override
+  String docenteConfirmGradeBody(String evaluacion, String alumno, String anterior, String nueva) {
+    return '$evaluacion for $alumno: $anterior → $nueva. The change is recorded directly in SIGMA.';
+  }
+
+  @override
+  String get docenteGradeSaved => 'Grade saved to SIGMA';
+
+  @override
+  String docenteSessionsAttendedCount(String presentes, String total) {
+    return '$presentes of $total\nsessions attended';
+  }
+
+  @override
+  String get docenteTodayOngoing => 'NOW';
+
+  @override
+  String get docenteTodayNext => 'NEXT';
+
+  @override
+  String get docenteTodayDone => 'DONE';
+
+  @override
+  String get docenteGradeDistributionHint => 'Based on each student current final grade';
 }

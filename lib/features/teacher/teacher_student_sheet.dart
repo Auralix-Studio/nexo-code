@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/errors.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
@@ -73,9 +74,26 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     super.dispose();
   }
 
+  /// Versión más reciente del alumno en el store (tras guardar una nota se
+  /// recarga el roster); si aún no está, la que se abrió.
+  TeacherStudent get _student =>
+      widget.store.alumnoDe(widget.course.id, widget.student.code) ??
+      widget.student;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    return ListenableBuilder(
+      listenable: widget.store,
+      builder: (context, _) => _buildSheet(context, l, _student),
+    );
+  }
+
+  Widget _buildSheet(
+    BuildContext context,
+    AppLocalizations l,
+    TeacherStudent student,
+  ) {
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -98,7 +116,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
               ),
             ),
             const SizedBox(height: 8),
-            _Header(student: widget.student),
+            _Header(student: student),
             ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
@@ -114,13 +132,14 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                 controller: _tabs,
                 children: [
                   _NotasTab(
-                    units: widget.student.units,
+                    units: student.units,
                     onEdit: _editEval,
                     scrollController: controller,
                   ),
                   _AsistenciaTab(
                     future: _futAsis,
                     scrollController: controller,
+                    onRetry: () => setState(_loadAll),
                   ),
                 ],
               ),
@@ -132,6 +151,19 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
   }
 
   Future<void> _editEval(EvaluationGrade eval) async {
+    final l0 = AppLocalizations.of(context);
+    if (eval.noteCount > 1) {
+      ClipboardHelper.showError(context, null, fallback: l0.docenteEvalReadOnly);
+      return;
+    }
+    if (!eval.isEditable || _student.matriculaAsignaturaId == null) {
+      ClipboardHelper.showError(
+        context,
+        null,
+        fallback: l0.docenteEvalMissingIds,
+      );
+      return;
+    }
     final ctrl = TextEditingController(text: eval.grade ?? '');
     final formKey = GlobalKey<FormState>();
     final result = await showDialog<String>(
@@ -286,19 +318,53 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
         );
       },
     );
-    if (result == null) return;
-    final err = await widget.store.updateDocenteEvaluacion(
-      cleAuto: widget.course.id,
-      codigoAlumno: widget.student.code,
-      codigoEvaluacion: eval.code,
-      grade: result,
+    if (result == null || !mounted) return;
+    final nota = double.parse(result.replaceAll(',', '.'));
+    final notaTxt = nota % 1 == 0 ? nota.toStringAsFixed(0) : '$nota';
+    final student = _student;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dctx) {
+        final l = AppLocalizations.of(dctx);
+        return AlertDialog(
+          title: Text(l.docenteConfirmGradeTitle),
+          content: Text(
+            l.docenteConfirmGradeBody(
+              eval.description,
+              student.displayName,
+              (eval.grade ?? '').trim().isEmpty ? '—' : eval.grade!.trim(),
+              notaTxt,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dctx).pop(false),
+              child: Text(l.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dctx).pop(true),
+              child: Text(l.actionSave),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    final err = await widget.store.guardarNotaDocente(
+      course: widget.course,
+      student: student,
+      evaluacion: eval,
+      nota: nota,
     );
     if (!mounted) return;
     if (err == null) {
-      setState(_loadAll);
-      ClipboardHelper.showSuccess(context, '${eval.description}: $result');
+      ClipboardHelper.showSuccess(
+        context,
+        '${AppLocalizations.of(context).docenteGradeSaved} · '
+        '${eval.description}: $notaTxt',
+      );
     } else {
-      ClipboardHelper.showError(context, err);
+      ClipboardHelper.showError(context, null, fallback: err);
     }
   }
 }
@@ -322,7 +388,7 @@ class _Header extends StatelessWidget {
             radius: 24,
             backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
             child: Text(
-              _initials(student),
+              student.initials,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -378,15 +444,6 @@ class _Header extends StatelessWidget {
       ),
     );
   }
-
-  String _initials(TeacherStudent a) {
-    String pick(String s) => s.trim().isEmpty ? '' : s.trim()[0].toUpperCase();
-    return (pick(a.firstName) + pick(a.lastName)).ifEmpty('?');
-  }
-}
-
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
 class _NotasTab extends StatelessWidget {
@@ -403,7 +460,7 @@ class _NotasTab extends StatelessWidget {
     if (units.isEmpty) {
       return Center(
         child: Text(
-          'No hay notas registradas',
+          AppLocalizations.of(context).docenteNoGradesRegistered,
           style: TextStyle(color: NexoTheme.textMuted),
         ),
       );
@@ -569,7 +626,11 @@ class _EvalRow extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 4),
-            Icon(Icons.edit_outlined, size: 16, color: NexoTheme.textMuted),
+            Icon(
+              eval.isEditable ? Icons.edit_outlined : Icons.lock_outline_rounded,
+              size: 16,
+              color: NexoTheme.textMuted,
+            ),
           ],
         ),
       ),
@@ -580,13 +641,53 @@ class _EvalRow extends StatelessWidget {
 class _AsistenciaTab extends StatelessWidget {
   final Future<List<DailyAttendance>> future;
   final ScrollController scrollController;
-  const _AsistenciaTab({required this.future, required this.scrollController});
+  final VoidCallback onRetry;
+  const _AsistenciaTab({
+    required this.future,
+    required this.scrollController,
+    required this.onRetry,
+  });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return FutureBuilder<List<DailyAttendance>>(
       future: future,
       builder: (_, snap) {
+        if (snap.hasError) {
+          // Antes un error dejaba el skeleton girando para siempre.
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l.docenteAttendanceLoadError,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NexoTheme.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    humanizeError(snap.error),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NexoTheme.textMuted,
+                      fontSize: AppFont.small,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  OutlinedButton(
+                    onPressed: onRetry,
+                    child: Text(l.actionRetry),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         if (!snap.hasData) return const _SkeletonList();
         final list = snap.data!;
         if (list.isEmpty) {
@@ -670,7 +771,7 @@ class _AsistenciaResumen extends StatelessWidget {
             ),
           ),
           Text(
-            l.docenteSessionsRegisteredCount(
+            l.docenteSessionsAttendedCount(
               presentes.toString(),
               total.toString(),
             ),
@@ -711,10 +812,16 @@ class _DiaRow extends StatelessWidget {
         NexoTheme.danger,
         Icons.cancel_rounded,
       ),
-      _ => (
+      'J' || '3' => (
         l.docenteAttendanceJustificada,
         NexoTheme.info,
         Icons.assignment_turned_in_rounded,
+      ),
+      // Estado desconocido: se muestra tal cual, sin inventarle significado.
+      _ => (
+        reg.state.isEmpty ? '—' : reg.state,
+        NexoTheme.textMuted,
+        Icons.help_outline_rounded,
       ),
     };
     return Padding(
