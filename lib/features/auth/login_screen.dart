@@ -5,6 +5,8 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/session.dart';
+import 'package:nexo/domain/saved_account.dart';
+import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
@@ -29,6 +31,46 @@ class _LoginScreenState extends State<LoginScreen>
     vsync: this,
     duration: const Duration(milliseconds: 700),
   )..forward();
+
+  /// Muestra el formulario aunque haya cuentas guardadas.
+  bool _showForm = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Si un cambio de cuenta falló, el login abre con ese usuario escrito y
+    // el motivo a la vista, listo para teclear la contraseña.
+    final failure = widget.session.takeSwitchFailure();
+    if (failure != null) {
+      _userCtrl.text = failure.user;
+      _showForm = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final l = AppLocalizations.of(context);
+        setState(() {
+          _error = failure.message.isEmpty
+              ? l.accountEnterPassword(failure.user)
+              : l.accountSwitchFailed(failure.user, failure.message);
+        });
+        _passFocus.requestFocus();
+      });
+    }
+  }
+
+  void _useSaved(SavedAccount a) {
+    if (a.canQuickSwitch) {
+      widget.session.switchTo(a.user);
+      return;
+    }
+    setState(() {
+      _showForm = true;
+      _userCtrl.text = a.user;
+      _passCtrl.clear();
+      _error = AppLocalizations.of(context).accountEnterPassword(a.user);
+    });
+    _passFocus.requestFocus();
+  }
+
   @override
   void dispose() {
     _userCtrl.dispose();
@@ -78,9 +120,27 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final isWide = context.isDesktop;
+    final saved = widget.session.savedAccounts;
+    final showSaved = saved.isNotEmpty && !_showForm;
     final form = _AnimatedIntro(
       controller: _intro,
-      child: _FormCard(
+      child: showSaved
+          ? _SavedAccountsPanel(
+              isWide: isWide,
+              accounts: saved,
+              onPick: _useSaved,
+              onForget: (a) async {
+                await widget.session.forgetAccount(a.user);
+                if (mounted) setState(() {});
+              },
+              onOther: () => setState(() {
+                _showForm = true;
+                _userCtrl.clear();
+                _passCtrl.clear();
+                _error = null;
+              }),
+            )
+          : _FormCard(
         isWide: isWide,
         l: l,
         formKey: _formKey,
@@ -94,6 +154,12 @@ class _LoginScreenState extends State<LoginScreen>
         onToggleShow: () => setState(() => _showPass = !_showPass),
         onKey: _onKey,
         onSubmit: _submit,
+        onBackToSaved: saved.isEmpty
+            ? null
+            : () => setState(() {
+                _showForm = false;
+                _error = null;
+              }),
       ),
     );
     return Scaffold(
@@ -173,6 +239,7 @@ class _FormCard extends StatelessWidget {
   final VoidCallback onToggleShow;
   final ValueChanged<KeyEvent> onKey;
   final Future<void> Function() onSubmit;
+  final VoidCallback? onBackToSaved;
   const _FormCard({
     required this.isWide,
     required this.l,
@@ -187,6 +254,7 @@ class _FormCard extends StatelessWidget {
     required this.onToggleShow,
     required this.onKey,
     required this.onSubmit,
+    this.onBackToSaved,
   });
   @override
   Widget build(BuildContext context) {
@@ -368,6 +436,14 @@ class _FormCard extends StatelessWidget {
               ),
             ),
           ),
+          if (onBackToSaved != null) ...[
+            const Gap(AppSpacing.sm),
+            TextButton.icon(
+              onPressed: loading ? null : onBackToSaved,
+              icon: const Icon(Icons.people_alt_outlined, size: AppIcon.md),
+              label: Text(l.accountSavedTitle),
+            ),
+          ],
           const Gap(AppSpacing.xl),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -388,6 +464,73 @@ class _FormCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Login con cuentas recordadas: un toque y entra, sin escribir nada.
+class _SavedAccountsPanel extends StatelessWidget {
+  final bool isWide;
+  final List<SavedAccount> accounts;
+  final ValueChanged<SavedAccount> onPick;
+  final ValueChanged<SavedAccount> onForget;
+  final VoidCallback onOther;
+  const _SavedAccountsPanel({
+    required this.isWide,
+    required this.accounts,
+    required this.onPick,
+    required this.onForget,
+    required this.onOther,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!isWide) ...[
+          const Center(child: AppLogo(size: 64)),
+          const Gap(AppSpacing.xxl),
+        ],
+        Text(
+          l.accountSavedTitle,
+          style: TextStyle(
+            fontSize: AppFont.h1,
+            fontWeight: FontWeight.w900,
+            color: NexoTheme.textPrimary,
+            letterSpacing: -0.8,
+          ),
+        ),
+        const Gap(AppSpacing.sm),
+        Text(
+          l.accountSwitchHint,
+          style: TextStyle(
+            fontSize: AppFont.body,
+            height: 1.45,
+            color: NexoTheme.textSecondary,
+          ),
+        ),
+        const Gap(AppSpacing.xxl),
+        for (final a in accounts) ...[
+          AccountTile(
+            account: a,
+            onTap: () => onPick(a),
+            onRemove: () => onForget(a),
+          ),
+          const Gap(AppSpacing.sm),
+        ],
+        const Gap(AppSpacing.md),
+        OutlinedButton.icon(
+          onPressed: onOther,
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+          label: Text(l.accountOtherAccount),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadii.rLg),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
+import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/domain/idiomas_models.dart';
 import 'package:nexo/features/auth/change_password_screen.dart';
@@ -90,6 +91,8 @@ class ProfileScreen extends StatelessWidget {
                         index: 3,
                         child: _ActionsCard(
                           onLogout: session.logout,
+                          onSwitchAccount: () =>
+                              showAccountSwitcher(context, session),
                           store: store,
                           theme: theme,
                         ),
@@ -555,10 +558,12 @@ class _InfoTile extends StatelessWidget {
 
 class _ActionsCard extends StatelessWidget {
   final Future<void> Function() onLogout;
+  final VoidCallback onSwitchAccount;
   final AppStore store;
   final ThemeController theme;
   const _ActionsCard({
     required this.onLogout,
+    required this.onSwitchAccount,
     required this.store,
     required this.theme,
   });
@@ -712,6 +717,32 @@ class _ActionsCard extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const DeveloperScreen()),
             ),
+          ),
+          const Divider(height: 1, indent: 70),
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: NexoTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.switch_account_rounded,
+                color: NexoTheme.primary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              l.accountSwitchTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              l.accountSwitchHint,
+              style: TextStyle(color: NexoTheme.textSecondary),
+            ),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            onTap: onSwitchAccount,
           ),
           const Divider(height: 1, indent: 70),
           ListTile(

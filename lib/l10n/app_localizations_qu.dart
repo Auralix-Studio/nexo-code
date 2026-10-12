@@ -1691,7 +1691,7 @@ class AppLocalizationsQu extends AppLocalizations {
   }
 
   @override
-  String get docenteSearchStudent => 'Yachachiqta maskay…';
+  String get docenteSearchStudent => 'Yachaqaqta maskay…';
 
   @override
   String get docenteSearchNoResults => 'Mana tariytaqa';
@@ -2428,4 +2428,55 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get tchCopyNrc => 'Copiar NRC';
+
+  @override
+  String get accountSwitchTitle => 'Cambiar de cuenta';
+
+  @override
+  String get accountSwitchHint => 'Entra a otra cuenta sin escribir la contraseña';
+
+  @override
+  String get accountAddAnother => 'Agregar otra cuenta';
+
+  @override
+  String get accountCurrent => 'Actual';
+
+  @override
+  String get accountRoleTeacher => 'Docente';
+
+  @override
+  String get accountRoleStudent => 'Estudiante';
+
+  @override
+  String get accountRemove => 'Quitar de este dispositivo';
+
+  @override
+  String get accountRemoved => 'Cuenta quitada de este dispositivo';
+
+  @override
+  String get accountNeedsPassword => 'Requiere contraseña';
+
+  @override
+  String accountSwitching(String name) {
+    return 'Entrando como $name';
+  }
+
+  @override
+  String get accountSavedTitle => 'Continuar como';
+
+  @override
+  String get accountOtherAccount => 'Usar otra cuenta';
+
+  @override
+  String accountSwitchFailed(String user, String reason) {
+    return 'No se pudo entrar como $user. $reason';
+  }
+
+  @override
+  String accountEnterPassword(String user) {
+    return 'Ingresa la contraseña de $user para continuar.';
+  }
+
+  @override
+  String get accountLogoutKeepHint => 'Tu cuenta actual seguirá guardada para volver con un toque.';
 }

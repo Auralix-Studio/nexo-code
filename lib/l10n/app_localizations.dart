@@ -3979,6 +3979,96 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Copiar NRC'**
   String get tchCopyNrc;
+  /// No description provided for @accountSwitchTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar de cuenta'**
+  String get accountSwitchTitle;
+
+  /// No description provided for @accountSwitchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Entra a otra cuenta sin escribir la contraseña'**
+  String get accountSwitchHint;
+
+  /// No description provided for @accountAddAnother.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar otra cuenta'**
+  String get accountAddAnother;
+
+  /// No description provided for @accountCurrent.
+  ///
+  /// In es, this message translates to:
+  /// **'Actual'**
+  String get accountCurrent;
+
+  /// No description provided for @accountRoleTeacher.
+  ///
+  /// In es, this message translates to:
+  /// **'Docente'**
+  String get accountRoleTeacher;
+
+  /// No description provided for @accountRoleStudent.
+  ///
+  /// In es, this message translates to:
+  /// **'Estudiante'**
+  String get accountRoleStudent;
+
+  /// No description provided for @accountRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar de este dispositivo'**
+  String get accountRemove;
+
+  /// No description provided for @accountRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta quitada de este dispositivo'**
+  String get accountRemoved;
+
+  /// No description provided for @accountNeedsPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Requiere contraseña'**
+  String get accountNeedsPassword;
+
+  /// No description provided for @accountSwitching.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrando como {name}'**
+  String accountSwitching(String name);
+
+  /// No description provided for @accountSavedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar como'**
+  String get accountSavedTitle;
+
+  /// No description provided for @accountOtherAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar otra cuenta'**
+  String get accountOtherAccount;
+
+  /// No description provided for @accountSwitchFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo entrar como {user}. {reason}'**
+  String accountSwitchFailed(String user, String reason);
+
+  /// No description provided for @accountEnterPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa la contraseña de {user} para continuar.'**
+  String accountEnterPassword(String user);
+
+  /// No description provided for @accountLogoutKeepHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta actual seguirá guardada para volver con un toque.'**
+  String get accountLogoutKeepHint;
+
 }
 
 class _AppLocalizationsDelegate

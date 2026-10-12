@@ -4,6 +4,15 @@ All notable changes to Nexo will be documented in this file.
 
 ## [Sin publicar]
 
+### Cambio rápido de cuenta
+- Hasta 5 cuentas guardadas en el dispositivo (almacén seguro del sistema); se cambia con un toque desde Perfil, la barra lateral o Ctrl/Cmd + Shift + A
+- El login muestra "Continuar como" con las cuentas guardadas
+- "Agregar otra cuenta" conserva la actual; "Cerrar sesión" la olvida del dispositivo
+- Si la contraseña cambió en SIGMA, la cuenta queda en la lista y pide la nueva con el usuario ya escrito
+
+### Publicación
+- Versionado y releases automáticos al fusionar en `main` (ver docs/versionado.md)
+
 ### Docentes
 - Inicio reorganizado: saludo, cifras (cursos, alumnos, periodo), agenda de hoy, pendientes y cursos con sus números
 - Agenda de hoy con el estado de cada clase y si ya tiene asistencia registrada, con acceso directo a tomarla

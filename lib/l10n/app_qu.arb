@@ -785,19 +785,42 @@
       }
     }
   },
-  "docenteSearchStudent": "Yachachiqta maskay…",
+  "docenteSearchStudent": "Yachaqaqta maskay…",
   "docenteSearchNoResults": "Mana tariytaqa",
   "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.",
   "tabMarcacion": "Marcación",
   "titleMarcacion": "Ñuqap marcaciónniy",
   "marcacionSubtitlePlural": "{count,plural, =0{Mana marcakuna (30 p'unchaw)} =1{1 marca · q(ipa 30 p'unchaw} other{{count} marcakuna · q(ipa 30 p'unchaw}}",
   "@marcacionSubtitlePlural": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "marcacionEmpty": "Q(ipa 30 p'unchawpi mana marcakuna.",
   "marcacionVirtual": "Virtual",
   "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcakuna}}",
   "@marcacionCountDay": {
-    "placeholders": { "count": { "type": "int" } }
-  }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountSwitchTitle": "Cambiar de cuenta",
+  "accountSwitchHint": "Entra a otra cuenta sin escribir la contraseña",
+  "accountAddAnother": "Agregar otra cuenta",
+  "accountCurrent": "Actual",
+  "accountRoleTeacher": "Docente",
+  "accountRoleStudent": "Estudiante",
+  "accountRemove": "Quitar de este dispositivo",
+  "accountRemoved": "Cuenta quitada de este dispositivo",
+  "accountNeedsPassword": "Requiere contraseña",
+  "accountSwitching": "Entrando como {name}",
+  "accountSavedTitle": "Continuar como",
+  "accountOtherAccount": "Usar otra cuenta",
+  "accountSwitchFailed": "No se pudo entrar como {user}. {reason}",
+  "accountEnterPassword": "Ingresa la contraseña de {user} para continuar.",
+  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque."
 }

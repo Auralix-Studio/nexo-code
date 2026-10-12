@@ -2414,4 +2414,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tchCopyNrc => 'Copy NRC';
+
+  @override
+  String get accountSwitchTitle => 'Switch account';
+
+  @override
+  String get accountSwitchHint => 'Switch accounts without typing your password';
+
+  @override
+  String get accountAddAnother => 'Add another account';
+
+  @override
+  String get accountCurrent => 'Current';
+
+  @override
+  String get accountRoleTeacher => 'Teacher';
+
+  @override
+  String get accountRoleStudent => 'Student';
+
+  @override
+  String get accountRemove => 'Remove from this device';
+
+  @override
+  String get accountRemoved => 'Account removed from this device';
+
+  @override
+  String get accountNeedsPassword => 'Password required';
+
+  @override
+  String accountSwitching(String name) {
+    return 'Signing in as $name';
+  }
+
+  @override
+  String get accountSavedTitle => 'Continue as';
+
+  @override
+  String get accountOtherAccount => 'Use another account';
+
+  @override
+  String accountSwitchFailed(String user, String reason) {
+    return 'Could not sign in as $user. $reason';
+  }
+
+  @override
+  String accountEnterPassword(String user) {
+    return 'Enter the password for $user to continue.';
+  }
+
+  @override
+  String get accountLogoutKeepHint => 'Your current account stays saved so you can come back with one tap.';
 }
