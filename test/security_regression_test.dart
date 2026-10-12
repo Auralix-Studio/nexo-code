@@ -90,6 +90,13 @@ class _SlowVault extends MemorySecretStore {
   }
 }
 
+const _gw = GradeWrite(
+  matricula: 'm',
+  unidadId: 121,
+  tipoNotaId: 11,
+  nota: 15,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() async {
@@ -275,11 +282,7 @@ void main() {
         refreshes++;
         return ReauthOutcome.refreshed;
       };
-      final pending = TeacherRepository(api).guardarNota(
-        matriculaAsignaturaId: '501',
-        evaluacion: _editableEval,
-        nota: 15,
-      );
+      final pending = TeacherRepository(api).insertarNotas([_gw]);
       final rejected = expectLater(
         pending,
         throwsA(isA<StaleSessionException>()),
@@ -338,22 +341,41 @@ void main() {
       );
       addTearDown(api.close);
       final repo = TeacherRepository(api);
+      const student = AttendanceStudent(
+        code: 's',
+        name: 'S',
+        matriculaAsignaturaId: 'm',
+        codCursal: '1',
+        observacion: '',
+        percent: null,
+        marks: [],
+      );
+      final mark = AttendanceMark(
+        asistenciaId: 1,
+        date: DateTime(2026, 9, 25, 10),
+        state: 2,
+        tipoUnidadId: 121,
+      );
       for (final operation in <Future<void> Function()>[
-        () => repo.guardarNota(
-          matriculaAsignaturaId: '501',
-          evaluacion: _editableEval,
-          nota: 15,
+        () => repo.insertarNotas([_gw]),
+        () => repo.actualizarNotas([
+          const GradeWrite(
+            matricula: 'm',
+            unidadId: 121,
+            tipoNotaId: 11,
+            notaId: 9,
+            nota: 15,
+          ),
+        ]),
+        () => repo.registrarAsistencia(
+          fecha: DateTime(2026, 9, 25, 10),
+          unidadId: 121,
+          marks: [(student: student, state: 1)],
         ),
-        () => repo.guardarNota(
-          matriculaAsignaturaId: '501',
-          evaluacion: _editableEvalWithId,
-          nota: 15,
-        ),
-        () => repo.guardarAsistenciaDelDia(
-          cleAuto: 'c',
-          date: DateTime(2026, 9, 25),
-          estados: {'s': 'P'},
-        ),
+        () => repo.actualizarAsistencia([
+          (mark: mark, student: student, state: 3),
+        ]),
+        () => repo.marcarVirtual('123'),
       ]) {
         await expectLater(operation(), throwsA(isA<BadRequestException>()));
       }
@@ -368,31 +390,8 @@ void main() {
     );
     addTearDown(api.close);
     await expectLater(
-      TeacherRepository(api).guardarNota(
-        matriculaAsignaturaId: '501',
-        evaluacion: _editableEval,
-        nota: 15,
-      ),
+      TeacherRepository(api).insertarNotas([_gw]),
       completes,
     );
   });
 }
-
-const _editableEval = EvaluationGrade(
-  code: 'EV',
-  description: 'Evidencia de Conocimiento',
-  weight: 30,
-  tipoUnidadId: 121,
-  tipoNotaId: 11,
-);
-
-const _editableEvalWithId = EvaluationGrade(
-  code: 'EV',
-  description: 'Evidencia de Conocimiento',
-  weight: 30,
-  grade: '12',
-  tipoUnidadId: 121,
-  tipoNotaId: 11,
-  notaId: 9001,
-  noteCount: 1,
-);

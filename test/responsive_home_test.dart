@@ -163,4 +163,117 @@ void main() {
     }
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('las cuatro métricas del inicio quedan en 2 × 2 en el celular', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await AppStorage.init(secrets: MemorySecretStore());
+    final connection = ConnectivityService();
+    final store = AppStore(
+      _Repository(),
+      cache: _Cache(),
+      errorHandler: _Handler(),
+      connectivity: connection,
+    );
+    addTearDown(store.dispose);
+    addTearDown(connection.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    // Ancho de la captura reportada y uno de 320 dp, con letra grande.
+    for (final width in [369.0, 320.0]) {
+      for (final scale in [1.0, 1.3]) {
+        await tester.binding.setSurfaceSize(Size(width, 800));
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(width, 800),
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Scaffold(
+                body: HomeScreen(
+                  store: store,
+                  connectivity: connection,
+                  onJump: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull, reason: '$width x$scale');
+        final l = AppLocalizations.of(tester.element(find.byType(HomeScreen)));
+        Offset at(String label) => tester.getTopLeft(find.text(label));
+        final prom = at(l.homeMetricPromedioCiclo);
+        final cred = at(l.homeMetricCreditos);
+        final hoy = at(l.homeMetricClasesHoy);
+        final pagos = at(l.homeMetricPorPagar);
+        // Primera fila: promedio y créditos; segunda: clases hoy y por pagar.
+        expect(prom.dy, cred.dy, reason: '$width x$scale');
+        expect(hoy.dy, pagos.dy, reason: '$width x$scale');
+        expect(hoy.dy, greaterThan(prom.dy));
+        expect(cred.dx, greaterThan(prom.dx));
+        expect(pagos.dx, greaterThan(hoy.dx));
+      }
+    }
+  });
+
+  group('ancho de las tarjetas del inicio', () {
+    test('celular angosto: las métricas siguen de a dos por fila (2 × 2)', () {
+      // Como la captura reportada: ~337 px útiles. Antes cada métrica bajaba
+      // sola a otra fila con media anchura.
+      final w = dashboardItemWidth(
+        availableWidth: 337,
+        span: 2,
+        minWidth: metricMinWidth,
+      );
+      expect(w * 2 + 12, lessThanOrEqualTo(337));
+      expect(w, greaterThan(160));
+      // Celular de 320 dp (≈ 288 útiles): todavía dos por fila.
+      final small = dashboardItemWidth(
+        availableWidth: 288,
+        span: 2,
+        minWidth: metricMinWidth,
+      );
+      expect(small * 2 + 12, lessThanOrEqualTo(288));
+    });
+
+    test('si de verdad no caben dos, la tarjeta llena su fila', () {
+      final w = dashboardItemWidth(
+        availableWidth: 250,
+        span: 2,
+        minWidth: metricMinWidth,
+      );
+      expect(w, 250);
+    });
+
+    test('una métrica de un cuarto en celular pasa a dos por fila', () {
+      final w = dashboardItemWidth(
+        availableWidth: 337,
+        span: 1,
+        minWidth: metricMinWidth,
+      );
+      expect(w * 2 + 12, lessThanOrEqualTo(337));
+      expect(w, greaterThan(160));
+    });
+
+    test('ancho completo y ventanas anchas sin cambios', () {
+      expect(
+        dashboardItemWidth(availableWidth: 337, span: 4, minWidth: 360),
+        337,
+      );
+      // Escritorio: cuatro métricas por fila.
+      final w = dashboardItemWidth(
+        availableWidth: 1000,
+        span: 1,
+        minWidth: metricMinWidth,
+      );
+      expect(w * 4 + 36, lessThanOrEqualTo(1000));
+      expect(w, greaterThan(240));
+    });
+  });
 }

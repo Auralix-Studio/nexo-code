@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
-import 'package:nexo/core/errors.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/features/teacher/teacher_course_detail.dart'
-    show gradeColor;
+import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 
 Future<void> showTeacherStudentSheet({
   required BuildContext context,
@@ -49,7 +48,11 @@ class _AlumnoSheet extends StatefulWidget {
 class _AlumnoSheetState extends State<_AlumnoSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
-  late Future<List<DailyAttendance>> _futAsis;
+
+  /// Unidades en las que SIGMA permite registrar notas ahora. `null` mientras
+  /// carga o si el catálogo falla: en ese caso no se bloquea nada.
+  Set<int>? _enabledUnits;
+
   @override
   void initState() {
     super.initState();
@@ -58,14 +61,38 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, 1),
     );
-    _loadAll();
+    if (!widget.store.asistenciaDe(widget.course.id).hasValue) {
+      widget.store.loadDocenteAsistencia(widget.course);
+    }
+    widget.store
+        .docenteUnidades(widget.course)
+        .then((units) {
+          if (!mounted || units.isEmpty) return;
+          setState(() {
+            _enabledUnits = {
+              for (final u in units)
+                if (u.enabled) u.id,
+            };
+          });
+        })
+        .catchError((_) {});
   }
 
-  void _loadAll() {
-    _futAsis = widget.store.docenteAsistenciaAlumno(
-      course: widget.course,
-      codigoAlumno: widget.student.code,
-    );
+  /// Versión vigente del alumno: tras guardar una nota el store recarga el
+  /// roster y aquí se toma la fila nueva en vez del snapshot inicial.
+  TeacherStudent get _student {
+    final list = widget.store.alumnosDe(widget.course.id).value;
+    if (list == null) return widget.student;
+    for (final s in list) {
+      if (s.code == widget.student.code) return s;
+    }
+    return widget.student;
+  }
+
+  bool _isLocked(EvaluationGrade e) {
+    final enabled = _enabledUnits;
+    if (enabled == null || e.tipoUnidadId == null) return false;
+    return !enabled.contains(e.tipoUnidadId);
   }
 
   @override
@@ -74,26 +101,9 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     super.dispose();
   }
 
-  /// Versión más reciente del alumno en el store (tras guardar una nota se
-  /// recarga el roster); si aún no está, la que se abrió.
-  TeacherStudent get _student =>
-      widget.store.alumnoDe(widget.course.id, widget.student.code) ??
-      widget.student;
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return ListenableBuilder(
-      listenable: widget.store,
-      builder: (context, _) => _buildSheet(context, l, _student),
-    );
-  }
-
-  Widget _buildSheet(
-    BuildContext context,
-    AppLocalizations l,
-    TeacherStudent student,
-  ) {
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -116,7 +126,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
               ),
             ),
             const SizedBox(height: 8),
-            _Header(student: student),
+            _Header(student: widget.student),
             ColoredBox(
               color: NexoTheme.surface,
               child: TabBar(
@@ -131,15 +141,28 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
               child: TabBarView(
                 controller: _tabs,
                 children: [
-                  _NotasTab(
-                    units: student.units,
-                    onEdit: _editEval,
-                    scrollController: controller,
+                  ListenableBuilder(
+                    listenable: widget.store,
+                    builder: (context, _) => _NotasTab(
+                      units: _student.units,
+                      onEdit: _editEval,
+                      isLocked: _isLocked,
+                      scrollController: controller,
+                    ),
                   ),
-                  _AsistenciaTab(
-                    future: _futAsis,
-                    scrollController: controller,
-                    onRetry: () => setState(_loadAll),
+                  ListenableBuilder(
+                    listenable: widget.store,
+                    builder: (context, _) {
+                      final st = widget.store.asistenciaDe(widget.course.id);
+                      final att = st.value?.students
+                          .where((a) => a.code == widget.student.code)
+                          .firstOrNull;
+                      return _AsistenciaTab(
+                        loading: st.loading && !st.hasValue,
+                        student: att,
+                        scrollController: controller,
+                      );
+                    },
                   ),
                 ],
               ),
@@ -152,16 +175,16 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
 
   Future<void> _editEval(EvaluationGrade eval) async {
     final l0 = AppLocalizations.of(context);
-    if (eval.noteCount > 1) {
-      ClipboardHelper.showError(context, null, fallback: l0.docenteEvalReadOnly);
+    if (_isLocked(eval)) {
+      ClipboardHelper.showError(context, l0.docenteUnitLocked);
       return;
     }
-    if (!eval.isEditable || _student.matriculaAsignaturaId == null) {
-      ClipboardHelper.showError(
-        context,
-        null,
-        fallback: l0.docenteEvalMissingIds,
-      );
+    final matricula = _student.matriculaAsignaturaId ?? '';
+    if (matricula.isEmpty ||
+        (eval.tipoUnidadId ?? 0) == 0 ||
+        (eval.tipoNotaId ?? 0) == 0) {
+      // Sin estos ids SIGMA guardaría la nota en un registro equivocado.
+      ClipboardHelper.showError(context, l0.docenteGradeMissingIds);
       return;
     }
     final ctrl = TextEditingController(text: eval.grade ?? '');
@@ -318,53 +341,23 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
         );
       },
     );
-    if (result == null || !mounted) return;
-    final nota = double.parse(result.replaceAll(',', '.'));
-    final notaTxt = nota % 1 == 0 ? nota.toStringAsFixed(0) : '$nota';
-    final student = _student;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dctx) {
-        final l = AppLocalizations.of(dctx);
-        return AlertDialog(
-          title: Text(l.docenteConfirmGradeTitle),
-          content: Text(
-            l.docenteConfirmGradeBody(
-              eval.description,
-              student.displayName,
-              (eval.grade ?? '').trim().isEmpty ? '—' : eval.grade!.trim(),
-              notaTxt,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dctx).pop(false),
-              child: Text(l.actionCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dctx).pop(true),
-              child: Text(l.actionSave),
-            ),
-          ],
-        );
-      },
-    );
-    if (confirmed != true || !mounted) return;
-    final err = await widget.store.guardarNotaDocente(
-      course: widget.course,
-      student: student,
-      evaluacion: eval,
-      nota: nota,
-    );
+    if (result == null) return;
+    final value = double.tryParse(result.replaceAll(',', '.'));
+    if (value == null) return;
+    final res = await widget.store.guardarNotas(widget.course, [
+      GradeWrite(
+        matricula: matricula,
+        unidadId: eval.tipoUnidadId ?? 0,
+        tipoNotaId: eval.tipoNotaId ?? 0,
+        notaId: eval.notaId,
+        nota: value,
+      ),
+    ]);
     if (!mounted) return;
-    if (err == null) {
-      ClipboardHelper.showSuccess(
-        context,
-        '${AppLocalizations.of(context).docenteGradeSaved} · '
-        '${eval.description}: $notaTxt',
-      );
+    if (res.error == null) {
+      ClipboardHelper.showSuccess(context, '${eval.description}: $result');
     } else {
-      ClipboardHelper.showError(context, null, fallback: err);
+      ClipboardHelper.showError(context, res.error!);
     }
   }
 }
@@ -384,17 +377,10 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: NexoTheme.primary.withValues(alpha: 0.14),
-            child: Text(
-              student.initials,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: NexoTheme.primary,
-              ),
-            ),
+          StudentAvatar(
+            code: student.code,
+            name: student.displayName,
+            size: 52,
           ),
           const Gap.h(AppSpacing.md),
           Expanded(
@@ -449,10 +435,12 @@ class _Header extends StatelessWidget {
 class _NotasTab extends StatelessWidget {
   final List<TeacherUnit> units;
   final ValueChanged<EvaluationGrade> onEdit;
+  final bool Function(EvaluationGrade) isLocked;
   final ScrollController scrollController;
   const _NotasTab({
     required this.units,
     required this.onEdit,
+    required this.isLocked,
     required this.scrollController,
   });
   @override
@@ -460,7 +448,7 @@ class _NotasTab extends StatelessWidget {
     if (units.isEmpty) {
       return Center(
         child: Text(
-          AppLocalizations.of(context).docenteNoGradesRegistered,
+          AppLocalizations.of(context).docenteNoGrades,
           style: TextStyle(color: NexoTheme.textMuted),
         ),
       );
@@ -470,16 +458,16 @@ class _NotasTab extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         for (final u in units) ...[
-          _PromedioCard(
-            title: u.name,
-            average: u.average,
-            weight: u.weight,
-          ),
+          _PromedioCard(title: u.name, average: u.average, weight: u.weight),
           const SizedBox(height: 12),
           for (final e in u.grades)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _EvalRow(eval: e, onEdit: () => onEdit(e)),
+              child: _EvalRow(
+                eval: e,
+                locked: isLocked(e),
+                onEdit: () => onEdit(e),
+              ),
             ),
           const SizedBox(height: 16),
         ],
@@ -500,7 +488,9 @@ class _PromedioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = average != null ? gradeColor(average!.toStringAsFixed(1)) : NexoTheme.textMuted;
+    final color = average != null
+        ? gradeColor(average!.toStringAsFixed(1))
+        : NexoTheme.textMuted;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -554,8 +544,13 @@ class _PromedioCard extends StatelessWidget {
 
 class _EvalRow extends StatelessWidget {
   final EvaluationGrade eval;
+  final bool locked;
   final VoidCallback onEdit;
-  const _EvalRow({required this.eval, required this.onEdit});
+  const _EvalRow({
+    required this.eval,
+    required this.onEdit,
+    this.locked = false,
+  });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -627,7 +622,7 @@ class _EvalRow extends StatelessWidget {
               ),
             const SizedBox(width: 4),
             Icon(
-              eval.isEditable ? Icons.edit_outlined : Icons.lock_outline_rounded,
+              locked ? Icons.lock_outline_rounded : Icons.edit_outlined,
               size: 16,
               color: NexoTheme.textMuted,
             ),
@@ -639,81 +634,41 @@ class _EvalRow extends StatelessWidget {
 }
 
 class _AsistenciaTab extends StatelessWidget {
-  final Future<List<DailyAttendance>> future;
+  final bool loading;
+  final AttendanceStudent? student;
   final ScrollController scrollController;
-  final VoidCallback onRetry;
   const _AsistenciaTab({
-    required this.future,
+    required this.loading,
+    required this.student,
     required this.scrollController,
-    required this.onRetry,
   });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return FutureBuilder<List<DailyAttendance>>(
-      future: future,
-      builder: (_, snap) {
-        if (snap.hasError) {
-          // Antes un error dejaba el skeleton girando para siempre.
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l.docenteAttendanceLoadError,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: NexoTheme.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    humanizeError(snap.error),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: NexoTheme.textMuted,
-                      fontSize: AppFont.small,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  OutlinedButton(
-                    onPressed: onRetry,
-                    child: Text(l.actionRetry),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        if (!snap.hasData) return const _SkeletonList();
-        final list = snap.data!;
-        if (list.isEmpty) {
-          return Center(
-            child: Text(
-              l.docenteNoAttendanceRecords,
-              style: TextStyle(color: NexoTheme.textMuted),
-            ),
-          );
-        }
-        final presentes = list.where((r) => r.isPresent).length;
-        final pct = (presentes / list.length * 100).round();
-        return ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          children: [
-            _AsistenciaResumen(
-              total: list.length,
-              presentes: presentes,
-              pct: pct,
-            ),
-            const SizedBox(height: 12),
-            for (final r in list) _DiaRow(reg: r),
-          ],
-        );
-      },
+    if (loading) return const _SkeletonList();
+    final marks = [...?student?.marks]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    if (marks.isEmpty) {
+      return Center(
+        child: Text(
+          l.docenteNoAttendanceRecords,
+          style: TextStyle(color: NexoTheme.textMuted),
+        ),
+      );
+    }
+    final presentes = marks
+        .where((m) => m.state == AttendanceCode.present)
+        .length;
+    final pct =
+        student?.percent?.round() ?? (presentes / marks.length * 100).round();
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        _AsistenciaResumen(total: marks.length, presentes: presentes, pct: pct),
+        const SizedBox(height: 12),
+        for (final m in marks) _DiaRow(mark: m),
+      ],
     );
   }
 }
@@ -771,7 +726,7 @@ class _AsistenciaResumen extends StatelessWidget {
             ),
           ),
           Text(
-            l.docenteSessionsAttendedCount(
+            l.docenteSessionsRegisteredCount(
               presentes.toString(),
               total.toString(),
             ),
@@ -790,49 +745,22 @@ class _AsistenciaResumen extends StatelessWidget {
 }
 
 class _DiaRow extends StatelessWidget {
-  final DailyAttendance reg;
-  const _DiaRow({required this.reg});
+  final AttendanceMark mark;
+  const _DiaRow({required this.mark});
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    // SIGMA: 1=Presente, 2=Falta, 3=Justificado (P/T/F legado).
-    final (label, color, icon) = switch (reg.state) {
-      'P' || '1' => (
-        l.docenteAttendancePresent,
-        NexoTheme.success,
-        Icons.check_circle_rounded,
-      ),
-      'T' => (
-        l.docenteAttendanceTardanza,
-        NexoTheme.warning,
-        Icons.schedule_rounded,
-      ),
-      'F' || '2' => (
-        l.docenteAttendanceFalta,
-        NexoTheme.danger,
-        Icons.cancel_rounded,
-      ),
-      'J' || '3' => (
-        l.docenteAttendanceJustificada,
-        NexoTheme.info,
-        Icons.assignment_turned_in_rounded,
-      ),
-      // Estado desconocido: se muestra tal cual, sin inventarle significado.
-      _ => (
-        reg.state.isEmpty ? '—' : reg.state,
-        NexoTheme.textMuted,
-        Icons.help_outline_rounded,
-      ),
-    };
+    final look = attendanceLook(context, mark.state);
+    final d = mark.date;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(look.icon, color: look.color, size: 20),
           const Gap.h(AppSpacing.md),
           Expanded(
             child: Text(
-              Fmt.shortDate(reg.date),
+              '${Fmt.dayLabel(d.weekday)} ${Fmt.shortDate(d)} · '
+              '${two(d.hour)}:${two(d.minute)}',
               style: TextStyle(
                 fontSize: AppFont.body,
                 color: NexoTheme.textPrimary,
@@ -841,10 +769,10 @@ class _DiaRow extends StatelessWidget {
             ),
           ),
           Text(
-            label,
+            look.label,
             style: TextStyle(
               fontSize: AppFont.small,
-              color: color,
+              color: look.color,
               fontWeight: FontWeight.w700,
             ),
           ),

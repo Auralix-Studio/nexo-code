@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/tokens.dart';
 
 class Skeleton extends StatefulWidget {
@@ -25,7 +26,20 @@ class _SkeletonState extends State<Skeleton>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // El brillo es decorativo: se detiene con "reducir movimiento".
+    if (Motion.reduced(context)) {
+      _ctrl
+        ..stop()
+        ..value = 0.5;
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
   }
 
   @override

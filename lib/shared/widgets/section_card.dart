@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class SectionCard extends StatelessWidget {
   final String title;
@@ -77,7 +79,14 @@ class SectionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            child,
+            // Al pasar de cargando a contenido la tarjeta crece suave en vez
+            // de saltar.
+            AnimatedSize(
+              duration: Motion.of(context, AppDurations.normal),
+              curve: Motion.enter,
+              alignment: Alignment.topCenter,
+              child: child,
+            ),
           ],
         ),
       ),

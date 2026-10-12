@@ -1,24 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:nexo/domain/course_roster_stats.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
-import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/domain/unified_models.dart';
+import 'package:nexo/domain/teacher_insights.dart';
+import 'package:nexo/features/teacher/teacher_course_detail.dart';
+import 'package:nexo/features/teacher/teacher_dashboard_cards.dart';
+import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
-import 'package:nexo/features/schedule/schedule_detail_screen.dart';
-import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
-import 'package:nexo/shared/widgets/status_chip.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 
+/// Inicio del docente, de lo inmediato a lo general: quién soy y mis números,
+/// qué dicto hoy, qué tengo pendiente y mis cursos.
 class TeacherScreen extends StatefulWidget {
-  const TeacherScreen({super.key, required this.store});
+  const TeacherScreen({super.key, required this.store, this.clock});
   final AppStore store;
+
+  /// Hora de referencia; para pruebas. Por defecto, la del dispositivo.
+  final DateTime Function()? clock;
+
   @override
   State<TeacherScreen> createState() => _TeacherScreenState();
 }
@@ -30,7 +36,11 @@ class _TeacherScreenState extends State<TeacherScreen> {
     final s = widget.store;
     if (!s.teacherInfo.hasValue) s.loadTeacherInfo();
     if (!s.teacherSubjects.hasValue) s.loadTeacherSubjects();
+    if (!s.teacherMarcacion.hasValue) s.loadTeacherMarcacion();
     if (!s.teacherSchedule.hasValue) s.loadDocenteHorario();
+    // Rosters y hojas de asistencia de todas las secciones: alimentan la
+    // agenda, los pendientes y los números de cada curso.
+    s.loadDocenteResumen();
   }
 
   @override
@@ -38,13 +48,16 @@ class _TeacherScreenState extends State<TeacherScreen> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
+        final now = (widget.clock ?? DateTime.now)();
         return RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
               widget.store.loadTeacherInfo(),
               widget.store.loadTeacherSubjects(),
+              widget.store.loadTeacherMarcacion(),
               widget.store.loadDocenteHorario(),
             ]);
+            await widget.store.loadDocenteResumen(force: true);
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
@@ -52,26 +65,36 @@ class _TeacherScreenState extends State<TeacherScreen> {
             ),
             slivers: [
               SliverToBoxAdapter(
-                child: PageHeader(
-                  title: AppLocalizations.of(context).titleTeacher,
-                  subtitle: AppLocalizations.of(context).subtitleTeacher,
-                ),
-              ),
-              SliverToBoxAdapter(
                 child: PageBody(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Reveal(
-                        index: 0,
-                        child: _HeroInfoCard(state: widget.store.teacherInfo),
+                      const Gap(AppSpacing.xxl),
+                      FadeSwitch(
+                        child: KeyedSubtree(
+                          key: ValueKey(widget.store.teacherInfo.hasValue),
+                          child: _Header(store: widget.store, now: now),
+                        ),
                       ),
                       const Gap(AppSpacing.lg),
-                      Reveal(index: 1, child: _TodayCard(store: widget.store)),
+                      _StatsStrip(store: widget.store),
+                      const Gap(AppSpacing.xl),
+                      Reveal(
+                        index: 0,
+                        child: TeacherAgendaCard(store: widget.store, now: now),
+                      ),
+                      const Gap(AppSpacing.lg),
+                      Reveal(
+                        index: 1,
+                        child: TeacherPendingCard(
+                          store: widget.store,
+                          now: now,
+                        ),
+                      ),
                       const Gap(AppSpacing.lg),
                       Reveal(
                         index: 2,
-                        child: _MetricsGrid(store: widget.store),
+                        child: _MisCursosCard(store: widget.store),
                       ),
                     ],
                   ),
@@ -86,215 +109,186 @@ class _TeacherScreenState extends State<TeacherScreen> {
   }
 }
 
-class _HeroInfoCard extends StatelessWidget {
-  final AsyncValue<TeacherInfo> state;
-  const _HeroInfoCard({required this.state});
+String _capitalized(String word) {
+  final w = word.trim().toLowerCase();
+  return w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}';
+}
+
+/// Saludo con foto y nombre, igual que el inicio del estudiante, y el día con
+/// cuántas clases hay.
+class _Header extends StatelessWidget {
+  final AppStore store;
+  final DateTime now;
+  const _Header({required this.store, required this.now});
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (state.loading && !state.hasValue) {
-      return const Skeleton(height: 130, radius: 22);
-    }
+    final state = store.teacherInfo;
     final info = state.value;
-    if (info == null || info.code.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [NexoTheme.primary, NexoTheme.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    if (info == null || info.code.isEmpty) {
+      return state.loading || state.isIdle
+          ? const Skeleton(height: 60, radius: 18)
+          : Text(
+              l.titleTeacher,
+              style: TextStyle(
+                fontSize: AppFont.h1,
+                fontWeight: FontWeight.w800,
+                color: NexoTheme.textPrimary,
+              ),
+            );
+    }
+    final first = _capitalized(info.firstName.split(RegExp(r'\s+')).first);
+    final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
+    final today = PeruHolidays.isHoliday(now)
+        ? 0
+        : sessionsOn(courses, now).length;
+    return Row(
+      children: [
+        StudentAvatar(
+          code: info.code,
+          name: info.displayName,
+          size: 56,
+          radius: 18,
         ),
-        borderRadius: AppRadii.rXxl,
-        boxShadow: [
-          BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white.withValues(alpha: 0.18),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 36,
-            ),
-          ),
-          const Gap.h(AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.docenteLabel,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.4,
-                  ),
+        const Gap.h(14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${Fmt.greeting(now)},',
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  fontWeight: FontWeight.w600,
+                  color: NexoTheme.textSecondary,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  info.displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppFont.h2,
-                    fontWeight: FontWeight.w800,
-                    height: 1.2,
-                    letterSpacing: -0.5,
-                  ),
+              ),
+              Text(
+                first.isEmpty ? info.displayName : first,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: NexoTheme.textPrimary,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: () => ClipboardHelper.copyAndShow(
-                    context,
-                    info.code,
-                    label: l.docenteCodeLabel,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        info.code,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.88),
-                          fontSize: AppFont.body,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.copy_rounded,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        size: 13,
-                      ),
-                      if ((info.faculty ?? '').isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '· ${info.faculty}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontSize: AppFont.body,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+              ),
+              Text(
+                [
+                  '${Fmt.dayLabel(now.weekday)} ${now.day}',
+                  if (courses.isNotEmpty) l.tchClassesToday(today),
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppFont.small,
+                  color: NexoTheme.textMuted,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _MetricsGrid extends StatelessWidget {
+/// Facultad y, en una sola franja, cursos, alumnos y periodo.
+class _StatsStrip extends StatelessWidget {
   final AppStore store;
-  const _MetricsGrid({required this.store});
+  const _StatsStrip({required this.store});
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final courses = store.teacherSubjects.value ?? const <TeacherSubject>[];
-    // Si SIGMA no manda `matriculados`, usamos el roster ya cargado del curso.
-    final totalAlumnos = courses.fold<int>(
-      0,
-      (a, c) => a + (store.alumnosDe(c.id).value?.length ?? c.enrolledCount ?? 0),
-    );
-    final stats = <_StatData>[
-      _StatData(
-        label: l.docenteMetricCursos,
-        value: '${courses.length}',
-        icon: Icons.menu_book_rounded,
-        color: NexoTheme.primary,
-      ),
-      _StatData(
-        label: l.docenteMetricAlumnos,
-        value: '$totalAlumnos',
-        icon: Icons.groups_rounded,
-        color: NexoTheme.accent,
-      ),
-      _StatData(
-        label: l.docenteMetricPeriodo,
-        value: courses.isEmpty ? '—' : courses.first.periodo,
-        icon: Icons.calendar_month_rounded,
-        color: NexoTheme.success,
-      ),
+    // SIGMA no manda cuántos alumnos tiene cada sección: se cuentan los
+    // alumnos distintos de los rosters cargados. Sin datos aún, "—" en vez de
+    // un 0 engañoso.
+    final rosters = store.docenteRosters;
+    final codes = <String>{
+      for (final c in courses)
+        for (final s in rosters[c.id] ?? const <TeacherStudent>[]) s.code,
+    };
+    final faculty = (store.teacherInfo.value?.faculty ?? '').trim();
+    final stats = <(Object, String)>[
+      (courses.isEmpty ? '—' : courses.length, l.docenteMetricCursos),
+      (codes.isEmpty ? '—' : codes.length, l.docenteMetricAlumnos),
+      (courses.isEmpty ? '—' : courses.first.periodo, l.docenteMetricPeriodo),
     ];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: stats.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        mainAxisExtent: 90,
-      ),
-      itemBuilder: (_, i) => _StatTile(data: stats[i]),
+    final numberStyle = TextStyle(
+      fontSize: AppFont.h3,
+      fontWeight: FontWeight.w900,
+      color: NexoTheme.textPrimary,
     );
-  }
-}
-
-class _StatData {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  const _StatData({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-}
-
-class _StatTile extends StatelessWidget {
-  final _StatData data;
-  const _StatTile({required this.data});
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: NexoTheme.card,
         borderRadius: AppRadii.rXl,
         border: Border.all(color: NexoTheme.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(data.icon, color: data.color, size: 22),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                data.value,
-                style: TextStyle(
-                  fontSize: AppFont.h3,
-                  fontWeight: FontWeight.w800,
-                  color: NexoTheme.textPrimary,
-                ),
+          if (faculty.isNotEmpty) ...[
+            Text(
+              faculty,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: NexoTheme.textMuted,
               ),
-              Text(
-                data.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: NexoTheme.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+            ),
+            const Gap(AppSpacing.sm),
+          ],
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                for (var i = 0; i < stats.length; i++) ...[
+                  if (i > 0)
+                    VerticalDivider(
+                      width: AppSpacing.xl,
+                      color: NexoTheme.border,
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (stats[i].$1 case final int n)
+                          AnimatedCount(value: n, style: numberStyle)
+                        else
+                          Text(
+                            '${stats[i].$1}',
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.fade,
+                            style: numberStyle,
+                          ),
+                        Text(
+                          stats[i].$2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: NexoTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -302,67 +296,52 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _TodayCard extends StatelessWidget {
+/// Cursos del docente con sus números de un vistazo: alumnos, asistencia
+/// promedio y cuántos necesitan atención.
+class _MisCursosCard extends StatelessWidget {
   final AppStore store;
-  const _TodayCard({required this.store});
+  const _MisCursosCard({required this.store});
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final today = DateTime.now().weekday;
-    final state = store.teacherSchedule;
+    final state = store.teacherSubjects;
     if (state.loading && !state.hasValue) {
-      return const Skeleton(height: 140, radius: 22);
+      return const Skeleton(height: 180, radius: 22);
     }
-    final clases =
-        (state.value ?? const <ScheduleClass>[])
-            .where((c) => c.weekday == today)
-            .toList()
-          ..sort((a, b) => compareHm(a.startTime, b.startTime));
-    final h24 = AppStorage.instance.use24h;
-    final isToday = today >= 1 && today <= 7;
+    final cursos = state.value ?? const <TeacherSubject>[];
+    final rosters = store.docenteRosters;
+    final alerts = studentAlerts(cursos, rosters);
     return SectionCard(
-      title: l.docenteToday,
-      subtitle: isToday ? Fmt.dayLabel(today) : '',
-      icon: Icons.today_rounded,
+      title: l.titleCourses,
+      subtitle: l.docenteCoursesCountPlural(cursos.length),
+      icon: Icons.menu_book_rounded,
       iconColor: NexoTheme.primary,
-      trailing: clases.isEmpty
-          ? null
-          : StatusChip(
-              text: l.docenteClassCount(clases.length),
-              color: NexoTheme.primary,
-            ),
-      child: clases.isEmpty
-          ? Container(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              alignment: Alignment.center,
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.coffee_outlined,
-                    size: 32,
-                    color: NexoTheme.textSecondary,
-                  ),
-                  const Gap(AppSpacing.sm),
-                  Text(
-                    l.docenteNoClassesToday,
-                    style: TextStyle(
-                      fontSize: AppFont.body,
-                      color: NexoTheme.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+      child: cursos.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Text(
+                l.docenteNoCoursesPeriod,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: AppFont.body,
+                  color: NexoTheme.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             )
           : Column(
               children: [
-                for (var i = 0; i < clases.length; i++) ...[
-                  _TodaySessionRow(
-                    c: clases[i],
-                    h24: h24,
-                    status: _statusOf(clases, i),
+                for (var i = 0; i < cursos.length; i++) ...[
+                  if (i > 0) Divider(height: 1, color: NexoTheme.border),
+                  _CursoRow(
+                    store: store,
+                    course: cursos[i],
+                    roster: rosters[cursos[i].id],
+                    atRisk: alerts
+                        .where((a) => a.course.id == cursos[i].id)
+                        .length,
                   ),
-                  if (i < clases.length - 1) const Gap(AppSpacing.sm),
                 ],
               ],
             ),
@@ -370,180 +349,77 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
-enum _SessionStatus { done, ongoing, next, later }
+class _CursoRow extends StatelessWidget {
+  final AppStore store;
+  final TeacherSubject course;
+  final List<TeacherStudent>? roster;
+  final int atRisk;
+  const _CursoRow({
+    required this.store,
+    required this.course,
+    required this.roster,
+    required this.atRisk,
+  });
 
-/// Estado de la clase [i] de hoy respecto a la hora actual. Solo la primera
-/// clase que aún no empieza se marca como "siguiente".
-_SessionStatus _statusOf(List<ScheduleClass> clases, int i) {
-  final now = DateTime.now();
-  final nowMin = now.hour * 60 + now.minute;
-  int? ini(ScheduleClass c) => hmToMinutes(c.startTime);
-  int? fin(ScheduleClass c) => hmToMinutes(c.endTime);
-  final c = clases[i];
-  final a = ini(c), b = fin(c);
-  if (a == null || b == null) return _SessionStatus.later;
-  if (nowMin >= b) return _SessionStatus.done;
-  if (nowMin >= a) return _SessionStatus.ongoing;
-  final firstUpcoming = clases.indexWhere((x) {
-    final s = ini(x);
-    return s != null && s > nowMin;
-  });
-  final anyOngoing = clases.any((x) {
-    final s = ini(x), e = fin(x);
-    return s != null && e != null && nowMin >= s && nowMin < e;
-  });
-  return !anyOngoing && firstUpcoming == i
-      ? _SessionStatus.next
-      : _SessionStatus.later;
-}
-
-class _TodaySessionRow extends StatelessWidget {
-  final ScheduleClass c;
-  final bool h24;
-  final _SessionStatus status;
-  const _TodaySessionRow({
-    required this.c,
-    required this.h24,
-    this.status = _SessionStatus.later,
-  });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isTeoria = c.typeCode.toUpperCase() == 'T';
-    final done = status == _SessionStatus.done;
-    final color = done
-        ? NexoTheme.textMuted
-        : isTeoria
-        ? NexoTheme.info
-        : NexoTheme.success;
-    final statusLabel = switch (status) {
-      _SessionStatus.ongoing => l.docenteTodayOngoing,
-      _SessionStatus.next => l.docenteTodayNext,
-      _SessionStatus.done => l.docenteTodayDone,
-      _SessionStatus.later => null,
-    };
-    final statusColor = switch (status) {
-      _SessionStatus.ongoing => NexoTheme.success,
-      _SessionStatus.next => NexoTheme.primary,
-      _ => NexoTheme.textMuted,
-    };
-    final hi = Fmt.time(c.startTime, h24: h24);
-    final hf = Fmt.time(c.endTime, h24: h24);
-    final grupo = ScheduleClassGroup(
-      subject: c.subject,
-      weekday: c.weekday,
-      sessions: [c],
-    );
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => ScheduleDetailScreen.open(context, grupo),
-        borderRadius: AppRadii.rLg,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md + 2),
-          decoration: BoxDecoration(
-            color: NexoTheme.surface,
-            borderRadius: AppRadii.rLg,
-            border: Border.all(color: NexoTheme.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Gap.h(AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (statusLabel != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            color: statusColor,
-                          ),
-                        ),
-                      ),
-                    Text(
-                      c.subject,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: AppFont.body,
-                        fontWeight: FontWeight.w700,
-                        color: done
-                            ? NexoTheme.textSecondary
-                            : NexoTheme.textPrimary,
-                        height: 1.2,
-                      ),
+    final r = roster;
+    final pcts = [
+      for (final s in r ?? const <TeacherStudent>[])
+        double.tryParse((s.attendance ?? '').replaceAll(',', '.')),
+    ].whereType<double>().toList();
+    final avg = pcts.isEmpty
+        ? null
+        : pcts.reduce((a, b) => a + b) / pcts.length;
+    final facts = [
+      l.tchSectionLabel(course.section),
+      if (r != null && r.isNotEmpty) l.docenteMetricAlumnosCount(r.length),
+      if (avg != null) l.docenteAsisPercent('${avg.round()}'),
+    ];
+    return InkWell(
+      onTap: () =>
+          TeacherCourseDetailScreen.open(context, store: store, course: course),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    course.displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppFont.body,
+                      fontWeight: FontWeight.w700,
+                      color: NexoTheme.textPrimary,
+                      height: 1.2,
                     ),
-                    const Gap(AppSpacing.xs),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 13, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$hi – $hf',
-                          style: TextStyle(
-                            fontSize: AppFont.small,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 13,
-                          color: NexoTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            Fmt.formatAula(c.room),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: AppFont.small,
-                              color: NexoTheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: AppRadii.rPill,
-                ),
-                child: Text(
-                  isTeoria ? l.docenteTypeTeoria : l.docenteTypePractica,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    letterSpacing: 0.5,
                   ),
-                ),
+                  const Gap(AppSpacing.xs),
+                  Text(
+                    facts.join(' · '),
+                    style: TextStyle(
+                      fontSize: AppFont.small,
+                      color: NexoTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (atRisk > 0) ...[
+              const Gap.h(AppSpacing.sm),
+              TeacherPill(
+                text: l.tchCourseAtRisk(atRisk),
+                color: NexoTheme.danger,
               ),
             ],
-          ),
+            const Gap.h(AppSpacing.xs),
+            Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
+          ],
         ),
       ),
     );
