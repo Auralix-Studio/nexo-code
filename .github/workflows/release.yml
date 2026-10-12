@@ -131,6 +131,10 @@ jobs:
           zip -r ../../../../../dist/nexo-${{ env.TAG }}-macos.zip nexo.app
           cd ../../../../../
 
+      # iOS se compila solo para pruebas: sin firma de Apple no se instala en
+      # un iPhone normal, así que NO se publica en el release. El .ipa queda
+      # como artefacto privado de la ejecución (Actions -> la ejecución ->
+      # Artifacts -> dist-ios) para instalarlo con Sideloadly/AltStore.
       - name: Build iOS (Unsigned)
         if: matrix.target == 'ios'
         run: |
@@ -221,7 +225,6 @@ jobs:
             dist/*.exe
             dist/*.zip
             dist/*.tar.gz
-            dist/*.ipa
             dist/SHA256SUMS*.txt
           fail_on_unmatched_files: false
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
