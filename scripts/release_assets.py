@@ -31,6 +31,29 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from auto_version import changelog_section  # noqa: E402
 
+# Lo público (notas del release y sitio) no nombra los sistemas internos de
+# la universidad: el CHANGELOG del código puede hacerlo, aquí se traduce.
+RULES = [
+    (r"\bentre SIGMA e (?:la )?Intranet\b", "entre los sistemas de la universidad"),
+    (r"\bSIGMA (?:e|y) (?:la )?Intranet\b", "los sistemas de la universidad"),
+    (r"\b[Ee]n SIGMA\b", "en el sistema académico"),
+    (r"\ba SIGMA\b", "al sistema académico"),
+    (r"\bde SIGMA\b", "del sistema académico"),
+    (r"\bcon SIGMA\b", "con el sistema académico"),
+    (r"(^|[.]\s*|<li>|<strong>|- )SIGMA\b", r"\1El sistema académico"),
+    (r"\bSIGMA\b", "el sistema académico"),
+    (r"\bde (?:la )?Intranet\b", "del portal web"),
+    (r"\ben (?:la )?Intranet\b", "en el portal web"),
+    (r"\ba (?:la )?Intranet\b", "al portal web"),
+    (r"(^|[.]\s*|<li>|<strong>|- )(?:La )?Intranet\b", r"\1El portal web"),
+    (r"\b(?:la )?Intranet\b", "el portal web"),
+]
+def neutral(t: str) -> str:
+    for a, b in RULES:
+        t = re.sub(a, b, t, flags=re.M)
+    return t
+
+
 META_FILES = {"SHA256SUMS.txt", "RELEASE_NOTES.md", "release-meta.json"}
 
 
@@ -121,7 +144,7 @@ def cmd_notes(dist: pathlib.Path, version: str, repo: str) -> None:
             {"name": p.name, "size": size, "sizeMB": round(size / 1048576), "sha256": sha, "url": url}
         )
 
-    body = [f"# Nexo {version}", "", changelog_section(version), ""]
+    body = [f"# Nexo {version}", "", neutral(changelog_section(version)), ""]
     if rows:
         body += [
             "## Descarga",
@@ -217,7 +240,7 @@ def section_to_html(version: str, section: str) -> str:
 
 
 def cmd_site(site: pathlib.Path, version: str, date: str) -> bool:
-    section = changelog_section(version)
+    section = neutral(changelog_section(version))
     changed = False
 
     html_path = site / "changelog.html"
