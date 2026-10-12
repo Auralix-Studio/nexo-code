@@ -1,4 +1,7 @@
 # update_site.ps1 - Actualiza nexo-releases
+#
+# NOTA: desde octubre 2026 esto lo hace GitHub Actions solo al fusionar en
+# main (ver docs/versionado.md). Este script queda para publicar a mano.
 
 param(
   [string]$MetaFile,

@@ -1,4 +1,4 @@
-name: Multi-Platform Release
+name: Release multiplataforma
 
 on:
   # Tag empujado a mano (git push origin vX.Y.Z)...
@@ -134,31 +134,109 @@ jobs:
           zip -r ../../../dist/nexo-${{ env.TAG }}-ios-unsigned.ipa Payload
           cd ../../../
 
-      - name: Upload Release Assets
+      # Cada plataforma deja sus archivos como artefacto; el release se
+      # publica una sola vez al final con todo junto (así el actualizador de
+      # la app nunca ve un release a medio subir).
+      - name: Guardar artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publicar release en Auralix-Studio/nexo
+    needs: build
+    # Publica aunque falle una plataforma secundaria (iOS, macOS, Linux):
+    # lo imprescindible (Android y Windows) se verifica abajo.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - id: v
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Reunir artefactos
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verificar lo imprescindible
+        run: |
+          for f in "nexo-${TAG}-universal.apk" "nexo-${TAG}-setup-x64.exe" "nexo-${TAG}-windows-x64.zip"; do
+            if [ ! -s "dist/$f" ]; then
+              echo "::error::Falta dist/$f: no se publica un release sin Android y Windows."
+              exit 1
+            fi
+          done
+          ls -la dist
+
+      # Igual que build_release.ps1 + generate_release_notes.ps1.
+      - name: Hashes, notas y metadatos
+        run: |
+          python3 scripts/release_assets.py sums dist
+          python3 scripts/release_assets.py notes dist "${TAG}"
+          cat dist/RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Crear release
         uses: softprops/action-gh-release@v2
         with:
           repository: Auralix-Studio/nexo
           tag_name: ${{ env.TAG }}
-          name: Nexo ${{ env.TAG }}
-          files: dist/*
+          name: Nexo ${{ steps.v.outputs.version }}
+          body_path: dist/RELEASE_NOTES.md
+          make_latest: true
+          files: |
+            dist/*.apk
+            dist/*.exe
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.ipa
+            dist/SHA256SUMS*.txt
+          fail_on_unmatched_files: false
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
-  notes:
-    name: Notas del release
-    needs: build
-    if: ${{ !cancelled() }}
+      - name: Guardar release-meta.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-meta
+          path: dist/release-meta.json
+
+  site:
+    name: Actualizar sitio (changelog)
+    needs: publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
-      - name: Extraer notas del CHANGELOG
-        run: python3 scripts/auto_version.py notes "${TAG}" > RELEASE_NOTES.md
-      - name: Publicar notas
-        uses: softprops/action-gh-release@v2
+          path: code
+
+      # Igual que update_site.ps1 -Push: agrega la versión a CHANGELOG.md y
+      # changelog.html del repo público; su workflow de Pages lo despliega.
+      - uses: actions/checkout@v4
         with:
           repository: Auralix-Studio/nexo
-          tag_name: ${{ env.TAG }}
-          name: Nexo ${{ env.TAG }}
-          body_path: RELEASE_NOTES.md
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
+          path: site
+
+      - name: Agregar la versión al sitio
+        run: |
+          python3 code/scripts/release_assets.py site site "${TAG}" --date "$(TZ=America/Lima date +%F)"
+          cd site
+          if git diff --quiet; then
+            echo "El sitio ya estaba al día."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: actualizar sitio para ${TAG}"
+          git push

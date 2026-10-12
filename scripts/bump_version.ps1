@@ -1,5 +1,8 @@
 ﻿# bump_version.ps1 — Incrementa la versión de Nexo en pubspec.yaml
 #
+# NOTA: desde octubre 2026 esto lo hace GitHub Actions solo al fusionar en
+# main (ver docs/versionado.md). Este script queda para publicar a mano.
+#
 # Lee la versión actual de pubspec.yaml, la incrementa según el tipo
 # (major, minor, patch) y actualiza pubspec.yaml + config.dart.
 #

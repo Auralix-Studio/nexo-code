@@ -11,7 +11,7 @@ All notable changes to Nexo will be documented in this file.
 - Si la contraseña cambió en SIGMA, la cuenta queda en la lista y pide la nueva con el usuario ya escrito
 
 ### Publicación
-- Versionado y releases automáticos al fusionar en `main` (ver docs/versionado.md)
+- Publicación 100 % automática al fusionar en `main`: versión, tag, compilación de todas las plataformas, verificación de Windows, `SHA256SUMS.txt`, notas con tabla de descargas, release en `Auralix-Studio/nexo` y changelog del sitio (ver docs/versionado.md)
 
 ### Docentes
 - Inicio reorganizado: saludo, cifras (cursos, alumnos, periodo), agenda de hoy, pendientes y cursos con sus números

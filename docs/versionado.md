@@ -19,13 +19,27 @@ El número de build (`+N`) sube 1 en cada versión.
 
 ## Qué hace el workflow
 
-1. Corre `flutter test`. **Si falla, no se publica nada.**
-2. Calcula la versión (`scripts/auto_version.py`) y actualiza
-   `pubspec.yaml`, `lib/core/config.dart` y `CHANGELOG.md`.
-3. Hace commit `chore(release): vX.Y.Z [skip ci]` en `main` y crea el tag.
-4. Llama a `release.yml`: compila Android, Windows, Linux, macOS e iOS y
-   publica el release en `Auralix-Studio/nexo` con las notas del CHANGELOG.
-   El actualizador de la app lo detecta desde ahí.
+Reproduce en GitHub, sin intervención, lo que hacían a mano
+`bump_version.ps1`, `sync_version.ps1`, `build_release.ps1`,
+`generate_release_notes.ps1` y `update_site.ps1`:
+
+| Paso | Antes (a mano) | Ahora (automático) |
+|---|---|---|
+| Tests | — | `flutter test`; si falla, no se publica |
+| Subir versión | `bump_version.ps1` + `sync_version.ps1` | `auto_version.py` (pubspec, config.dart, CHANGELOG) |
+| Commit y tag | `build_release.ps1 -Publish` | commit `chore(release): vX.Y.Z` + tag en `nexo-code` |
+| Compilar | `build_release.ps1` (Android + Windows) | `release.yml`: Android, Windows, Linux, macOS, iOS |
+| Verificar Windows | `verify_windows_bundle.ps1`, `scan_windows_release.ps1` | los mismos scripts, en el runner de Windows |
+| `SHA256SUMS.txt` | `build_release.ps1` | `release_assets.py sums` (todos los archivos) |
+| `RELEASE_NOTES.md`, `release-meta.json` | `generate_release_notes.ps1` | `release_assets.py notes` |
+| Release en `Auralix-Studio/nexo` | `gh release create` | se crea **una sola vez con todo** (el actualizador nunca ve un release a medias) |
+| Sitio: `CHANGELOG.md` y `changelog.html` | `update_site.ps1 -Push` | `release_assets.py site` + push; Pages lo despliega |
+
+Si falla una plataforma secundaria (iOS, macOS, Linux) el release sale
+igual; si falta Android o Windows, no se publica.
+
+Los scripts `.ps1` siguen funcionando para publicar a mano si alguna vez
+hace falta.
 
 ## Notas del release
 

@@ -1,5 +1,8 @@
 ﻿# build_release.ps1 — Pipeline completo de release de Nexo
 #
+# NOTA: desde octubre 2026 esto lo hace GitHub Actions solo al fusionar en
+# main (ver docs/versionado.md). Este script queda para publicar a mano.
+#
 # Flujo automatizado:
 #   1. Lee versión de pubspec.yaml (fuente de verdad)
 #   2. Valida estado del repo (sin cambios uncommitted, tag no duplicado)
