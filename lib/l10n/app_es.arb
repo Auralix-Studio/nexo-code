@@ -282,20 +282,20 @@
   "termsHeaderPre": "Antes de empezar",
   "termsHeaderTitle": "Términos de uso y privacidad",
   "termsHeaderSubtitle": "Léelos con calma y acéptalos para continuar.",
-  "termsAcceptNote": "Al continuar aceptas estos términos.",
+  "termsAcceptNote": "Al continuar aceptas los Términos y Condiciones y la Política de Privacidad, y declaras conocer la Política de Cookies.",
   "termsAcceptButton": "Aceptar y continuar",
   "termsBrandTitle": "Bienvenido a Nexo",
   "termsBrandBody": "Privacidad primero. Aquí te decimos qué se queda en tu dispositivo y qué sale de él.",
   "termsItemWhatTitle": "Qué es Nexo",
   "termsItemWhatBody": "Aplicación independiente y no oficial, creada por y para estudiantes, que reorganiza tu información académica de la UPLA de forma más clara. No está afiliada ni respaldada por la UPLA.",
   "termsItemPrivacyTitle": "Tus datos y privacidad",
-  "termsItemPrivacyBody": "Tus credenciales y tus datos académicos se guardan únicamente en tu dispositivo. Nexo no envía tu información a servidores propios ni a terceros: las peticiones van directamente a los servicios de la UPLA, igual que el portal oficial.",
+  "termsItemPrivacyBody": "Tus credenciales y tus datos académicos se guardan en tu dispositivo. Nexo no tiene servidores propios: las consultas van directamente a los servicios de la UPLA, igual que el portal oficial. Solo se consulta GitHub para buscar actualizaciones, sin enviar datos académicos. No hay publicidad ni analítica.",
   "termsItemSecurityTitle": "Seguridad",
   "termsItemSecurityBody": "En móvil y escritorio, las credenciales se protegen con el almacén seguro del sistema. En el navegador, la sesión permanece en memoria y debes iniciar sesión de nuevo al recargar. Los datos académicos se guardan localmente sin cifrado adicional. Cerrar sesión elimina credenciales y caché.",
   "termsItemResponsibleTitle": "Uso responsable",
-  "termsItemResponsibleBody": "Accede solo a tu propia información y con tus propias credenciales. Es un proyecto educativo y de uso personal: úsalo conforme a los reglamentos de tu universidad.",
+  "termsItemResponsibleBody": "Accede solo a tu propia información y con tus propias credenciales. Usar credenciales ajenas puede constituir delito (Ley N.º 30096). Si eres docente, los datos de tus estudiantes son confidenciales y solo pueden usarse con fines académicos (Ley N.º 29733).",
   "termsItemDisclaimerTitle": "Sin garantías",
-  "termsItemDisclaimerBody": "El servicio se ofrece \"tal cual\", sin garantías. Para trámites oficiales consulta siempre el portal institucional.",
+  "termsItemDisclaimerBody": "Nexo se ofrece «tal cual», sin garantías. No nos hacemos responsables por el mal uso de la aplicación o de las credenciales, ni por decisiones tomadas con la información mostrada. Para trámites oficiales consulta siempre los sistemas de la UPLA.",
   "aboutFeatureAllInOneTitle": "Tu universidad en un solo lugar",
   "aboutFeatureAllInOneBody": "Perfil, horario, notas, pagos y próximas tareas, sin saltar entre SIGMA, Intranet y otros portales.",
   "aboutFeatureMultiplatformTitle": "Multiplataforma",
@@ -866,9 +866,9 @@
     }
   },
   "termsItemRightsTitle": "Tus derechos",
-  "termsItemRightsBody": "Tus datos están en tu dispositivo, así que los controlas tú: puedes revisarlos, actualizarlos desde la Intranet o borrarlos cerrando sesión. Escríbenos desde la sección de soporte para cualquier duda sobre el tratamiento de tus datos.",
+  "termsItemRightsBody": "Tus datos están en tu dispositivo, así que los controlas tú: puedes revisarlos, actualizarlos en los sistemas de la UPLA o borrarlos cerrando sesión. Para ejercer tus derechos de acceso, rectificación, cancelación y oposición, escríbenos desde Soporte; también puedes acudir a la Autoridad Nacional de Protección de Datos Personales.",
   "termsHeaderUpdatedPre": "Cambiamos algo",
-  "termsUpdatedNotice": "Actualizamos estos términos para explicar mejor qué se queda en tu dispositivo y cómo te avisaremos de futuros cambios. Léelos de nuevo antes de continuar.",
+  "termsUpdatedNotice": "Actualizamos nuestros documentos: ahora hay Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con la ley peruana aplicable y los límites de responsabilidad. Léelos antes de continuar.",
   "termsItemDeviceTitle": "Lo que queda en tu dispositivo",
   "termsItemDeviceBody": "Nexo guarda una copia local de tu horario, tus notas y tus pagos para funcionar sin conexión, y programa las notificaciones y los widgets en el propio dispositivo. Todo eso se borra al cerrar sesión.",
   "termsItemChangesTitle": "Cambios en estos términos",
@@ -932,35 +932,37 @@
   "docenteSearchStudent": "Buscar alumno…",
   "docenteSearchNoResults": "Sin resultados",
   "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.",
-  "docenteTabResumen": "Resumen",
-  "docenteStatAverage": "Promedio del curso",
-  "docenteStatApproved": "Aprobados",
-  "docenteStatFailed": "Desaprobados",
-  "docenteStatNoGrade": "Sin nota",
-  "docenteStatAttendanceAvg": "Asistencia promedio",
-  "docenteGradeDistribution": "Distribución de notas",
-  "docenteAtRiskTitle": "Alumnos en riesgo",
-  "docenteAtRiskSubtitle": "Desaprobados o con asistencia menor a {percent}%",
-  "@docenteAtRiskSubtitle": {
+  "tabMarcacion": "Marcación",
+  "titleMarcacion": "Mi marcación",
+  "marcacionSubtitlePlural": "{count,plural, =0{Sin marcas (30 días)} =1{1 marca · últimos 30 días} other{{count} marcas · últimos 30 días}}",
+  "@marcacionSubtitlePlural": {
     "placeholders": {
-      "percent": {
-        "type": "String"
+      "count": {
+        "type": "int"
       }
     }
   },
-  "docenteAtRiskNone": "Ningún alumno en riesgo por ahora",
-  "docenteRiskLowGrade": "Nota baja",
-  "docenteRiskLowAttendance": "Poca asistencia",
-  "docenteExportPdf": "Exportar lista en PDF",
-  "docenteExportError": "No se pudo generar el PDF",
-  "docenteSortLabel": "Ordenar",
-  "docenteSortName": "Nombre (A-Z)",
-  "docenteSortGradeDesc": "Mayor nota",
-  "docenteSortGradeAsc": "Menor nota",
-  "docenteSortAttendance": "Menor asistencia",
-  "docenteOnlyAtRisk": "Solo en riesgo",
-  "docenteAttendanceDaySummary": "{presentes} presentes · {faltas} faltas · {justificadas} justif.",
-  "@docenteAttendanceDaySummary": {
+  "marcacionEmpty": "Sin marcaciones en los últimos 30 días.",
+  "marcacionVirtual": "Virtual",
+  "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcas}}",
+  "@marcacionCountDay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "docenteTabReporte": "Reporte",
+  "docenteReportLoadError": "No se pudo cargar el reporte de asistencia.",
+  "docenteReportEmpty": "Aún no hay asistencias registradas en esta sección.",
+  "docenteReportAll": "Todos",
+  "docenteReportAtRisk": "En riesgo",
+  "docenteReportNoRisk": "Ningún alumno en riesgo por faltas.",
+  "docenteReportSessions": "Sesiones",
+  "docenteReportAverage": "Asistencia prom.",
+  "docenteReportRiskHint": "En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.",
+  "docenteReportCounts": "{presentes} P · {faltas} F · {justificadas} J",
+  "@docenteReportCounts": {
     "placeholders": {
       "presentes": {
         "type": "String"
@@ -973,34 +975,16 @@
       }
     }
   },
-  "docenteNoClassThatDay": "No hay asistencia registrada para esta fecha",
-  "docenteNoGradesRegistered": "No hay notas registradas",
-  "docenteAttendanceLoadError": "No se pudo cargar la asistencia",
-  "docenteEvalReadOnly": "Este componente agrupa varias notas. Edítalo desde SIGMA para no sobrescribirlas.",
-  "docenteEvalMissingIds": "Faltan datos para editar esta nota. Actualiza la lista de alumnos.",
-  "docenteConfirmGradeTitle": "¿Guardar en SIGMA?",
-  "docenteConfirmGradeBody": "{evaluacion} de {alumno}: {anterior} → {nueva}. El cambio se registra directamente en SIGMA.",
-  "@docenteConfirmGradeBody": {
+  "docenteNoUnitEnabled": "No hay una unidad habilitada en SIGMA para registrar asistencia.",
+  "docenteUnitLocked": "Esta unidad no está habilitada en SIGMA para registrar notas.",
+  "docenteGradeMissingIds": "Faltan datos de SIGMA para guardar esta nota. Actualiza la lista e inténtalo de nuevo.",
+  "docenteNoGrades": "No hay notas registradas",
+  "marcacionViewPunches": "Marcas",
+  "marcacionViewClasses": "Por clase",
+  "marcacionClassesSubtitle": "{completas} de {total} clases con marca completa · 14 días",
+  "@marcacionClassesSubtitle": {
     "placeholders": {
-      "evaluacion": {
-        "type": "String"
-      },
-      "alumno": {
-        "type": "String"
-      },
-      "anterior": {
-        "type": "String"
-      },
-      "nueva": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteGradeSaved": "Nota guardada en SIGMA",
-  "docenteSessionsAttendedCount": "{presentes} de {total}\nsesiones asistidas",
-  "@docenteSessionsAttendedCount": {
-    "placeholders": {
-      "presentes": {
+      "completas": {
         "type": "String"
       },
       "total": {
@@ -1008,8 +992,519 @@
       }
     }
   },
-  "docenteTodayOngoing": "EN CURSO",
-  "docenteTodayNext": "SIGUIENTE",
-  "docenteTodayDone": "TERMINÓ",
-  "docenteGradeDistributionHint": "Según la nota final actual de cada alumno"
+  "marcacionClassesEmpty": "Sin clases programadas en las últimas dos semanas.",
+  "marcacionMissingCount": "{count,plural, =1{1 clase con marca faltante} other{{count} clases con marca faltante}}",
+  "@marcacionMissingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marcacionIn": "Entrada",
+  "marcacionOut": "Salida",
+  "marcacionMarked": "Marcó",
+  "marcacionMissing": "Sin marca",
+  "marcacionPending": "Pendiente",
+  "tchAndMore": "… y {count} más",
+  "@tchAndMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttAllPresent": "Todos presentes",
+  "tchAttAlreadyRegistered": "Ya hay asistencia registrada este día en esta unidad. Si es otra sesión, continúa; para corregir, vuelve y abre la sesión.",
+  "tchAttConfirmTitle": "¿Registrar asistencia?",
+  "tchAttLoadError": "No se pudo cargar la lista de asistencia.",
+  "tchAttLowAttendance": "Asistencia {pct}%",
+  "@tchAttLowAttendance": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttModeList": "Ver como lista",
+  "tchAttModeOneByOne": "Pase de lista uno por uno",
+  "tchAttNoStudents": "SIGMA no devolvió alumnos para esta sección.",
+  "tchAttPending": "{count,plural, =1{Falta marcar 1 alumno.} other{Faltan marcar {count} alumnos.}}",
+  "@tchAttPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttPosition": "{current} de {total}",
+  "@tchAttPosition": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttProgress": "{done}/{total} marcados",
+  "@tchAttProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttRegister": "Registrar",
+  "tchAttRestPresent": "Resto presentes",
+  "tchAttSummary": "{present} asistieron · {absent} faltaron",
+  "@tchAttSummary": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttSuspendedCount": "{count} con matrícula suspendida (se registran como suspensión)",
+  "@tchAttSuspendedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttSwipeHint": "Al marcar pasa al siguiente. Desliza para volver.",
+  "tchAttTake": "Tomar asistencia",
+  "tchAttTakeAnother": "Tomar otra sesión",
+  "tchAttTitle": "Tomar asistencia",
+  "tchAuxReport": "Registro auxiliar",
+  "tchAuxReportPdf": "Registro auxiliar (PDF)",
+  "tchAuxReportXlsx": "Registro auxiliar (Excel)",
+  "tchAverage": "Promedio",
+  "tchCycle": "Ciclo {ciclo}",
+  "@tchCycle": {
+    "placeholders": {
+      "ciclo": {
+        "type": "String"
+      }
+    }
+  },
+  "tchDownloadError": "No se pudo descargar el archivo de SIGMA.",
+  "tchFailing": "Desaprobados",
+  "tchFileSaved": "Guardado en {path}",
+  "@tchFileSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "tchFix": "Corregir",
+  "tchGradeAverage": "Prom. {value}",
+  "@tchGradeAverage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "tchGradeConfirmTitle": "¿Guardar notas en SIGMA?",
+  "tchGradeFilled": "{filled}/{total} con nota",
+  "@tchGradeFilled": {
+    "placeholders": {
+      "filled": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradeInvalidCount": "{count,plural, =1{Hay 1 nota inválida} other{Hay {count} notas inválidas}} (0 a {max}, hasta 2 decimales).",
+  "@tchGradeInvalidCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "tchGradeMissingIds": "{count} sin datos de matrícula: no se guardarán.",
+  "@tchGradeMissingIds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradeNewCount": "{count,plural, =1{1 nota nueva} other{{count} notas nuevas}}",
+  "@tchGradeNewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradePassed": "{passed}/{total} aprobados",
+  "@tchGradePassed": {
+    "placeholders": {
+      "passed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradeUpdatedCount": "{count,plural, =1{1 nota modificada} other{{count} notas modificadas}}",
+  "@tchGradeUpdatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradesHint": "Según la nota final que calcula SIGMA. {count} sin nota aún.",
+  "@tchGradesHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchKpiAbsent": "Faltas",
+  "tchKpiGeneral": "Asistencia",
+  "tchKpiJustified": "Justificadas",
+  "tchKpiPresent": "Asistencias",
+  "tchKpiTotal": "Registros",
+  "tchOngoingNow": "En curso · {start}–{end}",
+  "@tchOngoingNow": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "tchPassed": "Aprobados",
+  "tchRiskHint70": "En riesgo: 70% de asistencia o menos, el mismo criterio que resalta SIGMA.",
+  "tchSaveChanges": "{count,plural, =1{Guardar 1 cambio} other{Guardar {count} cambios}}",
+  "@tchSaveChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchSaved": "Guardado en SIGMA",
+  "tchSessionConfirmTitle": "¿Corregir la asistencia?",
+  "tchSessionEmpty": "No hay marcas en esta sesión.",
+  "tchSessionLocked": "La unidad de esta sesión no está habilitada en SIGMA: solo lectura.",
+  "tchSessionsTitle": "Sesiones registradas ({count})",
+  "@tchSessionsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchShowAll": "Ver todas",
+  "tchShowLess": "Ver menos",
+  "tchSpecialUnit": "Las notas de {unit} se registran solo para los alumnos aptos; hazlo desde SIGMA web.",
+  "@tchSpecialUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "tchStateAbsent": "Faltó",
+  "tchStateJustified": "Justificado",
+  "tchStateNone": "Sin registro",
+  "tchStatePresent": "Asistió",
+  "tchStateSuspended": "Suspensión",
+  "tchTodayNotRegistered": "Aún no registras asistencia hoy.",
+  "tchTodayRegistered": "Hoy a las {time}: {present} asistieron, {absent} faltaron.",
+  "@tchTodayRegistered": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "present": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      }
+    }
+  },
+  "tchTypesLoadError": "No se pudieron cargar las evaluaciones de la unidad.",
+  "tchUnitsLoadError": "No se pudieron cargar las unidades de SIGMA.",
+  "tchVirtualConfirmIn": "¿Marcar ENTRADA?",
+  "tchVirtualConfirmOut": "¿Marcar SALIDA?",
+  "tchVirtualDone": "Presente",
+  "tchVirtualEmpty": "No tienes clases pendientes de marcación virtual hoy.",
+  "tchVirtualExactTime": "Se registrará la hora exacta de SIGMA.",
+  "tchVirtualHelp": "Marca primero la entrada; luego podrás marcar la salida.",
+  "tchVirtualLoadError": "No se pudieron cargar tus clases de hoy.",
+  "tchVirtualMarkIn": "Entrada",
+  "tchVirtualMarkOut": "Salida",
+  "tchVirtualMarkedAt": "Marcó {time}",
+  "@tchVirtualMarkedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tchVirtualPartial": "Parcial",
+  "tchVirtualSubtitle": "Marcación virtual de hoy",
+  "tchVirtualTab": "Virtual",
+  "tchVirtualTolerance": "Tolerancia +{minutes} min",
+  "@tchVirtualTolerance": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAttTodayTitle": "Asistencia de hoy",
+  "tchDraftRestored": "Recuperamos lo que marcaste antes. Revísalo y registra.",
+  "tchDraftDiscard": "Descartar",
+  "tchAgendaTitle": "Agenda de hoy",
+  "tchAgendaEmpty": "Hoy no tienes clases.",
+  "tchAgendaHoliday": "Hoy es feriado nacional: no hay clases.",
+  "tchAgendaNext": "Próxima clase: {when} · {course}",
+  "@tchAgendaNext": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "tchPhaseUpcoming": "Más tarde",
+  "tchPhaseOngoing": "En curso",
+  "tchPhaseFinished": "Terminó",
+  "tchAgendaChecking": "Revisando asistencia…",
+  "tchAgendaRegistered": "Asistencia registrada",
+  "tchAgendaPending": "Falta la asistencia",
+  "tchMissingSubtitle": "Últimas dos semanas. Aún puedes registrarlas.",
+  "tchMissingRegister": "Registrar",
+  "tchMissingDismiss": "No hubo clase",
+  "tchMissingDismissed": "Listo, esa clase ya no se mostrará.",
+  "tchAlertsTitle": "Alumnos que necesitan atención",
+  "tchAlertsNone": "Ningún alumno en riesgo por ahora.",
+  "tchAlertsChecking": "Revisando tus secciones…",
+  "tchAlertAttCritical": "Asistencia {pct}% · crítica",
+  "@tchAlertAttCritical": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertAttWarning": "Asistencia {pct}% · cerca del límite",
+  "@tchAlertAttWarning": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertFailing": "Promedio {grade} · desaprobando",
+  "@tchAlertFailing": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
+  "tchAlertsHint": "Asistencia crítica: 70 % o menos (30 % o más de faltas). Cerca del límite: hasta 80 %, para actuar antes. Notas: nota final a la fecha por debajo del aprobatorio, según SIGMA.",
+  "tchPasteAction": "Pegar desde Excel",
+  "tchPasteNothing": "Copia primero las notas en Excel: una columna en el orden de la lista, o dos columnas con código y nota.",
+  "tchPasteTitle": "¿Pegar estas notas?",
+  "tchPasteByCode": "{count, plural, =1{1 nota emparejada por código de alumno} other{{count} notas emparejadas por código de alumno}}",
+  "@tchPasteByCode": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchPasteByOrder": "{count, plural, =1{1 nota en el orden de la lista} other{{count} notas en el orden de la lista}}",
+  "@tchPasteByOrder": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchPasteSkipped": "{count, plural, =1{1 fila se ignora (código desconocido o nota inválida)} other{{count} filas se ignoran (código desconocido o nota inválida)}}",
+  "@tchPasteSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchPasteReplaces": "{count, plural, =1{Reemplaza 1 nota ya escrita} other{Reemplaza {count} notas ya escritas}}",
+  "@tchPasteReplaces": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchPasteMismatch": "Copiaste {rows} filas pero la lista tiene {students} alumnos. Copia también la columna de códigos para emparejarlas.",
+  "@tchPasteMismatch": {
+    "placeholders": {
+      "rows": {
+        "type": "int"
+      },
+      "students": {
+        "type": "int"
+      }
+    }
+  },
+  "tchPasteApply": "Pegar",
+  "tchPasteDone": "Notas pegadas. Revísalas y guarda.",
+  "tchViewGrid": "Tabla de notas",
+  "tchViewCards": "Por evaluación",
+  "tchGridStudent": "Alumno",
+  "tchGridFinal": "Final",
+  "tchGridUnitAvg": "Prom.",
+  "tchGridEmpty": "Aún no hay notas registradas en esta sección.",
+  "tchGridHint": "Toca el encabezado de una evaluación para registrarla.",
+  "tchPendingTitle": "Pendientes",
+  "tchPendingNone": "Todo al día: no hay clases sin asistencia ni alumnos en riesgo.",
+  "tchMissingCount": "{count, plural, =1{1 clase sin asistencia} other{{count} clases sin asistencia}}",
+  "@tchMissingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertsRow": "{count, plural, =1{1 alumno necesita atención} other{{count} alumnos necesitan atención}}",
+  "@tchAlertsRow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertsSubtitle": "Asistencia baja o desaprobando, en todas tus secciones.",
+  "tchAlertsCriticalCount": "{count} asistencia crítica",
+  "@tchAlertsCriticalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertsNearCount": "{count} cerca del límite",
+  "@tchAlertsNearCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchAlertsFailingCount": "{count} desaprobando",
+  "@tchAlertsFailingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchCourseAtRisk": "{count} en riesgo",
+  "@tchCourseAtRisk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchClassesToday": "{count, plural, =0{sin clases hoy} =1{1 clase hoy} other{{count} clases hoy}}",
+  "@tchClassesToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "termsItemLawTitle": "Marco legal",
+  "termsItemLawBody": "Estos documentos se rigen por las leyes del Perú, en especial la Ley N.º 29733 de Protección de Datos Personales y su Reglamento (D. S. N.º 016-2024-JUS), la Ley N.º 30096 de Delitos Informáticos y el Código de Protección y Defensa del Consumidor (Ley N.º 29571).",
+  "legalDocsTitle": "Documentos completos",
+  "legalTermsTitle": "Términos y Condiciones",
+  "legalTermsSubtitle": "Uso, responsabilidades y ley aplicable",
+  "legalPrivacyTitle": "Política de Privacidad",
+  "legalPrivacySubtitle": "Qué datos se tratan, dónde y tus derechos",
+  "legalCookiesTitle": "Política de Cookies",
+  "legalCookiesSubtitle": "Qué se guarda en tu dispositivo y cómo borrarlo",
+  "legalLoadError": "No se pudo abrir el documento.",
+  "tchSectionLabel": "Sección {section}",
+  "@tchSectionLabel": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "tchElective": "Electivo",
+  "tchCopyNrc": "Copiar NRC",
+  "accountSwitchTitle": "Cambiar de cuenta",
+  "accountSwitchHint": "Entra a otra cuenta sin escribir la contraseña",
+  "accountAddAnother": "Agregar otra cuenta",
+  "accountCurrent": "Actual",
+  "accountRoleTeacher": "Docente",
+  "accountRoleStudent": "Estudiante",
+  "accountRemove": "Quitar de este dispositivo",
+  "accountRemoved": "Cuenta quitada de este dispositivo",
+  "accountNeedsPassword": "Requiere contraseña",
+  "accountSwitching": "Entrando como {name}",
+  "@accountSwitching": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountSavedTitle": "Continuar como",
+  "accountOtherAccount": "Usar otra cuenta",
+  "accountSwitchFailed": "No se pudo entrar como {user}. {reason}",
+  "@accountSwitchFailed": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "accountEnterPassword": "Ingresa la contraseña de {user} para continuar.",
+  "@accountEnterPassword": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque."
 }

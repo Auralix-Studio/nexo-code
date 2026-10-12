@@ -788,38 +788,39 @@
   "docenteSearchStudent": "Yachaqaqta maskay…",
   "docenteSearchNoResults": "Mana tariytaqa",
   "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.",
-  "docenteTabResumen": "Resumen",
-  "docenteStatAverage": "Promedio del curso",
-  "docenteStatApproved": "Aprobados",
-  "docenteStatFailed": "Desaprobados",
-  "docenteStatNoGrade": "Sin nota",
-  "docenteStatAttendanceAvg": "Asistencia promedio",
-  "docenteGradeDistribution": "Distribución de notas",
-  "docenteAtRiskTitle": "Alumnos en riesgo",
-  "docenteAtRiskSubtitle": "Desaprobados o con asistencia menor a {percent}%",
-  "docenteAtRiskNone": "Ningún alumno en riesgo por ahora",
-  "docenteRiskLowGrade": "Nota baja",
-  "docenteRiskLowAttendance": "Poca asistencia",
-  "docenteExportPdf": "Exportar lista en PDF",
-  "docenteExportError": "No se pudo generar el PDF",
-  "docenteSortLabel": "Ordenar",
-  "docenteSortName": "Nombre (A-Z)",
-  "docenteSortGradeDesc": "Mayor nota",
-  "docenteSortGradeAsc": "Menor nota",
-  "docenteSortAttendance": "Menor asistencia",
-  "docenteOnlyAtRisk": "Solo en riesgo",
-  "docenteAttendanceDaySummary": "{presentes} presentes · {faltas} faltas · {justificadas} justif.",
-  "docenteNoClassThatDay": "No hay asistencia registrada para esta fecha",
-  "docenteNoGradesRegistered": "No hay notas registradas",
-  "docenteAttendanceLoadError": "No se pudo cargar la asistencia",
-  "docenteEvalReadOnly": "Este componente agrupa varias notas. Edítalo desde SIGMA para no sobrescribirlas.",
-  "docenteEvalMissingIds": "Faltan datos para editar esta nota. Actualiza la lista de alumnos.",
-  "docenteConfirmGradeTitle": "¿Guardar en SIGMA?",
-  "docenteConfirmGradeBody": "{evaluacion} de {alumno}: {anterior} → {nueva}. El cambio se registra directamente en SIGMA.",
-  "docenteGradeSaved": "Nota guardada en SIGMA",
-  "docenteSessionsAttendedCount": "{presentes} de {total}\nsesiones asistidas",
-  "docenteTodayOngoing": "EN CURSO",
-  "docenteTodayNext": "SIGUIENTE",
-  "docenteTodayDone": "TERMINÓ",
-  "docenteGradeDistributionHint": "Según la nota final actual de cada alumno"
+  "tabMarcacion": "Marcación",
+  "titleMarcacion": "Ñuqap marcaciónniy",
+  "marcacionSubtitlePlural": "{count,plural, =0{Mana marcakuna (30 p'unchaw)} =1{1 marca · q(ipa 30 p'unchaw} other{{count} marcakuna · q(ipa 30 p'unchaw}}",
+  "@marcacionSubtitlePlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marcacionEmpty": "Q(ipa 30 p'unchawpi mana marcakuna.",
+  "marcacionVirtual": "Virtual",
+  "marcacionCountDay": "{count,plural, =1{1 marca} other{{count} marcakuna}}",
+  "@marcacionCountDay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountSwitchTitle": "Cambiar de cuenta",
+  "accountSwitchHint": "Entra a otra cuenta sin escribir la contraseña",
+  "accountAddAnother": "Agregar otra cuenta",
+  "accountCurrent": "Actual",
+  "accountRoleTeacher": "Docente",
+  "accountRoleStudent": "Estudiante",
+  "accountRemove": "Quitar de este dispositivo",
+  "accountRemoved": "Cuenta quitada de este dispositivo",
+  "accountNeedsPassword": "Requiere contraseña",
+  "accountSwitching": "Entrando como {name}",
+  "accountSavedTitle": "Continuar como",
+  "accountOtherAccount": "Usar otra cuenta",
+  "accountSwitchFailed": "No se pudo entrar como {user}. {reason}",
+  "accountEnterPassword": "Ingresa la contraseña de {user} para continuar.",
+  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque."
 }

@@ -37,7 +37,12 @@ class NextClassWidget extends StatelessWidget {
     return (h == null || m == null) ? null : h * 60 + m;
   }
 
-  String _relative(BuildContext context, {required ScheduleClass nextClass, required bool isToday, required int daysUntil}) {
+  String _relative(
+    BuildContext context, {
+    required ScheduleClass nextClass,
+    required bool isToday,
+    required int daysUntil,
+  }) {
     final l10n = AppLocalizations.of(context);
     if (!isToday) {
       return daysUntil == 1
@@ -52,7 +57,9 @@ class NextClassWidget extends StatelessWidget {
     if (diff < 60) return l10n.homeNextClassInMin(diff);
     final h = diff ~/ 60;
     final m = diff % 60;
-    return m == 0 ? l10n.homeNextClassInHours(h) : l10n.homeNextClassInHoursMin(h, m);
+    return m == 0
+        ? l10n.homeNextClassInHours(h)
+        : l10n.homeNextClassInHoursMin(h, m);
   }
 
   @override
@@ -127,7 +134,12 @@ class NextClassWidget extends StatelessWidget {
                       borderRadius: AppRadii.rPill,
                     ),
                     child: Text(
-                      _relative(context, nextClass: n.nextClass, isToday: n.isToday, daysUntil: n.daysUntil),
+                      _relative(
+                        context,
+                        nextClass: n.nextClass,
+                        isToday: n.isToday,
+                        daysUntil: n.daysUntil,
+                      ),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: AppFont.small,

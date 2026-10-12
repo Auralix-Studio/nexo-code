@@ -60,9 +60,7 @@ class _BackgroundLayerState extends State<_BackgroundLayer> {
       return const IgnorePointer(
         child: Opacity(
           opacity: 0.1, // 10% de opacidad para que sea marca de agua
-          child: Center(
-            child: MarcaPeruEffect(),
-          ),
+          child: Center(child: MarcaPeruEffect()),
         ),
       );
     }
@@ -344,14 +342,16 @@ class _ParticlesState extends State<_Particles>
   void _build() {
     final decor = widget.activeFestivity.decor;
     final r = math.Random(decor.index + 7);
-    final palette = widget.activeFestivity.festivity.decorColors ?? _palette(decor);
+    final palette =
+        widget.activeFestivity.festivity.decorColors ?? _palette(decor);
     _particles = List.generate(34, (_) => _Particle(r, palette));
   }
 
   @override
   void didUpdateWidget(covariant _Particles old) {
     super.didUpdateWidget(old);
-    if (old.activeFestivity.festivity.id != widget.activeFestivity.festivity.id) _build();
+    if (old.activeFestivity.festivity.id != widget.activeFestivity.festivity.id)
+      _build();
   }
 
   @override

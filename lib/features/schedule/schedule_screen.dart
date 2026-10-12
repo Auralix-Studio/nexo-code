@@ -17,8 +17,12 @@ import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key, required this.store});
+  const ScheduleScreen({super.key, required this.store, this.teacher = false});
   final AppStore store;
+
+  /// Muestra el horario del docente (`teacherSchedule`, derivado de sus
+  /// asignaturas) en vez del horario del estudiante.
+  final bool teacher;
   @override
   State<ScheduleScreen> createState() => _HorarioScreenState();
 }
@@ -28,24 +32,34 @@ class _HorarioScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.store.schedule.hasValue) {
-      widget.store.loadHorarioActual();
-    }
+    if (!_state.hasValue) _reload();
   }
+
+  AsyncValue<List<ScheduleClass>> get _state =>
+      widget.teacher ? widget.store.teacherSchedule : widget.store.schedule;
+
+  Future<void> _reload() => widget.teacher
+      ? widget.store.loadDocenteHorario()
+      : widget.store.loadHorarioActual();
+
+  String get _operation =>
+      widget.teacher ? 'loadDocenteHorario' : 'loadHorarioActual';
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final state = widget.store.schedule;
-        final finished = widget.store.finishedSubjectsThisTerm;
+        final state = _state;
+        final finished = widget.teacher
+            ? const <String>{}
+            : widget.store.finishedSubjectsThisTerm;
         final agrupadas = ScheduleClassGroup.groupBy(
           state.value ?? const [],
           finishedSubjects: finished,
         ).length;
         final list = RefreshIndicator(
-          onRefresh: () => widget.store.loadHorarioActual(),
+          onRefresh: _reload,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
@@ -56,9 +70,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
                   child: DataStatus(
                     store: widget.store,
                     operations: {
-                      'loadHorarioActual': AppLocalizations.of(
-                        context,
-                      ).titleSchedule,
+                      _operation: AppLocalizations.of(context).titleSchedule,
                     },
                   ),
                 ),
@@ -129,7 +141,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
           title: l.scheduleLoadError,
           subtitle: humanizeError(state.error),
           color: NexoTheme.danger,
-          onRetry: () => widget.store.loadHorarioActual(),
+          onRetry: _reload,
         ),
       );
     }

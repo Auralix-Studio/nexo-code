@@ -563,14 +563,18 @@ class ScheduleClassGroup {
       : '';
   bool get hasPractice => sessions.any((s) => s.typeCode.toUpperCase() != 'T');
   bool get hasTheory => sessions.any((s) => s.typeCode.toUpperCase() == 'T');
-  static List<ScheduleClassGroup> groupBy(List<ScheduleClass> classes, {Set<String> finishedSubjects = const {}}) {
+  static List<ScheduleClassGroup> groupBy(
+    List<ScheduleClass> classes, {
+    Set<String> finishedSubjects = const {},
+  }) {
     final map = <String, List<ScheduleClass>>{};
     for (final c in classes) {
       map.putIfAbsent('${c.weekday}|${c.subject}', () => []).add(c);
     }
 
     final initialGroups = map.entries.map((e) {
-      final list = [...e.value]..sort((a, b) => a.startTime.compareTo(b.startTime));
+      final list = [...e.value]
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
       return ScheduleClassGroup(
         subject: list.first.subject,
         weekday: list.first.weekday,
@@ -580,9 +584,9 @@ class ScheduleClassGroup {
 
     final mergedGroups = <ScheduleClassGroup>[];
     final usedIndices = <int>{};
-    
+
     String normalize(String raw) {
-      const acentos = {'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U'};
+      const acentos = {'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U'};
       var s = raw.toUpperCase();
       acentos.forEach((con, sin) => s = s.replaceAll(con, sin));
       return s.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -591,48 +595,51 @@ class ScheduleClassGroup {
     for (int i = 0; i < initialGroups.length; i++) {
       if (usedIndices.contains(i)) continue;
       final g1 = initialGroups[i];
-      
+
       if (g1.subject.toUpperCase().contains('TALLER')) {
         int? matchIdx;
         for (int j = i + 1; j < initialGroups.length; j++) {
           if (usedIndices.contains(j)) continue;
           final g2 = initialGroups[j];
-          if (g1.weekday == g2.weekday && g2.subject.toUpperCase().contains('TALLER')) {
+          if (g1.weekday == g2.weekday &&
+              g2.subject.toUpperCase().contains('TALLER')) {
             if (g1.startTime == g2.startTime && g1.endTime == g2.endTime) {
               matchIdx = j;
               break;
             }
           }
         }
-        
+
         if (matchIdx != null) {
           final g2 = initialGroups[matchIdx];
           usedIndices.add(matchIdx);
-          
+
           final isG1Finished = finishedSubjects.contains(normalize(g1.subject));
           final isG2Finished = finishedSubjects.contains(normalize(g2.subject));
-          
+
           String activeName = g1.subject;
           if (isG1Finished && !isG2Finished) {
             activeName = g2.subject;
           } else if (isG2Finished && !isG1Finished) {
             activeName = g1.subject;
           }
-          
-          mergedGroups.add(ScheduleClassGroup(
-            subject: activeName,
-            weekday: g1.weekday,
-            // Solo necesitamos las sesiones de uno de ellos
-            sessions: g1.sessions,
-            isSequentialWorkshop: true,
-            activeWorkshopName: activeName,
-          ));
+
+          mergedGroups.add(
+            ScheduleClassGroup(
+              subject: activeName,
+              weekday: g1.weekday,
+              // Solo necesitamos las sesiones de uno de ellos
+              sessions: g1.sessions,
+              isSequentialWorkshop: true,
+              activeWorkshopName: activeName,
+            ),
+          );
           continue;
         }
       }
       mergedGroups.add(g1);
     }
-    
+
     mergedGroups.sort((a, b) => a.startTime.compareTo(b.startTime));
     return mergedGroups;
   }

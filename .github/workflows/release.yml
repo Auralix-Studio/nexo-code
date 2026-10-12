@@ -1,9 +1,22 @@
-name: Multi-Platform Release
+name: Release multiplataforma
 
 on:
+  # Tag empujado a mano (git push origin vX.Y.Z)...
   push:
     tags:
       - 'v*'
+  # ...o llamado por auto-version.yml tras crear el tag automáticamente.
+  # (Un tag creado con GITHUB_TOKEN no dispara el evento `push`, por eso
+  # se invoca así y nunca se construye dos veces.)
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag a construir (vX.Y.Z)
+        type: string
+        required: true
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -27,6 +40,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -43,25 +58,49 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Firma de release: sin estos secretos el APK sale firmado con la clave
+      # de depuración y NO se puede instalar encima de una versión firmada.
+      # Secretos: ANDROID_KEYSTORE_BASE64 (base64 del .jks), ANDROID_KEYSTORE_PASSWORD,
+      # ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
+      - name: Configurar firma Android
+        if: matrix.target == 'android'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::Sin ANDROID_KEYSTORE_BASE64: el APK se firmará con la clave de depuración."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 --decode > android/nexo-release.jks
+          {
+            echo "storeFile=nexo-release.jks"
+            echo "storePassword=$STORE_PASS"
+            echo "keyAlias=${KEY_ALIAS:-nexo}"
+            echo "keyPassword=$KEY_PASS"
+          } > android/key.properties
+
       - name: Build Android
         if: matrix.target == 'android'
         run: |
           flutter build apk --release
           flutter build apk --split-per-abi --release
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/nexo-${{ github.ref_name }}-universal.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/nexo-${{ github.ref_name }}-armv7.apk
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/nexo-${{ github.ref_name }}-arm64.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/nexo-${{ github.ref_name }}-x86_64.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/nexo-${{ env.TAG }}-universal.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/nexo-${{ env.TAG }}-armv7.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/nexo-${{ env.TAG }}-arm64.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/nexo-${{ env.TAG }}-x86_64.apk
 
       - name: Build Windows
         if: matrix.target == 'windows'
         run: |
           flutter build windows --release
           mkdir -p dist
-          ./installer/build_installer.ps1 -ReleaseDir "build/windows/x64/runner/Release" -OutFile "dist/nexo-${{ github.ref_name }}-setup-x64.exe" -ZipOutFile "dist/nexo-${{ github.ref_name }}-windows-x64.zip"
-          ./scripts/verify_windows_bundle.ps1 -Installer "dist/nexo-${{ github.ref_name }}-setup-x64.exe" -Zip "dist/nexo-${{ github.ref_name }}-windows-x64.zip"
-          ./scripts/scan_windows_release.ps1 -Path @("dist/nexo-${{ github.ref_name }}-setup-x64.exe", "dist/nexo-${{ github.ref_name }}-windows-x64.zip")
+          ./installer/build_installer.ps1 -ReleaseDir "build/windows/x64/runner/Release" -OutFile "dist/nexo-${{ env.TAG }}-setup-x64.exe" -ZipOutFile "dist/nexo-${{ env.TAG }}-windows-x64.zip"
+          ./scripts/verify_windows_bundle.ps1 -Installer "dist/nexo-${{ env.TAG }}-setup-x64.exe" -Zip "dist/nexo-${{ env.TAG }}-windows-x64.zip"
+          ./scripts/scan_windows_release.ps1 -Path @("dist/nexo-${{ env.TAG }}-setup-x64.exe", "dist/nexo-${{ env.TAG }}-windows-x64.zip")
           Get-ChildItem dist -File | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
           } | Set-Content -Encoding ascii dist/SHA256SUMS-windows.txt
@@ -72,7 +111,7 @@ jobs:
           flutter build linux --release
           mkdir -p dist
           cd build/linux/x64/release/bundle
-          tar -czvf ../../../../../dist/nexo-${{ github.ref_name }}-linux-x64.tar.gz *
+          tar -czvf ../../../../../dist/nexo-${{ env.TAG }}-linux-x64.tar.gz *
           cd ../../../../../
 
       - name: Build macOS
@@ -81,7 +120,7 @@ jobs:
           flutter build macos --release
           mkdir -p dist
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../dist/nexo-${{ github.ref_name }}-macos.zip nexo.app
+          zip -r ../../../../../dist/nexo-${{ env.TAG }}-macos.zip nexo.app
           cd ../../../../../
 
       - name: Build iOS (Unsigned)
@@ -92,12 +131,112 @@ jobs:
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r ../../../dist/nexo-${{ github.ref_name }}-ios-unsigned.ipa Payload
+          zip -r ../../../dist/nexo-${{ env.TAG }}-ios-unsigned.ipa Payload
           cd ../../../
 
-      - name: Upload Release Assets
+      # Cada plataforma deja sus archivos como artefacto; el release se
+      # publica una sola vez al final con todo junto (así el actualizador de
+      # la app nunca ve un release a medio subir).
+      - name: Guardar artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publicar release en Auralix-Studio/nexo
+    needs: build
+    # Publica aunque falle una plataforma secundaria (iOS, macOS, Linux):
+    # lo imprescindible (Android y Windows) se verifica abajo.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - id: v
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Reunir artefactos
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verificar lo imprescindible
+        run: |
+          for f in "nexo-${TAG}-universal.apk" "nexo-${TAG}-setup-x64.exe" "nexo-${TAG}-windows-x64.zip"; do
+            if [ ! -s "dist/$f" ]; then
+              echo "::error::Falta dist/$f: no se publica un release sin Android y Windows."
+              exit 1
+            fi
+          done
+          ls -la dist
+
+      # Igual que build_release.ps1 + generate_release_notes.ps1.
+      - name: Hashes, notas y metadatos
+        run: |
+          python3 scripts/release_assets.py sums dist
+          python3 scripts/release_assets.py notes dist "${TAG}"
+          cat dist/RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Crear release
         uses: softprops/action-gh-release@v2
         with:
           repository: Auralix-Studio/nexo
-          files: dist/*
+          tag_name: ${{ env.TAG }}
+          name: Nexo ${{ steps.v.outputs.version }}
+          body_path: dist/RELEASE_NOTES.md
+          make_latest: true
+          files: |
+            dist/*.apk
+            dist/*.exe
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.ipa
+            dist/SHA256SUMS*.txt
+          fail_on_unmatched_files: false
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
+
+      - name: Guardar release-meta.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-meta
+          path: dist/release-meta.json
+
+  site:
+    name: Actualizar sitio (changelog)
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          path: code
+
+      # Igual que update_site.ps1 -Push: agrega la versión a CHANGELOG.md y
+      # changelog.html del repo público; su workflow de Pages lo despliega.
+      - uses: actions/checkout@v4
+        with:
+          repository: Auralix-Studio/nexo
+          token: ${{ secrets.ORG_GITHUB_TOKEN }}
+          path: site
+
+      - name: Agregar la versión al sitio
+        run: |
+          python3 code/scripts/release_assets.py site site "${TAG}" --date "$(TZ=America/Lima date +%F)"
+          cd site
+          if git diff --quiet; then
+            echo "El sitio ya estaba al día."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: actualizar sitio para ${TAG}"
+          git push

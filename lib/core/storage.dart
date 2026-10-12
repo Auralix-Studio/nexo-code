@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:nexo/core/secret_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nexo/core/config.dart';
+import 'package:nexo/domain/saved_account.dart';
 
 class AppStorage {
   AppStorage._(this._prefs, this._secrets);
@@ -11,6 +12,13 @@ class AppStorage {
   final Map<String, String> _auth = {};
   Future<void> _writes = Future.value();
   static const _authKey = 'nexo.auth.v1';
+
+  /// Cuentas recordadas para el cambio rápido. Clave aparte de [_authKey]
+  /// para que cerrar/limpiar la sesión activa no las borre.
+  static const _accountsKey = 'nexo.accounts.v1';
+  static const maxSavedAccounts = 5;
+  final List<SavedAccount> _accounts = [];
+  Future<void> _accountWrites = Future.value();
 
   static Future<AppStorage> init({SecretStore? secrets}) async {
     if (_instance != null && secrets == null) return _instance!;
@@ -23,7 +31,113 @@ class AppStorage {
     return storage;
   }
 
+  Future<void> _loadAccounts() async {
+    try {
+      final raw = await _secrets.read(_accountsKey);
+      if (raw == null) return;
+      final list = jsonDecode(raw);
+      if (list is! List) return;
+      for (final e in list) {
+        final a = SavedAccount.fromJson(e);
+        if (a != null && _accounts.every((x) => x.user != a.user)) {
+          _accounts.add(a);
+        }
+      }
+    } catch (_) {
+      // Un registro ilegible no debe impedir arrancar: se empieza sin cuentas.
+      _accounts.clear();
+    }
+  }
+
+  Future<void> _persistAccounts() {
+    final snapshot = _accounts.isEmpty
+        ? null
+        : jsonEncode([for (final a in _accounts) a.toJson()]);
+    final write = _accountWrites.then(
+      (_) => _secrets.write(_accountsKey, snapshot),
+    );
+    _accountWrites = write.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return write;
+  }
+
+  /// Cuentas recordadas, la usada más recientemente primero.
+  List<SavedAccount> get savedAccounts {
+    final list = [..._accounts]
+      ..sort((a, b) => b.lastUsedMs.compareTo(a.lastUsedMs));
+    return List.unmodifiable(list);
+  }
+
+  SavedAccount? savedAccount(String user) {
+    final u = user.trim().toUpperCase();
+    for (final a in _accounts) {
+      if (a.user == u) return a;
+    }
+    return null;
+  }
+
+  /// Agrega o actualiza una cuenta recordada y la marca como la más reciente.
+  /// Si se supera [maxSavedAccounts] se olvida la menos usada.
+  Future<void> rememberAccount({
+    required String user,
+    required String password,
+    String? displayName,
+    bool? isTeacher,
+  }) {
+    final u = user.trim().toUpperCase();
+    if (u.isEmpty || password.isEmpty) return Future.value();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final i = _accounts.indexWhere((a) => a.user == u);
+    if (i >= 0) {
+      final old = _accounts[i];
+      _accounts[i] = old.copyWith(
+        password: password,
+        displayName: (displayName ?? '').trim().isEmpty
+            ? old.displayName
+            : displayName!.trim(),
+        isTeacher: isTeacher ?? old.isTeacher,
+        lastUsedMs: now,
+      );
+    } else {
+      _accounts.add(
+        SavedAccount(
+          user: u,
+          password: password,
+          displayName: (displayName ?? '').trim(),
+          isTeacher: isTeacher ?? false,
+          lastUsedMs: now,
+        ),
+      );
+      while (_accounts.length > maxSavedAccounts) {
+        _accounts.sort((a, b) => a.lastUsedMs.compareTo(b.lastUsedMs));
+        _accounts.removeAt(0);
+      }
+    }
+    return _persistAccounts();
+  }
+
+  /// La contraseña guardada dejó de servir: la cuenta queda en la lista pero
+  /// pedirá contraseña la próxima vez.
+  Future<void> forgetAccountPassword(String user) {
+    final u = user.trim().toUpperCase();
+    final i = _accounts.indexWhere((a) => a.user == u);
+    if (i < 0) return Future.value();
+    _accounts[i] = _accounts[i].copyWith(clearPassword: true);
+    return _persistAccounts();
+  }
+
+  Future<void> removeSavedAccount(String user) {
+    final u = user.trim().toUpperCase();
+    final before = _accounts.length;
+    _accounts.removeWhere((a) => a.user == u);
+    if (_accounts.length == before) return Future.value();
+    return _persistAccounts();
+  }
+
   Future<void> _loadSecrets() async {
+    await _loadAccounts();
     const legacyKeys = [
       _kToken,
       _kUser,
@@ -180,8 +294,13 @@ class AppStorage {
   String? get credPass => _auth[_kCredPass];
   bool get hasCredentials =>
       (credUser?.isNotEmpty ?? false) && (credPass?.isNotEmpty ?? false);
-  Future<void> setCredentials(String user, String pass) =>
-      _updateAuth({_kCredUser: user, _kCredPass: pass});
+  Future<void> setCredentials(String user, String pass) async {
+    await _updateAuth({_kCredUser: user, _kCredPass: pass});
+    // Tras cambiar la contraseña, la cuenta recordada usa la nueva.
+    if (savedAccount(user) != null) {
+      await rememberAccount(user: user, password: pass);
+    }
+  }
   Future<void> clearCredentials() =>
       _updateAuth({_kCredUser: null, _kCredPass: null});
 
@@ -208,6 +327,8 @@ class AppStorage {
       return null;
     }
   }
+
+  Future<void> removeCache(String key) => _prefs.remove('$_kCachePrefix$key');
 
   Future<void> clearCache() async {
     final keys = _prefs

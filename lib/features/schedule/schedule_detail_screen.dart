@@ -12,9 +12,15 @@ import 'package:nexo/shared/widgets/empty_state.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 
 class ScheduleDetailScreen extends StatelessWidget {
-  static void open(BuildContext context, ScheduleClassGroup grupo, {AppStore? store}) {
+  static void open(
+    BuildContext context,
+    ScheduleClassGroup grupo, {
+    AppStore? store,
+  }) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ScheduleDetailScreen(grupo: grupo, store: store)),
+      MaterialPageRoute(
+        builder: (_) => ScheduleDetailScreen(grupo: grupo, store: store),
+      ),
     );
   }
 
@@ -28,7 +34,9 @@ class ScheduleDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: NexoTheme.bg,
       appBar: AppBar(title: Text(l.scheduleDetailTitle)),
-      body: SafeArea(child: ScheduleDetailBody(grupo: grupo, store: store)),
+      body: SafeArea(
+        child: ScheduleDetailBody(grupo: grupo, store: store),
+      ),
     );
   }
 }
@@ -116,9 +124,7 @@ class _Hero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              _DayBadge(idDia: grupo.weekday, isToday: isToday),
-            ],
+            children: [_DayBadge(idDia: grupo.weekday, isToday: isToday)],
           ),
           const Gap(AppSpacing.lg),
           Text(
@@ -132,50 +138,61 @@ class _Hero extends StatelessWidget {
             ),
           ),
           const Gap(AppSpacing.xs),
-          Builder(builder: (_) {
-            var s = first.section.trim();
-            if (s.toLowerCase().startsWith('sec')) {
-              s = s.replaceFirst(RegExp(r'sec\.?\s*', caseSensitive: false), '');
-            }
-            final isIdiomasVirtual = first.id.startsWith('ING') && 
-                                     first.modality.toUpperCase() == 'VIRTUAL';
-            final parts = <String>[];
-            if (first.nrc.isNotEmpty) {
-              parts.add('${l.detailNrc} ${first.nrc}');
-            }
-            if (s.isNotEmpty && !isIdiomasVirtual) {
-              parts.add('Sección $s');
-            }
-            if (first.level.isNotEmpty) {
-              parts.add('Nivel ${first.level}');
-            }
-            if (store != null) {
-              final p = store!.periodoActivo;
-              if (p != null) {
-                final b = store!.boletaOf(p.year, p.number).value;
-                if (b != null) {
-                  final target = grupo.activeWorkshopName ?? grupo.subject;
-                  final match = b.where((c) => normalizeSubject(c.name) == normalizeSubject(target)).toList();
-                  if (match.isNotEmpty && match.first.credit > 0) {
-                    parts.add('${match.first.credit.toInt()} Créditos');
+          Builder(
+            builder: (_) {
+              var s = first.section.trim();
+              if (s.toLowerCase().startsWith('sec')) {
+                s = s.replaceFirst(
+                  RegExp(r'sec\.?\s*', caseSensitive: false),
+                  '',
+                );
+              }
+              final isIdiomasVirtual =
+                  first.id.startsWith('ING') &&
+                  first.modality.toUpperCase() == 'VIRTUAL';
+              final parts = <String>[];
+              if (first.nrc.isNotEmpty) {
+                parts.add('${l.detailNrc} ${first.nrc}');
+              }
+              if (s.isNotEmpty && !isIdiomasVirtual) {
+                parts.add('Sección $s');
+              }
+              if (first.level.isNotEmpty) {
+                parts.add('Nivel ${first.level}');
+              }
+              if (store != null) {
+                final p = store!.periodoActivo;
+                if (p != null) {
+                  final b = store!.boletaOf(p.year, p.number).value;
+                  if (b != null) {
+                    final target = grupo.activeWorkshopName ?? grupo.subject;
+                    final match = b
+                        .where(
+                          (c) =>
+                              normalizeSubject(c.name) ==
+                              normalizeSubject(target),
+                        )
+                        .toList();
+                    if (match.isNotEmpty && match.first.credit > 0) {
+                      parts.add('${match.first.credit.toInt()} Créditos');
+                    }
                   }
                 }
               }
-            }
-            if (first.modality.isNotEmpty) {
-              parts.add(first.modality);
-            }
-            if (parts.isEmpty) return const SizedBox.shrink();
-            return Text(
-              parts.join(' · '),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: AppFont.body,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          }),
-
+              if (first.modality.isNotEmpty) {
+                parts.add(first.modality);
+              }
+              if (parts.isEmpty) return const SizedBox.shrink();
+              return Text(
+                parts.join(' · '),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: AppFont.body,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -280,7 +297,7 @@ class _LocationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasMixed = grupo.hasMixedRooms;
-    
+
     // Obtener las sesiones únicas por tipo
     final Map<String, ScheduleClass> uniqueSessions = {};
     for (final s in grupo.sessions) {
@@ -297,7 +314,8 @@ class _LocationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!hasMixed && grupo.room.isNotEmpty) ...[
-            if (first.building.isNotEmpty) _kv(label.detailPavilion, Fmt.cleanBuilding(first.building)),
+            if (first.building.isNotEmpty)
+              _kv(label.detailPavilion, Fmt.cleanBuilding(first.building)),
             _kv('Aula', Fmt.cleanRoom(grupo.room)),
           ],
           if (hasMixed)
@@ -308,19 +326,27 @@ class _LocationCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: AppFont.small,
                   fontWeight: FontWeight.w800,
-                  color: entry.key.toUpperCase() == 'T' ? Colors.blue.shade400 : Colors.green.shade400,
+                  color: entry.key.toUpperCase() == 'T'
+                      ? Colors.blue.shade400
+                      : Colors.green.shade400,
                   letterSpacing: 0.5,
                 ),
               ),
               const Gap(4),
               if (entry.value.building.isNotEmpty)
-                _kv(label.detailPavilion, Fmt.cleanBuilding(entry.value.building)),
-              _kv(entry.key.toUpperCase() == 'T' ? 'Aula' : 'Laboratorio', Fmt.cleanRoom(entry.value.room)),
+                _kv(
+                  label.detailPavilion,
+                  Fmt.cleanBuilding(entry.value.building),
+                ),
+              _kv(
+                entry.key.toUpperCase() == 'T' ? 'Aula' : 'Laboratorio',
+                Fmt.cleanRoom(entry.value.room),
+              ),
             ],
           if (first.campus.isNotEmpty) ...[
             const Gap(2),
             _kv(label.detailCampus, first.campus),
-          ]
+          ],
         ],
       ),
     );

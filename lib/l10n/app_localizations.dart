@@ -1057,7 +1057,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsAcceptNote.
   ///
   /// In es, this message translates to:
-  /// **'Al continuar aceptas estos términos.'**
+  /// **'Al continuar aceptas los Términos y Condiciones y la Política de Privacidad, y declaras conocer la Política de Cookies.'**
   String get termsAcceptNote;
 
   /// No description provided for @termsAcceptButton.
@@ -1099,7 +1099,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemPrivacyBody.
   ///
   /// In es, this message translates to:
-  /// **'Tus credenciales y tus datos académicos se guardan únicamente en tu dispositivo. Nexo no envía tu información a servidores propios ni a terceros: las peticiones van directamente a los servicios de la UPLA, igual que el portal oficial.'**
+  /// **'Tus credenciales y tus datos académicos se guardan en tu dispositivo. Nexo no tiene servidores propios: las consultas van directamente a los servicios de la UPLA, igual que el portal oficial. Solo se consulta GitHub para buscar actualizaciones, sin enviar datos académicos. No hay publicidad ni analítica.'**
   String get termsItemPrivacyBody;
 
   /// No description provided for @termsItemSecurityTitle.
@@ -1123,7 +1123,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemResponsibleBody.
   ///
   /// In es, this message translates to:
-  /// **'Accede solo a tu propia información y con tus propias credenciales. Es un proyecto educativo y de uso personal: úsalo conforme a los reglamentos de tu universidad.'**
+  /// **'Accede solo a tu propia información y con tus propias credenciales. Usar credenciales ajenas puede constituir delito (Ley N.º 30096). Si eres docente, los datos de tus estudiantes son confidenciales y solo pueden usarse con fines académicos (Ley N.º 29733).'**
   String get termsItemResponsibleBody;
 
   /// No description provided for @termsItemDisclaimerTitle.
@@ -1135,7 +1135,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemDisclaimerBody.
   ///
   /// In es, this message translates to:
-  /// **'El servicio se ofrece \"tal cual\", sin garantías. Para trámites oficiales consulta siempre el portal institucional.'**
+  /// **'Nexo se ofrece «tal cual», sin garantías. No nos hacemos responsables por el mal uso de la aplicación o de las credenciales, ni por decisiones tomadas con la información mostrada. Para trámites oficiales consulta siempre los sistemas de la UPLA.'**
   String get termsItemDisclaimerBody;
 
   /// No description provided for @aboutFeatureAllInOneTitle.
@@ -2797,7 +2797,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemRightsBody.
   ///
   /// In es, this message translates to:
-  /// **'Tus datos están en tu dispositivo, así que los controlas tú: puedes revisarlos, actualizarlos desde la Intranet o borrarlos cerrando sesión. Escríbenos desde la sección de soporte para cualquier duda sobre el tratamiento de tus datos.'**
+  /// **'Tus datos están en tu dispositivo, así que los controlas tú: puedes revisarlos, actualizarlos en los sistemas de la UPLA o borrarlos cerrando sesión. Para ejercer tus derechos de acceso, rectificación, cancelación y oposición, escríbenos desde Soporte; también puedes acudir a la Autoridad Nacional de Protección de Datos Personales.'**
   String get termsItemRightsBody;
 
   /// No description provided for @termsHeaderUpdatedPre.
@@ -2809,7 +2809,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsUpdatedNotice.
   ///
   /// In es, this message translates to:
-  /// **'Actualizamos estos términos para explicar mejor qué se queda en tu dispositivo y cómo te avisaremos de futuros cambios. Léelos de nuevo antes de continuar.'**
+  /// **'Actualizamos nuestros documentos: ahora hay Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con la ley peruana aplicable y los límites de responsabilidad. Léelos antes de continuar.'**
   String get termsUpdatedNotice;
 
   /// No description provided for @termsItemDeviceTitle.
@@ -2943,210 +2943,1131 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.'**
   String get docenteAttendanceComingSoon;
-  /// No description provided for @docenteTabResumen.
+
+  /// No description provided for @tabMarcacion.
   ///
   /// In es, this message translates to:
-  /// **'Resumen'**
-  String get docenteTabResumen;
+  /// **'Marcación'**
+  String get tabMarcacion;
 
-  /// No description provided for @docenteStatAverage.
+  /// No description provided for @titleMarcacion.
   ///
   /// In es, this message translates to:
-  /// **'Promedio del curso'**
-  String get docenteStatAverage;
+  /// **'Mi marcación'**
+  String get titleMarcacion;
 
-  /// No description provided for @docenteStatApproved.
+  /// No description provided for @marcacionSubtitlePlural.
   ///
   /// In es, this message translates to:
-  /// **'Aprobados'**
-  String get docenteStatApproved;
+  /// **'{count,plural, =0{Sin marcas (30 días)} =1{1 marca · últimos 30 días} other{{count} marcas · últimos 30 días}}'**
+  String marcacionSubtitlePlural(int count);
 
-  /// No description provided for @docenteStatFailed.
+  /// No description provided for @marcacionEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Desaprobados'**
-  String get docenteStatFailed;
+  /// **'Sin marcaciones en los últimos 30 días.'**
+  String get marcacionEmpty;
 
-  /// No description provided for @docenteStatNoGrade.
+  /// No description provided for @marcacionVirtual.
   ///
   /// In es, this message translates to:
-  /// **'Sin nota'**
-  String get docenteStatNoGrade;
+  /// **'Virtual'**
+  String get marcacionVirtual;
 
-  /// No description provided for @docenteStatAttendanceAvg.
+  /// No description provided for @marcacionCountDay.
   ///
   /// In es, this message translates to:
-  /// **'Asistencia promedio'**
-  String get docenteStatAttendanceAvg;
+  /// **'{count,plural, =1{1 marca} other{{count} marcas}}'**
+  String marcacionCountDay(int count);
 
-  /// No description provided for @docenteGradeDistribution.
+  /// No description provided for @docenteTabReporte.
   ///
   /// In es, this message translates to:
-  /// **'Distribución de notas'**
-  String get docenteGradeDistribution;
+  /// **'Reporte'**
+  String get docenteTabReporte;
 
-  /// No description provided for @docenteAtRiskTitle.
+  /// No description provided for @docenteReportLoadError.
   ///
   /// In es, this message translates to:
-  /// **'Alumnos en riesgo'**
-  String get docenteAtRiskTitle;
+  /// **'No se pudo cargar el reporte de asistencia.'**
+  String get docenteReportLoadError;
 
-  /// No description provided for @docenteAtRiskSubtitle.
+  /// No description provided for @docenteReportEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Desaprobados o con asistencia menor a {percent}%'**
-  String docenteAtRiskSubtitle(String percent);
+  /// **'Aún no hay asistencias registradas en esta sección.'**
+  String get docenteReportEmpty;
 
-  /// No description provided for @docenteAtRiskNone.
+  /// No description provided for @docenteReportAll.
   ///
   /// In es, this message translates to:
-  /// **'Ningún alumno en riesgo por ahora'**
-  String get docenteAtRiskNone;
+  /// **'Todos'**
+  String get docenteReportAll;
 
-  /// No description provided for @docenteRiskLowGrade.
+  /// No description provided for @docenteReportAtRisk.
   ///
   /// In es, this message translates to:
-  /// **'Nota baja'**
-  String get docenteRiskLowGrade;
+  /// **'En riesgo'**
+  String get docenteReportAtRisk;
 
-  /// No description provided for @docenteRiskLowAttendance.
+  /// No description provided for @docenteReportNoRisk.
   ///
   /// In es, this message translates to:
-  /// **'Poca asistencia'**
-  String get docenteRiskLowAttendance;
+  /// **'Ningún alumno en riesgo por faltas.'**
+  String get docenteReportNoRisk;
 
-  /// No description provided for @docenteExportPdf.
+  /// No description provided for @docenteReportSessions.
   ///
   /// In es, this message translates to:
-  /// **'Exportar lista en PDF'**
-  String get docenteExportPdf;
+  /// **'Sesiones'**
+  String get docenteReportSessions;
 
-  /// No description provided for @docenteExportError.
+  /// No description provided for @docenteReportAverage.
   ///
   /// In es, this message translates to:
-  /// **'No se pudo generar el PDF'**
-  String get docenteExportError;
+  /// **'Asistencia prom.'**
+  String get docenteReportAverage;
 
-  /// No description provided for @docenteSortLabel.
+  /// No description provided for @docenteReportRiskHint.
   ///
   /// In es, this message translates to:
-  /// **'Ordenar'**
-  String get docenteSortLabel;
+  /// **'En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.'**
+  String get docenteReportRiskHint;
 
-  /// No description provided for @docenteSortName.
+  /// No description provided for @docenteReportCounts.
   ///
   /// In es, this message translates to:
-  /// **'Nombre (A-Z)'**
-  String get docenteSortName;
+  /// **'{presentes} P · {faltas} F · {justificadas} J'**
+  String docenteReportCounts(
+    String presentes,
+    String faltas,
+    String justificadas,
+  );
 
-  /// No description provided for @docenteSortGradeDesc.
+  /// No description provided for @docenteNoUnitEnabled.
   ///
   /// In es, this message translates to:
-  /// **'Mayor nota'**
-  String get docenteSortGradeDesc;
+  /// **'No hay una unidad habilitada en SIGMA para registrar asistencia.'**
+  String get docenteNoUnitEnabled;
 
-  /// No description provided for @docenteSortGradeAsc.
+  /// No description provided for @docenteUnitLocked.
   ///
   /// In es, this message translates to:
-  /// **'Menor nota'**
-  String get docenteSortGradeAsc;
+  /// **'Esta unidad no está habilitada en SIGMA para registrar notas.'**
+  String get docenteUnitLocked;
 
-  /// No description provided for @docenteSortAttendance.
+  /// No description provided for @docenteGradeMissingIds.
   ///
   /// In es, this message translates to:
-  /// **'Menor asistencia'**
-  String get docenteSortAttendance;
+  /// **'Faltan datos de SIGMA para guardar esta nota. Actualiza la lista e inténtalo de nuevo.'**
+  String get docenteGradeMissingIds;
 
-  /// No description provided for @docenteOnlyAtRisk.
-  ///
-  /// In es, this message translates to:
-  /// **'Solo en riesgo'**
-  String get docenteOnlyAtRisk;
-
-  /// No description provided for @docenteAttendanceDaySummary.
-  ///
-  /// In es, this message translates to:
-  /// **'{presentes} presentes · {faltas} faltas · {justificadas} justif.'**
-  String docenteAttendanceDaySummary(String presentes, String faltas, String justificadas);
-
-  /// No description provided for @docenteNoClassThatDay.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay asistencia registrada para esta fecha'**
-  String get docenteNoClassThatDay;
-
-  /// No description provided for @docenteNoGradesRegistered.
+  /// No description provided for @docenteNoGrades.
   ///
   /// In es, this message translates to:
   /// **'No hay notas registradas'**
-  String get docenteNoGradesRegistered;
+  String get docenteNoGrades;
 
-  /// No description provided for @docenteAttendanceLoadError.
+  /// No description provided for @marcacionViewPunches.
   ///
   /// In es, this message translates to:
-  /// **'No se pudo cargar la asistencia'**
-  String get docenteAttendanceLoadError;
+  /// **'Marcas'**
+  String get marcacionViewPunches;
 
-  /// No description provided for @docenteEvalReadOnly.
+  /// No description provided for @marcacionViewClasses.
   ///
   /// In es, this message translates to:
-  /// **'Este componente agrupa varias notas. Edítalo desde SIGMA para no sobrescribirlas.'**
-  String get docenteEvalReadOnly;
+  /// **'Por clase'**
+  String get marcacionViewClasses;
 
-  /// No description provided for @docenteEvalMissingIds.
+  /// No description provided for @marcacionClassesSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Faltan datos para editar esta nota. Actualiza la lista de alumnos.'**
-  String get docenteEvalMissingIds;
+  /// **'{completas} de {total} clases con marca completa · 14 días'**
+  String marcacionClassesSubtitle(String completas, String total);
 
-  /// No description provided for @docenteConfirmGradeTitle.
+  /// No description provided for @marcacionClassesEmpty.
   ///
   /// In es, this message translates to:
-  /// **'¿Guardar en SIGMA?'**
-  String get docenteConfirmGradeTitle;
+  /// **'Sin clases programadas en las últimas dos semanas.'**
+  String get marcacionClassesEmpty;
 
-  /// No description provided for @docenteConfirmGradeBody.
+  /// No description provided for @marcacionMissingCount.
   ///
   /// In es, this message translates to:
-  /// **'{evaluacion} de {alumno}: {anterior} → {nueva}. El cambio se registra directamente en SIGMA.'**
-  String docenteConfirmGradeBody(String evaluacion, String alumno, String anterior, String nueva);
+  /// **'{count,plural, =1{1 clase con marca faltante} other{{count} clases con marca faltante}}'**
+  String marcacionMissingCount(int count);
 
-  /// No description provided for @docenteGradeSaved.
+  /// No description provided for @marcacionIn.
   ///
   /// In es, this message translates to:
-  /// **'Nota guardada en SIGMA'**
-  String get docenteGradeSaved;
+  /// **'Entrada'**
+  String get marcacionIn;
 
-  /// No description provided for @docenteSessionsAttendedCount.
+  /// No description provided for @marcacionOut.
   ///
   /// In es, this message translates to:
-  /// **'{presentes} de {total}
-sesiones asistidas'**
-  String docenteSessionsAttendedCount(String presentes, String total);
+  /// **'Salida'**
+  String get marcacionOut;
 
-  /// No description provided for @docenteTodayOngoing.
+  /// No description provided for @marcacionMarked.
   ///
   /// In es, this message translates to:
-  /// **'EN CURSO'**
-  String get docenteTodayOngoing;
+  /// **'Marcó'**
+  String get marcacionMarked;
 
-  /// No description provided for @docenteTodayNext.
+  /// No description provided for @marcacionMissing.
   ///
   /// In es, this message translates to:
-  /// **'SIGUIENTE'**
-  String get docenteTodayNext;
+  /// **'Sin marca'**
+  String get marcacionMissing;
 
-  /// No description provided for @docenteTodayDone.
+  /// No description provided for @marcacionPending.
   ///
   /// In es, this message translates to:
-  /// **'TERMINÓ'**
-  String get docenteTodayDone;
+  /// **'Pendiente'**
+  String get marcacionPending;
 
-  /// No description provided for @docenteGradeDistributionHint.
+  /// No description provided for @tchAndMore.
   ///
   /// In es, this message translates to:
-  /// **'Según la nota final actual de cada alumno'**
-  String get docenteGradeDistributionHint;
+  /// **'… y {count} más'**
+  String tchAndMore(int count);
+
+  /// No description provided for @tchAttAllPresent.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos presentes'**
+  String get tchAttAllPresent;
+
+  /// No description provided for @tchAttAlreadyRegistered.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya hay asistencia registrada este día en esta unidad. Si es otra sesión, continúa; para corregir, vuelve y abre la sesión.'**
+  String get tchAttAlreadyRegistered;
+
+  /// No description provided for @tchAttConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Registrar asistencia?'**
+  String get tchAttConfirmTitle;
+
+  /// No description provided for @tchAttLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la lista de asistencia.'**
+  String get tchAttLoadError;
+
+  /// No description provided for @tchAttLowAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia {pct}%'**
+  String tchAttLowAttendance(int pct);
+
+  /// No description provided for @tchAttModeList.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver como lista'**
+  String get tchAttModeList;
+
+  /// No description provided for @tchAttModeOneByOne.
+  ///
+  /// In es, this message translates to:
+  /// **'Pase de lista uno por uno'**
+  String get tchAttModeOneByOne;
+
+  /// No description provided for @tchAttNoStudents.
+  ///
+  /// In es, this message translates to:
+  /// **'SIGMA no devolvió alumnos para esta sección.'**
+  String get tchAttNoStudents;
+
+  /// No description provided for @tchAttPending.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{Falta marcar 1 alumno.} other{Faltan marcar {count} alumnos.}}'**
+  String tchAttPending(int count);
+
+  /// No description provided for @tchAttPosition.
+  ///
+  /// In es, this message translates to:
+  /// **'{current} de {total}'**
+  String tchAttPosition(int current, int total);
+
+  /// No description provided for @tchAttProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'{done}/{total} marcados'**
+  String tchAttProgress(int done, int total);
+
+  /// No description provided for @tchAttRegister.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar'**
+  String get tchAttRegister;
+
+  /// No description provided for @tchAttRestPresent.
+  ///
+  /// In es, this message translates to:
+  /// **'Resto presentes'**
+  String get tchAttRestPresent;
+
+  /// No description provided for @tchAttSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'{present} asistieron · {absent} faltaron'**
+  String tchAttSummary(int present, int absent);
+
+  /// No description provided for @tchAttSuspendedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} con matrícula suspendida (se registran como suspensión)'**
+  String tchAttSuspendedCount(int count);
+
+  /// No description provided for @tchAttSwipeHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Al marcar pasa al siguiente. Desliza para volver.'**
+  String get tchAttSwipeHint;
+
+  /// No description provided for @tchAttTake.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar asistencia'**
+  String get tchAttTake;
+
+  /// No description provided for @tchAttTakeAnother.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar otra sesión'**
+  String get tchAttTakeAnother;
+
+  /// No description provided for @tchAttTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar asistencia'**
+  String get tchAttTitle;
+
+  /// No description provided for @tchAuxReport.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro auxiliar'**
+  String get tchAuxReport;
+
+  /// No description provided for @tchAuxReportPdf.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro auxiliar (PDF)'**
+  String get tchAuxReportPdf;
+
+  /// No description provided for @tchAuxReportXlsx.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro auxiliar (Excel)'**
+  String get tchAuxReportXlsx;
+
+  /// No description provided for @tchAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio'**
+  String get tchAverage;
+
+  /// No description provided for @tchCycle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo {ciclo}'**
+  String tchCycle(String ciclo);
+
+  /// No description provided for @tchDownloadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo descargar el archivo de SIGMA.'**
+  String get tchDownloadError;
+
+  /// No description provided for @tchFailing.
+  ///
+  /// In es, this message translates to:
+  /// **'Desaprobados'**
+  String get tchFailing;
+
+  /// No description provided for @tchFileSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardado en {path}'**
+  String tchFileSaved(String path);
+
+  /// No description provided for @tchFix.
+  ///
+  /// In es, this message translates to:
+  /// **'Corregir'**
+  String get tchFix;
+
+  /// No description provided for @tchGradeAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom. {value}'**
+  String tchGradeAverage(String value);
+
+  /// No description provided for @tchGradeConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Guardar notas en SIGMA?'**
+  String get tchGradeConfirmTitle;
+
+  /// No description provided for @tchGradeFilled.
+  ///
+  /// In es, this message translates to:
+  /// **'{filled}/{total} con nota'**
+  String tchGradeFilled(int filled, int total);
+
+  /// No description provided for @tchGradeInvalidCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{Hay 1 nota inválida} other{Hay {count} notas inválidas}} (0 a {max}, hasta 2 decimales).'**
+  String tchGradeInvalidCount(int count, String max);
+
+  /// No description provided for @tchGradeMissingIds.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} sin datos de matrícula: no se guardarán.'**
+  String tchGradeMissingIds(int count);
+
+  /// No description provided for @tchGradeNewCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{1 nota nueva} other{{count} notas nuevas}}'**
+  String tchGradeNewCount(int count);
+
+  /// No description provided for @tchGradePassed.
+  ///
+  /// In es, this message translates to:
+  /// **'{passed}/{total} aprobados'**
+  String tchGradePassed(int passed, int total);
+
+  /// No description provided for @tchGradeUpdatedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{1 nota modificada} other{{count} notas modificadas}}'**
+  String tchGradeUpdatedCount(int count);
+
+  /// No description provided for @tchGradesHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Según la nota final que calcula SIGMA. {count} sin nota aún.'**
+  String tchGradesHint(int count);
+
+  /// No description provided for @tchKpiAbsent.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltas'**
+  String get tchKpiAbsent;
+
+  /// No description provided for @tchKpiGeneral.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia'**
+  String get tchKpiGeneral;
+
+  /// No description provided for @tchKpiJustified.
+  ///
+  /// In es, this message translates to:
+  /// **'Justificadas'**
+  String get tchKpiJustified;
+
+  /// No description provided for @tchKpiPresent.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencias'**
+  String get tchKpiPresent;
+
+  /// No description provided for @tchKpiTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Registros'**
+  String get tchKpiTotal;
+
+  /// No description provided for @tchOngoingNow.
+  ///
+  /// In es, this message translates to:
+  /// **'En curso · {start}–{end}'**
+  String tchOngoingNow(String start, String end);
+
+  /// No description provided for @tchPassed.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobados'**
+  String get tchPassed;
+
+  /// No description provided for @tchRiskHint70.
+  ///
+  /// In es, this message translates to:
+  /// **'En riesgo: 70% de asistencia o menos, el mismo criterio que resalta SIGMA.'**
+  String get tchRiskHint70;
+
+  /// No description provided for @tchSaveChanges.
+  ///
+  /// In es, this message translates to:
+  /// **'{count,plural, =1{Guardar 1 cambio} other{Guardar {count} cambios}}'**
+  String tchSaveChanges(int count);
+
+  /// No description provided for @tchSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardado en SIGMA'**
+  String get tchSaved;
+
+  /// No description provided for @tchSessionConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Corregir la asistencia?'**
+  String get tchSessionConfirmTitle;
+
+  /// No description provided for @tchSessionEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay marcas en esta sesión.'**
+  String get tchSessionEmpty;
+
+  /// No description provided for @tchSessionLocked.
+  ///
+  /// In es, this message translates to:
+  /// **'La unidad de esta sesión no está habilitada en SIGMA: solo lectura.'**
+  String get tchSessionLocked;
+
+  /// No description provided for @tchSessionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesiones registradas ({count})'**
+  String tchSessionsTitle(int count);
+
+  /// No description provided for @tchShowAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver todas'**
+  String get tchShowAll;
+
+  /// No description provided for @tchShowLess.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver menos'**
+  String get tchShowLess;
+
+  /// No description provided for @tchSpecialUnit.
+  ///
+  /// In es, this message translates to:
+  /// **'Las notas de {unit} se registran solo para los alumnos aptos; hazlo desde SIGMA web.'**
+  String tchSpecialUnit(String unit);
+
+  /// No description provided for @tchStateAbsent.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltó'**
+  String get tchStateAbsent;
+
+  /// No description provided for @tchStateJustified.
+  ///
+  /// In es, this message translates to:
+  /// **'Justificado'**
+  String get tchStateJustified;
+
+  /// No description provided for @tchStateNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin registro'**
+  String get tchStateNone;
+
+  /// No description provided for @tchStatePresent.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistió'**
+  String get tchStatePresent;
+
+  /// No description provided for @tchStateSuspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Suspensión'**
+  String get tchStateSuspended;
+
+  /// No description provided for @tchTodayNotRegistered.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no registras asistencia hoy.'**
+  String get tchTodayNotRegistered;
+
+  /// No description provided for @tchTodayRegistered.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy a las {time}: {present} asistieron, {absent} faltaron.'**
+  String tchTodayRegistered(String time, int present, int absent);
+
+  /// No description provided for @tchTypesLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar las evaluaciones de la unidad.'**
+  String get tchTypesLoadError;
+
+  /// No description provided for @tchUnitsLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar las unidades de SIGMA.'**
+  String get tchUnitsLoadError;
+
+  /// No description provided for @tchVirtualConfirmIn.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Marcar ENTRADA?'**
+  String get tchVirtualConfirmIn;
+
+  /// No description provided for @tchVirtualConfirmOut.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Marcar SALIDA?'**
+  String get tchVirtualConfirmOut;
+
+  /// No description provided for @tchVirtualDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Presente'**
+  String get tchVirtualDone;
+
+  /// No description provided for @tchVirtualEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes clases pendientes de marcación virtual hoy.'**
+  String get tchVirtualEmpty;
+
+  /// No description provided for @tchVirtualExactTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Se registrará la hora exacta de SIGMA.'**
+  String get tchVirtualExactTime;
+
+  /// No description provided for @tchVirtualHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Marca primero la entrada; luego podrás marcar la salida.'**
+  String get tchVirtualHelp;
+
+  /// No description provided for @tchVirtualLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar tus clases de hoy.'**
+  String get tchVirtualLoadError;
+
+  /// No description provided for @tchVirtualMarkIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrada'**
+  String get tchVirtualMarkIn;
+
+  /// No description provided for @tchVirtualMarkOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Salida'**
+  String get tchVirtualMarkOut;
+
+  /// No description provided for @tchVirtualMarkedAt.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcó {time}'**
+  String tchVirtualMarkedAt(String time);
+
+  /// No description provided for @tchVirtualPartial.
+  ///
+  /// In es, this message translates to:
+  /// **'Parcial'**
+  String get tchVirtualPartial;
+
+  /// No description provided for @tchVirtualSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcación virtual de hoy'**
+  String get tchVirtualSubtitle;
+
+  /// No description provided for @tchVirtualTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Virtual'**
+  String get tchVirtualTab;
+
+  /// No description provided for @tchVirtualTolerance.
+  ///
+  /// In es, this message translates to:
+  /// **'Tolerancia +{minutes} min'**
+  String tchVirtualTolerance(int minutes);
+
+  /// No description provided for @tchAttTodayTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia de hoy'**
+  String get tchAttTodayTitle;
+
+  /// No description provided for @tchDraftRestored.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperamos lo que marcaste antes. Revísalo y registra.'**
+  String get tchDraftRestored;
+
+  /// No description provided for @tchDraftDiscard.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar'**
+  String get tchDraftDiscard;
+
+  /// No description provided for @tchAgendaTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Agenda de hoy'**
+  String get tchAgendaTitle;
+
+  /// No description provided for @tchAgendaEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy no tienes clases.'**
+  String get tchAgendaEmpty;
+
+  /// No description provided for @tchAgendaHoliday.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy es feriado nacional: no hay clases.'**
+  String get tchAgendaHoliday;
+
+  /// No description provided for @tchAgendaNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Próxima clase: {when} · {course}'**
+  String tchAgendaNext(String when, String course);
+
+  /// No description provided for @tchPhaseUpcoming.
+  ///
+  /// In es, this message translates to:
+  /// **'Más tarde'**
+  String get tchPhaseUpcoming;
+
+  /// No description provided for @tchPhaseOngoing.
+  ///
+  /// In es, this message translates to:
+  /// **'En curso'**
+  String get tchPhaseOngoing;
+
+  /// No description provided for @tchPhaseFinished.
+  ///
+  /// In es, this message translates to:
+  /// **'Terminó'**
+  String get tchPhaseFinished;
+
+  /// No description provided for @tchAgendaChecking.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisando asistencia…'**
+  String get tchAgendaChecking;
+
+  /// No description provided for @tchAgendaRegistered.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia registrada'**
+  String get tchAgendaRegistered;
+
+  /// No description provided for @tchAgendaPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta la asistencia'**
+  String get tchAgendaPending;
+
+  /// No description provided for @tchMissingSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Últimas dos semanas. Aún puedes registrarlas.'**
+  String get tchMissingSubtitle;
+
+  /// No description provided for @tchMissingRegister.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar'**
+  String get tchMissingRegister;
+
+  /// No description provided for @tchMissingDismiss.
+  ///
+  /// In es, this message translates to:
+  /// **'No hubo clase'**
+  String get tchMissingDismiss;
+
+  /// No description provided for @tchMissingDismissed.
+  ///
+  /// In es, this message translates to:
+  /// **'Listo, esa clase ya no se mostrará.'**
+  String get tchMissingDismissed;
+
+  /// No description provided for @tchAlertsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Alumnos que necesitan atención'**
+  String get tchAlertsTitle;
+
+  /// No description provided for @tchAlertsNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Ningún alumno en riesgo por ahora.'**
+  String get tchAlertsNone;
+
+  /// No description provided for @tchAlertsChecking.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisando tus secciones…'**
+  String get tchAlertsChecking;
+
+  /// No description provided for @tchAlertAttCritical.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia {pct}% · crítica'**
+  String tchAlertAttCritical(int pct);
+
+  /// No description provided for @tchAlertAttWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia {pct}% · cerca del límite'**
+  String tchAlertAttWarning(int pct);
+
+  /// No description provided for @tchAlertFailing.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio {grade} · desaprobando'**
+  String tchAlertFailing(String grade);
+
+  /// No description provided for @tchAlertsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia crítica: 70 % o menos (30 % o más de faltas). Cerca del límite: hasta 80 %, para actuar antes. Notas: nota final a la fecha por debajo del aprobatorio, según SIGMA.'**
+  String get tchAlertsHint;
+
+  /// No description provided for @tchPasteAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Pegar desde Excel'**
+  String get tchPasteAction;
+
+  /// No description provided for @tchPasteNothing.
+  ///
+  /// In es, this message translates to:
+  /// **'Copia primero las notas en Excel: una columna en el orden de la lista, o dos columnas con código y nota.'**
+  String get tchPasteNothing;
+
+  /// No description provided for @tchPasteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Pegar estas notas?'**
+  String get tchPasteTitle;
+
+  /// No description provided for @tchPasteByCode.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 nota emparejada por código de alumno} other{{count} notas emparejadas por código de alumno}}'**
+  String tchPasteByCode(int count);
+
+  /// No description provided for @tchPasteByOrder.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 nota en el orden de la lista} other{{count} notas en el orden de la lista}}'**
+  String tchPasteByOrder(int count);
+
+  /// No description provided for @tchPasteSkipped.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 fila se ignora (código desconocido o nota inválida)} other{{count} filas se ignoran (código desconocido o nota inválida)}}'**
+  String tchPasteSkipped(int count);
+
+  /// No description provided for @tchPasteReplaces.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Reemplaza 1 nota ya escrita} other{Reemplaza {count} notas ya escritas}}'**
+  String tchPasteReplaces(int count);
+
+  /// No description provided for @tchPasteMismatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiaste {rows} filas pero la lista tiene {students} alumnos. Copia también la columna de códigos para emparejarlas.'**
+  String tchPasteMismatch(int rows, int students);
+
+  /// No description provided for @tchPasteApply.
+  ///
+  /// In es, this message translates to:
+  /// **'Pegar'**
+  String get tchPasteApply;
+
+  /// No description provided for @tchPasteDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Notas pegadas. Revísalas y guarda.'**
+  String get tchPasteDone;
+
+  /// No description provided for @tchViewGrid.
+  ///
+  /// In es, this message translates to:
+  /// **'Tabla de notas'**
+  String get tchViewGrid;
+
+  /// No description provided for @tchViewCards.
+  ///
+  /// In es, this message translates to:
+  /// **'Por evaluación'**
+  String get tchViewCards;
+
+  /// No description provided for @tchGridStudent.
+  ///
+  /// In es, this message translates to:
+  /// **'Alumno'**
+  String get tchGridStudent;
+
+  /// No description provided for @tchGridFinal.
+  ///
+  /// In es, this message translates to:
+  /// **'Final'**
+  String get tchGridFinal;
+
+  /// No description provided for @tchGridUnitAvg.
+  ///
+  /// In es, this message translates to:
+  /// **'Prom.'**
+  String get tchGridUnitAvg;
+
+  /// No description provided for @tchGridEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay notas registradas en esta sección.'**
+  String get tchGridEmpty;
+
+  /// No description provided for @tchGridHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca el encabezado de una evaluación para registrarla.'**
+  String get tchGridHint;
+
+  /// No description provided for @tchPendingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendientes'**
+  String get tchPendingTitle;
+
+  /// No description provided for @tchPendingNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo al día: no hay clases sin asistencia ni alumnos en riesgo.'**
+  String get tchPendingNone;
+
+  /// No description provided for @tchMissingCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 clase sin asistencia} other{{count} clases sin asistencia}}'**
+  String tchMissingCount(int count);
+
+  /// No description provided for @tchAlertsRow.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 alumno necesita atención} other{{count} alumnos necesitan atención}}'**
+  String tchAlertsRow(int count);
+
+  /// No description provided for @tchAlertsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia baja o desaprobando, en todas tus secciones.'**
+  String get tchAlertsSubtitle;
+
+  /// No description provided for @tchAlertsCriticalCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} asistencia crítica'**
+  String tchAlertsCriticalCount(int count);
+
+  /// No description provided for @tchAlertsNearCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} cerca del límite'**
+  String tchAlertsNearCount(int count);
+
+  /// No description provided for @tchAlertsFailingCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} desaprobando'**
+  String tchAlertsFailingCount(int count);
+
+  /// No description provided for @tchCourseAtRisk.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} en riesgo'**
+  String tchCourseAtRisk(int count);
+
+  /// No description provided for @tchClassesToday.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{sin clases hoy} =1{1 clase hoy} other{{count} clases hoy}}'**
+  String tchClassesToday(int count);
+
+  /// No description provided for @termsItemLawTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco legal'**
+  String get termsItemLawTitle;
+
+  /// No description provided for @termsItemLawBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Estos documentos se rigen por las leyes del Perú, en especial la Ley N.º 29733 de Protección de Datos Personales y su Reglamento (D. S. N.º 016-2024-JUS), la Ley N.º 30096 de Delitos Informáticos y el Código de Protección y Defensa del Consumidor (Ley N.º 29571).'**
+  String get termsItemLawBody;
+
+  /// No description provided for @legalDocsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Documentos completos'**
+  String get legalDocsTitle;
+
+  /// No description provided for @legalTermsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Términos y Condiciones'**
+  String get legalTermsTitle;
+
+  /// No description provided for @legalTermsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Uso, responsabilidades y ley aplicable'**
+  String get legalTermsSubtitle;
+
+  /// No description provided for @legalPrivacyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Privacidad'**
+  String get legalPrivacyTitle;
+
+  /// No description provided for @legalPrivacySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Qué datos se tratan, dónde y tus derechos'**
+  String get legalPrivacySubtitle;
+
+  /// No description provided for @legalCookiesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Cookies'**
+  String get legalCookiesTitle;
+
+  /// No description provided for @legalCookiesSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Qué se guarda en tu dispositivo y cómo borrarlo'**
+  String get legalCookiesSubtitle;
+
+  /// No description provided for @legalLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir el documento.'**
+  String get legalLoadError;
+
+  /// No description provided for @tchSectionLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Sección {section}'**
+  String tchSectionLabel(String section);
+
+  /// No description provided for @tchElective.
+  ///
+  /// In es, this message translates to:
+  /// **'Electivo'**
+  String get tchElective;
+
+  /// No description provided for @tchCopyNrc.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar NRC'**
+  String get tchCopyNrc;
+  /// No description provided for @accountSwitchTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar de cuenta'**
+  String get accountSwitchTitle;
+
+  /// No description provided for @accountSwitchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Entra a otra cuenta sin escribir la contraseña'**
+  String get accountSwitchHint;
+
+  /// No description provided for @accountAddAnother.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar otra cuenta'**
+  String get accountAddAnother;
+
+  /// No description provided for @accountCurrent.
+  ///
+  /// In es, this message translates to:
+  /// **'Actual'**
+  String get accountCurrent;
+
+  /// No description provided for @accountRoleTeacher.
+  ///
+  /// In es, this message translates to:
+  /// **'Docente'**
+  String get accountRoleTeacher;
+
+  /// No description provided for @accountRoleStudent.
+  ///
+  /// In es, this message translates to:
+  /// **'Estudiante'**
+  String get accountRoleStudent;
+
+  /// No description provided for @accountRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar de este dispositivo'**
+  String get accountRemove;
+
+  /// No description provided for @accountRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta quitada de este dispositivo'**
+  String get accountRemoved;
+
+  /// No description provided for @accountNeedsPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Requiere contraseña'**
+  String get accountNeedsPassword;
+
+  /// No description provided for @accountSwitching.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrando como {name}'**
+  String accountSwitching(String name);
+
+  /// No description provided for @accountSavedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar como'**
+  String get accountSavedTitle;
+
+  /// No description provided for @accountOtherAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar otra cuenta'**
+  String get accountOtherAccount;
+
+  /// No description provided for @accountSwitchFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo entrar como {user}. {reason}'**
+  String accountSwitchFailed(String user, String reason);
+
+  /// No description provided for @accountEnterPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa la contraseña de {user} para continuar.'**
+  String accountEnterPassword(String user);
+
+  /// No description provided for @accountLogoutKeepHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta actual seguirá guardada para volver con un toque.'**
+  String get accountLogoutKeepHint;
 
 }
 

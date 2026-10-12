@@ -5,6 +5,7 @@ import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
+import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/legal/about_screen.dart';
 import 'package:nexo/features/legal/developer_screen.dart';
@@ -12,6 +13,7 @@ import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/settings/settings_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -77,6 +79,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                         store: widget.store,
                         theme: widget.theme,
                         onLogout: widget.session.logout,
+                        onSwitchAccount: () =>
+                            showAccountSwitcher(context, widget.session),
                       ),
                     ),
                   ],
@@ -121,14 +125,13 @@ class _HeroCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white.withValues(alpha: 0.18),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 36,
-            ),
+          // Foto institucional del docente (PhotD de SIGMA); si no hay,
+          // sus iniciales.
+          StudentAvatar(
+            code: info.code,
+            name: info.displayName,
+            size: 64,
+            radius: 20,
           ),
           const Gap.h(AppSpacing.lg),
           Expanded(
@@ -329,10 +332,12 @@ class _ActionsCard extends StatelessWidget {
   final AppStore store;
   final ThemeController theme;
   final Future<void> Function() onLogout;
+  final VoidCallback onSwitchAccount;
   const _ActionsCard({
     required this.store,
     required this.theme,
     required this.onLogout,
+    required this.onSwitchAccount,
   });
   @override
   Widget build(BuildContext context) {
@@ -388,6 +393,32 @@ class _ActionsCard extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const DeveloperScreen()),
             ),
+          ),
+          const Divider(height: 1, indent: 70),
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: NexoTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.switch_account_rounded,
+                color: NexoTheme.primary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              l.accountSwitchTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              l.accountSwitchHint,
+              style: TextStyle(color: NexoTheme.textSecondary),
+            ),
+            trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+            onTap: onSwitchAccount,
           ),
           const Divider(height: 1, indent: 70),
           ListTile(

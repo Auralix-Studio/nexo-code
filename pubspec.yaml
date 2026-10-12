@@ -1,4 +1,4 @@
-﻿name: nexo
+name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
 version: 1.7.2+20
@@ -43,6 +43,7 @@ dependencies:
   url_launcher: ^6.3.2
   window_manager: ^0.4.3
   path_provider: ^2.1.4
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
@@ -105,6 +106,9 @@ flutter:
     # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando
     # el servidor omite el intermedio. Ver lib/data/secure_http.dart.
     - assets/certs/cacert.pem
+
+    # Términos, Política de Privacidad y Política de Cookies, uno por idioma.
+    - assets/legal/
 
   fonts:
     - family: SuperMindset

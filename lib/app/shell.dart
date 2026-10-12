@@ -11,7 +11,7 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/session.dart';
 import 'package:nexo/features/festivity/festivity_overlay.dart';
 import 'package:nexo/features/teacher/teacher_courses_screen.dart';
-import 'package:nexo/features/teacher/teacher_schedule_screen.dart';
+import 'package:nexo/features/teacher/teacher_marcacion_screen.dart';
 import 'package:nexo/features/teacher/teacher_profile_screen.dart';
 import 'package:nexo/features/teacher/teacher_screen.dart';
 import 'package:nexo/features/grades/grades_screen.dart';
@@ -20,6 +20,7 @@ import 'package:nexo/features/payments/payments_screen.dart';
 import 'package:nexo/features/profile/profile_screen.dart';
 import 'package:nexo/features/schedule/schedule_screen.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
+import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/shared/widgets/update_banner.dart';
 import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
 
@@ -47,12 +48,13 @@ List<_Tab> _studentTabs(AppLocalizations l) => [
 ];
 List<_Tab> _teacherTabs(AppLocalizations l) => [
   _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
-  _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
   _Tab(
     l.tabSchedule,
     Icons.calendar_today_rounded,
     Icons.calendar_today_outlined,
   ),
+  _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
+  _Tab(l.tabMarcacion, Icons.fingerprint_rounded, Icons.fingerprint_outlined),
   _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
 ];
 
@@ -195,8 +197,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       tabs = _teacherTabs(l);
       pages = <Widget>[
         wrap(TeacherScreen(store: widget.store)),
+        wrap(ScheduleScreen(store: widget.store, teacher: true)),
         wrap(TeacherCoursesScreen(store: widget.store)),
-        wrap(TeacherScheduleScreen(store: widget.store)),
+        wrap(TeacherMarcacionScreen(store: widget.store)),
         wrap(
           TeacherProfileScreen(
             store: widget.store,
@@ -262,6 +265,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           index: safeIndex,
                           onChange: _goTo,
                           onLogout: () => _confirmLogout(context),
+                          onSwitchAccount: () =>
+                              showAccountSwitcher(context, widget.session),
                           collapsed: _railCollapsed,
                           onToggleCollapse: () =>
                               setState(() => _railCollapsed = !_railCollapsed),
@@ -340,7 +345,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         SingleActivator(digits[i], meta: true): () => _goTo(i),
       },
       const SingleActivator(LogicalKeyboardKey.escape): _closeDetail,
+      // Ctrl/Cmd + Shift + A: cambiar de cuenta.
+      const SingleActivator(
+        LogicalKeyboardKey.keyA,
+        control: true,
+        shift: true,
+      ): _openAccountSwitcher,
+      const SingleActivator(LogicalKeyboardKey.keyA, meta: true, shift: true):
+          _openAccountSwitcher,
     };
+  }
+
+  void _openAccountSwitcher() {
+    if (!mounted) return;
+    showAccountSwitcher(context, widget.session);
   }
 
   void _closeDetail() {
@@ -514,6 +532,7 @@ class _SideRail extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChange;
   final Future<void> Function() onLogout;
+  final VoidCallback onSwitchAccount;
   final bool collapsed;
   final VoidCallback onToggleCollapse;
   final String? breadcrumb;
@@ -522,6 +541,7 @@ class _SideRail extends StatelessWidget {
     required this.index,
     required this.onChange,
     required this.onLogout,
+    required this.onSwitchAccount,
     required this.collapsed,
     required this.onToggleCollapse,
     this.breadcrumb,
@@ -594,24 +614,57 @@ class _SideRail extends StatelessWidget {
               16,
             ),
             child: collapsed
-                ? IconButton(
-                    tooltip: l.actionLogout,
-                    icon: const Icon(Icons.logout_rounded, size: 20),
-                    color: NexoTheme.textSecondary,
-                    onPressed: onLogout,
-                  )
-                : OutlinedButton.icon(
-                    onPressed: onLogout,
-                    icon: const Icon(Icons.logout_rounded, size: 18),
-                    label: Text(l.actionLogout),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: NexoTheme.textSecondary,
-                      minimumSize: const Size.fromHeight(44),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: l.accountSwitchTitle,
+                        icon: const Icon(
+                          Icons.switch_account_rounded,
+                          size: 20,
+                        ),
+                        color: NexoTheme.textSecondary,
+                        onPressed: onSwitchAccount,
                       ),
-                      side: BorderSide(color: NexoTheme.border),
-                    ),
+                      IconButton(
+                        tooltip: l.actionLogout,
+                        icon: const Icon(Icons.logout_rounded, size: 20),
+                        color: NexoTheme.textSecondary,
+                        onPressed: onLogout,
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextButton.icon(
+                        onPressed: onSwitchAccount,
+                        icon: const Icon(
+                          Icons.switch_account_rounded,
+                          size: 18,
+                        ),
+                        label: Text(l.accountSwitchTitle),
+                        style: TextButton.styleFrom(
+                          foregroundColor: NexoTheme.textSecondary,
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      OutlinedButton.icon(
+                        onPressed: onLogout,
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: Text(l.actionLogout),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: NexoTheme.textSecondary,
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: NexoTheme.border),
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ],

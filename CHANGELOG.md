@@ -4,25 +4,35 @@ All notable changes to Nexo will be documented in this file.
 
 ## [Sin publicar]
 
-### Docentes — mejoras
-- Nueva pestaña **Resumen** por curso: promedio, aprobados/desaprobados/sin nota, asistencia promedio, distribución de notas y **alumnos en riesgo** (desaprobados o con asistencia < 70 %)
-- **Registrar y corregir notas** en SIGMA desde la ficha del alumno, con confirmación previa (ver docs/evaluacion-endpoints-docente.md §11)
-- **Exportar lista del curso en PDF** (código, alumno, nota final, asistencia)
-- Ordenar alumnos por nombre, nota o asistencia, y filtro "Solo en riesgo"
-- Asistencia del día: resumen de presentes/faltas/justificados y navegación día a día
-- Inicio docente: marca la clase **en curso**, la **siguiente** y las que ya terminaron
-- Deslizar para actualizar en las listas del curso
+### Cambio rápido de cuenta
+- Hasta 5 cuentas guardadas en el dispositivo (almacén seguro del sistema); se cambia con un toque desde Perfil, la barra lateral o Ctrl/Cmd + Shift + A
+- El login muestra "Continuar como" con las cuentas guardadas
+- "Agregar otra cuenta" conserva la actual; "Cerrar sesión" la olvida del dispositivo
+- Si la contraseña cambió en SIGMA, la cuenta queda en la lista y pide la nueva con el usuario ya escrito
 
-### Docentes — correcciones
-- Iniciales de alumnos aparecían como "?" (SIGMA solo manda el nombre completo)
-- El conteo de alumnos mostraba 0 cuando SIGMA no envía `matriculados`
-- Al tocar un alumno desde la pestaña Notas se abría su asistencia
-- Error al cargar la asistencia del alumno dejaba el indicador de carga para siempre
-- Estados de asistencia desconocidos se mostraban como "Justificada"
-- La caché sin conexión perdía las notas por evaluación del alumno
-- Las clases se ordenaban como texto ("10:00" antes que "8:00") y los días enviados como nombre no aparecían
-- Tarjetas de curso se desbordaban en pantallas angostas
-- Texto fijo sin traducir en la ficha del alumno; etiqueta de búsqueda en quechua decía "docente" en vez de "alumno"
+### Publicación
+- Publicación 100 % automática al fusionar en `main`: versión, tag, compilación de todas las plataformas, verificación de Windows, `SHA256SUMS.txt`, notas con tabla de descargas, release en `Auralix-Studio/nexo` y changelog del sitio (ver docs/versionado.md)
+
+### Docentes
+- Inicio reorganizado: saludo, cifras (cursos, alumnos, periodo), agenda de hoy, pendientes y cursos con sus números
+- Agenda de hoy con el estado de cada clase y si ya tiene asistencia registrada, con acceso directo a tomarla
+- Pendientes: clases de las últimas dos semanas sin asistencia en SIGMA (omite feriados nacionales y se pueden descartar) y alumnos que necesitan atención en todas las secciones (asistencia crítica, cerca del límite o desaprobando)
+- Tabla de notas de la sección con la columna de alumnos fija
+- Pegar notas desde Excel (por código de alumno o en el orden de la lista), sin adivinar filas ambiguas
+- Lo marcado al pasar lista se guarda en el dispositivo y se recupera si la app se cierra o falla el envío
+- El horario se arma con las asignaturas ya descargadas: una consulta menos a SIGMA al abrir el inicio
+- Nombres de asignaturas legibles y sin paréntesis ("Base de Datos I"); las electivas llevan su etiqueta
+- Cabecera del curso y pestaña Cursos en palabras: "Sección A1 · Ciclo 4 · Presencial", horario por día y aula; el NRC queda discreto y copiable
+- Foto del docente (SIGMA la guarda en otra carpeta que la de los alumnos)
+- Animaciones: cambios de estado con fundido, tarjetas que crecen suave al cargar y cifras que cuentan; todo respeta "reducir movimiento" del sistema
+
+### Correcciones
+- "Alumnos: 0" en el inicio docente por rosters vacíos guardados por versiones anteriores
+- Métricas del inicio del estudiante otra vez en 2 × 2 en celulares angostos o con letra grande (antes bajaban de a una por fila); la tarjeta se compacta y los montos largos se achican para caber
+- Desbordes con letra grande en tomar asistencia, confirmaciones e inicio docente
+
+### Legal
+- Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con ley peruana aplicable y límites de responsabilidad, a nombre de Auralix Studio (versión 4: se pide aceptarlos de nuevo)
 
 ## [1.7.1] - 2026-09-26
 

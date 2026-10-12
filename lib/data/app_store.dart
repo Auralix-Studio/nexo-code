@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:nexo/core/session_scope.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nexo/core/data/resolver.dart';
@@ -294,6 +295,13 @@ class AppStore extends ChangeNotifier {
   AsyncValue<TeacherInfo> teacherInfo = const AsyncValue.idle();
   AsyncValue<List<TeacherSubject>> teacherSubjects = const AsyncValue.idle();
   AsyncValue<List<ScheduleClass>> teacherSchedule = const AsyncValue.idle();
+  AsyncValue<List<TeacherPunch>> teacherMarcacion = const AsyncValue.idle();
+  AsyncValue<List<TeacherClassCompliance>> teacherCumplimiento =
+      const AsyncValue.idle();
+  AsyncValue<List<VirtualClass>> teacherVirtual = const AsyncValue.idle();
+  final Map<String, Future<List<TeacherUnitCatalog>>> _teacherUnits = {};
+  final Map<String, Future<List<TeacherUnitCatalog>>> _teacherAttUnits = {};
+  final Map<int, Future<List<GradeType>>> _gradeTypes = {};
   final Map<String, AsyncValue<List<TeacherStudent>>> _teacherStudents = {};
   AsyncValue<List<TeacherStudent>> alumnosDe(String cleAuto) =>
       _teacherStudents[cleAuto] ?? const AsyncValue.idle();
@@ -1086,16 +1094,225 @@ class AppStore extends ChangeNotifier {
     persist: (v) => _cache.saveDocenteCursos(v),
     operationName: 'loadTeacherSubjects',
   );
+
+  /// El horario sale de las mismas asignaturas: se reutiliza su carga (y su
+  /// single-flight) en vez de volver a pedir `GetAsignaturaDocente`.
   Future<List<ScheduleClass>?> loadDocenteHorario() => _wrap(
-    () => _teacherReady().getHorario(),
+    () async {
+      _teacherReady();
+      final subjects = await loadTeacherSubjects();
+      // Sin asignaturas (ni en caché): el horario cae a su propio caché.
+      if (subjects == null) {
+        throw teacherSubjects.error ??
+            const NetworkException('Sin asignaturas del docente.');
+      }
+      return TeacherRepository.scheduleFromSubjects(subjects);
+    },
     () => teacherSchedule,
     (v) => teacherSchedule = v,
     cached: () => _cache.getDocenteHorario(),
     persist: (v) => _cache.saveDocenteHorario(v),
     operationName: 'loadDocenteHorario',
   );
-  Future<void> loadDocenteAlumnos(String cleAuto, {int tipoCalif = 0}) =>
+  Future<List<TeacherPunch>?> loadTeacherMarcacion() => _wrap(
+    () {
+      final now = DateTime.now();
+      return _teacherReady().historialMarcacion(
+        inicio: now.subtract(const Duration(days: 30)),
+        fin: now,
+      );
+    },
+    () => teacherMarcacion,
+    (v) => teacherMarcacion = v,
+    operationName: 'loadTeacherMarcacion',
+  );
+
+  /// Clases programadas de las últimas dos semanas con su estado de marcación
+  /// (entrada/salida). Pagina hasta agotar resultados (máx. 4 páginas).
+  Future<List<TeacherClassCompliance>?> loadTeacherCumplimiento() => _wrap(
+    () async {
+      final repo = _teacherReady();
+      final now = DateTime.now();
+      final inicio = now.subtract(const Duration(days: 14));
+      final all = <TeacherClassCompliance>[];
+      final seen = <String>{};
+      for (var page = 1; page <= 4; page++) {
+        final chunk = await repo.cumplimiento(
+          inicio: inicio,
+          fin: now,
+          pagina: page,
+        );
+        var added = 0;
+        for (final c in chunk) {
+          final key = '${c.date}|${c.startTime}|${c.subject}|${c.section}';
+          if (seen.add(key)) {
+            all.add(c);
+            added++;
+          }
+        }
+        // Página vacía o repetida (el backend ignora `pagina`): no hay más.
+        if (added == 0) break;
+      }
+      return all;
+    },
+    () => teacherCumplimiento,
+    (v) => teacherCumplimiento = v,
+    operationName: 'loadTeacherCumplimiento',
+  );
+
+  /// Memoiza un catálogo por clave durante la sesión; si la carga falla se
+  /// descarta para reintentar en la próxima llamada.
+  Future<T> _memo<K, T>(
+    Map<K, Future<T>> cache,
+    K key,
+    Future<T> Function(TeacherRepository repo) load,
+  ) {
+    final hit = cache[key];
+    if (hit != null) return hit;
+    final fut = _scope.run(() async {
+      final r = await load(_teacherReady());
+      _scope.check();
+      return r;
+    });
+    cache[key] = fut;
+    fut.then<void>((_) {}, onError: (Object _) => cache.remove(key));
+    return fut;
+  }
+
+  /// Unidades de la sección para registrar notas.
+  Future<List<TeacherUnitCatalog>> docenteUnidades(TeacherSubject course) =>
+      _memo(_teacherUnits, course.id, (r) => r.unidadesNotas(course));
+
+  /// Unidades de la sección para registrar asistencia.
+  Future<List<TeacherUnitCatalog>> docenteUnidadesAsistencia(
+    TeacherSubject course,
+  ) => _memo(_teacherAttUnits, course.id, (r) => r.unidadesAsistencia(course));
+
+  /// Tipos de nota (EV/DE/PR…) de una unidad.
+  Future<List<GradeType>> docenteTiposNota(int unidadId) =>
+      _memo(_gradeTypes, unidadId, (r) => r.tiposNota(unidadId));
+
+  final Map<String, AsyncValue<AttendanceSheet>> _attendance = {};
+
+  /// Hoja de asistencia de la sección (estado compartido por las pestañas).
+  AsyncValue<AttendanceSheet> asistenciaDe(String courseId) =>
+      _attendance[courseId] ?? const AsyncValue.idle();
+
+  /// Carga (o recarga) la hoja de asistencia completa de la sección.
+  Future<void> loadDocenteAsistencia(TeacherSubject course) =>
       _scope.run(() async {
+        _attendance[course.id] = AsyncValue.loading(
+          _attendance[course.id]?.value,
+        );
+        _notify();
+        try {
+          final r = await _teacherReady().asistencia(course);
+          if (!_scope.isCurrent) return;
+          _attendance[course.id] = AsyncValue.data(r);
+        } catch (e) {
+          if (!_scope.isCurrent) return;
+          _attendance[course.id] = AsyncValue.failure(
+            e,
+            _attendance[course.id]?.value,
+          );
+        }
+        _notify();
+      });
+
+  /// Hora oficial de SIGMA (para la hora de la sesión de asistencia).
+  Future<DateTime> docenteHoraServidor() =>
+      _scope.run(() => _teacherReady().horaServidor());
+
+  Future<SaveResult> _save(
+    Future<String?> Function(TeacherRepository) op,
+  ) => _scope.run(() async {
+    try {
+      final msg = await op(_teacherReady());
+      if (!_scope.isCurrent) {
+        return (error: const StaleSessionException().toString(), message: null);
+      }
+      return (error: null, message: msg);
+    } catch (e) {
+      if (!_scope.isCurrent) {
+        return (error: const StaleSessionException().toString(), message: null);
+      }
+      return (error: humanizeError(e), message: null);
+    }
+  });
+
+  /// Registra la asistencia de una sesión (todos los alumnos).
+  Future<SaveResult> registrarAsistencia(
+    TeacherSubject course, {
+    required DateTime fecha,
+    required int unidadId,
+    required List<({AttendanceStudent student, int state})> marks,
+  }) async {
+    final res = await _save(
+      (r) =>
+          r.registrarAsistencia(fecha: fecha, unidadId: unidadId, marks: marks),
+    );
+    await loadDocenteAsistencia(course);
+    return res;
+  }
+
+  /// Corrige marcas de asistencia ya registradas.
+  Future<SaveResult> actualizarAsistencia(
+    TeacherSubject course,
+    List<({AttendanceMark mark, AttendanceStudent student, int state})> changes,
+  ) async {
+    final res = await _save((r) => r.actualizarAsistencia(changes));
+    await loadDocenteAsistencia(course);
+    return res;
+  }
+
+  /// Guarda notas: las nuevas van a `InsertarNotas` y las existentes a
+  /// `UpdateNota`, cada grupo en una sola petición. Luego recarga el roster.
+  Future<SaveResult> guardarNotas(
+    TeacherSubject course,
+    List<GradeWrite> rows,
+  ) async {
+    final inserts = rows.where((r) => !r.isUpdate).toList();
+    final updates = rows.where((r) => r.isUpdate).toList();
+    final res = await _save((r) async {
+      String? msg;
+      if (inserts.isNotEmpty) msg = await r.insertarNotas(inserts);
+      if (updates.isNotEmpty) msg = await r.actualizarNotas(updates);
+      return msg;
+    });
+    // Aunque una parte falle, la otra pudo guardarse: siempre recargar.
+    await loadDocenteAlumnos(course.id, tipoCalif: course.tipoCalif);
+    return res;
+  }
+
+  /// Registro auxiliar de la sección en `pdf` o `xlsx`.
+  Future<({Uint8List bytes, String filename})> docenteReporteAuxiliar(
+    TeacherSubject course, {
+    required String tipo,
+  }) => _scope.run(() async {
+    final r = await _teacherReady().reporteAuxiliar(course, tipo: tipo);
+    _scope.check();
+    return r;
+  });
+
+  /// Clases del día para marcación virtual.
+  Future<List<VirtualClass>?> loadTeacherVirtual() => _wrap(
+    () => _teacherReady().clasesVirtuales(),
+    () => teacherVirtual,
+    (v) => teacherVirtual = v,
+    operationName: 'loadTeacherVirtual',
+  );
+
+  /// Marca entrada/salida virtual y recarga las clases del día.
+  Future<SaveResult> marcarVirtual(String codigo) async {
+    final res = await _save((r) => r.marcarVirtual(codigo));
+    await loadTeacherVirtual();
+    return res;
+  }
+
+  Future<void> loadDocenteAlumnos(
+    String cleAuto, {
+    int tipoCalif = 0,
+  }) => _scope.run(() async {
     _teacherStudents[cleAuto] = AsyncValue.loading(
       _teacherStudents[cleAuto]?.value,
     );
@@ -1106,12 +1323,18 @@ class AppStore extends ChangeNotifier {
           cleAuto: cleAuto,
           tipoCalif: tipoCalif,
         ),
-        cached: () => _cache.getDocenteAlumnos(cleAuto),
+        // Versiones anteriores guardaban `[]` (leían ListarEstudianteComple,
+        // que siempre viene vacío). Un roster vacío no sirve de caché: así
+        // se intenta la red aunque el arranque crea que no hay internet.
+        cached: () async {
+          final c = await _cache.getDocenteAlumnos(cleAuto);
+          return (c == null || c.isEmpty) ? null : c;
+        },
         operationName: 'loadDocenteAlumnos($cleAuto)',
       );
       if (!_scope.isCurrent) return;
       _teacherStudents[cleAuto] = AsyncValue.data(v);
-      await _cache.saveDocenteAlumnos(cleAuto, v);
+      if (v.isNotEmpty) await _cache.saveDocenteAlumnos(cleAuto, v);
     } catch (e) {
       if (!_scope.isCurrent) return;
       _teacherStudents[cleAuto] = AsyncValue.failure(
@@ -1122,85 +1345,108 @@ class AppStore extends ChangeNotifier {
     _notify();
   });
 
-  /// Registra/corrige una nota en SIGMA y recarga el roster del curso para
-  /// que la ficha y los promedios reflejen lo que guardó el servidor.
-  /// Devuelve `null` si todo salió bien, o un mensaje legible si no.
-  Future<String?> guardarNotaDocente({
-    required TeacherSubject course,
-    required TeacherStudent student,
-    required EvaluationGrade evaluacion,
-    required double nota,
-  }) => _scope.run(() async {
-    try {
-      await _teacherReady().guardarNota(
-        matriculaAsignaturaId: student.matriculaAsignaturaId,
-        evaluacion: evaluacion,
-        nota: nota,
-      );
-      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
-      await loadDocenteAlumnos(course.id, tipoCalif: course.tipoCalif);
-      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
-      return null;
-    } catch (e) {
-      if (!_scope.isCurrent) return humanizeError(const StaleSessionException());
-      return humanizeError(e);
-    }
-  });
+  /// Hojas de asistencia ya cargadas, por sección.
+  Map<String, AttendanceSheet> get docenteHojas => {
+    for (final e in _attendance.entries)
+      if (e.value.value != null) e.key: e.value.value!,
+  };
 
-  /// Alumno actualizado del roster en memoria (tras recargar), o `null`.
-  TeacherStudent? alumnoDe(String cleAuto, String codigo) {
-    final list = _teacherStudents[cleAuto]?.value;
-    if (list == null) return null;
-    for (final a in list) {
-      if (a.code == codigo) return a;
+  /// Rosters (con notas y % de asistencia) ya cargados, por sección.
+  Map<String, List<TeacherStudent>> get docenteRosters => {
+    for (final e in _teacherStudents.entries)
+      if (e.value.value != null) e.key: e.value.value!,
+  };
+
+  bool _resumenLoading = false;
+
+  /// Hay secciones del resumen docente cargándose.
+  bool get docenteResumenLoading => _resumenLoading;
+
+  /// Roster y hoja de asistencia de todas las secciones, para el tablero
+  /// (agenda, clases sin asistencia y alumnos en riesgo). De a dos secciones a
+  /// la vez para no saturar SIGMA; [force] recarga lo ya cargado.
+  Future<void> loadDocenteResumen({bool force = false}) async {
+    if (_resumenLoading) return;
+    final courses = teacherSubjects.value ?? await loadTeacherSubjects();
+    if (courses == null || courses.isEmpty) return;
+    _resumenLoading = true;
+    _notify();
+    try {
+      final queue = [...courses];
+      Future<void> worker() async {
+        while (queue.isNotEmpty) {
+          final c = queue.removeAt(0);
+          await Future.wait([
+            if (force || !alumnosDe(c.id).hasValue)
+              loadDocenteAlumnos(c.id, tipoCalif: c.tipoCalif),
+            if (force || !asistenciaDe(c.id).hasValue) loadDocenteAsistencia(c),
+          ]);
+        }
+      }
+
+      await Future.wait([worker(), worker()]);
+    } finally {
+      _resumenLoading = false;
+      _notify();
     }
-    return null;
   }
 
-  Future<List<DailyAttendance>> docenteAsistenciaAlumno({
-    required TeacherSubject course,
-    required String codigoAlumno,
-  }) => _scope.run(() async {
-    final result = await _teacherReady().asistenciaAlumno(
-      plan: course.plan,
-      codSaltem: course.codSaltem,
-      asignID: course.nrc,
-      codigoAlumno: codigoAlumno,
+  static const _ckDismissed = 'tch.dismissedMissing';
+
+  /// Clases sin asistencia que el docente marcó como "no hubo clase".
+  Set<String> get docenteClasesDescartadas {
+    final raw = AppStorage.instance.getCache(_ckDismissed);
+    return raw is List ? raw.map((e) => '$e').toSet() : <String>{};
+  }
+
+  Future<void> descartarClaseSinAsistencia(String key) async {
+    // Solo importan las últimas semanas: se guardan las 60 más recientes.
+    final keys = [...docenteClasesDescartadas, key]..sort();
+    final keep = keys.length > 60 ? keys.sublist(keys.length - 60) : keys;
+    await _setStorageCache(_ckDismissed, keep);
+    _notify();
+  }
+
+  // ── Borradores de asistencia ────────────────────────────────────────────
+  // Lo marcado se guarda en el dispositivo mientras se pasa lista: si la app
+  // se cierra o el wifi del aula falla al enviar, nada se pierde. Se borra al
+  // registrar con éxito y con el resto del caché al cerrar sesión.
+
+  static String _draftKey(String courseId, DateTime day, int unitId) =>
+      'tch.draftAtt.$courseId.${day.year}-${day.month}-${day.day}.$unitId';
+
+  Map<String, int> docenteBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+  ) {
+    final raw = AppStorage.instance.getCache(
+      _draftKey(courseId, day, unitId),
+      maxAge: const Duration(days: 2),
     );
-    _scope.check();
-    return result;
-  });
-  Future<Map<String, String>> docenteAsistenciaDia({
-    required TeacherSubject course,
-    required DateTime date,
-  }) => _scope.run(() async {
-    final result = await _teacherReady().asistenciaDelDia(
-      plan: course.plan,
-      codSaltem: course.codSaltem,
-      asignID: course.nrc,
-      date: date,
-    );
-    _scope.check();
-    return result;
-  });
-  Future<String?> guardarAsistenciaDia({
-    required String cleAuto,
-    required DateTime date,
-    required Map<String, String> estados,
-  }) => _scope.run(() async {
-    try {
-      await _teacherReady().guardarAsistenciaDelDia(
-        cleAuto: cleAuto,
-        date: date,
-        estados: estados,
-      );
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      return null;
-    } catch (e) {
-      if (!_scope.isCurrent) return const StaleSessionException().toString();
-      return e.toString();
-    }
-  });
+    if (raw is! Map) return {};
+    return {
+      for (final e in raw.entries)
+        if (e.value is int) '${e.key}': e.value as int,
+    };
+  }
+
+  Future<void> guardarBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+    Map<String, int> marks,
+  ) {
+    final key = _draftKey(courseId, day, unitId);
+    if (marks.isEmpty) return AppStorage.instance.removeCache(key);
+    return _setStorageCache(key, marks);
+  }
+
+  Future<void> borrarBorradorAsistencia(
+    String courseId,
+    DateTime day,
+    int unitId,
+  ) => AppStorage.instance.removeCache(_draftKey(courseId, day, unitId));
 
   bool get tieneDocente => _teacher != null;
   Future<void> changePassword(String actual, String nueva) =>
@@ -1278,6 +1524,13 @@ class AppStore extends ChangeNotifier {
     teacherInfo = const AsyncValue.idle();
     teacherSubjects = const AsyncValue.idle();
     teacherSchedule = const AsyncValue.idle();
+    teacherMarcacion = const AsyncValue.idle();
+    teacherCumplimiento = const AsyncValue.idle();
+    teacherVirtual = const AsyncValue.idle();
+    _teacherUnits.clear();
+    _teacherAttUnits.clear();
+    _gradeTypes.clear();
+    _attendance.clear();
     _teacherStudents.clear();
     _intranet?.invalidate();
     _idiomas?.invalidate();

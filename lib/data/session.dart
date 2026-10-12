@@ -7,6 +7,7 @@ import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/api_client.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/saved_account.dart';
 
 enum SessionStatus { unknown, authenticated, unauthenticated }
 
@@ -28,6 +29,26 @@ class SessionService extends ChangeNotifier {
   Future<ReauthOutcome>? _inFlightReauth;
   SessionStatus get status => _status;
   UserProfile? get user => _user;
+
+  /// Cuenta a la que se está cambiando (la UI muestra una transición en vez
+  /// del login mientras dura). `null` fuera de un cambio de cuenta.
+  SavedAccount? _switchingTo;
+  SavedAccount? get switchingTo => _switchingTo;
+
+  /// Resultado del último cambio de cuenta fallido, para que el login lo
+  /// muestre y deje el usuario ya escrito. Se consume con [takeSwitchFailure].
+  ({String user, String message})? _switchFailure;
+  ({String user, String message})? takeSwitchFailure() {
+    final f = _switchFailure;
+    _switchFailure = null;
+    return f;
+  }
+
+  /// Cuentas recordadas en el dispositivo (la actual incluida).
+  List<SavedAccount> get savedAccounts => AppStorage.instance.savedAccounts;
+
+  /// Código de la cuenta con sesión activa.
+  String? get currentAccount => AppStorage.instance.credUser ?? _user?.code;
   bool get isAuthenticated => _status == SessionStatus.authenticated;
   Future<void> bootstrap() => scope.run(() async {
     final storage = AppStorage.instance;
@@ -35,6 +56,22 @@ class SessionService extends ChangeNotifier {
     final account = storage.credUser ?? _user?.code;
     if (account != null && account.isNotEmpty) {
       await onAccountReady?.call(account);
+      scope.check();
+    }
+    // Usuarios que ya tenían sesión antes del cambio rápido de cuenta: su
+    // cuenta entra a la lista sin pedirles nada.
+    final pass = storage.credPass;
+    if (account != null &&
+        account.isNotEmpty &&
+        pass != null &&
+        pass.isNotEmpty &&
+        storage.savedAccount(account) == null) {
+      await storage.rememberAccount(
+        user: account,
+        password: pass,
+        displayName: _user?.displayName,
+        isTeacher: _user?.isTeacher,
+      );
       scope.check();
     }
     final tok = account == null || account.isEmpty ? null : storage.token;
@@ -130,6 +167,13 @@ class SessionService extends ChangeNotifier {
     scope.check();
     _api.setToken(result.token);
     _user = result.info;
+    await AppStorage.instance.rememberAccount(
+      user: user,
+      password: pass,
+      displayName: result.info?.displayName,
+      isTeacher: result.info?.isTeacher,
+    );
+    scope.check();
   }
 
   Future<ReauthOutcome> _reauthenticate() {
@@ -158,6 +202,8 @@ class SessionService extends ChangeNotifier {
     } on StaleSessionException {
       rethrow;
     } on InvalidCredentialsException {
+      // La contraseña recordada ya no sirve: no la ofrezcamos para cambiar.
+      await s.forgetAccountPassword(u).catchError((Object _) {});
       return ReauthOutcome.invalidCredentials;
     } catch (_) {
       return ReauthOutcome.unavailable;
@@ -187,9 +233,68 @@ class SessionService extends ChangeNotifier {
     );
   }
 
-  Future<void> logout() {
+  /// Cierra la sesión. Por defecto también olvida la cuenta del dispositivo
+  /// (lo que el usuario espera de "Cerrar sesión"). Con `forget: false` la
+  /// cuenta sigue en la lista para volver con un toque: es lo que usa
+  /// "Agregar otra cuenta".
+  Future<void> logout({bool forget = true}) {
+    final account = currentAccount;
     _reset();
+    if (forget && account != null && account.isNotEmpty) {
+      unawaited(
+        AppStorage.instance
+            .removeSavedAccount(account)
+            .catchError((Object _) {}),
+      );
+    }
     return _cleanup;
+  }
+
+  /// Cambia a otra cuenta recordada sin escribir la contraseña.
+  ///
+  /// Si la contraseña guardada ya no sirve, la olvida (la cuenta sigue en la
+  /// lista) y deja el error para el login, con el usuario ya escrito. Si no
+  /// hay red, igual queda en el login con el aviso; la cuenta anterior no se
+  /// pierde porque sigue en la lista.
+  Future<void> switchTo(String user) async {
+    final target = AppStorage.instance.savedAccount(user);
+    if (target == null) {
+      throw StateError('La cuenta $user no está guardada en este dispositivo.');
+    }
+    if (target.user == currentAccount && isAuthenticated) return;
+    if (!target.canQuickSwitch) {
+      _switchFailure = (user: target.user, message: '');
+      await logout(forget: false);
+      return;
+    }
+    _switchingTo = target;
+    _switchFailure = null;
+    notifyListeners();
+    try {
+      await login(target.user, target.password!);
+    } on StaleSessionException {
+      // Otro login/cambio empezó después: él decide el estado final.
+      return;
+    } on InvalidCredentialsException catch (e) {
+      await AppStorage.instance.forgetAccountPassword(target.user);
+      _switchFailure = (user: target.user, message: e.message);
+    } on ApiException catch (e) {
+      _switchFailure = (user: target.user, message: e.message);
+    } catch (e) {
+      _switchFailure = (user: target.user, message: e.toString());
+    } finally {
+      // Si mientras tanto empezó otro cambio, ese es el que manda.
+      if (identical(_switchingTo, target)) {
+        _switchingTo = null;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Olvida una cuenta recordada que no es la activa.
+  Future<void> forgetAccount(String user) async {
+    await AppStorage.instance.removeSavedAccount(user);
+    notifyListeners();
   }
 
   /// Cierra el arranque cuando `bootstrap` no pudo decidir —falló o tardó

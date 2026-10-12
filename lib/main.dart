@@ -37,6 +37,7 @@ import 'package:nexo/data/intranet_repository.dart';
 import 'package:nexo/domain/idiomas_repository.dart';
 import 'package:nexo/data/secure_http.dart';
 import 'package:nexo/data/update_service.dart';
+import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/features/auth/login_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/onboarding/onboarding_screen.dart';
@@ -473,9 +474,13 @@ class _GateState extends State<_Gate> {
               widget.session.status == SessionStatus.unauthenticated;
           final Widget child;
           final String k;
+          final switching = widget.session.switchingTo;
           if (isWaiting) {
             k = 'splash_delay';
             child = const _SplashScreen();
+          } else if (switching != null) {
+            k = 'switching';
+            child = AccountSwitchingScreen(account: switching);
           } else if (showOnboarding) {
             k = 'onboarding';
             child = OnboardingScreen(

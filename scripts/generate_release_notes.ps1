@@ -1,4 +1,7 @@
 ﻿# generate_release_notes.ps1 — Genera las notas del release para GitHub
+#
+# NOTA: desde octubre 2026 esto lo hace GitHub Actions solo al fusionar en
+# main (ver docs/versionado.md). Este script queda para publicar a mano.
 
 # Extrae la sección correspondiente a la versión actual de CHANGELOG.md y
 # genera un archivo RELEASE_NOTES.md en dist/ con la tabla de artefactos,

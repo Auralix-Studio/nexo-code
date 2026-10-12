@@ -44,7 +44,7 @@ class MockSessionService extends Fake implements SessionService {
   bool loggedOut = false;
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({bool forget = true}) async {
     loggedOut = true;
   }
 }

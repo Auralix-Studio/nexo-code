@@ -127,14 +127,22 @@ abstract final class Fmt {
       return 'Pabellón $pab - Aula $aul';
     }
     if (aul.isEmpty) return '—';
-    if (RegExp(r'^(LABORATORIO|LAB)', caseSensitive: false).hasMatch(rawAula.trim())) {
+    if (RegExp(
+      r'^(LABORATORIO|LAB)',
+      caseSensitive: false,
+    ).hasMatch(rawAula.trim())) {
       return 'Laboratorio - $aul';
     }
     return aul;
   }
 
   static String cleanBuilding(String raw) {
-    var s = raw.replaceAll(RegExp(r'^(PABELLON|PABELLÓN)\s*_?\s*', caseSensitive: false), '').trim();
+    var s = raw
+        .replaceAll(
+          RegExp(r'^(PABELLON|PABELLÓN)\s*_?\s*', caseSensitive: false),
+          '',
+        )
+        .trim();
     if (s.isEmpty) return raw;
     return s;
   }
@@ -142,7 +150,12 @@ abstract final class Fmt {
   static String cleanRoom(String raw) {
     final parsed = parseAula(raw);
     String s = parsed['aula'] ?? raw;
-    s = s.replaceAll(RegExp(r'^(LABORATORIO|LAB)\s*_?\s*', caseSensitive: false), '').trim();
+    s = s
+        .replaceAll(
+          RegExp(r'^(LABORATORIO|LAB)\s*_?\s*', caseSensitive: false),
+          '',
+        )
+        .trim();
     if (s.isEmpty) return raw;
     return s;
   }

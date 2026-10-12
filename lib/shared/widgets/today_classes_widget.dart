@@ -12,7 +12,12 @@ class TodayClassesWidget extends StatelessWidget {
   final List<ScheduleClass> all;
   final DateTime? nowOverride;
   final bool isCompact;
-  const TodayClassesWidget({super.key, required this.all, this.nowOverride, this.isCompact = false});
+  const TodayClassesWidget({
+    super.key,
+    required this.all,
+    this.nowOverride,
+    this.isCompact = false,
+  });
   DateTime get now => nowOverride ?? DateTime.now();
   @override
   Widget build(BuildContext context) {
@@ -52,7 +57,8 @@ class TodayClassesWidget extends StatelessWidget {
               children: [
                 for (var i = 0; i < (isCompact ? 1 : groups.length); i++) ...[
                   _CourseTile(group: groups[i], nowHM: nowHM),
-                  if (i < (isCompact ? 1 : groups.length) - 1) const Gap(AppSpacing.sm + 2),
+                  if (i < (isCompact ? 1 : groups.length) - 1)
+                    const Gap(AppSpacing.sm + 2),
                 ],
                 if (isCompact && groups.length > 1) ...[
                   const SizedBox(height: 12),
@@ -174,7 +180,10 @@ class _CourseTile extends StatelessWidget {
                             ),
                             if (anyOngoing) ...[
                               const Gap.h(AppSpacing.sm),
-                              _badge(AppLocalizations.of(context).classOngoing, NexoTheme.success),
+                              _badge(
+                                AppLocalizations.of(context).classOngoing,
+                                NexoTheme.success,
+                              ),
                             ],
                           ],
                         ),
@@ -284,8 +293,8 @@ class _SessionRow extends StatelessWidget {
             session.typeCode.toUpperCase() == 'I'
                 ? Icons.language_rounded
                 : session.typeCode.toUpperCase() == 'T'
-                    ? Icons.menu_book_outlined
-                    : Icons.science_outlined,
+                ? Icons.menu_book_outlined
+                : Icons.science_outlined,
             size: AppIcon.xs,
             color: c,
           ),
