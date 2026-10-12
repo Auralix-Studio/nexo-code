@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [Sin publicar]
+
+### Android
+- Nexo para Android ahora va firmado con la clave propia de Auralix Studio y tiene un identificador nuevo. **Si tienes una versión anterior, desinstálala una vez antes de instalar esta**: solo tendrás que volver a iniciar sesión. Desde esta versión, las actualizaciones se instalan encima sin desinstalar.
+
 ## [1.8.0] - 2026-10-12
 
 ### Cambio rápido de cuenta
