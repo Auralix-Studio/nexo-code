@@ -34,6 +34,9 @@ def main(path: str) -> int:
                 tests[e["test"]["id"]] = e["test"]
             elif t == "error":
                 errors.setdefault(e["testID"], []).append(e.get("error", ""))
+            elif t == "print":
+                # flutter_test imprime aquí el detalle de los fallos de widgets.
+                errors.setdefault(e["testID"], []).append(e.get("message", ""))
             elif t == "testDone":
                 if e.get("hidden"):
                     continue
@@ -48,7 +51,8 @@ def main(path: str) -> int:
                         file = file.split("/test/", 1)[-1]
                         file = "test/" + file
                     line_no = test.get("root_line") or test.get("line") or 1
-                    msg = "\n".join(errors.get(e["testID"], []))[:1500]
+                    msg = "\n".join(errors.get(e["testID"], []))
+                    msg = "\n".join(l for l in msg.splitlines() if l.strip() and not set(l) <= set("═╡╞ ═"))[:3000]
                     if not name.startswith("loading "):
                         print(f"::error file={file},line={line_no},title={esc(name)}::{esc(msg)}")
                     else:
