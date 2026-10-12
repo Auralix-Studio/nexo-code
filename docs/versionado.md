@@ -55,13 +55,48 @@ Actions → **Versionado automático** → *Run workflow* → elegir
 
 ## Secretos necesarios
 
-| Secreto | Para |
-|---|---|
-| `ORG_GITHUB_TOKEN` | Publicar el release en `Auralix-Studio/nexo` (ya existía) |
-| `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Firmar el APK con la clave de release. Sin ellos se firma con la de depuración y **no se instala encima** de una versión firmada |
+Se guardan en `nexo-code` → **Settings → Secrets and variables → Actions →
+New repository secret**.
 
-Para generar `ANDROID_KEYSTORE_BASE64`: `base64 -w0 nexo-release.jks`
-(en Windows: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("nexo-release.jks"))`).
+### `ORG_GITHUB_TOKEN` (obligatorio)
+
+Permite publicar el release y el changelog del sitio en `Auralix-Studio/nexo`.
+El `GITHUB_TOKEN` automático no sirve porque solo tiene acceso a `nexo-code`.
+
+1. GitHub → foto de perfil → **Settings → Developer settings → Personal access
+   tokens → Fine-grained tokens → Generate new token**.
+2. **Resource owner:** `Auralix-Studio` (si no aparece, un admin de la
+   organización debe permitir fine-grained tokens en la organización).
+3. **Repository access:** *Only select repositories* → `nexo`.
+4. **Permissions → Repository permissions → Contents: Read and write**
+   (Metadata: Read se agrega solo).
+5. **Expiration:** la que prefieras; al vencer, el release falla con un aviso
+   claro y basta con generar otro y reemplazar el secreto.
+6. Copia el token y créalo en `nexo-code` como secreto `ORG_GITHUB_TOKEN`.
+
+Si la organización exige aprobación, el token queda *pending* hasta que un
+admin lo apruebe en Auralix-Studio → Settings → Personal access tokens.
+
+### Firma Android (opcional, recomendado)
+
+| Secreto | Valor |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | el `.jks` en base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | contraseña del keystore |
+| `ANDROID_KEY_ALIAS` | alias (por defecto `nexo`) |
+| `ANDROID_KEY_PASSWORD` | contraseña de la clave |
+
+Sin ellos el APK se firma con la clave de depuración y **no se instala
+encima** de una versión firmada. Para generar `ANDROID_KEYSTORE_BASE64`:
+`base64 -w0 nexo-release.jks` (en Windows:
+`[Convert]::ToBase64String([IO.File]::ReadAllBytes("nexo-release.jks"))`).
+
+## Si un release falla
+
+Actions → **Release multiplataforma** → *Run workflow* → escribir el tag
+(p. ej. `v1.8.0`). Vuelve a compilar y publica sin crear otra versión.
+Si solo falló la publicación, en la ejecución fallida basta con
+*Re-run failed jobs*.
 
 ## Ver qué versión saldría
 
