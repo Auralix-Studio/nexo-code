@@ -32,7 +32,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "pe.upla.nexo"
+        // Identidad pública de la app, en el dominio de Auralix Studio: un
+        // "pe.upla.*" se leía como app oficial de la universidad. El
+        // `namespace` (paquete del código Kotlin) se queda como está; no es
+        // visible para el usuario ni cambia la identidad del APK.
+        // Cambió junto con la clave de firma propia (octubre 2026): quien tenga
+        // una versión anterior debe desinstalarla una vez.
+        applicationId = "pro.aurx.nexo"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
