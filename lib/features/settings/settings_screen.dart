@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/app_locale.dart';
 import 'package:nexo/core/config.dart';
+import 'package:nexo/core/design/fonts.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/storage.dart';
@@ -101,10 +102,376 @@ class _AppearanceCard extends StatelessWidget {
                   );
                 },
               ),
+              const SizedBox(height: 20),
+              _FontPicker(theme: theme),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _FontPicker extends StatelessWidget {
+  final ThemeController theme;
+  const _FontPicker({required this.theme});
+
+  void _openCustomDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _CustomFontDialog(theme: theme),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeFont = theme.fontFamily;
+    final isCustom = activeFont != null &&
+        !NexoFontOption.presets.any((p) => p.fontFamily == activeFont);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'TIPOGRAFÍA Y FUENTES',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: NexoTheme.textMuted,
+              ),
+            ),
+            InkWell(
+              onTap: () => _openCustomDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.font_download_outlined,
+                      size: 14,
+                      color: NexoTheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Personalizada...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: NexoTheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (ctx, c) {
+            final cols = c.maxWidth >= 480 ? 2 : 1;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: NexoFontOption.presets.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: 64,
+              ),
+              itemBuilder: (_, i) {
+                final opt = NexoFontOption.presets[i];
+                final isSelected = !isCustom &&
+                    (activeFont == opt.fontFamily ||
+                        (activeFont == null && opt.id == 'system'));
+                return _FontTile(
+                  name: opt.name,
+                  description: opt.description,
+                  fontFamily: opt.fontFamily,
+                  selected: isSelected,
+                  onTap: () => theme.setFontFamily(opt.fontFamily),
+                );
+              },
+            );
+          },
+        ),
+        if (isCustom) ...[
+          const SizedBox(height: 10),
+          _CustomActiveFontTile(
+            fontName: activeFont,
+            onEdit: () => _openCustomDialog(context),
+            onReset: () => theme.setFontFamily('Roboto'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FontTile extends StatelessWidget {
+  final String name;
+  final String description;
+  final String? fontFamily;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FontTile({
+    required this.name,
+    required this.description,
+    required this.fontFamily,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? NexoTheme.primary.withValues(alpha: 0.10)
+              : NexoTheme.bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? NexoTheme.primary : NexoTheme.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: selected
+                          ? NexoTheme.primary
+                          : NexoTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: NexoTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: NexoTheme.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomActiveFontTile extends StatelessWidget {
+  final String fontName;
+  final VoidCallback onEdit;
+  final VoidCallback onReset;
+
+  const _CustomActiveFontTile({
+    required this.fontName,
+    required this.onEdit,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: NexoTheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: NexoTheme.primary, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.text_fields_rounded, size: 20, color: NexoTheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fontName,
+                  style: TextStyle(
+                    fontFamily: fontName,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: NexoTheme.primary,
+                  ),
+                ),
+                Text(
+                  'Fuente externa activa en todo el sistema',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: NexoTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            color: NexoTheme.primary,
+            tooltip: 'Cambiar',
+            onPressed: onEdit,
+          ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 18),
+            color: NexoTheme.textMuted,
+            tooltip: 'Quitar',
+            onPressed: onReset,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomFontDialog extends StatefulWidget {
+  final ThemeController theme;
+  const _CustomFontDialog({required this.theme});
+
+  @override
+  State<_CustomFontDialog> createState() => _CustomFontDialogState();
+}
+
+class _CustomFontDialogState extends State<_CustomFontDialog> {
+  late final TextEditingController _controller;
+  String _previewFont = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _previewFont = widget.theme.fontFamily ?? '';
+    _controller = TextEditingController(text: _previewFont);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _apply() {
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) {
+      widget.theme.setFontFamily(text);
+    }
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Fuente personalizada'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Ingresa el nombre de cualquier fuente instalada en tu dispositivo o sistema operativo (Windows, macOS, Android, Linux):',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Ej: Segoe UI, Arial, Fira Code, Inter',
+                prefixIcon: Icon(Icons.font_download_outlined),
+              ),
+              onChanged: (val) {
+                setState(() => _previewFont = val.trim());
+              },
+              onSubmitted: (_) => _apply(),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: NexoTheme.bg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: NexoTheme.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VISTA PREVIA EN TIEMPO REAL',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: NexoTheme.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nexo UPLA 2026',
+                    style: TextStyle(
+                      fontFamily: _previewFont.isEmpty ? null : _previewFont,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'El veloz murciélago hindú comía feliz cardillo y kiwi. 1234567890',
+                    style: TextStyle(
+                      fontFamily: _previewFont.isEmpty ? null : _previewFont,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _apply,
+          child: const Text('Aplicar a toda la app'),
+        ),
+      ],
     );
   }
 }
@@ -519,6 +886,7 @@ class _NotificationsCard extends StatelessWidget {
     );
   }
 }
+
 
 class UpdateCard extends StatelessWidget {
   const UpdateCard({super.key});

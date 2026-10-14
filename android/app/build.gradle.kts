@@ -38,7 +38,7 @@ android {
         // visible para el usuario ni cambia la identidad del APK.
         // Cambió junto con la clave de firma propia (octubre 2026): quien tenga
         // una versión anterior debe desinstalarla una vez.
-        applicationId = "pro.aurx.nexo"
+        applicationId = "com.auralix.nexo"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

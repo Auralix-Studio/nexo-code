@@ -9,7 +9,7 @@ import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/core/storage.dart';
 
 class HomeWidgetService {
-  static const _appGroup = 'pe.upla.nexo.widgets';
+  static const _appGroup = 'com.auralix.nexo.widgets';
   static const _wNext = 'NextClassWidgetProvider';
   static const _wToday = 'TodayWidgetProvider';
   static const _wPay = 'PaymentWidgetProvider';

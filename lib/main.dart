@@ -332,9 +332,12 @@ class NexoApp extends StatelessWidget {
             if (!kIsWeb && Platform.isWindows && !isTest) {
               windowManager.setBackgroundColor(palette.bg);
             }
-            return Theme(data: NexoTheme.themeFor(palette), child: child!);
+            return Theme(
+              data: NexoTheme.themeFor(palette, fontFamily: theme.fontFamily),
+              child: child!,
+            );
           },
-          theme: NexoTheme.light(),
+          theme: NexoTheme.light(theme.fontFamily),
           home: _Gate(
             session: session,
             store: store,

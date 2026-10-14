@@ -215,6 +215,7 @@ class AppStorage {
   static const _kToken = 'nexo.token';
   static const _kUser = 'nexo.user';
   static const _kTheme = 'nexo.themeMode';
+  static const _kFontFamily = 'nexo.fontFamily';
   static const _kCredUser = 'nexo.cred.user';
   static const _kCredPass = 'nexo.cred.pass';
   static const _kCachePrefix = 'nexo.cache.';
@@ -282,6 +283,14 @@ class AppStorage {
 
   String? get themeMode => _prefs.getString(_kTheme);
   Future<void> setThemeMode(String value) => _prefs.setString(_kTheme, value);
+  String? get fontFamily => _prefs.getString(_kFontFamily);
+  Future<void> setFontFamily(String? value) async {
+    if (value == null || value.trim().isEmpty) {
+      await _prefs.remove(_kFontFamily);
+    } else {
+      await _prefs.setString(_kFontFamily, value.trim());
+    }
+  }
   String? get localeCode => _prefs.getString(_kLocale);
   Future<void> setLocaleCode(String value) => _prefs.setString(_kLocale, value);
   bool get use24h => _prefs.getBool(_kUse24h) ?? true;

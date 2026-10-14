@@ -74,7 +74,7 @@ class NotificationService extends ChangeNotifier {
     const linux = LinuxInitializationSettings(defaultActionName: 'Abrir');
     const windows = WindowsInitializationSettings(
       appName: 'Nexo UPLA',
-      appUserModelId: 'pe.upla.nexo',
+      appUserModelId: 'com.auralix.nexo',
       guid: 'd2c4f88a-2d4b-4c0e-9e2c-3e7a4b9f1c10',
     );
     await _plugin.initialize(

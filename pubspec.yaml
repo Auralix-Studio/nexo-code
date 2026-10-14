@@ -1,7 +1,7 @@
 name: nexo
 description: "Cliente UPLA multiplataforma — SIGMA reimaginado."
 publish_to: 'none'
-version: 1.8.1+22
+version: 1.9.0+23
 
 environment:
   sdk: ^3.10.1
@@ -111,6 +111,9 @@ flutter:
     - assets/legal/
 
   fonts:
+    - family: Hypero
+      fonts:
+        - asset: assets/fonts/Hypero.ttf
     - family: SuperMindset
       fonts:
         - asset: assets/fonts/Super Mindset.ttf
