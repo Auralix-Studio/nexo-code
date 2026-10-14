@@ -10,6 +10,8 @@ class ThemeController extends ChangeNotifier {
   AppLocale get locale => _locale;
   bool _use24h = true;
   bool get use24h => _use24h;
+  String? _fontFamily;
+  String? get fontFamily => _fontFamily;
   ThemeMode get mode {
     switch (_selection) {
       case 'system':
@@ -29,8 +31,22 @@ class ThemeController extends ChangeNotifier {
     final s = AppStorage.instance;
     final raw = s.themeMode;
     _selection = raw ?? 'system';
+    _fontFamily = s.fontFamily;
     _locale = AppLocale.fromCode(s.localeCode);
     _use24h = s.use24h;
+  }
+
+  Future<void> setFontFamily(String? font) async {
+    final normalized = (font == null ||
+            font.trim().isEmpty ||
+            font.trim().toLowerCase() == 'system' ||
+            font.trim().toLowerCase() == 'sistema')
+        ? null
+        : font.trim();
+    if (_fontFamily == normalized) return;
+    _fontFamily = normalized;
+    notifyListeners();
+    await AppStorage.instance.setFontFamily(normalized);
   }
 
   Future<void> setLocale(AppLocale l) async {

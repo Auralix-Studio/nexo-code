@@ -2,10 +2,18 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [Sin publicar]
+
+### Tipografía y Diseño
+- **Personalización total de fuentes**: posibilidad de cambiar la tipografía en el 100% de la aplicación (Roboto, Sistema nativo, Hypero, Super Mindset o fuentes personalizadas del sistema operativo con vista previa en tiempo real).
+
+### Android y Plataformas
+- **Identidad de paquete definitiva**: identificador público actualizado a `com.auralix.nexo` en Android, iOS, Windows, macOS y Linux.
+
 ## [1.8.1] - 2026-10-12
 
 ### Android
-- Nexo para Android ahora va firmado con la clave propia de Auralix Studio y tiene un identificador nuevo. **Si tienes una versión anterior, desinstálala una vez antes de instalar esta**: solo tendrás que volver a iniciar sesión. Desde esta versión, las actualizaciones se instalan encima sin desinstalar.
+- Nexo para Android va firmado con la clave propia de Auralix Studio.
 
 ## [1.8.0] - 2026-10-12
 

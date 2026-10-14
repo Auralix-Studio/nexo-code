@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/fonts.dart';
 
 class NexoTheme {
   static const Color success = Color(0xFF10B981);
@@ -35,8 +35,9 @@ class NexoTheme {
     textMuted = p.textMuted;
   }
 
-  static ThemeData themeFor(NexoColors p) {
+  static ThemeData themeFor(NexoColors p, {String? fontFamily}) {
     apply(p);
+    final font = NexoFontOption.resolveFontFamily(fontFamily);
     final brightness = p.isDark ? Brightness.dark : Brightness.light;
     final base = ThemeData(
       useMaterial3: true,
@@ -50,7 +51,7 @@ class NexoTheme {
         error: danger,
       ),
       scaffoldBackgroundColor: p.bg,
-      fontFamily: 'Roboto',
+      fontFamily: font,
       extensions: <ThemeExtension<dynamic>>[p],
     );
     return base.copyWith(
@@ -61,6 +62,7 @@ class NexoTheme {
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: p.textPrimary,
+          fontFamily: font,
           fontSize: 22,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.4,
@@ -95,7 +97,7 @@ class NexoTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: p.primary, width: 1.5),
         ),
-        labelStyle: TextStyle(color: p.textSecondary),
+        labelStyle: TextStyle(color: p.textSecondary, fontFamily: font),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -105,7 +107,11 @@ class NexoTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: font,
+          ),
         ),
       ),
       dividerTheme: DividerThemeData(color: p.divider, thickness: 1, space: 1),
@@ -113,13 +119,19 @@ class NexoTheme {
         labelColor: p.primary,
         unselectedLabelColor: p.textSecondary,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(
+        labelStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          fontFamily: font,
+        ),
+        unselectedLabelStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
+          fontFamily: font,
         ),
       ),
       textTheme: base.textTheme.apply(
+        fontFamily: font,
         bodyColor: p.textPrimary,
         displayColor: p.textPrimary,
       ),
@@ -137,8 +149,10 @@ class NexoTheme {
     );
   }
 
-  static ThemeData light() => themeFor(NexoColors.light);
-  static ThemeData dark() => themeFor(NexoColors.dark);
+  static ThemeData light([String? fontFamily]) =>
+      themeFor(NexoColors.light, fontFamily: fontFamily);
+  static ThemeData dark([String? fontFamily]) =>
+      themeFor(NexoColors.dark, fontFamily: fontFamily);
 }
 
 @immutable

@@ -18,8 +18,8 @@ class StoreBuild {
 }
 
 class AppConfig {
-  static const String appVersion = '1.8.1';
-  static const int appBuild = 22;
+  static const String appVersion = '1.9.0';
+  static const int appBuild = 23;
   static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
   static const String nomSys = 'SIGMA';
   static const Duration httpTimeout = Duration(seconds: 30);
