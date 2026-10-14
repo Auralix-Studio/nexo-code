@@ -11,6 +11,11 @@ generate_release_notes.ps1 y update_site.ps1. Lo usa release.yml.
       hash + verificación + instalación) y release-meta.json, como
       generate_release_notes.ps1.
 
+  python3 scripts/release_assets.py manifest DIST VERSION [--min-build N]
+      version.json: lo que lee el actualizador de la app (sitio y release).
+      Necesita release-meta.json (paso `notes`). El build sale de
+      pubspec.yaml y el mínimo de scripts/release_policy.json.
+
   python3 scripts/release_assets.py site  SITE_DIR VERSION [--date YYYY-MM-DD]
       Agrega la versión a CHANGELOG.md y changelog.html del sitio
       (repo Auralix-Studio/nexo), como update_site.ps1. No duplica si ya está.
@@ -54,7 +59,7 @@ def neutral(t: str) -> str:
     return t
 
 
-META_FILES = {"SHA256SUMS.txt", "RELEASE_NOTES.md", "release-meta.json"}
+META_FILES = {"SHA256SUMS.txt", "RELEASE_NOTES.md", "release-meta.json", "version.json"}
 # Se compilan pero no se publican (solo pruebas internas).
 NOT_PUBLISHED = (".ipa",)
 
@@ -68,7 +73,7 @@ def sha256(path: pathlib.Path) -> str:
 
 
 ORDER = (
-    "universal.apk", "arm64.apk", "armv7.apk", "x86_64.apk",
+    "arm64.apk", "universal.apk", "armv7.apk", "x86_64.apk",
     "setup-x64.exe", "windows-x64.zip", "linux-x64.tar.gz", "macos.zip",
     "ios-unsigned.ipa",
 )
@@ -113,10 +118,10 @@ def read_sums(dist: pathlib.Path) -> dict[str, str]:
 def describe(name: str) -> str:
     n = name.lower()
     table = [
-        ("universal.apk", "Android (recomendado)"),
-        ("arm64.apk", "Android ARM64"),
-        ("armv7.apk", "Android ARMv7 (equipos antiguos)"),
-        ("x86_64.apk", "Android x86_64 (emuladores)"),
+        ("arm64.apk", "Android (la mayoría de teléfonos)"),
+        ("universal.apk", "Android, si no sabes cuál elegir"),
+        ("armv7.apk", "Android de 32 bits (equipos antiguos o Android Go)"),
+        ("x86_64.apk", "Android x86_64 (emuladores y Chromebooks)"),
         ("setup-x64.exe", "Windows, instalador (recomendado)"),
         ("windows-x64.zip", "Windows, portable"),
         ("linux-x64.tar.gz", "Linux x64"),
@@ -164,17 +169,18 @@ def cmd_notes(dist: pathlib.Path, version: str, repo: str) -> None:
         "",
         "**PowerShell:**",
         "```",
-        f"Get-FileHash -Algorithm SHA256 .\\nexo-{tag}-universal.apk",
+        f"Get-FileHash -Algorithm SHA256 .\\nexo-{tag}-arm64.apk",
         "```",
         "**Bash:**",
         "```",
-        f"sha256sum nexo-{tag}-universal.apk",
+        f"sha256sum nexo-{tag}-arm64.apk",
         "```",
         "",
         "## Instalación",
         "",
-        "- **Usuarios con versión anterior:** la app detecta esta versión al próximo arranque, "
-        "la descarga en segundo plano y avisa cuando está lista para instalar.",
+        "- **Usuarios con versión anterior:** la app avisa de esta versión (en Android también "
+        "con la app cerrada, una vez al día) y la instala con un toque, descargando solo el "
+        "archivo que corresponde al equipo.",
         "- **Instalación limpia en Android:** la primera vez se pide autorizar «fuentes desconocidas» para Nexo.",
         "- **Windows:** ejecutar `nexo-" + tag + "-setup-x64.exe`; no requiere permisos de administrador.",
         "",
@@ -242,6 +248,57 @@ def section_to_html(version: str, section: str) -> str:
     return "\n".join(out) + "\n"
 
 
+# Clave de version.json para cada archivo (ver lib/data/update_manifest.dart).
+MANIFEST_KEYS = {
+    "arm64.apk": "android-arm64",
+    "armv7.apk": "android-armv7",
+    "x86_64.apk": "android-x86_64",
+    "universal.apk": "android-universal",
+    "setup-x64.exe": "windows-x64",
+}
+POLICY = ROOT / "scripts" / "release_policy.json"
+SITE_URL = "https://nexo.aurx.pro"
+
+
+def pubspec_build() -> int:
+    text = (ROOT / "pubspec.yaml").read_text(encoding="utf-8")
+    m = re.search(r"^version:\s*\S+\+(\d+)\s*$", text, re.M)
+    if not m:
+        raise SystemExit("pubspec.yaml no tiene `version: X.Y.Z+BUILD`")
+    return int(m.group(1))
+
+
+def cmd_manifest(dist: pathlib.Path, version: str, min_build: int | None) -> None:
+    meta = json.loads((dist / "release-meta.json").read_text(encoding="utf-8"))
+    if meta.get("version") != version:
+        raise SystemExit(f"release-meta.json es de {meta.get('version')}, no de {version}")
+    if min_build is None:
+        policy = json.loads(POLICY.read_text(encoding="utf-8")) if POLICY.exists() else {}
+        min_build = int(policy.get("min_build", 0))
+    build = pubspec_build()
+    if min_build > build:
+        raise SystemExit(f"min_build {min_build} es mayor que el build publicado {build}")
+    assets = {}
+    for a in meta["artifacts"]:
+        for suffix, key in MANIFEST_KEYS.items():
+            if a["name"].lower() == f"nexo-v{version}-{suffix}" and a.get("sha256"):
+                assets[key] = {k: a[k] for k in ("name", "url", "size", "sha256")}
+    if "android-universal" not in assets or "windows-x64" not in assets:
+        raise SystemExit("version.json sin el APK universal o el instalador de Windows")
+    manifest = {
+        "schema": 1,
+        "version": version,
+        "build": build,
+        "date": meta["date"],
+        "min_build": min_build,
+        "notes_url": f"{SITE_URL}/changelog.html",
+        "assets": assets,
+    }
+    out = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+    (dist / "version.json").write_text(out, encoding="utf-8")
+    print(out)
+
+
 def cmd_site(site: pathlib.Path, version: str, date: str) -> bool:
     section = neutral(changelog_section(version))
     changed = False
@@ -284,6 +341,10 @@ def main(argv: list[str]) -> int:
     n.add_argument("dist", type=pathlib.Path)
     n.add_argument("version")
     n.add_argument("--repo", default="Auralix-Studio/nexo")
+    m = sub.add_parser("manifest")
+    m.add_argument("dist", type=pathlib.Path)
+    m.add_argument("version")
+    m.add_argument("--min-build", type=int, default=None)
     w = sub.add_parser("site")
     w.add_argument("site", type=pathlib.Path)
     w.add_argument("version")
@@ -293,6 +354,8 @@ def main(argv: list[str]) -> int:
         cmd_sums(a.dist)
     elif a.cmd == "notes":
         cmd_notes(a.dist, a.version.lstrip("v"), a.repo)
+    elif a.cmd == "manifest":
+        cmd_manifest(a.dist, a.version.lstrip("v"), a.min_build)
     else:
         cmd_site(a.site, a.version.lstrip("v"), a.date)
     return 0

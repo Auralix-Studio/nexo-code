@@ -1,3 +1,8 @@
 {
-    "cmake.sourceDirectory": "C:/Users/aless/Desktop/nexo/nexo/linux"
+    "cmake.sourceDirectory": "${workspaceFolder}/linux",
+    // La extensión de Java intentaba importar android/ con el JDK más nuevo
+    // de la máquina (25), que Gradle 8.14 no soporta: error en
+    // build.gradle.kts. El código Android es Kotlin (que esa extensión no
+    // analiza) y lo compila Flutter con su propio JDK (flutter config --jdk-dir).
+    "java.import.gradle.enabled": false
 }

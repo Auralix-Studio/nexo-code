@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
-import 'package:nexo/core/design/fonts.dart';
 
 class NexoTheme {
   static const Color success = Color(0xFF10B981);
@@ -36,9 +35,15 @@ class NexoTheme {
     textMuted = p.textMuted;
   }
 
-  static ThemeData themeFor(NexoColors p, {String? fontFamily}) {
+  /// La fuente de siempre, si el usuario no eligió otra.
+  static const String defaultFontFamily = 'Roboto';
+
+  /// [fontFamily] `null` deja la fuente del sistema.
+  static ThemeData themeFor(
+    NexoColors p, {
+    String? fontFamily = defaultFontFamily,
+  }) {
     apply(p);
-    final font = NexoFontOption.resolveFontFamily(fontFamily);
     final brightness = p.isDark ? Brightness.dark : Brightness.light;
     final base = ThemeData(
       useMaterial3: true,
@@ -52,7 +57,7 @@ class NexoTheme {
         error: danger,
       ),
       scaffoldBackgroundColor: p.bg,
-      fontFamily: font,
+      fontFamily: fontFamily,
       extensions: <ThemeExtension<dynamic>>[p],
     );
     return base.copyWith(
@@ -61,9 +66,11 @@ class NexoTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
+        // Los estilos de componente no heredan la familia del tema: sin
+        // nombrarla aquí, el título y los botones saldrían con la del sistema.
         titleTextStyle: TextStyle(
           color: p.textPrimary,
-          fontFamily: font,
+          fontFamily: fontFamily,
           fontSize: 22,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.4,
@@ -98,7 +105,7 @@ class NexoTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: p.primary, width: 1.5),
         ),
-        labelStyle: TextStyle(color: p.textSecondary, fontFamily: font),
+        labelStyle: TextStyle(color: p.textSecondary, fontFamily: fontFamily),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -111,7 +118,7 @@ class NexoTheme {
           textStyle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            fontFamily: font,
+            fontFamily: fontFamily,
           ),
         ),
       ),
@@ -123,16 +130,15 @@ class NexoTheme {
         labelStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          fontFamily: font,
+          fontFamily: fontFamily,
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          fontFamily: font,
+          fontFamily: fontFamily,
         ),
       ),
       textTheme: base.textTheme.apply(
-        fontFamily: font,
         bodyColor: p.textPrimary,
         displayColor: p.textPrimary,
       ),
@@ -150,9 +156,9 @@ class NexoTheme {
     );
   }
 
-  static ThemeData light([String? fontFamily]) =>
+  static ThemeData light({String? fontFamily = defaultFontFamily}) =>
       themeFor(NexoColors.light, fontFamily: fontFamily);
-  static ThemeData dark([String? fontFamily]) =>
+  static ThemeData dark({String? fontFamily = defaultFontFamily}) =>
       themeFor(NexoColors.dark, fontFamily: fontFamily);
 }
 

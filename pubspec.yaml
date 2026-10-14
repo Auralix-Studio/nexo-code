@@ -44,6 +44,7 @@ dependencies:
   window_manager: ^0.4.3
   path_provider: ^2.1.4
   share_plus: ^13.3.1
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -109,6 +110,11 @@ flutter:
 
     # Términos, Política de Privacidad y Política de Cookies, uno por idioma.
     - assets/legal/
+
+    # Tipografías elegibles en Configuración. Se registran en tiempo de
+    # ejecución (ver lib/core/design/font_library.dart) y no como `fonts:`,
+    # porque hay que darles pesos que el archivo no trae.
+    - assets/fonts/Hypero.ttf
 
   fonts:
     - family: Hypero

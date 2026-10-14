@@ -17,7 +17,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
     // En la Store, las actualizaciones las gestiona Windows: sin banner propio.
     if (StoreBuild.isStore) return const SizedBox.shrink();
     final updater = UpdateService.instance;
-    if (updater == null || !updater.isSupported || _dismissed) {
+    if (updater == null || !updater.isSupported) {
       return const SizedBox.shrink();
     }
     return ListenableBuilder(
@@ -28,7 +28,10 @@ class _UpdateBannerState extends State<UpdateBanner> {
         final visible =
             status.state == UpdateState.available ||
             status.state == UpdateState.ready;
-        if (!visible) return const SizedBox.shrink();
+        // Una actualización obligatoria no se puede cerrar.
+        if (!visible || (_dismissed && !status.required)) {
+          return const SizedBox.shrink();
+        }
         final ready = status.state == UpdateState.ready;
         final version = status.latestVersion ?? '';
         return Material(
@@ -50,7 +53,9 @@ class _UpdateBannerState extends State<UpdateBanner> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          ready
+                          status.required
+                              ? l.updBannerRequiredTitle
+                              : ready
                               ? l.updBannerReadyTitle
                               : l.updBannerAvailableTitle,
                           style: TextStyle(
@@ -60,7 +65,9 @@ class _UpdateBannerState extends State<UpdateBanner> {
                           ),
                         ),
                         Text(
-                          ready
+                          status.required
+                              ? l.updBannerRequiredBody(version)
+                              : ready
                               ? l.updBannerReadyBody(version)
                               : l.updBannerAvailableBody(version),
                           style: TextStyle(
@@ -77,7 +84,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  else
+                  else if (!status.required)
                     IconButton(
                       icon: Icon(
                         Icons.close_rounded,

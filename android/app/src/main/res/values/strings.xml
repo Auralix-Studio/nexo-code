@@ -4,4 +4,9 @@
     <string name="widget_today_desc">Nexo · Horario de hoy</string>
     <string name="widget_payment_desc">Nexo · Próximo pago</string>
     <string name="widget_academic_desc">Nexo · Resumen académico</string>
+    <!-- Aviso diario de versión nueva (UpdateCheckJob). Mismos textos y
+         canal que NotificationService en Dart. -->
+    <string name="update_channel_name">Actualizaciones</string>
+    <string name="update_available_title">Actualización disponible</string>
+    <string name="update_available_body">Nexo %1$s está disponible. Toca para actualizar.</string>
 </resources>

@@ -1,15 +1,18 @@
 class UpdateConfig {
   static const String repo = 'auralix-studio/nexo';
-  static const String latestReleaseApi =
-      'https://api.github.com/repos/$repo/releases/latest';
-  static bool isApkAsset(String name) => name.toLowerCase().endsWith('.apk');
+
+  /// Lo publica el release en el sitio (GitHub Pages, servido por CDN). La
+  /// revisión diaria nativa de Android usa la misma URL (UpdateCheckJob.kt).
+  static const String manifestUrl = 'https://nexo.aurx.pro/version.json';
+
+  /// El mismo archivo, subido al último release.
+  static const String manifestFallbackUrl =
+      'https://github.com/$repo/releases/latest/download/version.json';
   static bool isWindowsAsset(String name) {
     final n = name.toLowerCase();
     return RegExp(r'^nexo-v\d+\.\d+\.\d+-setup-x64\.exe$').hasMatch(n);
   }
 
-  static bool isUniversalApk(String name) =>
-      isApkAsset(name) && name.toLowerCase().contains('universal');
   static const Duration checkInterval = Duration(hours: 24);
 }
 

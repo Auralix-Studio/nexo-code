@@ -117,6 +117,101 @@
   "settingsSystem": "Sistema",
   "settingsSystemDesc": "Sigue el modo claro/oscuro de tu dispositivo",
   "settingsActive": "Activa",
+  "fontsTitle": "Tipografía",
+  "fontsSubtitle": "Para toda la app. Puedes importar tus propias fuentes.",
+  "fontsPreviewTitle": "Horario de hoy",
+  "fontsPreviewBody": "Así se leerán tus clases, notas y pagos.",
+  "fontSystemName": "Sistema",
+  "fontKindStandard": "Predeterminada",
+  "fontKindSystem": "La de tu dispositivo",
+  "fontKindBundled": "Incluida en Nexo",
+  "fontKindImported": "{count, plural, =1{Importada · 1 estilo} other{Importada · {count} estilos}}",
+  "@fontKindImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fontImport": "Importar fuente",
+  "fontImportFormats": "Archivos TTF u OTF",
+  "fontRemove": "Quitar {name}",
+  "@fontRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fontApplied": "Se aplicó {name}",
+  "@fontApplied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fontRemoved": "Se quitó {name}",
+  "@fontRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fontPickFailed": "No se pudo abrir el selector de archivos.",
+  "fontProblemNotAFont": "{file} no es un archivo de fuente.",
+  "@fontProblemNotAFont": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "fontProblemWebFont": "{file} es una fuente para web (WOFF). Usa la versión TTF u OTF.",
+  "@fontProblemWebFont": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "fontProblemCollection": "{file} es una colección TTC. Usa los archivos TTF u OTF por separado.",
+  "@fontProblemCollection": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "fontProblemDamaged": "{file} está dañado o incompleto.",
+  "@fontProblemDamaged": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "fontProblemTooLarge": "{file} pesa más de {max} MB.",
+  "@fontProblemTooLarge": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "fontProblemNotSaved": "No se pudo guardar {file}.",
+  "@fontProblemNotSaved": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "fontVariableHint": "Es una fuente variable: Nexo la muestra con su grosor base, sin negritas. Para títulos en negrita, importa también sus archivos estáticos (Regular, Bold…).",
   "settingsNotificationsSubtitle": "Recordatorios y alertas",
   "notificationsIntro": "Recibe avisos de tus clases, pagos y notas. Personaliza qué llega y con cuánta anticipación.",
   "notificationsClassesTitle": "Clases",
@@ -702,6 +797,16 @@
   },
   "updSnackCheckFailed": "No se pudo verificar. Revisa tu conexión.",
   "updSnackInstallFailed": "No se pudo iniciar la instalación.",
+  "updSnackNeedsPermission": "Permite que Nexo instale aplicaciones y vuelve a tocar Instalar.",
+  "updBannerRequiredTitle": "Necesitas actualizar Nexo",
+  "updBannerRequiredBody": "Esta versión dejó de funcionar. Toca para instalar Nexo {version}.",
+  "@updBannerRequiredBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "updBannerReadyTitle": "Actualización lista para instalar",
   "updBannerAvailableTitle": "Actualización disponible",
   "updBannerReadyBody": "Toca para instalar Nexo {version}.",

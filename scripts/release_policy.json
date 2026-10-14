@@ -1,0 +1,4 @@
+{
+  "_comment": "min_build: las versiones con build menor dejaron de funcionar y la app obliga a actualizar. Subirlo solo cuando algo externo rompa las anteriores; 0 = nunca obligatorio.",
+  "min_build": 0
+}

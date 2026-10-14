@@ -1,17 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:nexo/core/app_locale.dart';
+import 'package:nexo/core/design/font_library.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/storage.dart';
 
 class ThemeController extends ChangeNotifier {
+  ThemeController({FontLibrary? fonts}) : fonts = fonts ?? FontLibrary();
+
+  final FontLibrary fonts;
   String _selection = 'system';
   String get selection => _selection;
   AppLocale _locale = AppLocale.es;
   AppLocale get locale => _locale;
   bool _use24h = true;
   bool get use24h => _use24h;
-  String? _fontFamily;
-  String? get fontFamily => _fontFamily;
+  String _fontId = FontLibrary.defaultId;
+  String get fontId => _fontId;
+  FontChoice get font => fonts.byId(_fontId) ?? FontLibrary.presets.first;
+
+  /// Familia para `ThemeData.fontFamily`; `null` es la del sistema.
+  String? get fontFamily => font.family;
   ThemeMode get mode {
     switch (_selection) {
       case 'system':
@@ -31,22 +41,63 @@ class ThemeController extends ChangeNotifier {
     final s = AppStorage.instance;
     final raw = s.themeMode;
     _selection = raw ?? 'system';
-    _fontFamily = s.fontFamily;
     _locale = AppLocale.fromCode(s.localeCode);
     _use24h = s.use24h;
+    fonts.load();
+    final savedFont = s.fontId ?? _migrateLegacyFont(s);
+    _fontId = savedFont != null && fonts.byId(savedFont) != null
+        ? savedFont
+        : FontLibrary.defaultId;
   }
 
-  Future<void> setFontFamily(String? font) async {
-    final normalized = (font == null ||
-            font.trim().isEmpty ||
-            font.trim().toLowerCase() == 'system' ||
-            font.trim().toLowerCase() == 'sistema')
-        ? null
-        : font.trim();
-    if (_fontFamily == normalized) return;
-    _fontFamily = normalized;
+  /// La v1.9.0 guardaba el nombre de la familia, incluso uno escrito a mano.
+  /// Las incluidas pasan a su id; un nombre suelto no tiene archivo detrás y
+  /// vuelve a la predeterminada.
+  static String? _migrateLegacyFont(AppStorage s) {
+    final legacy = s.legacyFontFamily;
+    if (legacy == null) return null;
+    final id = switch (legacy) {
+      'Roboto' => FontLibrary.defaultId,
+      'Hypero' => 'hypero',
+      'SuperMindset' => 'supermindset',
+      _ => FontLibrary.defaultId,
+    };
+    unawaited(s.setFontId(id));
+    unawaited(s.clearLegacyFontFamily());
+    return id;
+  }
+
+  /// Aplica la fuente cuando ya está registrada, para que el cambio no pase
+  /// por la del sistema durante un instante.
+  Future<void> setFont(String id) async {
+    if (_fontId == id || fonts.byId(id) == null) return;
+    await fonts.ensureLoaded(id);
+    _fontId = id;
     notifyListeners();
-    await AppStorage.instance.setFontFamily(normalized);
+    await AppStorage.instance.setFontId(id);
+  }
+
+  /// Importa los archivos y aplica la última familia que entró.
+  Future<FontImport> importFonts(List<PickedFontFile> files) async {
+    final result = await fonts.import(files);
+    if (result.fonts.isNotEmpty) {
+      final id = result.fonts.last.id;
+      await fonts.ensureLoaded(id);
+      // Aunque sea la fuente activa: si sumó archivos, cambió su familia.
+      _fontId = id;
+      notifyListeners();
+      await AppStorage.instance.setFontId(id);
+    }
+    return result;
+  }
+
+  Future<void> removeFont(String id) async {
+    await fonts.remove(id);
+    if (_fontId == id) {
+      _fontId = FontLibrary.defaultId;
+      await AppStorage.instance.setFontId(_fontId);
+    }
+    notifyListeners();
   }
 
   Future<void> setLocale(AppLocale l) async {

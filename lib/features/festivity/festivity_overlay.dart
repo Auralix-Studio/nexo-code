@@ -350,8 +350,10 @@ class _ParticlesState extends State<_Particles>
   @override
   void didUpdateWidget(covariant _Particles old) {
     super.didUpdateWidget(old);
-    if (old.activeFestivity.festivity.id != widget.activeFestivity.festivity.id)
+    if (old.activeFestivity.festivity.id !=
+        widget.activeFestivity.festivity.id) {
       _build();
+    }
   }
 
   @override

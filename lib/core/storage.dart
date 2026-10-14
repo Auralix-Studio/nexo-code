@@ -215,7 +215,12 @@ class AppStorage {
   static const _kToken = 'nexo.token';
   static const _kUser = 'nexo.user';
   static const _kTheme = 'nexo.themeMode';
-  static const _kFontFamily = 'nexo.fontFamily';
+  static const _kFont = 'nexo.font';
+  static const _kImportedFonts = 'nexo.fonts.imported';
+  static const _kFontFilePrefix = 'nexo.fontfile.';
+
+  /// v1.9.0 guardaba aquí el nombre de la familia; solo se lee para migrar.
+  static const _kLegacyFontFamily = 'nexo.fontFamily';
   static const _kCredUser = 'nexo.cred.user';
   static const _kCredPass = 'nexo.cred.pass';
   static const _kCachePrefix = 'nexo.cache.';
@@ -238,6 +243,7 @@ class AppStorage {
   static const _kUpdSha256 = 'nexo.upd.sha256';
   static const _kUpdDownloadedVer = 'nexo.upd.downloadedVer';
   static const _kUpdApkPath = 'nexo.upd.apkPath';
+  static const _kUpdMinBuild = 'nexo.upd.minBuild';
   static const _kDashboardConfig = 'nexo.dashboardConfig';
   String? get notifPrefsJson => _prefs.getString(_kNotifPrefs);
   Future<void> setNotifPrefsJson(String value) =>
@@ -283,14 +289,21 @@ class AppStorage {
 
   String? get themeMode => _prefs.getString(_kTheme);
   Future<void> setThemeMode(String value) => _prefs.setString(_kTheme, value);
-  String? get fontFamily => _prefs.getString(_kFontFamily);
-  Future<void> setFontFamily(String? value) async {
-    if (value == null || value.trim().isEmpty) {
-      await _prefs.remove(_kFontFamily);
-    } else {
-      await _prefs.setString(_kFontFamily, value.trim());
-    }
-  }
+  String? get fontId => _prefs.getString(_kFont);
+  Future<void> setFontId(String value) => _prefs.setString(_kFont, value);
+  String? get legacyFontFamily => _prefs.getString(_kLegacyFontFamily);
+  Future<void> clearLegacyFontFamily() => _prefs.remove(_kLegacyFontFamily);
+  String? get importedFontsJson => _prefs.getString(_kImportedFonts);
+  Future<void> setImportedFontsJson(String value) =>
+      _prefs.setString(_kImportedFonts, value);
+
+  /// Archivo de fuente en base64. Solo en web, donde no hay carpeta propia:
+  /// en el resto de plataformas los archivos van a disco.
+  String? fontFileBase64(String name) =>
+      _prefs.getString('$_kFontFilePrefix$name');
+  Future<void> setFontFileBase64(String name, String? value) => value == null
+      ? _prefs.remove('$_kFontFilePrefix$name')
+      : _prefs.setString('$_kFontFilePrefix$name', value);
   String? get localeCode => _prefs.getString(_kLocale);
   Future<void> setLocaleCode(String value) => _prefs.setString(_kLocale, value);
   bool get use24h => _prefs.getBool(_kUse24h) ?? true;
@@ -310,6 +323,7 @@ class AppStorage {
       await rememberAccount(user: user, password: pass);
     }
   }
+
   Future<void> clearCredentials() =>
       _updateAuth({_kCredUser: null, _kCredPass: null});
 
@@ -378,6 +392,10 @@ class AppStorage {
     await _prefs.remove(_kUpdApkSize);
     await _prefs.remove(_kUpdSha256);
   }
+
+  /// Build mínimo que sigue funcionando, según el último version.json.
+  int get updMinBuild => _prefs.getInt(_kUpdMinBuild) ?? 0;
+  Future<void> setUpdMinBuild(int value) => _prefs.setInt(_kUpdMinBuild, value);
 
   String? get updDownloadedVer => _prefs.getString(_kUpdDownloadedVer);
   String? get updApkPath => _prefs.getString(_kUpdApkPath);

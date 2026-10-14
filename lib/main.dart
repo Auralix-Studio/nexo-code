@@ -146,6 +146,9 @@ Future<void> main(List<String> args) async {
     scope: api.scope,
   );
   final theme = ThemeController()..load();
+  // Sin esperar: el splash usa su propia fuente y, cuando esta termina de
+  // registrarse, el motor vuelve a componer el texto con ella.
+  unawaited(theme.fonts.ensureLoaded(theme.fontId));
   final widgets = HomeWidgetService();
   final updater = UpdateService(httpClient: secureHttp);
   store.onGradeChange = (course, grade) =>
@@ -337,7 +340,7 @@ class NexoApp extends StatelessWidget {
               child: child!,
             );
           },
-          theme: NexoTheme.light(theme.fontFamily),
+          theme: NexoTheme.light(fontFamily: theme.fontFamily),
           home: _Gate(
             session: session,
             store: store,

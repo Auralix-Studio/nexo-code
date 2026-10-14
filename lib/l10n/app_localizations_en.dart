@@ -231,6 +231,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsActive => 'Active';
 
   @override
+  String get fontsTitle => 'Typography';
+
+  @override
+  String get fontsSubtitle =>
+      'For the whole app. You can import your own fonts.';
+
+  @override
+  String get fontsPreviewTitle => 'Today\'s schedule';
+
+  @override
+  String get fontsPreviewBody =>
+      'This is how your classes, grades and payments will read.';
+
+  @override
+  String get fontSystemName => 'System';
+
+  @override
+  String get fontKindStandard => 'Default';
+
+  @override
+  String get fontKindSystem => 'Your device\'s font';
+
+  @override
+  String get fontKindBundled => 'Included with Nexo';
+
+  @override
+  String fontKindImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported · $count styles',
+      one: 'Imported · 1 style',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get fontImport => 'Import font';
+
+  @override
+  String get fontImportFormats => 'TTF or OTF files';
+
+  @override
+  String fontRemove(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String fontApplied(String name) {
+    return '$name applied';
+  }
+
+  @override
+  String fontRemoved(String name) {
+    return '$name removed';
+  }
+
+  @override
+  String get fontPickFailed => 'Couldn\'t open the file picker.';
+
+  @override
+  String fontProblemNotAFont(String file) {
+    return '$file isn\'t a font file.';
+  }
+
+  @override
+  String fontProblemWebFont(String file) {
+    return '$file is a web font (WOFF). Use the TTF or OTF version.';
+  }
+
+  @override
+  String fontProblemCollection(String file) {
+    return '$file is a TTC collection. Use the separate TTF or OTF files.';
+  }
+
+  @override
+  String fontProblemDamaged(String file) {
+    return '$file is damaged or incomplete.';
+  }
+
+  @override
+  String fontProblemTooLarge(String file, String max) {
+    return '$file is larger than $max MB.';
+  }
+
+  @override
+  String fontProblemNotSaved(String file) {
+    return 'Couldn\'t save $file.';
+  }
+
+  @override
+  String get fontVariableHint =>
+      'This is a variable font: Nexo shows it at its base weight, without bold. For bold headings, also import its static files (Regular, Bold…).';
+
+  @override
   String get settingsNotificationsSubtitle => 'Reminders and alerts';
 
   @override
@@ -1425,6 +1520,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updSnackInstallFailed => 'Couldn\'t start the installation.';
 
   @override
+  String get updSnackNeedsPermission =>
+      'Allow Nexo to install apps, then tap Install again.';
+
+  @override
+  String get updBannerRequiredTitle => 'You need to update Nexo';
+
+  @override
+  String updBannerRequiredBody(String version) {
+    return 'This version no longer works. Tap to install Nexo $version.';
+  }
+
+  @override
   String get updBannerReadyTitle => 'Update ready to install';
 
   @override
@@ -2419,7 +2526,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSwitchTitle => 'Switch account';
 
   @override
-  String get accountSwitchHint => 'Switch accounts without typing your password';
+  String get accountSwitchHint =>
+      'Switch accounts without typing your password';
 
   @override
   String get accountAddAnother => 'Add another account';
@@ -2464,5 +2572,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accountLogoutKeepHint => 'Your current account stays saved so you can come back with one tap.';
+  String get accountLogoutKeepHint =>
+      'Your current account stays saved so you can come back with one tap.';
 }

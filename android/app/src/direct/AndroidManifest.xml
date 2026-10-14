@@ -1,0 +1,31 @@
+<!-- Solo en la distribución directa (APK de GitHub), nunca en tiendas:
+     build.gradle.kts lo aplica cuando no hay STORE_BUILD. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Para depurar con el Flutter tool (hot reload, breakpoints). En debug y
+         profile este manifiesto reemplaza a los de src/debug y src/profile. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Lanzar el instalador del sistema con el APK descargado. Android pide
+         al usuario autorizar a Nexo una vez («instalar apps desconocidas»). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <!-- Entrega el APK al instalador sin exponer otros archivos: solo la
+             carpeta updates/ de los archivos privados de la app. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/nexo_update_paths" />
+        </provider>
+
+        <!-- Revisión diaria de versiones con la app cerrada (JobScheduler). -->
+        <service
+            android:name=".UpdateCheckJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+    </application>
+</manifest>

@@ -442,6 +442,138 @@ abstract class AppLocalizations {
   /// **'Activa'**
   String get settingsActive;
 
+  /// No description provided for @fontsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipografía'**
+  String get fontsTitle;
+
+  /// No description provided for @fontsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Para toda la app. Puedes importar tus propias fuentes.'**
+  String get fontsSubtitle;
+
+  /// No description provided for @fontsPreviewTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario de hoy'**
+  String get fontsPreviewTitle;
+
+  /// No description provided for @fontsPreviewBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Así se leerán tus clases, notas y pagos.'**
+  String get fontsPreviewBody;
+
+  /// No description provided for @fontSystemName.
+  ///
+  /// In es, this message translates to:
+  /// **'Sistema'**
+  String get fontSystemName;
+
+  /// No description provided for @fontKindStandard.
+  ///
+  /// In es, this message translates to:
+  /// **'Predeterminada'**
+  String get fontKindStandard;
+
+  /// No description provided for @fontKindSystem.
+  ///
+  /// In es, this message translates to:
+  /// **'La de tu dispositivo'**
+  String get fontKindSystem;
+
+  /// No description provided for @fontKindBundled.
+  ///
+  /// In es, this message translates to:
+  /// **'Incluida en Nexo'**
+  String get fontKindBundled;
+
+  /// No description provided for @fontKindImported.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Importada · 1 estilo} other{Importada · {count} estilos}}'**
+  String fontKindImported(int count);
+
+  /// No description provided for @fontImport.
+  ///
+  /// In es, this message translates to:
+  /// **'Importar fuente'**
+  String get fontImport;
+
+  /// No description provided for @fontImportFormats.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivos TTF u OTF'**
+  String get fontImportFormats;
+
+  /// No description provided for @fontRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar {name}'**
+  String fontRemove(String name);
+
+  /// No description provided for @fontApplied.
+  ///
+  /// In es, this message translates to:
+  /// **'Se aplicó {name}'**
+  String fontApplied(String name);
+
+  /// No description provided for @fontRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Se quitó {name}'**
+  String fontRemoved(String name);
+
+  /// No description provided for @fontPickFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir el selector de archivos.'**
+  String get fontPickFailed;
+
+  /// No description provided for @fontProblemNotAFont.
+  ///
+  /// In es, this message translates to:
+  /// **'{file} no es un archivo de fuente.'**
+  String fontProblemNotAFont(String file);
+
+  /// No description provided for @fontProblemWebFont.
+  ///
+  /// In es, this message translates to:
+  /// **'{file} es una fuente para web (WOFF). Usa la versión TTF u OTF.'**
+  String fontProblemWebFont(String file);
+
+  /// No description provided for @fontProblemCollection.
+  ///
+  /// In es, this message translates to:
+  /// **'{file} es una colección TTC. Usa los archivos TTF u OTF por separado.'**
+  String fontProblemCollection(String file);
+
+  /// No description provided for @fontProblemDamaged.
+  ///
+  /// In es, this message translates to:
+  /// **'{file} está dañado o incompleto.'**
+  String fontProblemDamaged(String file);
+
+  /// No description provided for @fontProblemTooLarge.
+  ///
+  /// In es, this message translates to:
+  /// **'{file} pesa más de {max} MB.'**
+  String fontProblemTooLarge(String file, String max);
+
+  /// No description provided for @fontProblemNotSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar {file}.'**
+  String fontProblemNotSaved(String file);
+
+  /// No description provided for @fontVariableHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Es una fuente variable: Nexo la muestra con su grosor base, sin negritas. Para títulos en negrita, importa también sus archivos estáticos (Regular, Bold…).'**
+  String get fontVariableHint;
+
   /// No description provided for @settingsNotificationsSubtitle.
   ///
   /// In es, this message translates to:
@@ -2518,6 +2650,24 @@ abstract class AppLocalizations {
   /// **'No se pudo iniciar la instalación.'**
   String get updSnackInstallFailed;
 
+  /// No description provided for @updSnackNeedsPermission.
+  ///
+  /// In es, this message translates to:
+  /// **'Permite que Nexo instale aplicaciones y vuelve a tocar Instalar.'**
+  String get updSnackNeedsPermission;
+
+  /// No description provided for @updBannerRequiredTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitas actualizar Nexo'**
+  String get updBannerRequiredTitle;
+
+  /// No description provided for @updBannerRequiredBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta versión dejó de funcionar. Toca para instalar Nexo {version}.'**
+  String updBannerRequiredBody(String version);
+
   /// No description provided for @updBannerReadyTitle.
   ///
   /// In es, this message translates to:
@@ -3979,6 +4129,7 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Copiar NRC'**
   String get tchCopyNrc;
+
   /// No description provided for @accountSwitchTitle.
   ///
   /// In es, this message translates to:
@@ -4068,7 +4219,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu cuenta actual seguirá guardada para volver con un toque.'**
   String get accountLogoutKeepHint;
-
 }
 
 class _AppLocalizationsDelegate

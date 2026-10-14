@@ -34,6 +34,7 @@ Reproduce en GitHub, sin intervención, lo que hacían a mano
 | `RELEASE_NOTES.md`, `release-meta.json` | `generate_release_notes.ps1` | `release_assets.py notes` |
 | Release en `Auralix-Studio/nexo` | `gh release create` | se crea **una sola vez con todo** (el actualizador nunca ve un release a medias) |
 | Sitio: `CHANGELOG.md` y `changelog.html` | `update_site.ps1 -Push` | `release_assets.py site` + push; Pages lo despliega |
+| `version.json` (lo lee el actualizador de la app) | — | `release_assets.py manifest`; va al release y, **ya publicado el release**, al sitio (`nexo.aurx.pro/version.json`) |
 
 Si falla una plataforma secundaria (iOS, macOS, Linux) el release sale
 igual; si falta Android o Windows, no se publica.
@@ -90,6 +91,12 @@ Sin ellos el APK se firma con la clave de depuración y **no se instala
 encima** de una versión firmada. Para generar `ANDROID_KEYSTORE_BASE64`:
 `base64 -w0 nexo-release.jks` (en Windows:
 `[Convert]::ToBase64String([IO.File]::ReadAllBytes("nexo-release.jks"))`).
+
+### Actualización obligatoria
+
+`scripts/release_policy.json` → `min_build`: las versiones con un build menor
+dejaron de funcionar y la app pide actualizar sin dejar cerrar el aviso.
+Subirlo solo cuando algo externo rompa las versiones anteriores.
 
 ## Si un release falla
 

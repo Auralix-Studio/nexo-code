@@ -90,13 +90,18 @@ jobs:
             echo "keyPassword=$KEY_PASS"
           } > android/key.properties
 
+      # Universal solo con ARM (x86_64 es de emuladores: tiene su propio APK).
+      # --obfuscate/--split-debug-info quitan ~1,5 MB por arquitectura; los
+      # símbolos quedan como artefacto privado para descifrar errores con
+      # `flutter symbolize`.
       - name: Build Android
         if: matrix.target == 'android'
         run: |
-          flutter build apk --release
-          flutter build apk --split-per-abi --release
+          flutter build apk --release --target-platform android-arm,android-arm64 --obfuscate --split-debug-info=build/symbols/universal
+          cp build/app/outputs/flutter-apk/app-release.apk universal.apk
+          flutter build apk --split-per-abi --release --obfuscate --split-debug-info=build/symbols/split
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/nexo-${{ env.TAG }}-universal.apk
+          mv universal.apk dist/nexo-${{ env.TAG }}-universal.apk
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/nexo-${{ env.TAG }}-armv7.apk
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/nexo-${{ env.TAG }}-arm64.apk
           cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/nexo-${{ env.TAG }}-x86_64.apk
@@ -145,6 +150,15 @@ jobs:
           cp -r Runner.app Payload/
           zip -r ../../../dist/nexo-${{ env.TAG }}-ios-unsigned.ipa Payload
           cd ../../../
+
+      - name: Guardar símbolos de Android
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: symbols-android-${{ env.TAG }}
+          path: build/symbols
+          if-no-files-found: error
+          retention-days: 90
 
       # Cada plataforma deja sus archivos como artefacto; el release se
       # publica una sola vez al final con todo junto (así el actualizador de
@@ -210,6 +224,7 @@ jobs:
         run: |
           python3 scripts/release_assets.py sums dist
           python3 scripts/release_assets.py notes dist "${TAG}"
+          python3 scripts/release_assets.py manifest dist "${TAG}"
           cat dist/RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
 
       # Copias con nombre fijo (sin versión) para enlazar desde la web:
@@ -244,14 +259,17 @@ jobs:
             dist/*.zip
             dist/*.tar.gz
             dist/SHA256SUMS*.txt
+            dist/version.json
           fail_on_unmatched_files: false
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
-      - name: Guardar release-meta.json
+      - name: Guardar release-meta.json y version.json
         uses: actions/upload-artifact@v4
         with:
           name: release-meta
-          path: dist/release-meta.json
+          path: |
+            dist/release-meta.json
+            dist/version.json
 
   site:
     name: Actualizar sitio (changelog)
@@ -271,11 +289,20 @@ jobs:
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
           path: site
 
+      # version.json va al sitio recién ahora, con el release ya publicado:
+      # la app nunca ve una versión cuyos archivos aún no existen.
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-meta
+          path: meta
+
       - name: Agregar la versión al sitio
         run: |
           python3 code/scripts/release_assets.py site site "${TAG}" --date "$(TZ=America/Lima date +%F)"
+          cp meta/version.json site/version.json
           cd site
-          if git diff --quiet; then
+          git add version.json
+          if git diff --quiet HEAD; then
             echo "El sitio ya estaba al día."
             exit 0
           fi

@@ -2,6 +2,18 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [Sin publicar]
+
+### Tipografía
+- **Importa tus propias fuentes**: elige archivos TTF u OTF (también varios estilos de una misma familia, como Regular y Bold) y se aplican a toda la app.
+- Las fuentes incluidas ya no se ven engrosadas: los títulos usan el grosor real de la letra en lugar de una negrita artificial.
+- Si en la versión anterior elegiste Hypero o Super Mindset, se conserva.
+
+### Actualizaciones
+- **Android se actualiza desde la app**: avisa cuando hay una versión nueva (también con la app cerrada, una vez al día) y la instala con un toque, después de comprobar que el archivo es de Nexo y está firmado por Auralix Studio.
+- Descargas más livianas: la app baja solo el archivo de tu teléfono, unos 11 MB en la mayoría de equipos.
+- La búsqueda de versiones nuevas ya no falla cuando muchas personas usan la misma red, como el Wi-Fi de la universidad.
+
 ## [1.9.0] - 2026-10-14
 
 ### Tipografía y Diseño
