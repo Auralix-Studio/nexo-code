@@ -2,7 +2,7 @@
 
 All notable changes to Nexo will be documented in this file.
 
-## [Sin publicar]
+## [1.9.0] - 2026-10-14
 
 ### Tipografía y Diseño
 - **Personalización total de fuentes**: posibilidad de cambiar la tipografía en el 100% de la aplicación (Roboto, Sistema nativo, Hypero, Super Mindset o fuentes personalizadas del sistema operativo con vista previa en tiempo real).
