@@ -2,7 +2,7 @@
 
 All notable changes to Nexo will be documented in this file.
 
-## [Sin publicar]
+## [1.10.0] - 2026-10-14
 
 ### Tipografía
 - **Importa tus propias fuentes**: elige archivos TTF u OTF (también varios estilos de una misma familia, como Regular y Bold) y se aplican a toda la app.
