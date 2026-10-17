@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ env.TAG }}
 
@@ -153,7 +153,7 @@ jobs:
 
       - name: Guardar símbolos de Android
         if: matrix.target == 'android'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: symbols-android-${{ env.TAG }}
           path: build/symbols
@@ -164,7 +164,7 @@ jobs:
       # publica una sola vez al final con todo junto (así el actualizador de
       # la app nunca ve un release a medio subir).
       - name: Guardar artefactos
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist-${{ matrix.target }}
           path: dist/*
@@ -181,7 +181,7 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.TAG }}
 
@@ -203,7 +203,7 @@ jobs:
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Reunir artefactos
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: dist-*
           path: dist
@@ -245,7 +245,7 @@ jobs:
           ls -la dist/latest
 
       - name: Crear release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: Auralix-Studio/nexo
           tag_name: ${{ env.TAG }}
@@ -264,7 +264,7 @@ jobs:
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
       - name: Guardar release-meta.json y version.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-meta
           path: |
@@ -276,14 +276,14 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.TAG }}
           path: code
 
       # Igual que update_site.ps1 -Push: agrega la versión a CHANGELOG.md y
       # changelog.html del repo público; su workflow de Pages lo despliega.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: Auralix-Studio/nexo
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
@@ -291,7 +291,7 @@ jobs:
 
       # version.json va al sitio recién ahora, con el release ya publicado:
       # la app nunca ve una versión cuyos archivos aún no existen.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: release-meta
           path: meta

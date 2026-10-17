@@ -1,4 +1,4 @@
-﻿# build_release.ps1 — Pipeline completo de release de Nexo
+# build_release.ps1 — Pipeline completo de release de Nexo
 #
 # NOTA: desde octubre 2026 esto lo hace GitHub Actions solo al fusionar en
 # main (ver docs/versionado.md). Este script queda para publicar a mano.
@@ -95,6 +95,12 @@ try {
   $existingTag = git tag -l $tag 2>$null
   if ($existingTag -and $Publish) {
     throw "El tag '$tag' ya existe. Bumpea la version primero: scripts\bump_version.ps1 -Type patch"
+  }
+  if ($Publish) {
+    $existingRelease = gh release view $tag --repo $repo --json isDraft 2>$null
+    if ($LASTEXITCODE -eq 0 -and $existingRelease) {
+      throw "La release '$tag' ya existe en GitHub ($repo). Bumpea la version primero: scripts\bump_version.ps1 -Type patch"
+    }
   }
 
   Write-Host "  Version : $rawVer" -ForegroundColor Green

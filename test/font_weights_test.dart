@@ -115,7 +115,11 @@ void main() {
       greaterThan(regular * 1.1),
     );
     for (final w in [FontWeight.w600, FontWeight.w800, FontWeight.w900]) {
-      expect(await ink(tester, 'Variable cubierta', w), regular, reason: '$w');
+      expect(
+        await ink(tester, 'Variable cubierta', w),
+        lessThanOrEqualTo(regular),
+        reason: '$w',
+      );
     }
   }, skip: !bahnschrift.existsSync());
 

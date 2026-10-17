@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import os
 import pathlib
 import re
 import subprocess
@@ -48,6 +49,35 @@ def git(*args: str) -> str:
     return subprocess.run(
         ["git", *args], cwd=ROOT, check=True, capture_output=True, text=True
     ).stdout
+
+
+def get_remote_public_tags(slug: str = "nexo") -> set[str]:
+    try:
+        url = f"https://github.com/Auralix-Studio/{slug}.git"
+        env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+        res = subprocess.run(
+            ["git", "-c", "core.askPass=", "ls-remote", "--tags", url],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=env,
+            timeout=5,
+        )
+        if res.returncode != 0:
+            return set()
+        tags = set()
+        for line in res.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 2 and parts[1].startswith("refs/tags/"):
+                tag = parts[1][len("refs/tags/"):]
+                if tag.endswith("^{}"):
+                    tag = tag[:-3]
+                if re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+                    tags.add(tag)
+        return tags
+    except Exception:
+        return set()
 
 
 # ── Versión actual ──────────────────────────────────────────────────────────
@@ -149,7 +179,12 @@ def next_version(forced: str) -> tuple[str | None, int, list[Commit], str]:
     # se respeta (p. ej. 1.7.2 sin publicar con último tag v1.7.1).
     if parse_semver(pub_version) > parse_semver(base) and parse_semver(pub_version) >= parse_semver(candidate):
         candidate = pub_version
-    existing = set(git("tag", "--list", "v*").split())
+    remote_tags = get_remote_public_tags("nexo")
+    existing = set(git("tag", "--list", "v*").split()) | remote_tags
+    if remote_tags:
+        highest_remote = max(remote_tags, key=lambda t: parse_semver(t[1:]))
+        if parse_semver(candidate) <= parse_semver(highest_remote[1:]):
+            candidate = bump_version(highest_remote[1:], kind)
     while f"v{candidate}" in existing:
         candidate = bump_version(candidate, "patch")
     return candidate, build + 1, commits, kind
