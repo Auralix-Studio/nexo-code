@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [1.12.0] - 2026-10-20
+
+### Novedades
+- Add connectivity service, update checkers, and native Android widgets
+
 ## [1.11.0] - 2026-10-19
 
 ### Novedades
