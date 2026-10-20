@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -35,7 +34,7 @@ val isStoreBuild = dartDefines["STORE_BUILD"] == "true"
 val abiDigit = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 4)
 
 android {
-    namespace = "pe.upla.nexo"
+    namespace = "com.auralix.nexo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -46,17 +45,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
-        // Identidad pública de la app, en el dominio de Auralix Studio: un
-        // "pe.upla.*" se leía como app oficial de la universidad. El
-        // `namespace` (paquete del código Kotlin) se queda como está; no es
-        // visible para el usuario ni cambia la identidad del APK.
-        // Cambió junto con la clave de firma propia (octubre 2026): quien tenga
-        // una versión anterior debe desinstalarla una vez.
+        // Identidad de Auralix Studio, compartida con el namespace y las
+        // clases Kotlin, incluidos los proveedores de widgets.
         applicationId = "com.auralix.nexo"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
@@ -138,6 +129,12 @@ android.applicationVariants.configureEach {
         val apk = this as com.android.build.gradle.api.ApkVariantOutput
         val abi = apk.getFilter(com.android.build.VariantOutput.FilterType.ABI)
         apk.versionCodeOverride = base + (abiDigit[abi] ?: 0)
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 

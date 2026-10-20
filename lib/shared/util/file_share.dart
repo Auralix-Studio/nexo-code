@@ -17,6 +17,19 @@ Future<String?> deliverFile(
   required String filename,
   required String mimeType,
 }) async {
+  // El nombre puede venir de Content-Disposition. Tratarlo como un nombre,
+  // nunca como una ruta proporcionada por el servidor.
+  filename = p.posix
+      .basename(filename.replaceAll('\\', '/'))
+      .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_')
+      .replaceFirst(RegExp(r'[. ]+$'), '');
+  if (filename.isEmpty) filename = 'reporte';
+  if (RegExp(
+    r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)',
+    caseSensitive: false,
+  ).hasMatch(filename)) {
+    filename = '_$filename';
+  }
   final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
   if (kIsWeb || isMobile) {
     await SharePlus.instance.share(

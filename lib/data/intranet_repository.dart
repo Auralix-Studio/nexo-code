@@ -45,7 +45,7 @@ class IntranetRepository {
     final future = _client.getJsonList(path, referer: referer);
     _cache[key] = _Cached(future, now);
     future.catchError((_) {
-      _cache.remove(key);
+      if (identical(_cache[key]?.future, future)) _cache.remove(key);
       return <dynamic>[];
     });
     return future;
@@ -270,11 +270,9 @@ class IntranetRepository {
     int year,
     int periodo,
   ) async {
-    final rows = await _memoPostList(
-      'consultarConstanciaMatriculaEstudiante',
-      {'periodo': '$year-$periodo'},
-      referer: 'pg_reportesDelEstudiante',
-    );
+    final rows = await _memoPostList('consultarConstanciaMatriculaEstudiante', {
+      'periodo': '$year-$periodo',
+    }, referer: 'pg_reportesDelEstudiante');
     return EnrollmentCertificate.fromRows(rows);
   }
 

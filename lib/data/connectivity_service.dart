@@ -9,9 +9,13 @@ enum ServerStatus { online, offline, degraded }
 class ConnectivityService extends ChangeNotifier {
   ConnectivityService({Connectivity? connectivity, http.Client? httpClient})
     : _connectivity = connectivity ?? Connectivity(),
-      _httpClient = httpClient ?? http.Client();
+      _httpClient = httpClient ?? http.Client(),
+      _ownsHttpClient = httpClient == null;
   final Connectivity _connectivity;
   final http.Client _httpClient;
+  final bool _ownsHttpClient;
+  bool _disposed = false;
+  int _healthRevision = 0;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
   Timer? _timer;
   bool _hasInternet = false;
@@ -49,7 +53,9 @@ class ConnectivityService extends ChangeNotifier {
   bool _isChecking = false;
   bool get isChecking => _isChecking;
   Future<void> start() async {
+    if (_disposed) return;
     await _subscription?.cancel();
+    if (_disposed) return;
     _timer?.cancel();
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       _handleConnectivityChange(results);
@@ -66,6 +72,7 @@ class ConnectivityService extends ChangeNotifier {
         _firstCheckCompleter.complete();
       }
     }
+    if (_disposed) return;
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_hasInternet) {
         _healthCheck();
@@ -74,23 +81,25 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   Future<void> checkNow() async {
-    if (_isChecking) return;
+    if (_disposed || _isChecking) return;
     _isChecking = true;
     notifyListeners();
     try {
       final results = await _connectivity.checkConnectivity();
+      if (_disposed) return;
       _hasInternet =
           results.isNotEmpty && !results.contains(ConnectivityResult.none);
       await _healthCheck();
     } finally {
       _isChecking = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
   Future<void> _handleConnectivityChange(
     List<ConnectivityResult> results,
   ) async {
+    if (_disposed) return;
     final hasNet =
         results.isNotEmpty && !results.contains(ConnectivityResult.none);
     _hasInternet = hasNet;
@@ -101,6 +110,16 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   Future<void> _healthCheck() async {
+    if (_disposed) return;
+    final revision = ++_healthRevision;
+    if (!_hasInternet) {
+      _sigmaStatus = ServerStatus.offline;
+      _intranetStatus = ServerStatus.offline;
+      _idiomasAuthStatus = ServerStatus.offline;
+      _idiomasApiStatus = ServerStatus.offline;
+      notifyListeners();
+      return;
+    }
     final sigmaFuture = _pingServer(Uri.parse(AppConfig.apiBaseUrl));
     final intranetFuture = _pingServer(
       Uri.parse('https://intranet.upla.edu.pe'),
@@ -117,6 +136,9 @@ class ConnectivityService extends ChangeNotifier {
       idiomasAuthFuture,
       idiomasApiFuture,
     ]);
+    // Una respuesta de la red anterior no debe reactivar la conexión después
+    // de perderla, ni notificar a un servicio que ya fue destruido.
+    if (_disposed || revision != _healthRevision) return;
     _sigmaStatus = results[0];
     _intranetStatus = results[1];
     _idiomasAuthStatus = results[2];
@@ -148,9 +170,11 @@ class ConnectivityService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _healthRevision++;
     _subscription?.cancel();
     _timer?.cancel();
-    _httpClient.close();
+    if (_ownsHttpClient) _httpClient.close();
     super.dispose();
   }
 }

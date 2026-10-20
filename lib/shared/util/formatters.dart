@@ -16,9 +16,10 @@ abstract final class Fmt {
 
   static String currency(double v, [String simbolo = 'S/']) {
     final negativo = v < 0;
-    final abs = v.abs();
-    final entero = abs.truncate();
-    final decimales = ((abs - entero) * 100).round();
+    // Redondear antes de separar: 1.999 debe mostrarse como 2.00, no 1.100.
+    final centavos = (v.abs() * 100).round();
+    final entero = centavos ~/ 100;
+    final decimales = centavos % 100;
     final enteroStr = entero.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',

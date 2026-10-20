@@ -1,4 +1,4 @@
-package pe.upla.nexo
+package com.auralix.nexo
 
 import android.Manifest
 import android.app.NotificationChannel

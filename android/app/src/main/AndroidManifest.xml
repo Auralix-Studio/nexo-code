@@ -20,7 +20,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
-            android:name=".MainActivity"
+            android:name="com.auralix.nexo.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
@@ -43,7 +43,7 @@
         </activity>
         <!-- ===== Widgets de pantalla de inicio ===== -->
         <receiver
-            android:name=".NextClassWidgetProvider"
+            android:name="com.auralix.nexo.NextClassWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -53,7 +53,7 @@
                 android:resource="@xml/widget_next_class_info" />
         </receiver>
         <receiver
-            android:name=".TodayWidgetProvider"
+            android:name="com.auralix.nexo.TodayWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -63,7 +63,7 @@
                 android:resource="@xml/widget_today_info" />
         </receiver>
         <receiver
-            android:name=".PaymentWidgetProvider"
+            android:name="com.auralix.nexo.PaymentWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -73,7 +73,7 @@
                 android:resource="@xml/widget_payment_info" />
         </receiver>
         <receiver
-            android:name=".AcademicWidgetProvider"
+            android:name="com.auralix.nexo.AcademicWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

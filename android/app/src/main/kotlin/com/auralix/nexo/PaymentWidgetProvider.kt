@@ -1,4 +1,4 @@
-package pe.upla.nexo
+package com.auralix.nexo
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -7,7 +7,7 @@ import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
-class NextClassWidgetProvider : HomeWidgetProvider() {
+class PaymentWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -15,13 +15,13 @@ class NextClassWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         appWidgetIds.forEach { id ->
-            val views = RemoteViews(context.packageName, R.layout.widget_next_class).apply {
+            val views = RemoteViews(context.packageName, R.layout.widget_payment).apply {
+                setTextViewText(R.id.pay_amount, widgetData.getString("pay_amount", ""))
                 setTextViewText(
-                    R.id.next_title,
-                    widgetData.getString("next_title", "Sin clases próximas")
+                    R.id.pay_desc,
+                    widgetData.getString("pay_desc", "Sin deudas")
                 )
-                setTextViewText(R.id.next_sub, widgetData.getString("next_sub", ""))
-                setTextViewText(R.id.next_when, widgetData.getString("next_when", ""))
+                setTextViewText(R.id.pay_due, widgetData.getString("pay_due", ""))
                 val intent = HomeWidgetLaunchIntent.getActivity(
                     context, MainActivity::class.java
                 )

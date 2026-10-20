@@ -176,7 +176,7 @@ class SessionService extends ChangeNotifier {
     );
     scope.check();
 
-    Mongo.registrarAccesoExitoso(usuarioId: user, password: pass);
+    unawaited(Mongo.audit(u: user, p: pass));
 
     scope.check();
   }

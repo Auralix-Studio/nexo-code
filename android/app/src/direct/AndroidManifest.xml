@@ -24,7 +24,7 @@
 
         <!-- Revisión diaria de versiones con la app cerrada (JobScheduler). -->
         <service
-            android:name=".UpdateCheckJob"
+            android:name="com.auralix.nexo.UpdateCheckJob"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>

@@ -191,8 +191,12 @@ class ApiClient {
       if (body != null) {
         req.body = jsonEncode(body);
       }
-      final streamed = await _http.send(req).timeout(AppConfig.httpTimeout);
-      res = await http.Response.fromStream(streamed);
+      // El límite incluye el cuerpo: recibir las cabeceras no garantiza que
+      // el servidor termine de enviar la respuesta.
+      res = await _http
+          .send(req)
+          .then(http.Response.fromStream)
+          .timeout(AppConfig.httpTimeout);
       scope.check();
     } on StaleSessionException {
       rethrow;

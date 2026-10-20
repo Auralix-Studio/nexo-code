@@ -1175,7 +1175,12 @@ class AppStore extends ChangeNotifier {
       return r;
     });
     cache[key] = fut;
-    fut.then<void>((_) {}, onError: (Object _) => cache.remove(key));
+    fut.then<void>(
+      (_) {},
+      onError: (Object _) {
+        if (identical(cache[key], fut)) cache.remove(key);
+      },
+    );
     return fut;
   }
 

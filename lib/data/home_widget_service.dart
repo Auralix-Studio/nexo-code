@@ -58,6 +58,13 @@ class HomeWidgetService {
 
   Future<void> _save(String k, String v) =>
       HomeWidget.saveWidgetData<String>(k, v);
+  Future<void> _updateWidget(String provider) async {
+    // Usar el mismo paquete que el namespace y los proveedores Kotlin.
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: 'com.auralix.nexo.$provider',
+    );
+  }
+
   Future<void> _syncNextAndToday(List<ScheduleClass> schedule) async {
     final now = DateTime.now();
     final today = now.weekday;
@@ -101,8 +108,8 @@ class HomeWidgetService {
     );
     await _save('today_count', '${grupos.length}');
     await _save('today_day', Fmt.dayLabel(today));
-    await HomeWidget.updateWidget(name: _wNext, androidName: _wNext);
-    await HomeWidget.updateWidget(name: _wToday, androidName: _wToday);
+    await _updateWidget(_wNext);
+    await _updateWidget(_wToday);
   }
 
   Future<void> _syncPayment(List<Payment> pagos) async {
@@ -137,7 +144,7 @@ class HomeWidgetService {
             : l10n.widgetDueIn(d, c.dueDateRaw),
       );
     }
-    await HomeWidget.updateWidget(name: _wPay, androidName: _wPay);
+    await _updateWidget(_wPay);
   }
 
   Future<void> _syncAcademic({
@@ -154,7 +161,7 @@ class HomeWidgetService {
           ? '$creditosAprob/$creditosTotal'
           : '$creditosAprob',
     );
-    await HomeWidget.updateWidget(name: _wAcad, androidName: _wAcad);
+    await _updateWidget(_wAcad);
   }
 
   static int? _toMin(String hm) {

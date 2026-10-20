@@ -73,8 +73,10 @@ class IntranetClient {
   Future<http.Response> _send(http.BaseRequest req) => scope.run(() async {
     final generation = _cookieGeneration;
     try {
-      final streamed = await _http.send(req).timeout(_timeout);
-      final res = await http.Response.fromStream(streamed);
+      final res = await _http
+          .send(req)
+          .then(http.Response.fromStream)
+          .timeout(_timeout);
       scope.check();
       if (generation != _cookieGeneration) throw const StaleSessionException();
       _storeCookies(res);
