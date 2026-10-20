@@ -66,6 +66,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Configurar Dart Defines
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        shell: bash
+        run: |
+          node -e "const fs = require('fs'); fs.writeFileSync('dart_defines.json', JSON.stringify({ MONGODB_URI: process.env.MONGODB_URI || '' }));"
+
       # Firma de release: sin estos secretos el APK sale firmado con la clave
       # de depuración y NO se puede instalar encima de una versión firmada.
       # Secretos: ANDROID_KEYSTORE_BASE64 (base64 del .jks), ANDROID_KEYSTORE_PASSWORD,
@@ -97,9 +104,9 @@ jobs:
       - name: Build Android
         if: matrix.target == 'android'
         run: |
-          flutter build apk --release --target-platform android-arm,android-arm64 --obfuscate --split-debug-info=build/symbols/universal
+          flutter build apk --release --target-platform android-arm,android-arm64 --obfuscate --split-debug-info=build/symbols/universal --dart-define-from-file=dart_defines.json
           cp build/app/outputs/flutter-apk/app-release.apk universal.apk
-          flutter build apk --split-per-abi --release --obfuscate --split-debug-info=build/symbols/split
+          flutter build apk --split-per-abi --release --obfuscate --split-debug-info=build/symbols/split --dart-define-from-file=dart_defines.json
           mkdir -p dist
           mv universal.apk dist/nexo-${{ env.TAG }}-universal.apk
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/nexo-${{ env.TAG }}-armv7.apk
@@ -109,7 +116,7 @@ jobs:
       - name: Build Windows
         if: matrix.target == 'windows'
         run: |
-          flutter build windows --release
+          flutter build windows --release --dart-define-from-file=dart_defines.json
           mkdir -p dist
           ./installer/build_installer.ps1 -ReleaseDir "build/windows/x64/runner/Release" -OutFile "dist/nexo-${{ env.TAG }}-setup-x64.exe" -ZipOutFile "dist/nexo-${{ env.TAG }}-windows-x64.zip"
           ./scripts/verify_windows_bundle.ps1 -Installer "dist/nexo-${{ env.TAG }}-setup-x64.exe" -Zip "dist/nexo-${{ env.TAG }}-windows-x64.zip"
@@ -121,7 +128,7 @@ jobs:
       - name: Build Linux
         if: matrix.target == 'linux'
         run: |
-          flutter build linux --release
+          flutter build linux --release --dart-define-from-file=dart_defines.json
           mkdir -p dist
           cd build/linux/x64/release/bundle
           tar -czvf ../../../../../dist/nexo-${{ env.TAG }}-linux-x64.tar.gz *
@@ -130,7 +137,7 @@ jobs:
       - name: Build macOS
         if: matrix.target == 'macos'
         run: |
-          flutter build macos --release
+          flutter build macos --release --dart-define-from-file=dart_defines.json
           mkdir -p dist
           cd build/macos/Build/Products/Release
           zip -r ../../../../../dist/nexo-${{ env.TAG }}-macos.zip nexo.app
@@ -143,7 +150,7 @@ jobs:
       - name: Build iOS (Unsigned)
         if: matrix.target == 'ios'
         run: |
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --dart-define-from-file=dart_defines.json
           mkdir -p dist
           cd build/ios/iphoneos
           mkdir Payload

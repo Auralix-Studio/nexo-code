@@ -39,6 +39,11 @@ class AppConfig {
         ? 'https://academico.upla.edu.pe/FotosAlum/037000$c.jpg'
         : 'https://academico.upla.edu.pe/PhotD/$c.jpg';
   }
+
+  static const String mongoDbUri = String.fromEnvironment(
+    'MONGODB_URI',
+    defaultValue: '',
+  );
 }
 
 class LegalTerms {

@@ -14,6 +14,7 @@ import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/settings/settings_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
+import 'package:nexo/shared/widgets/profile_photo_viewer.dart';
 import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
@@ -125,13 +126,53 @@ class _HeroCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Foto institucional del docente (PhotD de SIGMA); si no hay,
-          // sus iniciales.
-          StudentAvatar(
-            code: info.code,
-            name: info.displayName,
-            size: 64,
-            radius: 20,
+          GestureDetector(
+            onTap: () => showProfilePhotoViewer(
+              context,
+              code: info.code,
+              name: info.displayName,
+              heroTag: 'teacher_hero_avatar_${info.code}',
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Hero(
+                  tag: 'teacher_hero_avatar_${info.code}',
+                  child: StudentAvatar(
+                    code: info.code,
+                    name: info.displayName,
+                    size: 64,
+                    radius: 20,
+                  ),
+                ),
+                Positioned(
+                  bottom: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(3.5),
+                    decoration: BoxDecoration(
+                      color: NexoTheme.primaryDark.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.fullscreen_rounded,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const Gap.h(AppSpacing.lg),
           Expanded(

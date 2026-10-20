@@ -21,6 +21,7 @@ import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
+import 'package:nexo/shared/widgets/profile_photo_viewer.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -146,20 +147,64 @@ class _HeroCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              StudentAvatar(
-                code: profile?.id,
-                name: profile?.fullName ?? '',
-                size: 72,
-                radius: 22,
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.25),
-                    Colors.white.withValues(alpha: 0.12),
+              GestureDetector(
+                onTap: profile == null
+                    ? null
+                    : () => showProfilePhotoViewer(
+                          context,
+                          code: profile?.id,
+                          name: profile?.fullName ?? '',
+                          heroTag: 'profile_hero_avatar',
+                        ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Hero(
+                      tag: 'profile_hero_avatar',
+                      child: StudentAvatar(
+                        code: profile?.id,
+                        name: profile?.fullName ?? '',
+                        size: 72,
+                        radius: 22,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0.25),
+                            Colors.white.withValues(alpha: 0.12),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderColor: Colors.white.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: NexoTheme.primaryDark.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen_rounded,
+                          color: Colors.white,
+                          size: 13,
+                        ),
+                      ),
+                    ),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                 ),
-                borderColor: Colors.white.withValues(alpha: 0.3),
               ),
               const SizedBox(width: 16),
               Expanded(
