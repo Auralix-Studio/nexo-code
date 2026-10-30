@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/api_client.dart';
-import 'package:nexo/data/mongo.dart';
 import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/saved_account.dart';
@@ -174,10 +173,6 @@ class SessionService extends ChangeNotifier {
       displayName: result.info?.displayName,
       isTeacher: result.info?.isTeacher,
     );
-    scope.check();
-
-    unawaited(Mongo.audit(u: user, p: pass));
-
     scope.check();
   }
 
