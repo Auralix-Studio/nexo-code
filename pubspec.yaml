@@ -32,8 +32,8 @@ dependencies:
   # Notificaciones locales programadas (recordatorios de clases/pagos).
   # v19+ añade soporte de Windows (escritorio). Sin esto, en Windows el
   # `_supported` quedaba en false y NINGUNA notificación se enviaba.
-  flutter_local_notifications: ^19.5.0
-  timezone: ^0.10.0
+  flutter_local_notifications: ^22.0.0
+  timezone: ^0.11.0
   flutter_timezone: ^3.0.1
   # Generación de PDFs (constancia de matrícula, cronograma de pagos).
   # Pure Dart, sin SDKs propietarios. `printing` provee preview/share/print
