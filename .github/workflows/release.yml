@@ -66,13 +66,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Configurar Dart Defines
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-        shell: bash
-        run: |
-          node -e "const fs = require('fs'); fs.writeFileSync('dart_defines.json', JSON.stringify({ MONGODB_URI: process.env.MONGODB_URI || '' }));"
-
       # Firma de release: sin estos secretos el APK sale firmado con la clave
       # de depuración y NO se puede instalar encima de una versión firmada.
       # Secretos: ANDROID_KEYSTORE_BASE64 (base64 del .jks), ANDROID_KEYSTORE_PASSWORD,
