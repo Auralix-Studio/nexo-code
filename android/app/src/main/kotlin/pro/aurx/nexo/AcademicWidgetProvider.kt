@@ -1,4 +1,4 @@
-package com.auralix.nexo
+package pro.aurx.nexo
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

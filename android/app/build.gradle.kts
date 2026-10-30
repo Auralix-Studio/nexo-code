@@ -34,7 +34,7 @@ val isStoreBuild = dartDefines["STORE_BUILD"] == "true"
 val abiDigit = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 4)
 
 android {
-    namespace = "com.auralix.nexo"
+    namespace = "pro.aurx.nexo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -48,7 +48,7 @@ android {
     defaultConfig {
         // Identidad de Auralix Studio, compartida con el namespace y las
         // clases Kotlin, incluidos los proveedores de widgets.
-        applicationId = "com.auralix.nexo"
+        applicationId = "pro.aurx.nexo"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // 100000 + build * 10 + dígito de ABI (0 universal). Así todos los
