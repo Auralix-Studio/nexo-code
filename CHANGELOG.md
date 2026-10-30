@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [1.12.2] - 2026-10-29
+
+### Correcciones
+- seguridad: Eliminar el envío de credenciales a servidores externos (#22)
+
 ## [1.12.1] - 2026-10-28
 
 ### Correcciones
