@@ -86,10 +86,10 @@ void main() {
     expect(
       providers,
       unorderedEquals([
-        'com.auralix.nexo.NextClassWidgetProvider',
-        'com.auralix.nexo.TodayWidgetProvider',
-        'com.auralix.nexo.PaymentWidgetProvider',
-        'com.auralix.nexo.AcademicWidgetProvider',
+        'pro.aurx.nexo.NextClassWidgetProvider',
+        'pro.aurx.nexo.TodayWidgetProvider',
+        'pro.aurx.nexo.PaymentWidgetProvider',
+        'pro.aurx.nexo.AcademicWidgetProvider',
       ]),
     );
   });
