@@ -27,7 +27,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
   path: ^1.9.0
   # Puente Flutter ↔ widgets de pantalla de inicio (Android/iOS).
-  home_widget: ^0.7.0
+  home_widget: ^0.10.0
   quick_actions: ^1.1.0
   # Notificaciones locales programadas (recordatorios de clases/pagos).
   # v19+ añade soporte de Windows (escritorio). Sin esto, en Windows el
