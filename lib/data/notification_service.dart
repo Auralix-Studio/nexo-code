@@ -16,7 +16,7 @@ import 'package:nexo/domain/unified_models.dart';
 class NotificationService extends ChangeNotifier {
   NotificationService._()
     : _plugin = FlutterLocalNotificationsPlugin(),
-      _timezoneName = FlutterTimezone.getLocalTimezone;
+      _timezoneName = _localTimezone;
 
   @visibleForTesting
   NotificationService.forTesting({
@@ -27,6 +27,9 @@ class NotificationService extends ChangeNotifier {
   static final NotificationService instance = NotificationService._();
   final FlutterLocalNotificationsPlugin _plugin;
   final Future<String> Function() _timezoneName;
+  // flutter_timezone v5 devuelve un TimezoneInfo; nos quedamos con el id IANA.
+  static Future<String> _localTimezone() async =>
+      (await FlutterTimezone.getLocalTimezone()).identifier;
   bool _ready = false;
   bool _clearOnInit = false;
   NotificationPrefs _prefs = const NotificationPrefs();
