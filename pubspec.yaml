@@ -57,6 +57,14 @@ dev_dependencies:
   # Empaqueta la app como MSIX para la Microsoft Store.
   msix: ^3.16.8
 
+# image 4.9+ llama a ZLibDecoder.decodeLazy, que no existe en el archive que
+# resuelve pub (4.0.9), y rompe el build AOT release ("The method 'decodeLazy'
+# isn't defined"). pdf/printing arrastran image con una restricción laxa, así
+# que se fija a la versión que ya iba en producción hasta que se resuelva
+# aguas arriba.
+dependency_overrides:
+  image: 4.8.0
+
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
