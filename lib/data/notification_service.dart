@@ -16,7 +16,7 @@ import 'package:nexo/domain/unified_models.dart';
 class NotificationService extends ChangeNotifier {
   NotificationService._()
     : _plugin = FlutterLocalNotificationsPlugin(),
-      _timezoneName = FlutterTimezone.getLocalTimezone;
+      _timezoneName = _localTimezone;
 
   @visibleForTesting
   NotificationService.forTesting({
@@ -27,6 +27,9 @@ class NotificationService extends ChangeNotifier {
   static final NotificationService instance = NotificationService._();
   final FlutterLocalNotificationsPlugin _plugin;
   final Future<String> Function() _timezoneName;
+  // flutter_timezone v5 devuelve un TimezoneInfo; nos quedamos con el id IANA.
+  static Future<String> _localTimezone() async =>
+      (await FlutterTimezone.getLocalTimezone()).identifier;
   bool _ready = false;
   bool _clearOnInit = false;
   NotificationPrefs _prefs = const NotificationPrefs();
@@ -74,11 +77,11 @@ class NotificationService extends ChangeNotifier {
     const linux = LinuxInitializationSettings(defaultActionName: 'Abrir');
     const windows = WindowsInitializationSettings(
       appName: 'Nexo UPLA',
-      appUserModelId: 'com.auralix.nexo',
+      appUserModelId: 'pro.aurx.nexo',
       guid: 'd2c4f88a-2d4b-4c0e-9e2c-3e7a4b9f1c10',
     );
     await _plugin.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: android,
         iOS: ios,
         macOS: macos,
@@ -294,7 +297,7 @@ class NotificationService extends ChangeNotifier {
                   request.id < _idGradeBase &&
                   categoryKnown &&
                   !_desiredIds!.contains(request.id)) {
-                await _plugin.cancel(request.id);
+                await _plugin.cancel(id: request.id);
               }
             }
             if (revision == _revision) _lastSnapshot = snapshot;
@@ -411,11 +414,11 @@ class NotificationService extends ChangeNotifier {
     _desiredIds?.add(id);
     try {
       await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        when,
-        _details(channelId, channelName),
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: when,
+        notificationDetails: _details(channelId, channelName),
         androidScheduleMode: _androidMode,
       );
     } catch (_) {
@@ -423,11 +426,11 @@ class NotificationService extends ChangeNotifier {
           _androidMode == AndroidScheduleMode.exactAllowWhileIdle) {
         _androidMode = AndroidScheduleMode.inexactAllowWhileIdle;
         await _plugin.zonedSchedule(
-          id,
-          title,
-          body,
-          when,
-          _details(channelId, channelName),
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: when,
+          notificationDetails: _details(channelId, channelName),
           androidScheduleMode: _androidMode,
         );
       } else {
@@ -449,30 +452,30 @@ class NotificationService extends ChangeNotifier {
       return;
     }
     await _plugin.show(
-      _idGradeBase + (course.hashCode % 1000),
-      'Nueva nota publicada',
-      '$course: $grade',
-      _details('grades', 'Notas'),
+      id: _idGradeBase + (course.hashCode % 1000),
+      title: 'Nueva nota publicada',
+      body: '$course: $grade',
+      notificationDetails: _details('grades', 'Notas'),
     );
   }
 
   Future<void> showUpdateAvailable(String version) async {
     if (!_supported || !_ready) return;
     await _plugin.show(
-      _idUpdate,
-      'Actualización disponible',
-      'Nexo $version está disponible. Se descargará cuando haya conexión.',
-      _details('actualizaciones', 'Actualizaciones'),
+      id: _idUpdate,
+      title: 'Actualización disponible',
+      body: 'Nexo $version está disponible. Se descargará cuando haya conexión.',
+      notificationDetails: _details('actualizaciones', 'Actualizaciones'),
     );
   }
 
   Future<void> showUpdateReady(String version) async {
     if (!_supported || !_ready) return;
     await _plugin.show(
-      _idUpdate,
-      'Actualización lista para instalar',
-      'Toca para instalar Nexo $version.',
-      _details('actualizaciones', 'Actualizaciones'),
+      id: _idUpdate,
+      title: 'Actualización lista para instalar',
+      body: 'Toca para instalar Nexo $version.',
+      notificationDetails: _details('actualizaciones', 'Actualizaciones'),
       payload: _payloadUpdateInstall,
     );
   }

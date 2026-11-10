@@ -1,4 +1,4 @@
-package com.auralix.nexo
+package pro.aurx.nexo
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -7,7 +7,7 @@ import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
-class NextClassWidgetProvider : HomeWidgetProvider() {
+class TodayWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -15,13 +15,12 @@ class NextClassWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         appWidgetIds.forEach { id ->
-            val views = RemoteViews(context.packageName, R.layout.widget_next_class).apply {
+            val views = RemoteViews(context.packageName, R.layout.widget_today).apply {
                 setTextViewText(
-                    R.id.next_title,
-                    widgetData.getString("next_title", "Sin clases próximas")
+                    R.id.today_list,
+                    widgetData.getString("today_list", "Sin clases hoy")
                 )
-                setTextViewText(R.id.next_sub, widgetData.getString("next_sub", ""))
-                setTextViewText(R.id.next_when, widgetData.getString("next_when", ""))
+                setTextViewText(R.id.today_day, widgetData.getString("today_day", ""))
                 val intent = HomeWidgetLaunchIntent.getActivity(
                     context, MainActivity::class.java
                 )

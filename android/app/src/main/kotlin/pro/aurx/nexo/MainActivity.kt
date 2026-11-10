@@ -1,4 +1,4 @@
-package com.auralix.nexo
+package pro.aurx.nexo
 
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity

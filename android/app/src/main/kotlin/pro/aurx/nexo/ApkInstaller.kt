@@ -1,4 +1,4 @@
-package com.auralix.nexo
+package pro.aurx.nexo
 
 import android.app.Activity
 import android.content.Intent

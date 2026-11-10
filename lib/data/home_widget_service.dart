@@ -9,7 +9,7 @@ import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/core/storage.dart';
 
 class HomeWidgetService {
-  static const _appGroup = 'com.auralix.nexo.widgets';
+  static const _appGroup = 'pro.aurx.nexo.widgets';
   static const _wNext = 'NextClassWidgetProvider';
   static const _wToday = 'TodayWidgetProvider';
   static const _wPay = 'PaymentWidgetProvider';
@@ -61,7 +61,7 @@ class HomeWidgetService {
   Future<void> _updateWidget(String provider) async {
     // Usar el mismo paquete que el namespace y los proveedores Kotlin.
     await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.auralix.nexo.$provider',
+      qualifiedAndroidName: 'pro.aurx.nexo.$provider',
     );
   }
 

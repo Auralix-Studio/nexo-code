@@ -37,7 +37,7 @@ class RecordingNotifications implements FlutterLocalNotificationsPlugin {
         }
         return blockedSchedule?.future ?? Future<void>.value();
       case #cancel:
-        cancelled.add(invocation.positionalArguments.first as int);
+        cancelled.add(invocation.namedArguments[#id] as int);
         return Future<void>.value();
       case #cancelAll:
         cleared++;
@@ -103,8 +103,9 @@ void main() {
     expect(plugin.scheduled, isEmpty);
     await service.init();
     expect(plugin.scheduled, hasLength(2));
-    expect(plugin.scheduled.first.positionalArguments[1], 'FÍSICA');
-    final when = plugin.scheduled.first.positionalArguments[3] as tz.TZDateTime;
+    expect(plugin.scheduled.first.namedArguments[#title], 'FÍSICA');
+    final when =
+        plugin.scheduled.first.namedArguments[#scheduledDate] as tz.TZDateTime;
     expect(when.hour, 8);
     expect(when.minute, 30);
   });
