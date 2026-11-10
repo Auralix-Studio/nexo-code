@@ -45,15 +45,16 @@ dependencies:
   path_provider: ^2.1.4
   share_plus: ^13.3.1
   file_selector: ^1.1.0
+  # Genera splash screens nativos (Android/iOS/Web) con el logo de Nexo,
+  # sin pantalla blanca antes de que Flutter arranque. Debe ir en dependencies
+  # porque registra FlutterNativeSplashPlugin en GeneratedPluginRegistrant.
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
-  # Genera splash screens nativos (Android/iOS/Web) con el logo de Nexo,
-  # sin pantalla blanca antes de que Flutter arranque.
-  flutter_native_splash: ^2.4.4
   # Empaqueta la app como MSIX para la Microsoft Store.
   msix: ^3.16.8
 

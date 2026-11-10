@@ -8,11 +8,11 @@ import 'package:nexo/domain/unified_models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
   late Directory temp;
   late CacheManager cache;
   setUp(() async {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
     temp = await Directory(
       p.join(Directory.current.path, '.dart_tool'),
     ).createTemp('nexo-cache-test-');

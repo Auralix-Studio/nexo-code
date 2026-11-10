@@ -67,13 +67,16 @@ android {
         buildConfig = true
     }
 
-    // Bibliotecas nativas comprimidas dentro del APK. Sin comprimir Android
-    // las carga sin extraerlas, pero la descarga pesa el doble (24,8 MB contra
-    // ~12 MB el ARM64, medido en la 1.9.0). Para un APK que se baja por datos
-    // móviles conviene comprimir; a cambio, instalada ocupa ~10 MB más.
+    // Bibliotecas nativas comprimidas dentro del APK directo (GitHub/web) para
+    // reducir la descarga a la mitad (~31 MB universal / ~11 MB arm64).
+    // En App Bundle (.aab) o build de tienda (STORE_BUILD=true) se mantienen
+    // sin comprimir para cumplir la alineación de páginas de 16 KB en Play Store.
+    val isBuildingBundle = gradle.startParameter.taskNames.any {
+        it.contains("bundle", ignoreCase = true)
+    }
     packaging {
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = !isBuildingBundle && !isStoreBuild
         }
     }
 

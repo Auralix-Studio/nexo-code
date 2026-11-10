@@ -17,6 +17,20 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:-options")
+    }
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            val javaTask = project.tasks.withType<JavaCompile>().findByName(
+                name.replace("Kotlin", "JavaWithJavac")
+            ) ?: project.tasks.withType<JavaCompile>().firstOrNull()
+            val target = javaTask?.targetCompatibility
+            if (!target.isNullOrEmpty()) {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(target))
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
