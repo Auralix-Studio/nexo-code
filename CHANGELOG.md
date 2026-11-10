@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [1.12.3] - 2026-11-10
+
+### Otros cambios
+- Deps + Flutter SDK 3.47.9 + renombrado a pro.aurx.nexo (#24)
+
 ## [1.12.2] - 2026-10-29
 
 ### Correcciones
