@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [1.12.4] - 2026-11-10
+
+### Correcciones
+- android: Incluir flutter_native_splash en release y optimizar empaquetado JNI
+
 ## [1.12.3] - 2026-11-10
 
 ### Otros cambios
