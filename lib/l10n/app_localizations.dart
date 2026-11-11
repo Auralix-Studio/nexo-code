@@ -3764,6 +3764,30 @@ abstract class AppLocalizations {
   /// **'Descartar'**
   String get tchDraftDiscard;
 
+  /// No description provided for @tchGradeDraftBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Borrador · 1 cambio} other{Borrador · {count} cambios}}'**
+  String tchGradeDraftBadge(int count);
+
+  /// No description provided for @tchGradeSaveDraft.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar borrador'**
+  String get tchGradeSaveDraft;
+
+  /// No description provided for @tchGradeDraftSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.'**
+  String get tchGradeDraftSaved;
+
+  /// No description provided for @tchGradeLockedDraftHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite.'**
+  String get tchGradeLockedDraftHint;
+
   /// No description provided for @tchAgendaTitle.
   ///
   /// In es, this message translates to:

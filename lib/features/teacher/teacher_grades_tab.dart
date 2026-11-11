@@ -153,7 +153,7 @@ class _TeacherGradesTabState extends State<TeacherGradesTab>
                                     top: AppSpacing.sm,
                                   ),
                                   child: Text(
-                                    l.docenteUnitLocked,
+                                    l.tchGradeLockedDraftHint,
                                     style: TextStyle(
                                       fontSize: AppFont.small,
                                       color: NexoTheme.textMuted,
@@ -280,6 +280,13 @@ class _TypesListState extends State<_TypesList> {
           }
           final shown = columns < t.maxCount ? columns + 1 : columns;
           for (var i = 0; i < shown; i++) {
+            final draftCount = widget.store.docenteCambiosBorradorNotas(
+              widget.course.id,
+              widget.unit.id,
+              t.id,
+              ordinal: i,
+              maxValue: t.maxValue,
+            );
             children.add(
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -289,6 +296,7 @@ class _TypesListState extends State<_TypesList> {
                   multi: t.maxCount > 1,
                   unit: widget.unit,
                   roster: widget.roster,
+                  draftCount: draftCount,
                   onTap: () => TeacherGradeEntryScreen.open(
                     context,
                     store: widget.store,
@@ -314,6 +322,7 @@ class _TypeCard extends StatelessWidget {
   final bool multi;
   final TeacherUnitCatalog unit;
   final List<TeacherStudent> roster;
+  final int draftCount;
   final VoidCallback onTap;
   const _TypeCard({
     required this.type,
@@ -321,6 +330,7 @@ class _TypeCard extends StatelessWidget {
     required this.multi,
     required this.unit,
     required this.roster,
+    this.draftCount = 0,
     required this.onTap,
   });
 
@@ -344,6 +354,7 @@ class _TypeCard extends StatelessWidget {
         ? null
         : values.reduce((a, b) => a + b) / values.length;
     final complete = total > 0 && values.length >= total;
+    final hasDraft = draftCount > 0;
     final color = _color;
     return Material(
       color: Colors.transparent,
@@ -355,7 +366,11 @@ class _TypeCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: NexoTheme.card,
             borderRadius: AppRadii.rXl,
-            border: Border.all(color: NexoTheme.border),
+            border: Border.all(
+              color: hasDraft
+                  ? NexoTheme.warning.withValues(alpha: 0.6)
+                  : NexoTheme.border,
+            ),
           ),
           child: Row(
             children: [
@@ -414,17 +429,28 @@ class _TypeCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (hasDraft) ...[
+                      const SizedBox(height: 6),
+                      TeacherPill(
+                        text: l.tchGradeDraftBadge(draftCount),
+                        color: NexoTheme.warning,
+                      ),
+                    ],
                   ],
                 ),
               ),
               const Gap.h(AppSpacing.sm),
               Icon(
-                unit.enabled
-                    ? (values.isEmpty
-                          ? Icons.add_circle_rounded
-                          : Icons.edit_rounded)
-                    : Icons.visibility_rounded,
-                color: unit.enabled ? NexoTheme.primary : NexoTheme.textMuted,
+                hasDraft
+                    ? Icons.edit_note_rounded
+                    : values.isEmpty
+                    ? Icons.add_circle_rounded
+                    : Icons.edit_rounded,
+                color: hasDraft
+                    ? NexoTheme.warning
+                    : unit.enabled
+                    ? NexoTheme.primary
+                    : NexoTheme.textMuted,
               ),
             ],
           ),

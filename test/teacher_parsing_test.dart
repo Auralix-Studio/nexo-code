@@ -87,6 +87,30 @@ void main() {
       expect(back.blocks.length, 3);
       expect(back.blocks.last.id, '419321');
     });
+
+    test('deduplica filas repetidas de SIGMA y combina sus bloques', () {
+      final notasDuplicadas = [
+        notasRow,
+        {
+          ...notasRow,
+          'horario': 'Viernes 08:00:00 09:30:00 T',
+        },
+      ];
+      final asis2 = {
+        ...asistenciaRow,
+        'id': '419330',
+        'horario': 'Viernes 08:00:00 09:30:00 T',
+      };
+      final out = TeacherRepository.mergeAsignaturas(
+        notasDuplicadas,
+        [asistenciaRow, asis2],
+      );
+      // No debe duplicar la tarjeta de la sección
+      expect(out, hasLength(1));
+      expect(out.single.id, '1365838');
+      // Debe haber combinado los bloques sin duplicar
+      expect(out.single.blocks, hasLength(4));
+    });
   });
 
   test('horario docente para la pestaña Horario sale de las asignaturas', () {

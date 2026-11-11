@@ -822,5 +822,9 @@
   "accountOtherAccount": "Usar otra cuenta",
   "accountSwitchFailed": "No se pudo entrar como {user}. {reason}",
   "accountEnterPassword": "Ingresa la contraseña de {user} para continuar.",
-  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque."
+  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque.",
+  "tchGradeDraftBadge": "{count, plural, =1{Borrador · 1 cambio} other{Borrador · {count} cambios}}",
+  "tchGradeSaveDraft": "Guardar borrador",
+  "tchGradeDraftSaved": "Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.",
+  "tchGradeLockedDraftHint": "Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite."
 }

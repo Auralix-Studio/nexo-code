@@ -2261,6 +2261,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tchDraftDiscard => 'Descartar';
 
   @override
+  String tchGradeDraftBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Borrador · $count cambios',
+      one: 'Borrador · 1 cambio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tchGradeSaveDraft => 'Guardar borrador';
+
+  @override
+  String get tchGradeDraftSaved =>
+      'Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.';
+
+  @override
+  String get tchGradeLockedDraftHint =>
+      'Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite.';
+
+  @override
   String get tchAgendaTitle => 'Agenda de hoy';
 
   @override

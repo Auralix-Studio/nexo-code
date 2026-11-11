@@ -310,7 +310,27 @@ class _TeacherTakeAttendanceScreenState
         return Scaffold(
           backgroundColor: NexoTheme.bg,
           appBar: AppBar(
-            title: Text(l.tchAttTitle),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l.tchAttTitle),
+                Text(
+                  [
+                    widget.course.displayName,
+                    if (widget.course.careerName.isNotEmpty)
+                      widget.course.careerName,
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: NexoTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
             actions: [
               if (students.isNotEmpty)
                 IconButton(

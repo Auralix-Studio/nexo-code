@@ -108,10 +108,34 @@ class _TeacherCourseDetailScreenState extends State<TeacherCourseDetailScreen>
     return Scaffold(
       backgroundColor: NexoTheme.bg,
       appBar: AppBar(
-        title: Text(
-          c.displayName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              c.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            if (c.careerName.isNotEmpty || c.section.isNotEmpty)
+              Text(
+                [
+                  if (c.careerName.isNotEmpty) c.careerName,
+                  if (c.section.isNotEmpty) l.tchSectionLabel(c.section),
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: NexoTheme.textSecondary,
+                ),
+              ),
+          ],
         ),
         actions: [
           if (_downloading)
@@ -247,15 +271,30 @@ class _Header extends StatelessWidget {
               ),
             ),
           if (c.careerName.isNotEmpty)
-            Text(
-              c.careerName,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-                color: NexoTheme.textMuted,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 14,
+                    color: NexoTheme.primary,
+                  ),
+                  const Gap.h(AppSpacing.xs + 2),
+                  Expanded(
+                    child: Text(
+                      c.careerName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.primary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           // "Sección A1 · Ciclo 4 · Presencial" y, a la derecha, el NRC

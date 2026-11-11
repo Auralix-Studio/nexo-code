@@ -68,6 +68,8 @@ class TeacherRepository {
 
   /// Cruza cada sección de `modo=Notas` con su par de `modo=Asistencia` por
   /// NRC; si hay varias con el mismo NRC, desempata por sección y carrera.
+  /// Deduplica para garantizar que una sección no se repita si SIGMA devuelve
+  /// múltiples registros para la misma asignatura/sección.
   @visibleForTesting
   static List<TeacherSubject> mergeAsignaturas(
     List<Map<String, dynamic>> notas,
@@ -75,7 +77,7 @@ class TeacherRepository {
   ) {
     String norm(Object? v) => (v ?? '').toString().trim().toUpperCase();
     final used = <int>{};
-    final out = <TeacherSubject>[];
+    final rawList = <TeacherSubject>[];
     for (final n in notas) {
       final base = TeacherSubject.fromJson(n);
       var best = -1;
@@ -94,12 +96,83 @@ class TeacherRepository {
       }
       if (best >= 0) {
         used.add(best);
-        out.add(base.mergeAttendance(asistencia[best]));
+        rawList.add(base.mergeAttendance(asistencia[best]));
       } else {
-        out.add(base);
+        rawList.add(base);
       }
     }
-    return out;
+
+    // Si hay asignaturas en modo=Asistencia que no vinieron en modo=Notas,
+    // se incluyen para no perder ninguna sección del docente.
+    for (var i = 0; i < asistencia.length; i++) {
+      if (used.contains(i)) continue;
+      final a = asistencia[i];
+      final base = TeacherSubject.fromJson(a).mergeAttendance(a);
+      rawList.add(base);
+    }
+
+    // Deduplicación: agrupa y fusiona cualquier sección duplicada (por id único
+    // de notas o por combinación de NRC + sección + carrera).
+    final deduped = <String, TeacherSubject>{};
+    for (final s in rawList) {
+      final key = s.id.isNotEmpty
+          ? s.id
+          : '${norm(s.nrc)}|${norm(s.section)}|${norm(s.carrera)}';
+
+      final existing = deduped[key] ??
+          ((s.nrc.isNotEmpty && s.section.isNotEmpty)
+              ? deduped.values
+                  .where((e) =>
+                      norm(e.nrc) == norm(s.nrc) &&
+                      norm(e.section) == norm(s.section) &&
+                      (e.carrera.isEmpty ||
+                          s.carrera.isEmpty ||
+                          norm(e.carrera) == norm(s.carrera)))
+                  .firstOrNull
+              : null);
+
+      if (existing == null) {
+        deduped[key] = s;
+      } else {
+        final existingKey = existing.id.isNotEmpty
+            ? existing.id
+            : '${norm(existing.nrc)}|${norm(existing.section)}|${norm(existing.carrera)}';
+
+        final combinedBlocks = [
+          ...existing.blocks,
+          for (final b in s.blocks)
+            if (!existing.blocks.any((eb) =>
+                eb.weekday == b.weekday &&
+                eb.start == b.start &&
+                eb.end == b.end))
+              b,
+        ];
+
+        deduped[existingKey] = TeacherSubject(
+          id: existing.id.isNotEmpty ? existing.id : s.id,
+          code: existing.code.isNotEmpty ? existing.code : s.code,
+          subject: existing.subject.isNotEmpty ? existing.subject : s.subject,
+          section: existing.section.isNotEmpty ? existing.section : s.section,
+          periodo: existing.periodo.isNotEmpty ? existing.periodo : s.periodo,
+          enrolledCount: existing.enrolledCount ?? s.enrolledCount,
+          plan: existing.plan.isNotEmpty ? existing.plan : s.plan,
+          nrc: existing.nrc.isNotEmpty ? existing.nrc : s.nrc,
+          tipoCalif: existing.tipoCalif != 0 ? existing.tipoCalif : s.tipoCalif,
+          asistenciaId: existing.asistenciaId.isNotEmpty
+              ? existing.asistenciaId
+              : s.asistenciaId,
+          carrera: existing.carrera.isNotEmpty ? existing.carrera : s.carrera,
+          modalidad: existing.modalidad.isNotEmpty ? existing.modalidad : s.modalidad,
+          sede: existing.sede.isNotEmpty ? existing.sede : s.sede,
+          local: existing.local.isNotEmpty ? existing.local : s.local,
+          aula: existing.aula.isNotEmpty ? existing.aula : s.aula,
+          ciclo: existing.ciclo.isNotEmpty ? existing.ciclo : s.ciclo,
+          blocks: combinedBlocks,
+        );
+      }
+    }
+
+    return deduped.values.toList();
   }
 
   /// Horario del docente. SIGMA no tiene un endpoint propio (y

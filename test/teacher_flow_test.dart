@@ -580,6 +580,64 @@ void main() {
     expect(find.text('U1'), findsOneWidget);
     expect(find.text('EV'), findsOneWidget);
   });
+
+  testWidgets('borrador de notas se guarda al escribir, se muestra y descarta', (
+    tester,
+  ) async {
+    await pumpPhone(tester);
+    final l = AppLocalizations.of(
+      tester.element(find.byType(TeacherCourseDetailScreen)),
+    );
+    await tester.tap(find.text(l.docenteTabNotas));
+    await settle(tester);
+    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+    await settle(tester);
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '18');
+    await tester.enterText(fields.at(2), '15');
+    await settle(tester);
+    expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
+    expect(find.text(l.tchGradeSaveDraft), findsOneWidget);
+
+    await tester.tap(find.text(l.tchGradeSaveDraft));
+    await settle(tester);
+    expect(sigma.posts, isEmpty);
+    // La tarjeta de la evaluación muestra el aviso de borrador pendiente.
+    expect(find.text(l.tchGradeDraftBadge(2)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(seconds: 6));
+    await settle(tester);
+
+    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+    await settle(tester);
+    expect(find.text(l.tchDraftRestored), findsOneWidget);
+    expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text(l.tchDraftDiscard));
+    await settle(tester);
+    expect(find.text(l.tchDraftRestored), findsNothing);
+    expect(find.text(l.tchSaveChanges(2)), findsNothing);
+
+    await tester.tap(find.byType(BackButton));
+    await settle(tester);
+    expect(find.text(l.tchGradeDraftBadge(2)), findsNothing);
+
+    // Unidad cerrada en SIGMA (UNIDAD 3): permite guardar borrador igualmente.
+    await tester.ensureVisible(find.text('UNIDAD 3'));
+    await tester.tap(find.text('UNIDAD 3'));
+    await settle(tester);
+    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+    await settle(tester);
+    expect(find.text(l.tchGradeLockedDraftHint), findsOneWidget);
+    await tester.enterText(find.byType(TextField).at(1), '17');
+    await settle(tester);
+    await tester.tap(find.text(l.tchGradeSaveDraft));
+    await settle(tester);
+    expect(find.text(l.tchGradeDraftBadge(1)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 /// Avanza animaciones y peticiones simuladas sin esperar a que terminen las

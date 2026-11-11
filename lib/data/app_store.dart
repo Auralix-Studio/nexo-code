@@ -16,6 +16,7 @@ import 'package:nexo/data/sigma_repository.dart';
 import 'package:nexo/domain/idiomas_repository.dart';
 import 'package:nexo/domain/idiomas_models.dart';
 import 'package:nexo/domain/grade_calculator.dart';
+import 'package:nexo/domain/grade_paste.dart';
 import 'package:nexo/domain/course_status.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/passing_rule.dart';
@@ -1452,6 +1453,89 @@ class AppStore extends ChangeNotifier {
     DateTime day,
     int unitId,
   ) => AppStorage.instance.removeCache(_draftKey(courseId, day, unitId));
+
+  // ── Borradores de notas ─────────────────────────────────────────────────
+  // Las notas escritas o pegadas desde Excel se guardan localmente por
+  // evaluación (curso + unidad + tipo de nota + columna) mientras el docente
+  // califica: puede avanzar en varios momentos, salir sin perder cambios o
+  // reintentar si SIGMA falla. Se limpia al publicar en SIGMA o descartar.
+
+  static String _gradeDraftKey(
+    String courseId,
+    int unitId,
+    int tipoNotaId,
+    int ordinal,
+  ) => 'tch.draftGrade.$courseId.$unitId.$tipoNotaId.$ordinal';
+
+  Map<String, String> docenteBorradorNotas(
+    String courseId,
+    int unitId,
+    int tipoNotaId, [
+    int ordinal = 0,
+  ]) {
+    final raw = AppStorage.instance.getCache(
+      _gradeDraftKey(courseId, unitId, tipoNotaId, ordinal),
+      maxAge: const Duration(days: 30),
+    );
+    if (raw is! Map) return {};
+    return {
+      for (final e in raw.entries)
+        if ('${e.value}'.trim().isNotEmpty) '${e.key}': '${e.value}'.trim(),
+    };
+  }
+
+  /// Cantidad de alumnos con nota en borrador (distinta de la registrada en
+  /// SIGMA) para una evaluación.
+  int docenteCambiosBorradorNotas(
+    String courseId,
+    int unitId,
+    int tipoNotaId, {
+    int ordinal = 0,
+    double maxValue = 20,
+  }) {
+    final draft = docenteBorradorNotas(courseId, unitId, tipoNotaId, ordinal);
+    if (draft.isEmpty) return 0;
+    final roster = alumnosDe(courseId).value;
+    if (roster == null || roster.isEmpty) return draft.length;
+    final byCode = {for (final s in roster) s.code: s};
+    var count = 0;
+    for (final e in draft.entries) {
+      final s = byCode[e.key];
+      if (s == null) continue;
+      final orig = s.cellFor(unitId, tipoNotaId, ordinal)?.value;
+      final v = parseGradeValue(e.value, maxValue);
+      if (v == null || v != orig) count++;
+    }
+    return count;
+  }
+
+  Future<void> guardarBorradorNotas(
+    String courseId,
+    int unitId,
+    int tipoNotaId,
+    Map<String, String> grades, {
+    int ordinal = 0,
+  }) async {
+    final key = _gradeDraftKey(courseId, unitId, tipoNotaId, ordinal);
+    if (grades.isEmpty) {
+      await AppStorage.instance.removeCache(key);
+    } else {
+      await _setStorageCache(key, grades);
+    }
+    _notify();
+  }
+
+  Future<void> borrarBorradorNotas(
+    String courseId,
+    int unitId,
+    int tipoNotaId, [
+    int ordinal = 0,
+  ]) async {
+    await AppStorage.instance.removeCache(
+      _gradeDraftKey(courseId, unitId, tipoNotaId, ordinal),
+    );
+    _notify();
+  }
 
   bool get tieneDocente => _teacher != null;
   Future<void> changePassword(String actual, String nueva) =>

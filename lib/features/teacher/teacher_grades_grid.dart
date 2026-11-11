@@ -293,13 +293,24 @@ class TeacherGradesGrid extends StatelessWidget {
         Row(
           children: [
             for (final c in cols)
-              c.isAverage
-                  ? head(l.tchGridUnitAvg, width: _avgW)
-                  : head(
-                      c.label,
-                      width: _cellW,
-                      onTap: () => _openColumn(context, c),
-                    ),
+              if (c.isAverage)
+                head(l.tchGridUnitAvg, width: _avgW)
+              else
+                head(
+                  c.label,
+                  width: _cellW,
+                  color:
+                      store.docenteCambiosBorradorNotas(
+                            course.id,
+                            c.unit.id,
+                            c.tipoNotaId!,
+                            ordinal: c.ordinal,
+                          ) >
+                          0
+                      ? NexoTheme.warning
+                      : null,
+                  onTap: () => _openColumn(context, c),
+                ),
             head('', width: _finalW),
           ],
         ),

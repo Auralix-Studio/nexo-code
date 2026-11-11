@@ -1387,6 +1387,17 @@
   "tchAttTodayTitle": "Asistencia de hoy",
   "tchDraftRestored": "Recuperamos lo que marcaste antes. Revísalo y registra.",
   "tchDraftDiscard": "Descartar",
+  "tchGradeDraftBadge": "{count, plural, =1{Borrador · 1 cambio} other{Borrador · {count} cambios}}",
+  "@tchGradeDraftBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tchGradeSaveDraft": "Guardar borrador",
+  "tchGradeDraftSaved": "Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.",
+  "tchGradeLockedDraftHint": "Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite.",
   "tchAgendaTitle": "Agenda de hoy",
   "tchAgendaEmpty": "Hoy no tienes clases.",
   "tchAgendaHoliday": "Hoy es feriado nacional: no hay clases.",

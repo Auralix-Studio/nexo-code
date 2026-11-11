@@ -62,6 +62,8 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
   final Map<String, TextEditingController> _ctrls = {};
   final Map<String, FocusNode> _focus = {};
   bool _saving = false;
+  bool _draftRestored = false;
+  bool _restoredOnce = false;
   String _q = '';
 
   List<TeacherStudent> get _students {
@@ -85,6 +87,98 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
       });
 
   FocusNode _node(String code) => _focus.putIfAbsent(code, FocusNode.new);
+
+  void _restoreDraftIfNeeded(List<TeacherStudent> students) {
+    if (_restoredOnce || students.isEmpty) return;
+    _restoredOnce = true;
+    final saved = widget.store.docenteBorradorNotas(
+      widget.course.id,
+      widget.unit.id,
+      widget.type.id,
+      widget.ordinal,
+    );
+    if (saved.isEmpty) return;
+    var restored = false;
+    for (final s in students) {
+      final draft = saved[s.code]?.trim();
+      if (draft == null || draft.isEmpty) continue;
+      final orig = _cell(s)?.value;
+      final parsed = TeacherGradeEntryScreen.parseGrade(
+        draft,
+        widget.type.maxValue,
+      );
+      if (parsed != null && parsed == orig) continue;
+      _ctrl(s).text = draft;
+      restored = true;
+    }
+    if (restored) {
+      _draftRestored = true;
+    } else {
+      widget.store.borrarBorradorNotas(
+        widget.course.id,
+        widget.unit.id,
+        widget.type.id,
+        widget.ordinal,
+      );
+    }
+  }
+
+  void _persistDraft(List<TeacherStudent> students) {
+    final draft = <String, String>{};
+    for (final s in students) {
+      final text = _ctrls[s.code]?.text.trim() ?? '';
+      if (text.isEmpty) continue;
+      final orig = _cell(s)?.value;
+      final parsed = TeacherGradeEntryScreen.parseGrade(
+        text,
+        widget.type.maxValue,
+      );
+      if (parsed != null && parsed == orig) continue;
+      draft[s.code] = text;
+    }
+    if (draft.isEmpty && _draftRestored) {
+      _draftRestored = false;
+    }
+    widget.store.guardarBorradorNotas(
+      widget.course.id,
+      widget.unit.id,
+      widget.type.id,
+      draft,
+      ordinal: widget.ordinal,
+    );
+  }
+
+  void _saveDraft(List<TeacherStudent> students) {
+    final l = AppLocalizations.of(context);
+    final r = _collect(students);
+    if (r.invalid > 0) {
+      ClipboardHelper.showError(
+        context,
+        l.tchGradeInvalidCount(r.invalid, _fmt(widget.type.maxValue)),
+      );
+      return;
+    }
+    _persistDraft(students);
+    HapticFeedback.mediumImpact();
+    ClipboardHelper.showSuccess(context, l.tchGradeDraftSaved);
+    Navigator.of(context).pop(false);
+  }
+
+  void _discardDraft(List<TeacherStudent> students) {
+    setState(() {
+      for (final s in students) {
+        final orig = _cell(s)?.value;
+        _ctrl(s).text = orig == null ? '' : _fmt(orig);
+      }
+      _draftRestored = false;
+    });
+    widget.store.borrarBorradorNotas(
+      widget.course.id,
+      widget.unit.id,
+      widget.type.id,
+      widget.ordinal,
+    );
+  }
 
   @override
   void dispose() {
@@ -187,6 +281,7 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
         _ctrl(byCode[e.key]!).text = _fmt(e.value);
       }
     });
+    _persistDraft(students);
     ClipboardHelper.showSuccess(context, l.tchPasteDone);
   }
 
@@ -221,9 +316,19 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (res.error != null) {
+      // Si parte del lote se guardó en SIGMA, se actualiza el borrador solo
+      // con las notas que aún faltan por registrar.
+      _persistDraft(_students);
       ClipboardHelper.showError(context, res.error!);
       return;
     }
+    await widget.store.borrarBorradorNotas(
+      widget.course.id,
+      widget.unit.id,
+      widget.type.id,
+      widget.ordinal,
+    );
+    if (!mounted) return;
     HapticFeedback.heavyImpact();
     ClipboardHelper.showSuccess(
       context,
@@ -240,6 +345,7 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
       listenable: widget.store,
       builder: (context, _) {
         final students = _students;
+        _restoreDraftIfNeeded(students);
         final shown = _q.isEmpty
             ? students
             : students
@@ -264,9 +370,35 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
         return Scaffold(
           backgroundColor: NexoTheme.bg,
           appBar: AppBar(
-            title: Text('${widget.type.abbr} · ${widget.unit.name}'),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${widget.type.abbr} · ${widget.unit.name}'),
+                Text(
+                  [
+                    widget.course.displayName,
+                    if (widget.course.careerName.isNotEmpty)
+                      widget.course.careerName,
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: NexoTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
             actions: [
-              if (!locked && students.isNotEmpty)
+              if (pending.writes.isNotEmpty)
+                IconButton(
+                  tooltip: l.tchGradeSaveDraft,
+                  icon: const Icon(Icons.save_outlined),
+                  onPressed: _saving ? null : () => _saveDraft(students),
+                ),
+              if (students.isNotEmpty)
                 IconButton(
                   tooltip: l.tchPasteAction,
                   icon: const Icon(Icons.content_paste_rounded),
@@ -308,6 +440,11 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                             ),
                             color: NexoTheme.primary,
                           ),
+                          if (pending.writes.isNotEmpty)
+                            TeacherPill(
+                              text: l.tchGradeDraftBadge(pending.writes.length),
+                              color: NexoTheme.warning,
+                            ),
                           if (avg != null)
                             TeacherPill(
                               text: l.tchGradeAverage(avg.toStringAsFixed(1)),
@@ -329,9 +466,17 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                 ),
                 if (locked)
                   TeacherBanner(
-                    color: NexoTheme.textMuted,
-                    icon: Icons.lock_outline_rounded,
-                    text: l.docenteUnitLocked,
+                    color: NexoTheme.warning,
+                    icon: Icons.edit_note_rounded,
+                    text: l.tchGradeLockedDraftHint,
+                  ),
+                if (_draftRestored)
+                  TeacherBanner(
+                    color: NexoTheme.info,
+                    icon: Icons.restore_rounded,
+                    text: l.tchDraftRestored,
+                    action: l.tchDraftDiscard,
+                    onAction: () => _discardDraft(students),
                   ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -375,9 +520,12 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                         original: _cell(s)?.value,
                         max: widget.type.maxValue,
                         minPass: widget.type.minPass,
-                        readOnly: locked,
+                        readOnly: _saving,
                         isLast: next == null,
-                        onChanged: () => setState(() {}),
+                        onChanged: () {
+                          setState(() {});
+                          _persistDraft(students);
+                        },
                         onSubmitted: () {
                           if (next != null) {
                             _node(next.code).requestFocus();
@@ -389,30 +537,75 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                     },
                   ),
                 ),
-                if (!locked && pending.writes.isNotEmpty)
+                if (pending.writes.isNotEmpty)
                   SafeArea(
                     minimum: const EdgeInsets.all(AppSpacing.lg),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                        backgroundColor: NexoTheme.primary,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadii.rLg,
-                        ),
-                      ),
-                      onPressed: _saving ? null : () => _save(students),
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    child: locked
+                        ? FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              backgroundColor: NexoTheme.primary,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppRadii.rLg,
                               ),
-                            )
-                          : const Icon(Icons.cloud_upload_rounded),
-                      label: Text(l.tchSaveChanges(pending.writes.length)),
-                    ),
+                            ),
+                            onPressed: _saving
+                                ? null
+                                : () => _saveDraft(students),
+                            icon: const Icon(Icons.save_outlined),
+                            label: Text(l.tchGradeSaveDraft),
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                    side: BorderSide(color: NexoTheme.border),
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: AppRadii.rLg,
+                                    ),
+                                  ),
+                                  onPressed: _saving
+                                      ? null
+                                      : () => _saveDraft(students),
+                                  icon: const Icon(
+                                    Icons.save_outlined,
+                                    size: 18,
+                                  ),
+                                  label: Text(l.tchGradeSaveDraft),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                    backgroundColor: NexoTheme.primary,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: AppRadii.rLg,
+                                    ),
+                                  ),
+                                  onPressed: _saving
+                                      ? null
+                                      : () => _save(students),
+                                  icon: _saving
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(Icons.cloud_upload_rounded),
+                                  label: Text(
+                                    l.tchSaveChanges(pending.writes.length),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
               ],
             ),

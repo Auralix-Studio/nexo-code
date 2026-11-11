@@ -388,6 +388,20 @@ class _CursoRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (course.careerName.isNotEmpty) ...[
+                    Text(
+                      course.careerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: NexoTheme.primary,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const Gap(2),
+                  ],
                   Text(
                     course.displayName,
                     maxLines: 2,

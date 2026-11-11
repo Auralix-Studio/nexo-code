@@ -218,6 +218,42 @@ class _CursoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (c.careerName.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.school_outlined,
+                        size: 13,
+                        color: NexoTheme.primary,
+                      ),
+                      const Gap.h(AppSpacing.xs + 2),
+                      Expanded(
+                        child: Text(
+                          c.careerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            color: NexoTheme.primary,
+                          ),
+                        ),
+                      ),
+                      if (c.nrc.isNotEmpty)
+                        Text(
+                          'NRC ${c.nrc}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: NexoTheme.textMuted,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
