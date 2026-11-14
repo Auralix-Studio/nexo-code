@@ -4,9 +4,10 @@ import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:nexo/domain/saved_account.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
+import 'package:nexo/features/guardian/guardian_access_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
 
@@ -446,7 +447,17 @@ class _FormCard extends StatelessWidget {
               label: Text(l.accountSavedTitle),
             ),
           ],
-          const Gap(AppSpacing.xl),
+          const Gap(AppSpacing.md),
+          // Los apoderados no tienen cuenta en la UPLA: entran por su propia
+          // puerta, con DNI y PIN.
+          TextButton.icon(
+            onPressed: loading
+                ? null
+                : () => GuardianAccessScreen.open(context),
+            icon: const Icon(Icons.family_restroom_rounded, size: AppIcon.lg),
+            label: Text(l.guardianEntry),
+          ),
+          const Gap(AppSpacing.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

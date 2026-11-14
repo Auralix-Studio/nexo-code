@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:nexo/core/session_scope.dart';
 import 'package:nexo/core/errors.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/session.dart';
 
 class ErrorHandler {
   final ConnectivityService connectivity;
@@ -31,7 +31,7 @@ class ErrorHandler {
     } on StaleSessionException {
       rethrow;
     } on SessionExpiredException {
-      // El logout ya lo disparó ApiClient (onUnauthorized) como fuente única.
+      // El logout ya lo disparó BackendClient (onSessionInvalid), fuente única.
       // Aquí NO cerramos sesión otra vez: solo intentamos mostrar el caché
       // durante la transición a la pantalla de login.
       debugPrint('ErrorHandler: session expired in $operationName.');

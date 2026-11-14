@@ -39,43 +39,36 @@ void main() {
     });
   });
 
-  testWidgets('los términos cubren el dispositivo y los cambios', (
-    tester,
-  ) async {
+  testWidgets(
+    'los términos cubren el dispositivo, los cambios y el directorio',
+    (tester) async {
+      await tester.pumpWidget(_app(const TermsScreen()));
+      await tester.pumpAndSettle();
+
+      // La lista es larga: hay que bajar hasta cada bloque para comprobarlo.
+      for (final title in [
+        'Lo que queda en tu dispositivo',
+        'El apartado Estudiantes',
+        'Datos de otras personas',
+        'Datos de demostración',
+        'Cambios en estos términos',
+        'Versión ${LegalTerms.version}',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.textContaining(title),
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.textContaining(title), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets('no mencionan integraciones retiradas', (tester) async {
     await tester.pumpWidget(_app(const TermsScreen()));
     await tester.pumpAndSettle();
 
-    // La lista es larga: hay que bajar hasta cada bloque para comprobarlo.
-    for (final title in [
-      'Lo que queda en tu dispositivo',
-      'Cambios en estos términos',
-      'Versión ${LegalTerms.version}',
-    ]) {
-      await tester.scrollUntilVisible(
-        find.textContaining(title),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.textContaining(title), findsOneWidget);
-    }
-  });
-
-  testWidgets('no prometen nada sobre servidores propios ni datos ajenos', (
-    tester,
-  ) async {
-    // La app volvió a no hablar con ningún servidor de Nexo: los términos no
-    // deben describir un apartado que ya no existe.
-    await tester.pumpWidget(_app(const TermsScreen()));
-    await tester.pumpAndSettle();
-
-    for (final gone in [
-      'El apartado Estudiantes',
-      'Datos de otras personas',
-      'Datos de demostración',
-      'servidor de Nexo',
-      'Cuenta de Microsoft',
-      'Teams',
-    ]) {
+    for (final gone in ['Cuenta de Microsoft', 'Teams']) {
       expect(find.textContaining(gone), findsNothing, reason: gone);
     }
   });

@@ -9,31 +9,33 @@ import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/session_scope.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/data/api_client.dart';
+import 'package:nexo/data/remote/backend_client.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/intranet_client.dart';
-import 'package:nexo/data/intranet_repository.dart';
-import 'package:nexo/data/session.dart';
-import 'package:nexo/data/sigma_repository.dart';
-import 'package:nexo/data/teacher_repository.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/directory_service.dart';
+import 'package:nexo/data/services/session.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/data/repositories/nexo_teacher_repository.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
-http.Response loginResponse(String user) => http.Response(
-  jsonEncode({
-    'success': true,
-    'data': {
-      'token': 'token-$user',
-      'info': {'codigo': user},
-    },
-  }),
-  200,
-);
+import 'support/fake_nexo_api.dart';
 
-Student student(String user) =>
-    Student.fromSigmaJson({'est_Id': user, 'estudiante': user});
+http.Response loginResponse(String user) =>
+    nexoOk(nexoSession(user, token: 'token-$user'));
+
+Student student(String user) => Student(
+  id: user,
+  fullName: user,
+  career: '',
+  faculty: '',
+  campus: '',
+  level: '',
+  studyPlan: '',
+  modality: '',
+  isEnrolled: false,
+);
 
 class _Online extends Fake implements ConnectivityService {
   @override
@@ -42,11 +44,11 @@ class _Online extends Fake implements ConnectivityService {
   bool get firstCheckCompleted => true;
 }
 
-class _ProfileRepo extends Fake implements SigmaRepository {
+class _ProfileRepo extends Fake implements NexoRepository {
   final Completer<Student> response = Completer();
   final Completer<void> started = Completer();
   @override
-  Future<Student> infoEstudiante() {
+  Future<Student> profile() {
     started.complete();
     return response.future;
   }
@@ -90,12 +92,7 @@ class _SlowVault extends MemorySecretStore {
   }
 }
 
-const _gw = GradeWrite(
-  matricula: 'm',
-  unidadId: 121,
-  tipoNotaId: 11,
-  nota: 15,
-);
+const _gw = GradeWrite(matricula: 'm', unidadId: 121, tipoNotaId: 11, nota: 15);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -122,12 +119,11 @@ void main() {
       expect(prefs.getKeys(), {'nexo.themeMode'});
       final reloaded = await AppStorage.init(secrets: vault);
       expect(reloaded.token, 'legacy-token');
-      expect(reloaded.intranetCookies, 'PHPSESSID=private-cookie');
+      // The old Intranet cookie moved into the vault too, and is wiped below.
+      expect(vault.values.values.join(), contains('PHPSESSID=private-cookie'));
       await reloaded.clear(keepCredentials: false);
       expect(vault.values, isEmpty);
       expect(reloaded.credPass, isNull);
-      expect(reloaded.intranetCookies, isNull);
-      expect(reloaded.intranetUser, isNull);
       expect(reloaded.themeMode, 'dark');
     },
   );
@@ -174,14 +170,11 @@ void main() {
   test(
     'a pending profile cannot repopulate state or cache after logout',
     () async {
+      await AppStorage.instance.setCredentials('A', 'password-A');
       final repo = _ProfileRepo();
       final cache = _Cache();
-      final api = ApiClient();
-      addTearDown(api.close);
-      final session = SessionService(
-        apiClient: api,
-        repo: SigmaRepository(api),
-      );
+      final api = BackendClient(transport: MockClient((_) async => nexoOk({})));
+      final session = SessionService(client: api);
       final store = AppStore(
         repo,
         cache: cache,
@@ -203,14 +196,14 @@ void main() {
   test('pending login cannot restore credentials after logout', () async {
     final response = Completer<http.Response>();
     final started = Completer<void>();
-    final api = ApiClient(
-      transport: MockClient((_) {
+    final api = BackendClient(
+      transport: MockClient((req) {
+        if (req.url.path == '/auth/logout') return Future.value(nexoOk({}));
         started.complete();
         return response.future;
       }),
     );
-    addTearDown(api.close);
-    final session = SessionService(apiClient: api, repo: SigmaRepository(api));
+    final session = SessionService(client: api);
     final pending = session.login('A', 'password-A');
     final rejected = expectLater(
       pending,
@@ -221,7 +214,7 @@ void main() {
     response.complete(loginResponse('A'));
     await rejected;
     expect(session.isAuthenticated, isFalse);
-    expect(api.token, isNull);
+    expect(api.accessToken, isNull);
     expect(AppStorage.instance.token, isNull);
     expect(AppStorage.instance.credPass, isNull);
   });
@@ -230,23 +223,27 @@ void main() {
     final refreshing = Completer<void>();
     final oldResponse = Completer<http.Response>();
     int aLogins = 0;
-    final api = ApiClient(
+    final api = BackendClient(
       transport: MockClient((request) async {
-        if (request.url.path.endsWith('/Login/SesionV1')) {
-          final user = (jsonDecode(request.body) as Map)['usuarioId'] as String;
-          if (user == 'A' && ++aLogins == 2) {
-            refreshing.complete();
-            return oldResponse.future;
-          }
-          return loginResponse(user);
+        switch (request.url.path) {
+          case '/auth/login':
+            final user = loginBody(request).user;
+            if (user == 'A' && ++aLogins == 2) {
+              refreshing.complete();
+              return oldResponse.future;
+            }
+            return loginResponse(user);
+          case '/auth/logout':
+            return nexoOk({});
+          case '/auth/refresh':
+            return nexoError('invalid_refresh_token', 401);
         }
-        return http.Response('{}', 401);
+        return nexoError('unauthorized', 401);
       }),
     );
-    addTearDown(api.close);
-    final session = SessionService(apiClient: api, repo: SigmaRepository(api));
+    final session = SessionService(client: api);
     await session.login('A', 'password-A');
-    final pending = api.get<String>('profile', decode: (_) => 'old');
+    final pending = api.profile();
     final rejected = expectLater(
       pending,
       throwsA(isA<StaleSessionException>()),
@@ -256,7 +253,7 @@ void main() {
     await session.login('B', 'password-B');
     oldResponse.complete(loginResponse('A'));
     await rejected;
-    expect(api.token, 'token-B');
+    expect(api.accessToken, 'token-B');
     expect(session.user?.code, 'B');
     expect(AppStorage.instance.credUser, 'B');
     expect(AppStorage.instance.token, 'token-B');
@@ -269,20 +266,19 @@ void main() {
       final response = Completer<http.Response>();
       int requests = 0;
       int refreshes = 0;
-      final api = ApiClient(
+      final api = BackendClient(
         transport: MockClient((_) {
           requests++;
           started.complete();
           return response.future;
         }),
       );
-      addTearDown(api.close);
       api.setToken('A');
       api.reauthenticate = () async {
         refreshes++;
         return ReauthOutcome.refreshed;
       };
-      final pending = TeacherRepository(api).insertarNotas([_gw]);
+      final pending = _teacher(api).saveGrades('sec_1', [_gw]);
       final rejected = expectLater(
         pending,
         throwsA(isA<StaleSessionException>()),
@@ -290,57 +286,27 @@ void main() {
       await started.future;
       api.scope.invalidate();
       api.setToken('B');
-      response.complete(http.Response('{}', 401));
+      response.complete(nexoError('unauthorized', 401));
       await rejected;
       expect(requests, 1);
       expect(refreshes, 0);
-      expect(api.token, 'B');
-    },
-  );
-
-  test(
-    'intranet logout discards late cookies and captured credentials',
-    () async {
-      final started = Completer<void>();
-      final response = Completer<http.Response>();
-      final client = IntranetClient(
-        transport: MockClient((_) {
-          started.complete();
-          return response.future;
-        }),
-      );
-      addTearDown(client.close);
-      final repo = IntranetRepository(client);
-      final pending = repo.ensureSession('A', 'password-A');
-      final rejected = expectLater(
-        pending,
-        throwsA(isA<StaleSessionException>()),
-      );
-      await started.future;
-      repo.invalidate();
-      response.complete(
-        http.Response('', 200, headers: {'set-cookie': 'PHPSESSID=old'}),
-      );
-      await rejected;
-      expect(client.exportCookies(), isNull);
-      expect(client.reauthenticate, isNull);
-      expect(repo.currentUser, isNull);
-      expect(AppStorage.instance.intranetCookies, isNull);
+      expect(api.accessToken, 'B');
     },
   );
 
   for (final body in [
-    '{"success":false,"mensaje":"rechazado"}',
+    '{"ok":false,"error":{"code":"rejected"}}',
+    '{"ok":true,"data":{"saved":0,"failed":[{"student":"s","reason":"rejected"}]}}',
+    '{"ok":true,"data":{"result":"error","message":"Fuera de horario"}}',
     '{}',
     '',
     'invalid JSON',
   ]) {
     test('teacher mutations require explicit confirmation: $body', () async {
-      final api = ApiClient(
+      final api = BackendClient(
         transport: MockClient((_) async => http.Response(body, 200)),
-      );
-      addTearDown(api.close);
-      final repo = TeacherRepository(api);
+      )..setToken('t');
+      final repo = _teacher(api);
       const student = AttendanceStudent(
         code: 's',
         name: 'S',
@@ -356,42 +322,46 @@ void main() {
         state: 2,
         tipoUnidadId: 121,
       );
+      final punch = body.contains('result');
       for (final operation in <Future<void> Function()>[
-        () => repo.insertarNotas([_gw]),
-        () => repo.actualizarNotas([
-          const GradeWrite(
-            matricula: 'm',
+        if (!punch) ...[
+          () => repo.saveGrades('sec_1', [_gw]),
+          () => repo.saveGrades('sec_1', [
+            const GradeWrite(
+              matricula: 'm',
+              unidadId: 121,
+              tipoNotaId: 11,
+              notaId: 9,
+              nota: 15,
+            ),
+          ]),
+          () => repo.takeAttendance(
+            'sec_1',
             unidadId: 121,
-            tipoNotaId: 11,
-            notaId: 9,
-            nota: 15,
+            marks: [(student: student, state: 1)],
           ),
-        ]),
-        () => repo.registrarAsistencia(
-          fecha: DateTime(2026, 9, 25, 10),
-          unidadId: 121,
-          marks: [(student: student, state: 1)],
-        ),
-        () => repo.actualizarAsistencia([
-          (mark: mark, student: student, state: 3),
-        ]),
-        () => repo.marcarVirtual('123'),
+          () => repo.correctAttendance('sec_1', [
+            (mark: mark, student: student, state: 3),
+          ]),
+        ],
+        () => repo.punch('123'),
       ]) {
-        await expectLater(operation(), throwsA(isA<BadRequestException>()));
+        await expectLater(
+          operation(),
+          throwsA(anyOf(isA<BadRequestException>(), isA<BackendException>())),
+        );
       }
     });
   }
 
   test('a confirmed teacher write completes normally', () async {
-    final api = ApiClient(
-      transport: MockClient(
-        (_) async => http.Response('{"success":true}', 200),
-      ),
-    );
-    addTearDown(api.close);
-    await expectLater(
-      TeacherRepository(api).insertarNotas([_gw]),
-      completes,
-    );
+    final api = BackendClient(
+      transport: MockClient((_) async => nexoOk({'saved': 1, 'failed': []})),
+    )..setToken('t');
+    await expectLater(_teacher(api).saveGrades('sec_1', [_gw]), completes);
   });
 }
+
+/// Módulo docente sobre un cliente ya conectado (no vuelve a iniciar sesión).
+NexoTeacherRepository _teacher(BackendClient api) =>
+    NexoTeacherRepository(DirectoryService(client: api));

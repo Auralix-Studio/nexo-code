@@ -1,24 +1,43 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/data/teacher_repository.dart';
+import 'package:nexo/data/repositories/nexo_teacher_repository.dart';
 import 'package:nexo/domain/grade_paste.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/teacher_insights.dart';
 
+const _days = {
+  'Lunes': 1,
+  'Martes': 2,
+  'Miércoles': 3,
+  'Jueves': 4,
+  'Viernes': 5,
+  'Sábado': 6,
+  'Domingo': 7,
+};
+
+/// Sección de `GET /teaching/sections` con su horario escrito como
+/// `"Jueves 11:30:00 13:00:00 P, …"`.
 TeacherSubject _course(String id, String nrc, String horario) =>
-    TeacherRepository.mergeAsignaturas(
-      [
-        {
-          'id': id,
-          'nrc': nrc,
-          'asignatura': 'CURSO $nrc (2026-2)',
-          'seccion': 'A1',
-          'tipoCalif': 12,
-        },
+    teacherSubjectFromNexo({
+      'id': 'sec_$id',
+      'nrc': nrc,
+      'course': {'code': nrc, 'name': 'CURSO $nrc (2026-2)'},
+      'section': 'A1',
+      'schedule': [
+        for (final block in horario.split(','))
+          if (block.trim().split(' ') case [
+            final day,
+            final start,
+            final end,
+            final kind,
+          ])
+            {
+              'weekday': _days[day],
+              'start': start.substring(0, 5),
+              'end': end.substring(0, 5),
+              'kind': kind == 'P' ? 'practice' : 'theory',
+            },
       ],
-      [
-        {'id': '9$id', 'nrc': nrc, 'seccion': 'A1', 'horario': horario},
-      ],
-    ).single;
+    });
 
 AttendanceSheet _sheet(List<String> dates) => AttendanceSheet.fromJson([
   {

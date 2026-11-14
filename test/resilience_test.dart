@@ -1,14 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/errors.dart';
-import 'package:nexo/data/api_client.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/data/remote/backend_client.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
 import 'package:nexo/domain/unified_models.dart';
-import 'package:nexo/data/session.dart';
-import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
+
+import 'support/fake_nexo_api.dart';
 
 // Simple Mocks for test isolation
 
@@ -175,7 +176,7 @@ void main() {
         );
 
         expect(res, 'cached');
-        // El logout lo dispara ApiClient.onUnauthorized (fuente única). El
+        // El logout lo dispara BackendClient.onSessionInvalid (fuente única). El
         // ErrorHandler NUNCA debe cerrar sesión: eso causaba el doble-logout.
         expect(session.loggedOut, false);
       },
@@ -252,24 +253,29 @@ void main() {
     });
   });
 
-  group('ApiClient auth challenge (regresión rebote-al-login)', () {
-    test('401 persistente tras un refresh exitoso NO cierra sesión', () async {
-      // Simula el caso real: el token vencido se refresca bien, pero el
-      // endpoint sigue respondiendo 401/HTML. Antes esto hacía logout y
-      // rebotaba al usuario al login justo tras entrar.
-      final api = ApiClient(
+  group('BackendClient auth challenge (regresión rebote-al-login)', () {
+    test('401 persistente tras renovar la sesión NO cierra sesión', () async {
+      // El token vencido se renueva bien, pero la ruta sigue respondiendo
+      // 401. Antes esto hacía logout y rebotaba al usuario al login.
+      final api = BackendClient(
         transport: MockHttpClient(
-          (req) async => http.Response('{"mensaje":"no"}', 401),
+          (req) async => nexoError('unauthorized', 401),
         ),
       );
       var loggedOut = false;
-      api.onUnauthorized = () => loggedOut = true;
+      api.onSessionInvalid = () => loggedOut = true;
       api.reauthenticate = () async => ReauthOutcome.refreshed; // creds válidas
       api.setToken('tok');
 
       await expectLater(
-        api.get<String>('X', decode: (_) => 'x'),
-        throwsA(isA<AuthUnavailableException>()),
+        api.profile(),
+        throwsA(
+          isA<BackendException>().having(
+            apiErrorOf,
+            'como error de la app',
+            isA<AuthUnavailableException>(),
+          ),
+        ),
       );
       expect(
         loggedOut,
@@ -280,30 +286,54 @@ void main() {
     });
 
     test('credenciales rechazadas al reautenticar SÍ cierra sesión', () async {
-      final api = ApiClient(
+      final api = BackendClient(
         transport: MockHttpClient(
-          (req) async => http.Response('{"mensaje":"no"}', 401),
+          (req) async => nexoError('unauthorized', 401),
         ),
       );
       var loggedOut = false;
-      api.onUnauthorized = () => loggedOut = true;
+      api.onSessionInvalid = () => loggedOut = true;
       api.reauthenticate = () async => ReauthOutcome.invalidCredentials;
       api.setToken('tok');
 
       await expectLater(
-        api.get<String>('X', decode: (_) => 'x'),
-        throwsA(isA<SessionExpiredException>()),
+        api.profile(),
+        throwsA(
+          isA<BackendException>().having(
+            apiErrorOf,
+            'como error de la app',
+            isA<SessionExpiredException>(),
+          ),
+        ),
       );
       expect(loggedOut, true);
+    });
+
+    test('sin red es un error de red (va al caché, no al login)', () async {
+      final api = BackendClient(
+        transport: MockHttpClient(
+          (req) async => throw http.ClientException('sin red'),
+        ),
+      );
+      await expectLater(
+        api.profile(),
+        throwsA(
+          isA<BackendException>().having(
+            apiErrorOf,
+            'como error de la app',
+            isA<NetworkException>(),
+          ),
+        ),
+      );
     });
   });
 
   group('Arranque (regresión ventana en blanco de la Store)', () {
     SessionService build() {
-      final api = ApiClient(
-        transport: MockHttpClient((_) async => http.Response('{}', 200)),
+      final api = BackendClient(
+        transport: MockHttpClient((_) async => nexoOk({})),
       );
-      return SessionService(apiClient: api, repo: SigmaRepository(api));
+      return SessionService(client: api);
     }
 
     test('un arranque que no decide acaba en login, no en el splash', () {

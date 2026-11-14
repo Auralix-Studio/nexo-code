@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:nexo/core/session_scope.dart';
-import 'package:nexo/data/cache_manager.dart';
+import 'package:nexo/data/local/cache_manager.dart';
 import 'package:nexo/domain/unified_models.dart';
 
 void main() {
@@ -36,16 +36,12 @@ void main() {
         tables.map((r) => r['name']),
         containsAll(['schedule', 'cache_owner', 'unified_student']),
       );
-      await cache.saveStudent(
-        Student.fromSigmaJson({'est_Id': 'A', 'estudiante': 'Alice'}),
-      );
+      await cache.saveStudent(_student('A', 'Alice'));
       await cache.activateAccount('A');
       expect((await cache.getStudent())?.id, 'A');
       await cache.activateAccount('B');
       expect(await cache.getStudent(), isNull);
-      await cache.saveStudent(
-        Student.fromSigmaJson({'est_Id': 'B', 'estudiante': 'Bob'}),
-      );
+      await cache.saveStudent(_student('B', 'Bob'));
       expect((await cache.getStudent())?.id, 'B');
       final database = cache.db;
       await cache.clearAll();
@@ -132,3 +128,15 @@ void main() {
     await cache.db.close();
   });
 }
+
+Student _student(String id, String name) => Student(
+  id: id,
+  fullName: name,
+  career: '',
+  faculty: '',
+  campus: '',
+  level: '',
+  studyPlan: '',
+  modality: '',
+  isEnrolled: false,
+);

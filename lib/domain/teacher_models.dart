@@ -380,16 +380,6 @@ class GradeType {
         .toList();
     return nums.isEmpty ? 20 : nums.last;
   }
-
-  factory GradeType.fromJson(Map<String, dynamic> j) => GradeType(
-    id: _int(j['tipo_nota_id']) ?? 0,
-    abbr: _str(j['tipo_nota_abr']).trim(),
-    description: _str(j['tipo_nota_desc']).trim(),
-    maxValue: parseMax(_str(j['tipo_nota_escala'])),
-    minPass: _double(j['minimo_aprob']) ?? 10.5,
-    maxCount: _int(j['tipo_nota_cant_max']) ?? 1,
-    colorHex: _str(j['tipo_nota_color']),
-  );
 }
 
 /// Una nota individual registrada (`NotasEstudianteResumenV1` →
@@ -439,8 +429,8 @@ class GradeCell {
   }
 }
 
-/// Una nota a enviar a `Docente/InsertarNotas` (sin [notaId]) o
-/// `Docente/UpdateNota` (con [notaId]).
+/// Una nota a guardar con `PUT /teaching/sections/{id}/grades`: nueva (sin
+/// [notaId]) o la corrección de una existente ([notaId] = columna + 1).
 class GradeWrite {
   final String matricula;
   final int unidadId;
@@ -456,21 +446,6 @@ class GradeWrite {
   });
 
   bool get isUpdate => notaId != null && notaId != 0;
-
-  Map<String, dynamic> toInsertJson() => {
-    'matricula_asignatura_id': matricula,
-    'tipo_unidad_id': unidadId,
-    'tipo_nota_id': tipoNotaId,
-    'nota': nota,
-  };
-
-  Map<String, dynamic> toUpdateJson() => {
-    'matricula_asignatura_id': matricula,
-    'nota_id': notaId,
-    'tipo_unidad_id': unidadId,
-    'tipo_nota_id': tipoNotaId,
-    'nota': nota,
-  };
 }
 
 /// Clase del día para marcación virtual (`Docente/getAsistenciaDocente`).
@@ -509,21 +484,6 @@ class VirtualClass {
   bool get hasOut => !_empty(markOut);
   bool get canMarkIn => !hasIn;
   bool get canMarkOut => hasIn && !hasOut;
-
-  factory VirtualClass.fromJson(Map<String, dynamic> j) => VirtualClass(
-    code: _str(j['codigo']),
-    subject: _str(j['asignatura']).trim(),
-    career: _str(j['car_Id']).trim(),
-    level: _str(j['nivel']).trim(),
-    section: _str(j['seccion']).trim(),
-    day: DateTime.tryParse(_str(j['dia_marcado'])),
-    start: _str(j['hora_ini']),
-    end: _str(j['hora_fin']),
-    toleranceStart: _int(j['tol_ini']) ?? 0,
-    toleranceEnd: _int(j['tol_fin']) ?? 0,
-    markIn: _str(j['marc_entrada']),
-    markOut: _str(j['marc_salida']),
-  );
 }
 
 /// Respuesta de SIGMA a una marcación: `mensaje` = "S - texto" (éxito),

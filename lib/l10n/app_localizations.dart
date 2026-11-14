@@ -124,12 +124,6 @@ abstract class AppLocalizations {
   /// **'Pagos'**
   String get tabPayments;
 
-  /// Etiqueta de la pestaña Docente
-  ///
-  /// In es, this message translates to:
-  /// **'Docente'**
-  String get tabTeacher;
-
   /// Etiqueta de la pestaña Cursos del docente
   ///
   /// In es, this message translates to:
@@ -141,12 +135,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Perfil'**
   String get tabProfile;
-
-  /// No description provided for @titleHome.
-  ///
-  /// In es, this message translates to:
-  /// **'Inicio'**
-  String get titleHome;
 
   /// No description provided for @titleSchedule.
   ///
@@ -226,12 +214,6 @@ abstract class AppLocalizations {
   /// **'Cuotas, tasas e historial'**
   String get subtitlePayments;
 
-  /// No description provided for @subtitleTeacher.
-  ///
-  /// In es, this message translates to:
-  /// **'Tus cursos y estudiantes'**
-  String get subtitleTeacher;
-
   /// No description provided for @language.
   ///
   /// In es, this message translates to:
@@ -261,12 +243,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cerrar sesión'**
   String get actionLogout;
-
-  /// No description provided for @actionAccept.
-  ///
-  /// In es, this message translates to:
-  /// **'Aceptar'**
-  String get actionAccept;
 
   /// No description provided for @actionCancel.
   ///
@@ -310,12 +286,6 @@ abstract class AppLocalizations {
   /// **'Ubicación'**
   String get detailLocation;
 
-  /// No description provided for @detailRoom.
-  ///
-  /// In es, this message translates to:
-  /// **'Aula'**
-  String get detailRoom;
-
   /// No description provided for @detailPavilion.
   ///
   /// In es, this message translates to:
@@ -345,12 +315,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{period, select, morning{Buenos días} afternoon{Buenas tardes} evening{Buenas noches} other{Hola}}'**
   String timeGreeting(String period);
-
-  /// No description provided for @detailBuilding.
-  ///
-  /// In es, this message translates to:
-  /// **'Local'**
-  String get detailBuilding;
 
   /// No description provided for @detailCampus.
   ///
@@ -748,12 +712,6 @@ abstract class AppLocalizations {
   /// **'Sin clases programadas'**
   String get scheduleNoClassesScheduled;
 
-  /// No description provided for @gradesTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Notas'**
-  String get gradesTitle;
-
   /// No description provided for @gradesSubtitleNoPeriod.
   ///
   /// In es, this message translates to:
@@ -1090,24 +1048,6 @@ abstract class AppLocalizations {
   /// **'Código copiado'**
   String get actionCodeCopied;
 
-  /// No description provided for @profileSettingsSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Apariencia, idioma, hora y notificaciones'**
-  String get profileSettingsSubtitle;
-
-  /// No description provided for @profileChangePasswordSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Para tu cuenta institucional UPLA'**
-  String get profileChangePasswordSubtitle;
-
-  /// No description provided for @profileAboutSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Versión {version}'**
-  String profileAboutSubtitle(String version);
-
   /// No description provided for @logoutConfirmTitle.
   ///
   /// In es, this message translates to:
@@ -1120,12 +1060,6 @@ abstract class AppLocalizations {
   /// **'¿Quieres salir de tu cuenta?'**
   String get logoutConfirmBody;
 
-  /// No description provided for @docenteChangeDate.
-  ///
-  /// In es, this message translates to:
-  /// **'Cambiar'**
-  String get docenteChangeDate;
-
   /// No description provided for @docenteSaveAttendance.
   ///
   /// In es, this message translates to:
@@ -1137,12 +1071,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Asistencia guardada'**
   String get docenteAttendanceSaved;
-
-  /// No description provided for @docenteAttendanceError.
-  ///
-  /// In es, this message translates to:
-  /// **'Error: {error}'**
-  String docenteAttendanceError(String error);
 
   /// No description provided for @docenteGradeLabel.
   ///
@@ -1504,59 +1432,11 @@ abstract class AppLocalizations {
   /// **'Periodo'**
   String get docenteMetricPeriodo;
 
-  /// No description provided for @docenteNoClassesToday.
-  ///
-  /// In es, this message translates to:
-  /// **'No dictas hoy'**
-  String get docenteNoClassesToday;
-
-  /// No description provided for @docenteToday.
-  ///
-  /// In es, this message translates to:
-  /// **'Hoy'**
-  String get docenteToday;
-
-  /// No description provided for @docenteClassCount.
-  ///
-  /// In es, this message translates to:
-  /// **'{count, plural, =1{{count} clase} other{{count} clases}}'**
-  String docenteClassCount(int count);
-
-  /// No description provided for @docenteTypeTeoria.
-  ///
-  /// In es, this message translates to:
-  /// **'TEO'**
-  String get docenteTypeTeoria;
-
-  /// No description provided for @docenteTypePractica.
-  ///
-  /// In es, this message translates to:
-  /// **'PRÁC'**
-  String get docenteTypePractica;
-
   /// No description provided for @docenteLoadingClasses.
   ///
   /// In es, this message translates to:
   /// **'Cargando clases...'**
   String get docenteLoadingClasses;
-
-  /// No description provided for @docenteSessionsWeeklyCount.
-  ///
-  /// In es, this message translates to:
-  /// **'Mis clases · {count, plural, =1{1 sesión esta semana} other{{count} sesiones esta semana}}'**
-  String docenteSessionsWeeklyCount(int count);
-
-  /// No description provided for @docenteNoClassesRegistered.
-  ///
-  /// In es, this message translates to:
-  /// **'No tienes clases registradas'**
-  String get docenteNoClassesRegistered;
-
-  /// No description provided for @docenteCourseCount.
-  ///
-  /// In es, this message translates to:
-  /// **'{count, plural, =1{{count} curso} other{{count} cursos}}'**
-  String docenteCourseCount(int count);
 
   /// No description provided for @docenteCoursesCountPlural.
   ///
@@ -1600,18 +1480,6 @@ abstract class AppLocalizations {
   /// **'Notas'**
   String get docenteTabNotas;
 
-  /// No description provided for @docenteNoCode.
-  ///
-  /// In es, this message translates to:
-  /// **'Sin código'**
-  String get docenteNoCode;
-
-  /// No description provided for @docenteSectionPeriod.
-  ///
-  /// In es, this message translates to:
-  /// **'Sección {seccion} · {periodo}'**
-  String docenteSectionPeriod(String seccion, String periodo);
-
   /// No description provided for @docenteNoAlumnosRegistered.
   ///
   /// In es, this message translates to:
@@ -1624,47 +1492,11 @@ abstract class AppLocalizations {
   /// **'{percent}% asist.'**
   String docenteAsisPercent(String percent);
 
-  /// No description provided for @docenteAttendancePresentShort.
-  ///
-  /// In es, this message translates to:
-  /// **'Pres.'**
-  String get docenteAttendancePresentShort;
-
-  /// No description provided for @docenteAttendanceTardanzaShort.
-  ///
-  /// In es, this message translates to:
-  /// **'Tard.'**
-  String get docenteAttendanceTardanzaShort;
-
-  /// No description provided for @docenteAttendanceFaltaShort.
-  ///
-  /// In es, this message translates to:
-  /// **'Falta'**
-  String get docenteAttendanceFaltaShort;
-
   /// No description provided for @docenteNoAlumnosInCourse.
   ///
   /// In es, this message translates to:
   /// **'Sin alumnos en este curso'**
   String get docenteNoAlumnosInCourse;
-
-  /// No description provided for @docenteAprobadosCount.
-  ///
-  /// In es, this message translates to:
-  /// **'{aprobados} de {total} aprobados'**
-  String docenteAprobadosCount(String aprobados, String total);
-
-  /// No description provided for @docenteTapToEdit.
-  ///
-  /// In es, this message translates to:
-  /// **'Toca para editar →'**
-  String get docenteTapToEdit;
-
-  /// No description provided for @docentePromedioParcial.
-  ///
-  /// In es, this message translates to:
-  /// **'PROMEDIO PARCIAL'**
-  String get docentePromedioParcial;
 
   /// No description provided for @docenteCoursePercentGraded.
   ///
@@ -1689,36 +1521,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'ASISTENCIA'**
   String get docenteAttendanceLabel;
-
-  /// No description provided for @docenteSessionsRegisteredCount.
-  ///
-  /// In es, this message translates to:
-  /// **'{presentes} de {total}\nsesiones registradas'**
-  String docenteSessionsRegisteredCount(String presentes, String total);
-
-  /// No description provided for @docenteAttendancePresent.
-  ///
-  /// In es, this message translates to:
-  /// **'Presente'**
-  String get docenteAttendancePresent;
-
-  /// No description provided for @docenteAttendanceTardanza.
-  ///
-  /// In es, this message translates to:
-  /// **'Tardanza'**
-  String get docenteAttendanceTardanza;
-
-  /// No description provided for @docenteAttendanceFalta.
-  ///
-  /// In es, this message translates to:
-  /// **'Falta'**
-  String get docenteAttendanceFalta;
-
-  /// No description provided for @docenteAttendanceJustificada.
-  ///
-  /// In es, this message translates to:
-  /// **'Justificada'**
-  String get docenteAttendanceJustificada;
 
   /// No description provided for @docenteInfoTitle.
   ///
@@ -1750,12 +1552,6 @@ abstract class AppLocalizations {
   /// **'Especialidad'**
   String get docenteInfoFieldEspecialidad;
 
-  /// No description provided for @docenteSupportSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Contactar por WhatsApp o Correo'**
-  String get docenteSupportSubtitle;
-
   /// No description provided for @connectivityStatusTitle.
   ///
   /// In es, this message translates to:
@@ -1774,17 +1570,11 @@ abstract class AppLocalizations {
   /// **'Conexión a Internet'**
   String get connectivityInternet;
 
-  /// No description provided for @connectivitySigma.
+  /// No description provided for @connectivityNexo.
   ///
   /// In es, this message translates to:
-  /// **'Servidor SIGMA'**
-  String get connectivitySigma;
-
-  /// No description provided for @connectivityIntranet.
-  ///
-  /// In es, this message translates to:
-  /// **'Servidor INTRANET'**
-  String get connectivityIntranet;
+  /// **'Servidor de Nexo'**
+  String get connectivityNexo;
 
   /// No description provided for @connectivityBackupNote.
   ///
@@ -1839,12 +1629,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Prom. ciclo'**
   String get homeMetricPromedioCiclo;
-
-  /// No description provided for @homeMetricPromedioAcumulado.
-  ///
-  /// In es, this message translates to:
-  /// **'Prom. acum.'**
-  String get homeMetricPromedioAcumulado;
 
   /// No description provided for @homeMetricCreditos.
   ///
@@ -1905,12 +1689,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Evidencia de producto'**
   String get gradesEvidenciaProducto;
-
-  /// No description provided for @gradesPromedioAcumulado.
-  ///
-  /// In es, this message translates to:
-  /// **'Promedio acumulado'**
-  String get gradesPromedioAcumulado;
 
   /// No description provided for @gradesNoCreditsData.
   ///
@@ -2458,12 +2236,6 @@ abstract class AppLocalizations {
   /// **'Registrando en Windows...'**
   String get setupProgressRegister;
 
-  /// No description provided for @setupProgressDone.
-  ///
-  /// In es, this message translates to:
-  /// **'¡Instalación completada exitosamente!'**
-  String get setupProgressDone;
-
   /// No description provided for @setupSuccessTitle.
   ///
   /// In es, this message translates to:
@@ -2698,42 +2470,6 @@ abstract class AppLocalizations {
   /// **'Descartar'**
   String get updDismiss;
 
-  /// No description provided for @assignmentNoDate.
-  ///
-  /// In es, this message translates to:
-  /// **'Sin fecha de entrega'**
-  String get assignmentNoDate;
-
-  /// No description provided for @assignmentOverdue.
-  ///
-  /// In es, this message translates to:
-  /// **'Venció'**
-  String get assignmentOverdue;
-
-  /// No description provided for @assignmentDueToday.
-  ///
-  /// In es, this message translates to:
-  /// **'Vence hoy'**
-  String get assignmentDueToday;
-
-  /// No description provided for @assignmentDueTomorrow.
-  ///
-  /// In es, this message translates to:
-  /// **'Vence mañana'**
-  String get assignmentDueTomorrow;
-
-  /// No description provided for @assignmentDueInDays.
-  ///
-  /// In es, this message translates to:
-  /// **'En {days} días'**
-  String assignmentDueInDays(int days);
-
-  /// No description provided for @assignmentEmpty.
-  ///
-  /// In es, this message translates to:
-  /// **'No tienes asignaciones pendientes.'**
-  String get assignmentEmpty;
-
   /// No description provided for @widgetNoPendingDebts.
   ///
   /// In es, this message translates to:
@@ -2896,18 +2632,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{count} vencida} other{{count} vencidas}}'**
   String homePendingPaymentsOverdueCount(int count);
 
-  /// No description provided for @widgetAssignmentsTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Tareas'**
-  String get widgetAssignmentsTitle;
-
-  /// No description provided for @widgetAssignmentsSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Próximas a vencer'**
-  String get widgetAssignmentsSubtitle;
-
   /// No description provided for @whatsappBannerTitle.
   ///
   /// In es, this message translates to:
@@ -3040,59 +2764,11 @@ abstract class AppLocalizations {
   /// **'Si en {unit} sacas {value}:'**
   String projectionAssume(String unit, String value);
 
-  /// No description provided for @dataSaved.
-  ///
-  /// In es, this message translates to:
-  /// **'Datos guardados'**
-  String get dataSaved;
-
-  /// No description provided for @dataServer.
-  ///
-  /// In es, this message translates to:
-  /// **'Consultado al servidor'**
-  String get dataServer;
-
-  /// No description provided for @dataRefreshing.
-  ///
-  /// In es, this message translates to:
-  /// **'Actualizando…'**
-  String get dataRefreshing;
-
-  /// No description provided for @dataRefreshFailed.
-  ///
-  /// In es, this message translates to:
-  /// **'No se pudo actualizar'**
-  String get dataRefreshFailed;
-
-  /// No description provided for @dataUnknownDate.
-  ///
-  /// In es, this message translates to:
-  /// **'Fecha de actualización desconocida'**
-  String get dataUnknownDate;
-
-  /// No description provided for @dataUpdatedAt.
-  ///
-  /// In es, this message translates to:
-  /// **'Última actualización: {date}'**
-  String dataUpdatedAt(String date);
-
   /// No description provided for @docenteSearchStudent.
   ///
   /// In es, this message translates to:
   /// **'Buscar alumno…'**
   String get docenteSearchStudent;
-
-  /// No description provided for @docenteSearchNoResults.
-  ///
-  /// In es, this message translates to:
-  /// **'Sin resultados'**
-  String get docenteSearchNoResults;
-
-  /// No description provided for @docenteAttendanceComingSoon.
-  ///
-  /// In es, this message translates to:
-  /// **'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.'**
-  String get docenteAttendanceComingSoon;
 
   /// No description provided for @tabMarcacion.
   ///
@@ -3136,12 +2812,6 @@ abstract class AppLocalizations {
   /// **'Reporte'**
   String get docenteTabReporte;
 
-  /// No description provided for @docenteReportLoadError.
-  ///
-  /// In es, this message translates to:
-  /// **'No se pudo cargar el reporte de asistencia.'**
-  String get docenteReportLoadError;
-
   /// No description provided for @docenteReportEmpty.
   ///
   /// In es, this message translates to:
@@ -3160,12 +2830,6 @@ abstract class AppLocalizations {
   /// **'En riesgo'**
   String get docenteReportAtRisk;
 
-  /// No description provided for @docenteReportNoRisk.
-  ///
-  /// In es, this message translates to:
-  /// **'Ningún alumno en riesgo por faltas.'**
-  String get docenteReportNoRisk;
-
   /// No description provided for @docenteReportSessions.
   ///
   /// In es, this message translates to:
@@ -3177,12 +2841,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Asistencia prom.'**
   String get docenteReportAverage;
-
-  /// No description provided for @docenteReportRiskHint.
-  ///
-  /// In es, this message translates to:
-  /// **'En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.'**
-  String get docenteReportRiskHint;
 
   /// No description provided for @docenteReportCounts.
   ///
@@ -4345,6 +4003,702 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Promedio del ciclo'**
   String get gradesPromedioCiclo;
+
+  /// No description provided for @tabDirectory.
+  ///
+  /// In es, this message translates to:
+  /// **'Estudiantes'**
+  String get tabDirectory;
+
+  /// No description provided for @directoryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Estudiantes'**
+  String get directoryTitle;
+
+  /// No description provided for @directorySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Directorio institucional'**
+  String get directorySubtitle;
+
+  /// No description provided for @directoryCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Sin estudiantes} =1{1 estudiante} other{{count} estudiantes}}'**
+  String directoryCount(int count);
+
+  /// No description provided for @directorySearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por nombre o código'**
+  String get directorySearchHint;
+
+  /// No description provided for @directoryFilterSchool.
+  ///
+  /// In es, this message translates to:
+  /// **'Escuela'**
+  String get directoryFilterSchool;
+
+  /// No description provided for @directoryAllSchools.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las escuelas'**
+  String get directoryAllSchools;
+
+  /// No description provided for @directoryCycle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo {n}'**
+  String directoryCycle(String n);
+
+  /// No description provided for @directoryNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados'**
+  String get directoryNoResults;
+
+  /// No description provided for @directoryNoResultsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba con otro nombre, código o filtro.'**
+  String get directoryNoResultsHint;
+
+  /// No description provided for @directoryEndOfList.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 estudiante en total} other{{count} estudiantes en total}}'**
+  String directoryEndOfList(int count);
+
+  /// No description provided for @directoryManageAccess.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestionar acceso'**
+  String get directoryManageAccess;
+
+  /// No description provided for @directoryDeniedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin acceso al directorio'**
+  String get directoryDeniedTitle;
+
+  /// No description provided for @directoryDeniedHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta no está autorizada. Pídeselo a un administrador del sistema.'**
+  String get directoryDeniedHint;
+
+  /// No description provided for @directoryUnavailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo conectar'**
+  String get directoryUnavailableTitle;
+
+  /// No description provided for @directoryUnavailableHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa tu conexión e inténtalo de nuevo.'**
+  String get directoryUnavailableHint;
+
+  /// No description provided for @directoryRecordTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ficha del estudiante'**
+  String get directoryRecordTitle;
+
+  /// No description provided for @directoryTabGrades.
+  ///
+  /// In es, this message translates to:
+  /// **'Notas'**
+  String get directoryTabGrades;
+
+  /// No description provided for @directoryTabSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario'**
+  String get directoryTabSchedule;
+
+  /// No description provided for @directoryTabPayments.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagos'**
+  String get directoryTabPayments;
+
+  /// No description provided for @directoryEmptyModule.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos que mostrar.'**
+  String get directoryEmptyModule;
+
+  /// No description provided for @directoryRecordMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Ficha no encontrada'**
+  String get directoryRecordMissing;
+
+  /// No description provided for @directoryRecordMissingHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese código ya no está en el directorio.'**
+  String get directoryRecordMissingHint;
+
+  /// No description provided for @directoryStatAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio'**
+  String get directoryStatAverage;
+
+  /// No description provided for @directoryStatCredits.
+  ///
+  /// In es, this message translates to:
+  /// **'Créditos aprobados'**
+  String get directoryStatCredits;
+
+  /// No description provided for @directoryPersonalData.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos del estudiante'**
+  String get directoryPersonalData;
+
+  /// No description provided for @directoryFieldCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código'**
+  String get directoryFieldCode;
+
+  /// No description provided for @directoryFieldEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo'**
+  String get directoryFieldEmail;
+
+  /// No description provided for @directoryFieldPhone.
+  ///
+  /// In es, this message translates to:
+  /// **'Teléfono'**
+  String get directoryFieldPhone;
+
+  /// No description provided for @directoryFieldFaculty.
+  ///
+  /// In es, this message translates to:
+  /// **'Facultad'**
+  String get directoryFieldFaculty;
+
+  /// No description provided for @directoryFieldSchool.
+  ///
+  /// In es, this message translates to:
+  /// **'Escuela'**
+  String get directoryFieldSchool;
+
+  /// No description provided for @directoryFieldPlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan'**
+  String get directoryFieldPlan;
+
+  /// No description provided for @directoryFieldEntry.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingreso'**
+  String get directoryFieldEntry;
+
+  /// No description provided for @directoryProgressByTerm.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio por ciclo'**
+  String get directoryProgressByTerm;
+
+  /// No description provided for @directoryCourseCredits.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} créditos'**
+  String directoryCourseCredits(String value);
+
+  /// No description provided for @directoryAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia {value}%'**
+  String directoryAttendance(String value);
+
+  /// No description provided for @directoryAccessExplainer.
+  ///
+  /// In es, this message translates to:
+  /// **'El acceso al directorio se concede por código. Los administradores del sistema se configuran en el servidor y no se pueden cambiar desde aquí.'**
+  String get directoryAccessExplainer;
+
+  /// No description provided for @directoryAdmins.
+  ///
+  /// In es, this message translates to:
+  /// **'Administradores del sistema'**
+  String get directoryAdmins;
+
+  /// No description provided for @directoryAdminsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Pueden entrar siempre y repartir el acceso.'**
+  String get directoryAdminsHint;
+
+  /// No description provided for @directoryGrantsActive.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Con acceso} =1{Con acceso · 1} other{Con acceso · {count}}}'**
+  String directoryGrantsActive(int count);
+
+  /// No description provided for @directoryGrantsRevoked.
+  ///
+  /// In es, this message translates to:
+  /// **'Acceso revocado'**
+  String get directoryGrantsRevoked;
+
+  /// No description provided for @directoryNoGrants.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no autorizaste a nadie.'**
+  String get directoryNoGrants;
+
+  /// No description provided for @directoryGrantAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Dar acceso'**
+  String get directoryGrantAdd;
+
+  /// No description provided for @directoryGrantCodeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Código o DNI'**
+  String get directoryGrantCodeLabel;
+
+  /// No description provided for @directoryGrantCodeHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Tal como aparece en la Intranet.'**
+  String get directoryGrantCodeHelp;
+
+  /// No description provided for @directoryGrantConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Conceder'**
+  String get directoryGrantConfirm;
+
+  /// No description provided for @directoryGrantFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cambiar el acceso.'**
+  String get directoryGrantFailed;
+
+  /// No description provided for @directoryGrantedBy.
+  ///
+  /// In es, this message translates to:
+  /// **'Concedido por {code}'**
+  String directoryGrantedBy(String code);
+
+  /// No description provided for @directoryGrant.
+  ///
+  /// In es, this message translates to:
+  /// **'Dar acceso'**
+  String get directoryGrant;
+
+  /// No description provided for @directoryRevoke.
+  ///
+  /// In es, this message translates to:
+  /// **'Revocar'**
+  String get directoryRevoke;
+
+  /// No description provided for @directoryAdminOnlyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo administradores'**
+  String get directoryAdminOnlyTitle;
+
+  /// No description provided for @directoryAdminOnlyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Repartir el acceso está reservado a los administradores del sistema.'**
+  String get directoryAdminOnlyHint;
+
+  /// No description provided for @termsItemDirectoryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'El apartado Estudiantes'**
+  String get termsItemDirectoryTitle;
+
+  /// No description provided for @termsItemDirectoryBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Es un directorio al que solo entran las cuentas autorizadas, y aparece en la app únicamente si la tuya lo está. Para comprobarlo, tu usuario y tu contraseña viajan una sola vez al servidor de Nexo, que los verifica contra SIGMA y no los guarda; a partir de ahí se usa una sesión temporal. Cada vez que abres la ficha de un estudiante queda registrado tu código, la fecha y a quién consultaste.'**
+  String get termsItemDirectoryBody;
+
+  /// No description provided for @termsItemThirdPartyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos de otras personas'**
+  String get termsItemThirdPartyTitle;
+
+  /// No description provided for @termsItemThirdPartyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Si tienes acceso al directorio estarás viendo información de terceros. Úsala solo para aquello que te fue autorizado: no la descargues, copies, compartas ni publiques. La Ley 29733 de Protección de Datos Personales también te alcanza a ti, y el acceso puede revocarse en cualquier momento.'**
+  String get termsItemThirdPartyBody;
+
+  /// No description provided for @termsItemDemoDataTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos de demostración'**
+  String get termsItemDemoDataTitle;
+
+  /// No description provided for @termsItemDemoDataBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Mientras no exista autorización institucional para consultar el directorio real, el apartado Estudiantes muestra datos generados para pruebas: personas que no existen. Cuando se sustituyan por datos reales actualizaremos estos términos y te pediremos aceptarlos otra vez.'**
+  String get termsItemDemoDataBody;
+
+  /// No description provided for @directoryClearFilters.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar filtros'**
+  String get directoryClearFilters;
+
+  /// No description provided for @directoryFieldCycle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo'**
+  String get directoryFieldCycle;
+
+  /// No description provided for @directoryCumulativeAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio acumulado'**
+  String get directoryCumulativeAverage;
+
+  /// No description provided for @directoryApprovedCourses.
+  ///
+  /// In es, this message translates to:
+  /// **'Cursos aprobados'**
+  String get directoryApprovedCourses;
+
+  /// No description provided for @directoryCoursesCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 curso} other{{count} cursos}}'**
+  String directoryCoursesCount(int count);
+
+  /// No description provided for @directoryOverdueCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 vencida} other{{count} vencidas}}'**
+  String directoryOverdueCount(int count);
+
+  /// No description provided for @guardianEntry.
+  ///
+  /// In es, this message translates to:
+  /// **'Soy padre, madre o apoderado'**
+  String get guardianEntry;
+
+  /// No description provided for @guardianTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Acceso de apoderado'**
+  String get guardianTitle;
+
+  /// No description provided for @guardianHeadline.
+  ///
+  /// In es, this message translates to:
+  /// **'Consulta la ficha de tu hijo'**
+  String get guardianHeadline;
+
+  /// No description provided for @guardianIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa con tu DNI y el PIN que te entregaron. No necesitas cuenta de la universidad.'**
+  String get guardianIntro;
+
+  /// No description provided for @guardianDniLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'DNI'**
+  String get guardianDniLabel;
+
+  /// No description provided for @guardianDniInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa los 8 dígitos de tu DNI'**
+  String get guardianDniInvalid;
+
+  /// No description provided for @guardianPinLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'PIN'**
+  String get guardianPinLabel;
+
+  /// No description provided for @guardianPinHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Los 6 dígitos que te dio la universidad'**
+  String get guardianPinHelp;
+
+  /// No description provided for @guardianPinInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El PIN tiene 6 dígitos'**
+  String get guardianPinInvalid;
+
+  /// No description provided for @guardianEnter.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrar'**
+  String get guardianEnter;
+
+  /// No description provided for @guardianBadCredentials.
+  ///
+  /// In es, this message translates to:
+  /// **'DNI o PIN incorrectos. Revísalos e inténtalo de nuevo.'**
+  String get guardianBadCredentials;
+
+  /// No description provided for @guardianLocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Demasiados intentos fallidos. Espera unos minutos antes de volver a probar.'**
+  String get guardianLocked;
+
+  /// No description provided for @guardianUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.'**
+  String get guardianUnavailable;
+
+  /// No description provided for @guardianAuditNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada consulta queda registrada.'**
+  String get guardianAuditNotice;
+
+  /// No description provided for @guardianPickTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿A quién quieres ver?'**
+  String get guardianPickTitle;
+
+  /// No description provided for @guardianNoStudents.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay ningún estudiante vinculado a tu DNI.'**
+  String get guardianNoStudents;
+
+  /// No description provided for @guardianSignOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Salir'**
+  String get guardianSignOut;
+
+  /// No description provided for @integTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Conexiones'**
+  String get integTitle;
+
+  /// No description provided for @integSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparte tu horario con tu calendario o con otras apps. Tú decides y puedes quitarlo cuando quieras.'**
+  String get integSubtitle;
+
+  /// No description provided for @integShareTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir mi horario'**
+  String get integShareTitle;
+
+  /// No description provided for @integShareBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Se comparte tu código, nombre, carrera, facultad y tu horario semanal. Nunca tus notas ni tus pagos.'**
+  String get integShareBody;
+
+  /// No description provided for @integShareOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartiendo tu horario'**
+  String get integShareOn;
+
+  /// No description provided for @integShareOff.
+  ///
+  /// In es, this message translates to:
+  /// **'No estás compartiendo nada'**
+  String get integShareOff;
+
+  /// No description provided for @integShareStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir'**
+  String get integShareStart;
+
+  /// No description provided for @integShareSync.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizar horario'**
+  String get integShareSync;
+
+  /// No description provided for @integShareStop.
+  ///
+  /// In es, this message translates to:
+  /// **'Dejar de compartir'**
+  String get integShareStop;
+
+  /// No description provided for @integShareStopConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Se borrarán tus datos compartidos, el enlace del calendario y el acceso de todas las apps.'**
+  String get integShareStopConfirm;
+
+  /// No description provided for @integCalendarTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendario'**
+  String get integCalendarTitle;
+
+  /// No description provided for @integCalendarBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Suscribe tu horario en Google Calendar, Outlook o el calendario de tu teléfono. Se actualiza solo.'**
+  String get integCalendarBody;
+
+  /// No description provided for @integCalendarCreate.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear enlace'**
+  String get integCalendarCreate;
+
+  /// No description provided for @integCalendarRotate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar nuevo enlace'**
+  String get integCalendarRotate;
+
+  /// No description provided for @integCalendarActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Enlace activo. Por seguridad solo se muestra al crearlo.'**
+  String get integCalendarActive;
+
+  /// No description provided for @integCalendarGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir a Google Calendar'**
+  String get integCalendarGoogle;
+
+  /// No description provided for @integCalendarOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir en mi calendario'**
+  String get integCalendarOpen;
+
+  /// No description provided for @integCalendarCopy.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar enlace'**
+  String get integCalendarCopy;
+
+  /// No description provided for @integCalendarDisable.
+  ///
+  /// In es, this message translates to:
+  /// **'Desactivar'**
+  String get integCalendarDisable;
+
+  /// No description provided for @integCalendarNeedsShare.
+  ///
+  /// In es, this message translates to:
+  /// **'Primero comparte tu horario.'**
+  String get integCalendarNeedsShare;
+
+  /// No description provided for @integAppsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Apps conectadas'**
+  String get integAppsTitle;
+
+  /// No description provided for @integAppsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Ninguna app tiene acceso.'**
+  String get integAppsEmpty;
+
+  /// No description provided for @integAppsConnect.
+  ///
+  /// In es, this message translates to:
+  /// **'Conectar una app'**
+  String get integAppsConnect;
+
+  /// No description provided for @integAppsRevoke.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar acceso'**
+  String get integAppsRevoke;
+
+  /// No description provided for @integConnectHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe el código que te muestra la otra app'**
+  String get integConnectHint;
+
+  /// No description provided for @integConnectCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código'**
+  String get integConnectCode;
+
+  /// No description provided for @integConnectContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get integConnectContinue;
+
+  /// No description provided for @integConnectAsks.
+  ///
+  /// In es, this message translates to:
+  /// **'{app} quiere ver:'**
+  String integConnectAsks(String app);
+
+  /// No description provided for @integScopeProfile.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu perfil: código, nombre, carrera y facultad'**
+  String get integScopeProfile;
+
+  /// No description provided for @integScopeSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu horario semanal'**
+  String get integScopeSchedule;
+
+  /// No description provided for @integConnectNever.
+  ///
+  /// In es, this message translates to:
+  /// **'No podrá ver tus notas, pagos ni tu contraseña.'**
+  String get integConnectNever;
+
+  /// No description provided for @integConnectApprove.
+  ///
+  /// In es, this message translates to:
+  /// **'Permitir'**
+  String get integConnectApprove;
+
+  /// No description provided for @integConnectDeny.
+  ///
+  /// In es, this message translates to:
+  /// **'No permitir'**
+  String get integConnectDeny;
+
+  /// No description provided for @integConnectNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'El código no existe o ya venció.'**
+  String get integConnectNotFound;
+
+  /// No description provided for @integError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo completar. Intenta de nuevo.'**
+  String get integError;
 }
 
 class _AppLocalizationsDelegate

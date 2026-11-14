@@ -2,23 +2,23 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nexo/core/data/resolver.dart';
+import 'package:nexo/data/resolver.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/data_status.dart';
 
-class Repository extends Fake implements SigmaRepository {
+class Repository extends Fake implements NexoRepository {
   int calls = 0;
   Completer<List<TermAverage>>? pending;
   @override
-  Future<List<TermAverage>> promediosResumen() async {
+  Future<List<TermAverage>> termAverages() async {
     calls++;
     return pending == null ? [] : await pending!.future;
   }

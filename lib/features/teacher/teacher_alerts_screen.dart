@@ -4,7 +4,7 @@ import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/teacher_insights.dart';
-import 'package:nexo/features/teacher/teacher_dashboard_cards.dart';
+import 'package:nexo/features/teacher/widgets/teacher_dashboard_cards.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
 

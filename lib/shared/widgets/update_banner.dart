@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
-import 'package:nexo/data/update_service.dart';
+import 'package:nexo/data/services/update_service.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/core/design/tokens.dart';
 

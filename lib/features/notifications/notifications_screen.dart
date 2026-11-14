@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/notification_service.dart';
+import 'package:nexo/data/services/notification_service.dart';
 import 'package:nexo/domain/notification_prefs.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/page_scaffold.dart';

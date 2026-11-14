@@ -21,16 +21,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tabPayments => 'Pagos';
 
   @override
-  String get tabTeacher => 'Docente';
-
-  @override
   String get tabCourses => 'Cursos';
 
   @override
   String get tabProfile => 'Perfil';
-
-  @override
-  String get titleHome => 'Inicio';
 
   @override
   String get titleSchedule => 'Horario';
@@ -72,9 +66,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get subtitlePayments => 'Cuotas, tasas e historial';
 
   @override
-  String get subtitleTeacher => 'Tus cursos y estudiantes';
-
-  @override
   String get language => 'Idioma';
 
   @override
@@ -88,9 +79,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get actionLogout => 'Cerrar sesión';
-
-  @override
-  String get actionAccept => 'Aceptar';
 
   @override
   String get actionCancel => 'Cancelar';
@@ -112,9 +100,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailLocation => 'Ubicación';
-
-  @override
-  String get detailRoom => 'Aula';
 
   @override
   String get detailPavilion => 'Pabellón';
@@ -179,9 +164,6 @@ class AppLocalizationsEs extends AppLocalizations {
     });
     return '$_temp0';
   }
-
-  @override
-  String get detailBuilding => 'Local';
 
   @override
   String get detailCampus => 'Sede';
@@ -427,9 +409,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scheduleNoClassesScheduled => 'Sin clases programadas';
 
   @override
-  String get gradesTitle => 'Notas';
-
-  @override
   String get gradesSubtitleNoPeriod => 'Boleta de notas';
 
   @override
@@ -622,37 +601,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionCodeCopied => 'Código copiado';
 
   @override
-  String get profileSettingsSubtitle =>
-      'Apariencia, idioma, hora y notificaciones';
-
-  @override
-  String get profileChangePasswordSubtitle =>
-      'Para tu cuenta institucional UPLA';
-
-  @override
-  String profileAboutSubtitle(String version) {
-    return 'Versión $version';
-  }
-
-  @override
   String get logoutConfirmTitle => 'Cerrar sesión';
 
   @override
   String get logoutConfirmBody => '¿Quieres salir de tu cuenta?';
 
   @override
-  String get docenteChangeDate => 'Cambiar';
-
-  @override
   String get docenteSaveAttendance => 'Guardar asistencia';
 
   @override
   String get docenteAttendanceSaved => 'Asistencia guardada';
-
-  @override
-  String docenteAttendanceError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get docenteGradeLabel => 'Nota (0 - 20)';
@@ -854,55 +812,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get docenteMetricPeriodo => 'Periodo';
 
   @override
-  String get docenteNoClassesToday => 'No dictas hoy';
-
-  @override
-  String get docenteToday => 'Hoy';
-
-  @override
-  String docenteClassCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count clases',
-      one: '$count clase',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get docenteTypeTeoria => 'TEO';
-
-  @override
-  String get docenteTypePractica => 'PRÁC';
-
-  @override
   String get docenteLoadingClasses => 'Cargando clases...';
-
-  @override
-  String docenteSessionsWeeklyCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count sesiones esta semana',
-      one: '1 sesión esta semana',
-    );
-    return 'Mis clases · $_temp0';
-  }
-
-  @override
-  String get docenteNoClassesRegistered => 'No tienes clases registradas';
-
-  @override
-  String docenteCourseCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cursos',
-      one: '$count curso',
-    );
-    return '$_temp0';
-  }
 
   @override
   String docenteCoursesCountPlural(int count) {
@@ -942,14 +852,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get docenteTabNotas => 'Notas';
 
   @override
-  String get docenteNoCode => 'Sin código';
-
-  @override
-  String docenteSectionPeriod(String seccion, String periodo) {
-    return 'Sección $seccion · $periodo';
-  }
-
-  @override
   String get docenteNoAlumnosRegistered => 'Sin alumnos registrados';
 
   @override
@@ -958,27 +860,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get docenteAttendancePresentShort => 'Pres.';
-
-  @override
-  String get docenteAttendanceTardanzaShort => 'Tard.';
-
-  @override
-  String get docenteAttendanceFaltaShort => 'Falta';
-
-  @override
   String get docenteNoAlumnosInCourse => 'Sin alumnos en este curso';
-
-  @override
-  String docenteAprobadosCount(String aprobados, String total) {
-    return '$aprobados de $total aprobados';
-  }
-
-  @override
-  String get docenteTapToEdit => 'Toca para editar →';
-
-  @override
-  String get docentePromedioParcial => 'PROMEDIO PARCIAL';
 
   @override
   String docenteCoursePercentGraded(String percent) {
@@ -993,23 +875,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get docenteAttendanceLabel => 'ASISTENCIA';
-
-  @override
-  String docenteSessionsRegisteredCount(String presentes, String total) {
-    return '$presentes de $total\nsesiones registradas';
-  }
-
-  @override
-  String get docenteAttendancePresent => 'Presente';
-
-  @override
-  String get docenteAttendanceTardanza => 'Tardanza';
-
-  @override
-  String get docenteAttendanceFalta => 'Falta';
-
-  @override
-  String get docenteAttendanceJustificada => 'Justificada';
 
   @override
   String get docenteInfoTitle => 'Información del docente';
@@ -1027,9 +892,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get docenteInfoFieldEspecialidad => 'Especialidad';
 
   @override
-  String get docenteSupportSubtitle => 'Contactar por WhatsApp o Correo';
-
-  @override
   String get connectivityStatusTitle => 'Estado de Conexión';
 
   @override
@@ -1039,10 +901,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get connectivityInternet => 'Conexión a Internet';
 
   @override
-  String get connectivitySigma => 'Servidor SIGMA';
-
-  @override
-  String get connectivityIntranet => 'Servidor INTRANET';
+  String get connectivityNexo => 'Servidor de Nexo';
 
   @override
   String get connectivityBackupNote =>
@@ -1073,9 +932,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeMetricPromedioCiclo => 'Prom. ciclo';
 
   @override
-  String get homeMetricPromedioAcumulado => 'Prom. acum.';
-
-  @override
   String get homeMetricCreditos => 'Créditos';
 
   @override
@@ -1104,9 +960,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get gradesEvidenciaProducto => 'Evidencia de producto';
-
-  @override
-  String get gradesPromedioAcumulado => 'Promedio acumulado';
 
   @override
   String get gradesNoCreditsData => 'Sin datos de créditos';
@@ -1417,9 +1270,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupProgressRegister => 'Registrando en Windows...';
 
   @override
-  String get setupProgressDone => '¡Instalación completada exitosamente!';
-
-  @override
   String get setupSuccessTitle => '¡Instalación Exitosa!';
 
   @override
@@ -1551,26 +1401,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get updDismiss => 'Descartar';
 
   @override
-  String get assignmentNoDate => 'Sin fecha de entrega';
-
-  @override
-  String get assignmentOverdue => 'Venció';
-
-  @override
-  String get assignmentDueToday => 'Vence hoy';
-
-  @override
-  String get assignmentDueTomorrow => 'Vence mañana';
-
-  @override
-  String assignmentDueInDays(int days) {
-    return 'En $days días';
-  }
-
-  @override
-  String get assignmentEmpty => 'No tienes asignaciones pendientes.';
-
-  @override
   String get widgetNoPendingDebts => 'Sin deudas pendientes';
 
   @override
@@ -1682,12 +1512,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get widgetAssignmentsTitle => 'Tareas';
-
-  @override
-  String get widgetAssignmentsSubtitle => 'Próximas a vencer';
-
-  @override
   String get whatsappBannerTitle => 'Únete al canal de Nexo';
 
   @override
@@ -1771,34 +1595,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dataSaved => 'Datos guardados';
-
-  @override
-  String get dataServer => 'Consultado al servidor';
-
-  @override
-  String get dataRefreshing => 'Actualizando…';
-
-  @override
-  String get dataRefreshFailed => 'No se pudo actualizar';
-
-  @override
-  String get dataUnknownDate => 'Fecha de actualización desconocida';
-
-  @override
-  String dataUpdatedAt(String date) {
-    return 'Última actualización: $date';
-  }
-
-  @override
   String get docenteSearchStudent => 'Buscar alumno…';
-
-  @override
-  String get docenteSearchNoResults => 'Sin resultados';
-
-  @override
-  String get docenteAttendanceComingSoon =>
-      'El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.';
 
   @override
   String get tabMarcacion => 'Marcación';
@@ -1839,10 +1636,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get docenteTabReporte => 'Reporte';
 
   @override
-  String get docenteReportLoadError =>
-      'No se pudo cargar el reporte de asistencia.';
-
-  @override
   String get docenteReportEmpty =>
       'Aún no hay asistencias registradas en esta sección.';
 
@@ -1853,17 +1646,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get docenteReportAtRisk => 'En riesgo';
 
   @override
-  String get docenteReportNoRisk => 'Ningún alumno en riesgo por faltas.';
-
-  @override
   String get docenteReportSessions => 'Sesiones';
 
   @override
   String get docenteReportAverage => 'Asistencia prom.';
-
-  @override
-  String get docenteReportRiskHint =>
-      'En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.';
 
   @override
   String docenteReportCounts(
@@ -2657,4 +2443,426 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get gradesPromedioCiclo => 'Promedio del ciclo';
+
+  @override
+  String get tabDirectory => 'Estudiantes';
+
+  @override
+  String get directoryTitle => 'Estudiantes';
+
+  @override
+  String get directorySubtitle => 'Directorio institucional';
+
+  @override
+  String directoryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count estudiantes',
+      one: '1 estudiante',
+      zero: 'Sin estudiantes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get directorySearchHint => 'Buscar por nombre o código';
+
+  @override
+  String get directoryFilterSchool => 'Escuela';
+
+  @override
+  String get directoryAllSchools => 'Todas las escuelas';
+
+  @override
+  String directoryCycle(String n) {
+    return 'Ciclo $n';
+  }
+
+  @override
+  String get directoryNoResults => 'Sin resultados';
+
+  @override
+  String get directoryNoResultsHint =>
+      'Prueba con otro nombre, código o filtro.';
+
+  @override
+  String directoryEndOfList(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count estudiantes en total',
+      one: '1 estudiante en total',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get directoryManageAccess => 'Gestionar acceso';
+
+  @override
+  String get directoryDeniedTitle => 'Sin acceso al directorio';
+
+  @override
+  String get directoryDeniedHint =>
+      'Tu cuenta no está autorizada. Pídeselo a un administrador del sistema.';
+
+  @override
+  String get directoryUnavailableTitle => 'No se pudo conectar';
+
+  @override
+  String get directoryUnavailableHint =>
+      'Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get directoryRecordTitle => 'Ficha del estudiante';
+
+  @override
+  String get directoryTabGrades => 'Notas';
+
+  @override
+  String get directoryTabSchedule => 'Horario';
+
+  @override
+  String get directoryTabPayments => 'Pagos';
+
+  @override
+  String get directoryEmptyModule => 'Sin datos que mostrar.';
+
+  @override
+  String get directoryRecordMissing => 'Ficha no encontrada';
+
+  @override
+  String get directoryRecordMissingHint =>
+      'Ese código ya no está en el directorio.';
+
+  @override
+  String get directoryStatAverage => 'Promedio';
+
+  @override
+  String get directoryStatCredits => 'Créditos aprobados';
+
+  @override
+  String get directoryPersonalData => 'Datos del estudiante';
+
+  @override
+  String get directoryFieldCode => 'Código';
+
+  @override
+  String get directoryFieldEmail => 'Correo';
+
+  @override
+  String get directoryFieldPhone => 'Teléfono';
+
+  @override
+  String get directoryFieldFaculty => 'Facultad';
+
+  @override
+  String get directoryFieldSchool => 'Escuela';
+
+  @override
+  String get directoryFieldPlan => 'Plan';
+
+  @override
+  String get directoryFieldEntry => 'Ingreso';
+
+  @override
+  String get directoryProgressByTerm => 'Promedio por ciclo';
+
+  @override
+  String directoryCourseCredits(String value) {
+    return '$value créditos';
+  }
+
+  @override
+  String directoryAttendance(String value) {
+    return 'Asistencia $value%';
+  }
+
+  @override
+  String get directoryAccessExplainer =>
+      'El acceso al directorio se concede por código. Los administradores del sistema se configuran en el servidor y no se pueden cambiar desde aquí.';
+
+  @override
+  String get directoryAdmins => 'Administradores del sistema';
+
+  @override
+  String get directoryAdminsHint =>
+      'Pueden entrar siempre y repartir el acceso.';
+
+  @override
+  String directoryGrantsActive(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Con acceso · $count',
+      one: 'Con acceso · 1',
+      zero: 'Con acceso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get directoryGrantsRevoked => 'Acceso revocado';
+
+  @override
+  String get directoryNoGrants => 'Todavía no autorizaste a nadie.';
+
+  @override
+  String get directoryGrantAdd => 'Dar acceso';
+
+  @override
+  String get directoryGrantCodeLabel => 'Código o DNI';
+
+  @override
+  String get directoryGrantCodeHelp => 'Tal como aparece en la Intranet.';
+
+  @override
+  String get directoryGrantConfirm => 'Conceder';
+
+  @override
+  String get directoryGrantFailed => 'No se pudo cambiar el acceso.';
+
+  @override
+  String directoryGrantedBy(String code) {
+    return 'Concedido por $code';
+  }
+
+  @override
+  String get directoryGrant => 'Dar acceso';
+
+  @override
+  String get directoryRevoke => 'Revocar';
+
+  @override
+  String get directoryAdminOnlyTitle => 'Solo administradores';
+
+  @override
+  String get directoryAdminOnlyHint =>
+      'Repartir el acceso está reservado a los administradores del sistema.';
+
+  @override
+  String get termsItemDirectoryTitle => 'El apartado Estudiantes';
+
+  @override
+  String get termsItemDirectoryBody =>
+      'Es un directorio al que solo entran las cuentas autorizadas, y aparece en la app únicamente si la tuya lo está. Para comprobarlo, tu usuario y tu contraseña viajan una sola vez al servidor de Nexo, que los verifica contra SIGMA y no los guarda; a partir de ahí se usa una sesión temporal. Cada vez que abres la ficha de un estudiante queda registrado tu código, la fecha y a quién consultaste.';
+
+  @override
+  String get termsItemThirdPartyTitle => 'Datos de otras personas';
+
+  @override
+  String get termsItemThirdPartyBody =>
+      'Si tienes acceso al directorio estarás viendo información de terceros. Úsala solo para aquello que te fue autorizado: no la descargues, copies, compartas ni publiques. La Ley 29733 de Protección de Datos Personales también te alcanza a ti, y el acceso puede revocarse en cualquier momento.';
+
+  @override
+  String get termsItemDemoDataTitle => 'Datos de demostración';
+
+  @override
+  String get termsItemDemoDataBody =>
+      'Mientras no exista autorización institucional para consultar el directorio real, el apartado Estudiantes muestra datos generados para pruebas: personas que no existen. Cuando se sustituyan por datos reales actualizaremos estos términos y te pediremos aceptarlos otra vez.';
+
+  @override
+  String get directoryClearFilters => 'Limpiar filtros';
+
+  @override
+  String get directoryFieldCycle => 'Ciclo';
+
+  @override
+  String get directoryCumulativeAverage => 'Promedio acumulado';
+
+  @override
+  String get directoryApprovedCourses => 'Cursos aprobados';
+
+  @override
+  String directoryCoursesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cursos',
+      one: '1 curso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String directoryOverdueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vencidas',
+      one: '1 vencida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get guardianEntry => 'Soy padre, madre o apoderado';
+
+  @override
+  String get guardianTitle => 'Acceso de apoderado';
+
+  @override
+  String get guardianHeadline => 'Consulta la ficha de tu hijo';
+
+  @override
+  String get guardianIntro =>
+      'Ingresa con tu DNI y el PIN que te entregaron. No necesitas cuenta de la universidad.';
+
+  @override
+  String get guardianDniLabel => 'DNI';
+
+  @override
+  String get guardianDniInvalid => 'Ingresa los 8 dígitos de tu DNI';
+
+  @override
+  String get guardianPinLabel => 'PIN';
+
+  @override
+  String get guardianPinHelp => 'Los 6 dígitos que te dio la universidad';
+
+  @override
+  String get guardianPinInvalid => 'El PIN tiene 6 dígitos';
+
+  @override
+  String get guardianEnter => 'Entrar';
+
+  @override
+  String get guardianBadCredentials =>
+      'DNI o PIN incorrectos. Revísalos e inténtalo de nuevo.';
+
+  @override
+  String get guardianLocked =>
+      'Demasiados intentos fallidos. Espera unos minutos antes de volver a probar.';
+
+  @override
+  String get guardianUnavailable =>
+      'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get guardianAuditNotice => 'Cada consulta queda registrada.';
+
+  @override
+  String get guardianPickTitle => '¿A quién quieres ver?';
+
+  @override
+  String get guardianNoStudents =>
+      'Todavía no hay ningún estudiante vinculado a tu DNI.';
+
+  @override
+  String get guardianSignOut => 'Salir';
+
+  @override
+  String get integTitle => 'Conexiones';
+
+  @override
+  String get integSubtitle =>
+      'Comparte tu horario con tu calendario o con otras apps. Tú decides y puedes quitarlo cuando quieras.';
+
+  @override
+  String get integShareTitle => 'Compartir mi horario';
+
+  @override
+  String get integShareBody =>
+      'Se comparte tu código, nombre, carrera, facultad y tu horario semanal. Nunca tus notas ni tus pagos.';
+
+  @override
+  String get integShareOn => 'Compartiendo tu horario';
+
+  @override
+  String get integShareOff => 'No estás compartiendo nada';
+
+  @override
+  String get integShareStart => 'Compartir';
+
+  @override
+  String get integShareSync => 'Actualizar horario';
+
+  @override
+  String get integShareStop => 'Dejar de compartir';
+
+  @override
+  String get integShareStopConfirm =>
+      'Se borrarán tus datos compartidos, el enlace del calendario y el acceso de todas las apps.';
+
+  @override
+  String get integCalendarTitle => 'Calendario';
+
+  @override
+  String get integCalendarBody =>
+      'Suscribe tu horario en Google Calendar, Outlook o el calendario de tu teléfono. Se actualiza solo.';
+
+  @override
+  String get integCalendarCreate => 'Crear enlace';
+
+  @override
+  String get integCalendarRotate => 'Generar nuevo enlace';
+
+  @override
+  String get integCalendarActive =>
+      'Enlace activo. Por seguridad solo se muestra al crearlo.';
+
+  @override
+  String get integCalendarGoogle => 'Añadir a Google Calendar';
+
+  @override
+  String get integCalendarOpen => 'Abrir en mi calendario';
+
+  @override
+  String get integCalendarCopy => 'Copiar enlace';
+
+  @override
+  String get integCalendarDisable => 'Desactivar';
+
+  @override
+  String get integCalendarNeedsShare => 'Primero comparte tu horario.';
+
+  @override
+  String get integAppsTitle => 'Apps conectadas';
+
+  @override
+  String get integAppsEmpty => 'Ninguna app tiene acceso.';
+
+  @override
+  String get integAppsConnect => 'Conectar una app';
+
+  @override
+  String get integAppsRevoke => 'Quitar acceso';
+
+  @override
+  String get integConnectHint => 'Escribe el código que te muestra la otra app';
+
+  @override
+  String get integConnectCode => 'Código';
+
+  @override
+  String get integConnectContinue => 'Continuar';
+
+  @override
+  String integConnectAsks(String app) {
+    return '$app quiere ver:';
+  }
+
+  @override
+  String get integScopeProfile =>
+      'Tu perfil: código, nombre, carrera y facultad';
+
+  @override
+  String get integScopeSchedule => 'Tu horario semanal';
+
+  @override
+  String get integConnectNever =>
+      'No podrá ver tus notas, pagos ni tu contraseña.';
+
+  @override
+  String get integConnectApprove => 'Permitir';
+
+  @override
+  String get integConnectDeny => 'No permitir';
+
+  @override
+  String get integConnectNotFound => 'El código no existe o ya venció.';
+
+  @override
+  String get integError => 'No se pudo completar. Intenta de nuevo.';
 }

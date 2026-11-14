@@ -28,25 +28,25 @@ const _parcialVacio = TermGrades(
 );
 
 CourseGrade _legacy(double credit, String grade) => CourseGrade(
-      code: 'X',
-      subject: 'Course',
-      section: 'A',
-      cycle: 'I',
-      credit: credit,
-      attendance: null,
-      subjectType: 'TN',
-      year: 2025,
-      periodNum: 1,
-      pf: grade,
-      pfp: '',
-      complementary: '',
-      cc: 'true',
-      rank: '',
-      pF1: '',
-      pF2: '',
-      firstTerm: _parcialVacio,
-      secondTerm: _parcialVacio,
-    );
+  code: 'X',
+  subject: 'Course',
+  section: 'A',
+  cycle: 'I',
+  credit: credit,
+  attendance: null,
+  subjectType: 'TN',
+  year: 2025,
+  periodNum: 1,
+  pf: grade,
+  pfp: '',
+  complementary: '',
+  cc: 'true',
+  rank: '',
+  pF1: '',
+  pF2: '',
+  firstTerm: _parcialVacio,
+  secondTerm: _parcialVacio,
+);
 
 void main() {
   group('promedioPonderadoBoleta (modelo nuevo)', () {
@@ -109,8 +109,11 @@ void main() {
     test('excluye el periodo activo en course', () {
       final periodos = [t(2024, 1, 14), t(2024, 2, 16), t(2025, 1, 0)];
       expect(
-        GradeCalculator.promedioAcumulado(periodos,
-            activeYear: 2025, activeNumber: 1),
+        GradeCalculator.promedioAcumulado(
+          periodos,
+          activeYear: 2025,
+          activeNumber: 1,
+        ),
         15.0,
       );
     });
@@ -124,8 +127,11 @@ void main() {
 
     test('sin periodos cerrados → null', () {
       expect(
-        GradeCalculator.promedioAcumulado([t(2025, 1, 0)],
-            activeYear: 2025, activeNumber: 1),
+        GradeCalculator.promedioAcumulado(
+          [t(2025, 1, 0)],
+          activeYear: 2025,
+          activeNumber: 1,
+        ),
         isNull,
       );
     });

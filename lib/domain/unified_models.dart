@@ -29,79 +29,7 @@ class Student {
     this.creditsApproved,
     this.creditsTotal,
   });
-  static String _s(Object? v) => v?.toString() ?? '';
-  static int? _i(Object? v) => v is int
-      ? v
-      : v is num
-      ? v.toInt()
-      : v is String
-      ? int.tryParse(v)
-      : null;
-  static bool _b(Object? v) {
-    if (v is bool) return v;
-    if (v is num) return v != 0;
-    if (v is String) {
-      final t = v.trim().toLowerCase();
-      return t == 'true' || t == '1' || t == 's' || t == 'si' || t == 'sí';
-    }
-    return false;
-  }
 
-  factory Student.fromSigmaJson(Map<String, dynamic> j) => Student(
-    id: _s(j['est_Id']),
-    fullName: _s(j['estudiante']),
-    career: _s(j['carrera']),
-    faculty: _s(j['facultad']),
-    campus: _expandSede(_s(j['sede'])),
-    level: _s(j['nivel']),
-    studyPlan: _s(j['pes_Id']),
-    modality: _s(j['modalidad']),
-    isEnrolled: _b(j['matriculado']),
-    lastEnrollment: j['ultimaMatricula']?.toString(),
-    creditsApproved: _i(j['creditoAprobado']),
-  );
-  static const _sedeNames = {
-    'HU': 'HUANCAYO',
-    'HYO': 'HUANCAYO',
-    'LM': 'LIMA',
-    'LI': 'LIMA',
-    'CHA': 'CHANCHAMAYO',
-    'CH': 'CHANCHAMAYO',
-    'SAT': 'SATIPO',
-    'ST': 'SATIPO',
-    'TAR': 'TARMA',
-    'TR': 'TARMA',
-    'CER': 'CERRO DE PASCO',
-  };
-  static String _expandSede(String code) {
-    final t = code.trim().toUpperCase();
-    return _sedeNames[t] ?? code;
-  }
-
-  factory Student.fromIntranetData({
-    required List<dynamic> datosBasico,
-    required EnrollmentCertificate certificate,
-  }) {
-    String at(int i) =>
-        (i < datosBasico.length ? datosBasico[i]?.toString() ?? '' : '').trim();
-    return Student(
-      id: certificate.code,
-      fullName: certificate.student,
-      career: certificate.career,
-      faculty: certificate.faculty,
-      campus: _expandSede(at(6)),
-      level: certificate.level,
-      studyPlan: certificate.studyPlan.isNotEmpty
-          ? certificate.studyPlan
-          : at(4),
-      modality: certificate.modality,
-      isEnrolled: certificate.code.isNotEmpty,
-      lastEnrollment: certificate.year > 0
-          ? '${certificate.year}-${certificate.periodo}'
-          : null,
-      creditsApproved: certificate.totalCredits.toInt(),
-    );
-  }
   Student mergeWith(Student other) {
     return Student(
       id: id.isNotEmpty ? id : other.id,
@@ -169,53 +97,6 @@ class Payment {
     required this.note,
     required this.dueDateRaw,
   });
-  factory Payment.fromSigmaJson(Map<String, dynamic> j) => Payment(
-    description: j['descripcion']?.toString() ?? '',
-    currency: j['tipoMoneda']?.toString() ?? '',
-    amount: (j['importe'] as num?)?.toDouble() ?? 0,
-    lateFee: (j['mora'] as num?)?.toDouble() ?? 0,
-    total: (j['subtotal'] as num?)?.toDouble() ?? 0,
-    note: j['observacion']?.toString() ?? '',
-    dueDateRaw: j['fechaVencimiento']?.toString() ?? '',
-  );
-  factory Payment.fromDebtRow(List<dynamic> r) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    final amount = double.tryParse(at(3)) ?? 0;
-    final lateFee = double.tryParse(at(4)) ?? 0;
-    final total = double.tryParse(at(5)) ?? (amount + lateFee);
-    final note = at(6);
-    return Payment(
-      description: at(0),
-      currency: at(2),
-      amount: amount,
-      lateFee: lateFee,
-      total: total,
-      note: note == '--' ? '' : note,
-      dueDateRaw: at(1),
-    );
-  }
-  factory Payment.fromIntranetRow(List<dynamic> r, {String? termLabel}) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    final amount = double.tryParse(at(2)) ?? 0;
-    final totSem = double.tryParse(at(1)) ?? 0;
-    final nro = at(3);
-    final totCuotas = at(5);
-    final desc = StringBuffer('Cuota $nro');
-    if (totCuotas.isNotEmpty) desc.write(' de $totCuotas');
-    if (termLabel != null && termLabel.isNotEmpty) desc.write(' · $termLabel');
-    final note = totSem > 0
-        ? 'Total semestre S/. ${totSem.toStringAsFixed(2)}'
-        : '';
-    return Payment(
-      description: desc.toString(),
-      currency: 'S/.',
-      amount: amount,
-      lateFee: 0,
-      total: amount,
-      note: note,
-      dueDateRaw: at(4),
-    );
-  }
   DateTime? get dueDate {
     final parts = dueDateRaw.split(RegExp(r'[-/]'));
     if (parts.length != 3) return null;
@@ -283,45 +164,6 @@ class PaymentRecord {
     required this.voucher,
     required this.place,
   });
-  factory PaymentRecord.fromSigmaJson(Map<String, dynamic> j) => PaymentRecord(
-    serial: j['serieOper']?.toString() ?? '',
-    number: j['numOper']?.toString() ?? '',
-    operationType: j['desOper']?.toString() ?? '',
-    item: j['item']?.toString() ?? '',
-    date: j['fecha']?.toString() ?? '',
-    time: j['hora']?.toString() ?? '',
-    term: j['periodo']?.toString() ?? '',
-    concept: j['concepto']?.toString() ?? '',
-    currency: j['tipoMoneda']?.toString() ?? '',
-    amount: (j['importe'] as num?)?.toDouble() ?? 0,
-    note: j['observacion']?.toString() ?? '',
-    voucher: j['comprobante']?.toString() ?? '',
-    place: j['lugar']?.toString() ?? '',
-  );
-  factory PaymentRecord.fromIntranetRow(List<dynamic> r) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    String date = at(4);
-    final parts = date.split('/');
-    if (parts.length == 3) {
-      date =
-          '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
-    }
-    return PaymentRecord(
-      serial: at(0),
-      number: at(1),
-      operationType: at(2),
-      item: at(3),
-      date: date,
-      time: '',
-      term: at(5),
-      concept: at(6),
-      currency: at(7),
-      amount: double.tryParse(at(8)) ?? 0,
-      note: at(9),
-      voucher: at(10),
-      place: at(11),
-    );
-  }
   DateTime? get dateAsDate {
     final p = date.split('-');
     if (p.length != 3) return null;
@@ -348,12 +190,6 @@ class Fee {
     required this.amount,
     required this.note,
   });
-  factory Fee.fromSigmaJson(Map<String, dynamic> j) => Fee(
-    description: j['descripcion']?.toString() ?? '',
-    currency: j['tipoMoneda']?.toString() ?? '',
-    amount: (j['importe'] as num?)?.toDouble() ?? 0,
-    note: j['observacion']?.toString() ?? '',
-  );
 }
 
 class ScheduleClass {
@@ -684,24 +520,6 @@ class Term {
       isActive: b(j['activo']),
     );
   }
-  factory Term.fromIntranetRow(List<dynamic> r) {
-    int i(Object? v) => v is int
-        ? v
-        : v is num
-        ? v.toInt()
-        : v is String
-        ? (int.tryParse(v) ?? 0)
-        : 0;
-    final y = i(r.isNotEmpty ? r[0] : 0);
-    final n = i(r.length > 1 ? r[1] : 0);
-    return Term(
-      id: '$y${n.toString().padLeft(1, '0')}',
-      label: '$y - ${n == 1 ? 'I' : 'II'}',
-      year: y,
-      number: n,
-      isActive: false,
-    );
-  }
   Map<String, dynamic> toJson() => {
     'periodoId': id,
     'descripcion': label,
@@ -768,34 +586,6 @@ class Teacher {
     this.department,
     required this.courses,
   });
-  factory Teacher.fromSigmaDocente(
-    TeacherInfo info,
-    List<TeacherSubject> courses,
-  ) {
-    return Teacher(
-      id: info.code,
-      fullName: info.displayName,
-      department: info.faculty,
-      courses: courses
-          .map((c) => TeacherCourse.fromDocenteAsignatura(c))
-          .toList(),
-    );
-  }
-  factory Teacher.fromIntranet(Map<String, dynamic> json) {
-    final list = json['courses'] as List?;
-    return Teacher(
-      id: (json['cod_teacher'] ?? json['codigo'] ?? '').toString(),
-      fullName: (json['nombres_completos'] ?? json['displayName'] ?? '')
-          .toString(),
-      email: json['email']?.toString(),
-      department: json['department']?.toString(),
-      courses: list != null
-          ? list
-                .map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>))
-                .toList()
-          : const [],
-    );
-  }
   Teacher mergeWith(Teacher other) {
     return Teacher(
       id: id.isNotEmpty ? id : other.id,

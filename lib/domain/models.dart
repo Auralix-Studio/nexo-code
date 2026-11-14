@@ -61,12 +61,6 @@ class LoginResult {
   final String token;
   final UserProfile? info;
   const LoginResult({required this.token, this.info});
-  factory LoginResult.fromJson(Map<String, dynamic> json) => LoginResult(
-    token: json['token'] as String,
-    info: json['info'] is Map<String, dynamic>
-        ? UserProfile.fromJson(json['info'] as Map<String, dynamic>)
-        : null,
-  );
 }
 
 class UserProfile {
@@ -188,65 +182,6 @@ class CourseGrade {
     firstTerm: TermGrades.fromJson(j, prefix: ''),
     secondTerm: TermGrades.fromJson(j, prefix: '_2'),
   );
-  static const _legacyKeys = [
-    'nombreFacultad',
-    'nombreCarrera',
-    'planEstudios',
-    'codigo',
-    'asignatura',
-    'plan',
-    'ciclo',
-    'seccion',
-    'credito',
-    'asistencia',
-    'pF1',
-    'pF2',
-    'pf',
-    'complementario',
-    'pfp',
-    'cc',
-    'cicloTotal',
-    'seccionTotal',
-    'creditosTotal',
-    'mtr_Anio',
-    'mtr_Periodo',
-    'tipoAsignatura',
-    'tar_Id',
-    'puesto',
-    'p1',
-    'p2',
-    'p3',
-    'p4',
-    'p5',
-    'p6',
-    'p7',
-    'p8',
-    'ntaP1',
-    'ntaTI1',
-    'ntaPY1',
-    'ntaPromTiPy',
-    'ntaParcial1',
-    '_2P1',
-    '_2P2',
-    '_2P3',
-    '_2P4',
-    '_2P5',
-    '_2P6',
-    '_2P7',
-    '_2P8',
-    '_2NtaP1',
-    '_2NtaTI1',
-    '_2NtaPY1',
-    '_2NtaPromTiPy',
-    '_2NtaParcial1',
-  ];
-  factory CourseGrade.fromLegacyRow(List<dynamic> row) {
-    final m = <String, dynamic>{};
-    for (var i = 0; i < _legacyKeys.length && i < row.length; i++) {
-      m[_legacyKeys[i]] = row[i];
-    }
-    return CourseGrade.fromJson(m);
-  }
   double? get currentGradeNum {
     for (final c in [pf, pfp]) {
       final n = parseGrade(c);
@@ -353,33 +288,6 @@ class RecordCourse {
     required this.rawGrade,
     this.creditos = 0,
   });
-  factory RecordCourse.fromRow(List<dynamic> r) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    double cred = 0;
-    // Buscar créditos en las columnas 9-11 (la 12 es la nota vigesimal).
-    // Solo se aceptan valores enteros en rango 1-10: ningún curso de la UPLA
-    // tiene más de 10 créditos, y acotar el rango evita confundir la nota
-    // (0-20) u otra columna numérica con créditos.
-    for (final i in [9, 10, 11]) {
-      final val = double.tryParse(at(i));
-      if (val != null && val >= 1 && val <= 10 && val == val.roundToDouble()) {
-        cred = val;
-        break;
-      }
-    }
-    return RecordCourse(
-      faculty: at(0),
-      career: at(1),
-      plan: at(2),
-      state: at(3),
-      type: at(4),
-      code: at(6),
-      name: at(7),
-      cycle: at(8),
-      rawGrade: at(12),
-      creditos: cred,
-    );
-  }
   double? get grade => parseGrade(rawGrade);
   String get notaText => formatGrade(rawGrade);
   bool get isApproved => PassingRule.current.passes(grade);
@@ -411,21 +319,6 @@ class ReportCardCourse {
     this.rawVigesimal = '',
     this.credit = 0,
   });
-  factory ReportCardCourse.fromRow(List<dynamic> r) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    return ReportCardCourse(
-      enrollmentSubjectId: at(0),
-      plan: at(1),
-      credit: parseGrade(at(3)) ?? parseGrade(at(2)) ?? 0,
-      code: at(4),
-      name: at(5),
-      section: at(6),
-      rawAttendance: at(7),
-      rawAverage: at(8),
-      rawVigesimal: at(9),
-      state: at(10),
-    );
-  }
   factory ReportCardCourse.fromJson(Map<String, dynamic> j) => ReportCardCourse(
     enrollmentSubjectId: _toStr(j['matriculaAsignaturaId']),
     plan: _toStr(j['plan']),
@@ -492,10 +385,16 @@ class UnitGrades {
     required this.rawWeight,
     required this.evidences,
     required this.rawAverage,
+    this.serverAverage,
   });
+
+  /// Promedio ya calculado por la API de Nexo (ponderado por evidencias).
+  /// Si existe, la app no lo recalcula.
+  final double? serverAverage;
   double? get weight => parseGrade(rawWeight);
 
   double? get predictedAverage {
+    if (serverAverage != null) return serverAverage;
     final validGrades = evidences
         .map((e) => e.grade)
         .where((g) => g != null && g > 0)
@@ -524,7 +423,11 @@ class CourseGradeDetail {
     required this.rawSubstitute,
     required this.rawFinalAverage,
     required this.state,
+    this.serverAverage,
   });
+
+  /// Promedio real del curso calculado por la API de Nexo.
+  final double? serverAverage;
   double? get promedioFinal => parseGrade(rawFinalAverage);
   String get finalAverageText => formatGrade(rawFinalAverage);
 
@@ -533,6 +436,7 @@ class CourseGradeDetail {
   /// del curso redondeado (11.60 → 12); este getter permite mostrar el valor
   /// real de forma consistente en la lista y en el detalle.
   double? get computedAverage {
+    if (serverAverage != null) return serverAverage;
     double weighted = 0, weights = 0;
     final plain = <double>[];
     var allWeighted = true;
@@ -555,63 +459,6 @@ class CourseGradeDetail {
 
   String get sustitutorioText => formatGrade(rawSubstitute);
   bool get hasSubstitute => parseGrade(rawSubstitute) != null;
-  factory CourseGradeDetail.fromRows(List<dynamic> rows) {
-    String at(List<dynamic> r, int i) =>
-        (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    final unidadesMap = <String, UnitGrades>{};
-    final orden = <String>[];
-    final evidPorUnidad = <String, List<EvidenceGrade>>{};
-    final pesoUnidad = <String, String>{};
-    final promUnidad = <String, String>{};
-    var sustitutorio = '';
-    var promFinal = '';
-    var state = '';
-    for (final raw in rows) {
-      if (raw is! List) continue;
-      final tbl = at(raw, 11);
-      final unidad = at(raw, 4);
-      switch (tbl) {
-        case 'tbl1':
-          if (!orden.contains(unidad)) {
-            orden.add(unidad);
-            pesoUnidad[unidad] = at(raw, 5);
-            evidPorUnidad[unidad] = [];
-          }
-          evidPorUnidad[unidad]!.add(
-            EvidenceGrade(
-              type: at(raw, 7),
-              rawWeight: at(raw, 8),
-              rawGrade: at(raw, 9),
-            ),
-          );
-          break;
-        case 'tbl3':
-          promUnidad[unidad] = at(raw, 9);
-          break;
-        case 'tbl5':
-          sustitutorio = at(raw, 9);
-          break;
-        case 'tbl6':
-          promFinal = at(raw, 9);
-          state = at(raw, 10);
-          break;
-      }
-    }
-    for (final u in orden) {
-      unidadesMap[u] = UnitGrades(
-        name: u,
-        rawWeight: pesoUnidad[u] ?? '',
-        evidences: evidPorUnidad[u] ?? const [],
-        rawAverage: promUnidad[u] ?? '',
-      );
-    }
-    return CourseGradeDetail(
-      units: orden.map((u) => unidadesMap[u]!).toList(),
-      rawSubstitute: sustitutorio,
-      rawFinalAverage: promFinal,
-      state: state,
-    );
-  }
 }
 
 class EnrollmentCourse {
@@ -661,61 +508,6 @@ class EnrollmentCertificate {
     required this.courses,
     required this.totalCredits,
   });
-  factory EnrollmentCertificate.fromRows(List<dynamic> rows) {
-    String at(List<dynamic> r, int i) =>
-        (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    final filas = rows.whereType<List<dynamic>>().toList();
-    if (filas.isEmpty) {
-      return const EnrollmentCertificate(
-        code: '',
-        student: '',
-        faculty: '',
-        career: '',
-        specialty: '',
-        studyPlan: '',
-        level: '',
-        year: 0,
-        periodo: 0,
-        modality: '',
-        photoUrl: '',
-        careerLabel: 'Carrera',
-        courses: [],
-        totalCredits: 0,
-      );
-    }
-    final head = filas.first;
-    final courses = filas
-        .map(
-          (r) => EnrollmentCourse(
-            code: at(r, 6),
-            subject: at(r, 7),
-            cycle: at(r, 9),
-            section: at(r, 10),
-            creditos: at(r, 13),
-          ),
-        )
-        .where((c) => c.code.isNotEmpty)
-        .toList();
-    final total =
-        double.tryParse(at(head, 17)) ??
-        courses.fold<double>(0, (a, c) => a + c.creditosNum);
-    return EnrollmentCertificate(
-      code: at(head, 0),
-      student: at(head, 1),
-      faculty: at(head, 2),
-      career: at(head, 4),
-      specialty: at(head, 5),
-      studyPlan: at(head, 8),
-      level: at(head, 18).isNotEmpty ? at(head, 18) : at(head, 9),
-      year: int.tryParse(at(head, 11)) ?? 0,
-      periodo: int.tryParse(at(head, 12)) ?? 0,
-      modality: at(head, 14),
-      photoUrl: at(head, 19),
-      careerLabel: at(head, 21).isNotEmpty ? at(head, 21) : 'Carrera',
-      courses: courses,
-      totalCredits: total,
-    );
-  }
   String get periodLabel =>
       '$year-${periodo == 1
           ? 'I'
@@ -733,14 +525,6 @@ class PaymentInstallment {
     required this.amount,
     required this.rawDueDate,
   });
-  factory PaymentInstallment.fromRow(List<dynamic> r) {
-    String at(int i) => (i < r.length ? r[i]?.toString() ?? '' : '').trim();
-    return PaymentInstallment(
-      number: at(3),
-      amount: double.tryParse(at(2)) ?? 0,
-      rawDueDate: at(4),
-    );
-  }
   DateTime? get dueDate {
     final p = rawDueDate.split('/');
     if (p.length != 3) return null;
@@ -771,16 +555,6 @@ class Publication {
     required this.allowsDownload,
     required this.mainDimension,
   });
-  factory Publication.fromJson(Map<String, dynamic> j) => Publication(
-    publicationId: _toInt(j['idPublicacion']) ?? 0,
-    contentType: _toStr(j['tipoContenido']),
-    mainUrl: _toStr(j['urlPrincipal']),
-    adaptableUrl: j['urlAdaptable'] as String?,
-    referenceUrl: j['urlReferencia'] as String?,
-    buttonText: j['textoBoton'] as String?,
-    allowsDownload: _toBool(j['permiteDescarga']),
-    mainDimension: _toStr(j['dimensionPrincipal']),
-  );
   bool get isImage => contentType.toLowerCase() == 'image';
 }
 
@@ -788,10 +562,6 @@ class WifiCredential {
   final String username;
   final String password;
   const WifiCredential({required this.username, required this.password});
-  factory WifiCredential.fromJson(Map<String, dynamic> j) => WifiCredential(
-    username: _toStr(j['usuario'] ?? j['user'] ?? j['usuario']),
-    password: _toStr(j['contrasena'] ?? j['contrasena'] ?? j['clave']),
-  );
 }
 
 class GradesCount {
@@ -805,17 +575,6 @@ class GradesCount {
     required this.pending,
     required this.total,
   });
-  factory GradesCount.fromJson(Map<String, dynamic> j) {
-    final a = _toInt(j['aprobados'] ?? j['cantAprobados']) ?? 0;
-    final d = _toInt(j['desaprobados'] ?? j['cantDesaprobados']) ?? 0;
-    final p = _toInt(j['pendientes'] ?? j['cantPendientes']) ?? 0;
-    return GradesCount(
-      approved: a,
-      disapproved: d,
-      pending: p,
-      total: _toInt(j['total']) ?? (a + d + p),
-    );
-  }
   double get approvedPercentage => total == 0 ? 0 : approved / total;
 }
 
@@ -1227,17 +986,6 @@ class TeacherPunch {
     required this.location,
   });
   bool get isVirtual => location.trim().toUpperCase().startsWith('VIRTUAL');
-  factory TeacherPunch.fromJson(Map<String, dynamic> j) {
-    final fecha = DateTime.tryParse(_toStr(j['fecha'])) ?? DateTime.now();
-    return TeacherPunch(
-      date: DateTime(fecha.year, fecha.month, fecha.day),
-      time: _toStr(j['hora']),
-      weekday: _toInt(j['idDia']) ?? fecha.weekday,
-      dayName: _toStr(j['dia']),
-      mode: _toStr(j['modo']),
-      location: _toStr(j['ubcacionMarcador'] ?? j['ubicacionMarcador']).trim(),
-    );
-  }
 }
 
 /// Estado de marcación de un extremo (inicio/fin) de una clase programada,
@@ -1246,14 +994,6 @@ class TeacherPunch {
 /// Valores observados con cuenta real: `1` en clases ya dictadas y marcadas,
 /// `X` en clases ya pasadas sin marca y `0` en la clase en curso/por venir.
 enum PunchStatus { marked, missing, pending, unknown }
-
-PunchStatus _punchStatus(Object? raw) =>
-    switch (_toStr(raw).trim().toUpperCase()) {
-      '1' => PunchStatus.marked,
-      'X' => PunchStatus.missing,
-      '0' || '' => PunchStatus.pending,
-      _ => PunchStatus.unknown,
-    };
 
 /// Una clase programada del docente con el estado de su marcación de entrada
 /// y salida. Fuente: `Docente/getAsistenciaDiaria`.
@@ -1302,23 +1042,6 @@ class TeacherClassCompliance {
     if (m == null || d == null || y == null) return null;
     return DateTime(y, m, d);
   }
-
-  factory TeacherClassCompliance.fromJson(Map<String, dynamic> j) {
-    final date = parseFecha(_toStr(j['fecha'])) ?? DateTime.now();
-    return TeacherClassCompliance(
-      date: DateTime(date.year, date.month, date.day),
-      weekday: _toInt(j['idDia']) ?? date.weekday,
-      dayName: _toStr(j['dia']),
-      startTime: _toStr(j['horaInicio']),
-      endTime: _toStr(j['horaFin']),
-      subject: _toStr(j['asignatura']),
-      level: _toStr(j['nivel']),
-      section: _toStr(j['seccion']),
-      modality: _toStr(j['modalidad']),
-      start: _punchStatus(j['statusInicio']),
-      end: _punchStatus(j['statusFin']),
-    );
-  }
 }
 
 /// Unidad de evaluación de una sección (`Asignatura/getTipoUnidadesV2`).
@@ -1332,12 +1055,6 @@ class TeacherUnitCatalog {
     required this.name,
     required this.enabled,
   });
-  factory TeacherUnitCatalog.fromJson(Map<String, dynamic> j) =>
-      TeacherUnitCatalog(
-        id: _toInt(j['tipo_unidad_id'] ?? j['tipoUnidadId']) ?? 0,
-        name: _toStr(j['descripcion'] ?? j['nombre']).trim(),
-        enabled: j['habilitado'] == true || _toStr(j['habilitado']) == '1',
-      );
 }
 
 class PaymentSchedule {
@@ -1347,13 +1064,4 @@ class PaymentSchedule {
     required this.totalAmount,
     required this.installments,
   });
-  factory PaymentSchedule.fromRows(List<dynamic> rows) {
-    final filas = rows.whereType<List<dynamic>>().toList();
-    if (filas.isEmpty) {
-      return const PaymentSchedule(totalAmount: 0, installments: []);
-    }
-    final total = double.tryParse(filas.first[1]?.toString() ?? '') ?? 0;
-    final installments = filas.map(PaymentInstallment.fromRow).toList();
-    return PaymentSchedule(totalAmount: total, installments: installments);
-  }
 }

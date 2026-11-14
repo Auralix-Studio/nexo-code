@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/data/update_manifest.dart';
+import 'package:nexo/data/services/update_manifest.dart';
 
 const _sha = 'a3f1c2d4e5b6978877665544332211009988776655443322110099887766554a';
 

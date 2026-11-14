@@ -248,7 +248,7 @@ def section_to_html(version: str, section: str) -> str:
     return "\n".join(out) + "\n"
 
 
-# Clave de version.json para cada archivo (ver lib/data/update_manifest.dart).
+# Clave de version.json para cada archivo (ver lib/data/services/update_manifest.dart).
 MANIFEST_KEYS = {
     "arm64.apk": "android-arm64",
     "armv7.apk": "android-armv7",

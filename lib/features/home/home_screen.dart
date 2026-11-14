@@ -20,7 +20,7 @@ import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/today_classes_widget.dart';
-import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
 import 'package:nexo/features/legal/support_screen.dart';
 import 'package:nexo/features/festivity/widgets/escarapela_widget.dart';
 
@@ -186,12 +186,7 @@ class _Header extends StatelessWidget {
                 listenable: connectivity,
                 builder: (context, _) {
                   final isOnline = connectivity.hasInternet;
-                  final sigmaOnline =
-                      connectivity.sigmaStatus == ServerStatus.online;
-                  final intranetOnline =
-                      connectivity.intranetStatus == ServerStatus.online;
-                  final isFullyOnline =
-                      isOnline && sigmaOnline && intranetOnline;
+                  final isFullyOnline = connectivity.isFullyOnline;
                   final Color color;
                   if (!isOnline) {
                     color = NexoTheme.danger;
@@ -262,8 +257,7 @@ class _Header extends StatelessWidget {
               listenable: connectivity,
               builder: (context, _) {
                 final isOnline = connectivity.hasInternet;
-                final sigma = connectivity.sigmaStatus;
-                final intranet = connectivity.intranetStatus;
+                final api = connectivity.apiStatus;
                 Widget buildStatusTile(
                   String title,
                   bool active,
@@ -425,12 +419,7 @@ class _Header extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       buildStatusTile(l.connectivityInternet, isOnline, null),
-                      buildStatusTile(l.connectivitySigma, isOnline, sigma),
-                      buildStatusTile(
-                        l.connectivityIntranet,
-                        isOnline,
-                        intranet,
-                      ),
+                      buildStatusTile(l.connectivityNexo, isOnline, api),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
                         l.connectivityBackupNote,

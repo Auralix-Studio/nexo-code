@@ -1,17 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:nexo/data/notification_service.dart';
+import 'package:nexo/data/services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/l10n/app_localizations.dart';
-import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/shortcuts.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/directory_service.dart';
+import 'package:nexo/data/services/session.dart';
+import 'package:nexo/features/directory/directory_screen.dart';
 import 'package:nexo/features/festivity/festivity_overlay.dart';
-import 'package:nexo/features/teacher/teacher_courses_screen.dart';
-import 'package:nexo/features/teacher/teacher_marcacion_screen.dart';
+import 'package:nexo/features/teacher/courses/teacher_courses_screen.dart';
+import 'package:nexo/features/teacher/marcacion/teacher_marcacion_screen.dart';
 import 'package:nexo/features/teacher/teacher_profile_screen.dart';
 import 'package:nexo/features/teacher/teacher_screen.dart';
 import 'package:nexo/features/grades/grades_screen.dart';
@@ -32,7 +36,13 @@ class _Tab {
   const _Tab(this.label, this.icon, this.iconOutlined);
 }
 
-List<_Tab> _studentTabs(AppLocalizations l) => [
+// El directorio de estudiantes es un apartado aparte: aparece en la barra
+// —tanto en la del estudiante como en la del docente— solo si el backend
+// confirmó que esta cuenta tiene acceso.
+_Tab _directoryTab(AppLocalizations l) =>
+    _Tab(l.tabDirectory, Icons.groups_rounded, Icons.groups_outlined);
+
+List<_Tab> _studentTabs(AppLocalizations l, {required bool directory}) => [
   _Tab(l.tabHome, Icons.home_rounded, Icons.home_outlined),
   _Tab(
     l.tabSchedule,
@@ -45,9 +55,10 @@ List<_Tab> _studentTabs(AppLocalizations l) => [
     Icons.account_balance_wallet_rounded,
     Icons.account_balance_wallet_outlined,
   ),
+  if (directory) _directoryTab(l),
   _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
 ];
-List<_Tab> _teacherTabs(AppLocalizations l) => [
+List<_Tab> _teacherTabs(AppLocalizations l, {required bool directory}) => [
   _Tab(l.tabHome, Icons.dashboard_rounded, Icons.dashboard_outlined),
   _Tab(
     l.tabSchedule,
@@ -56,6 +67,7 @@ List<_Tab> _teacherTabs(AppLocalizations l) => [
   ),
   _Tab(l.tabCourses, Icons.menu_book_rounded, Icons.menu_book_outlined),
   _Tab(l.tabMarcacion, Icons.fingerprint_rounded, Icons.fingerprint_outlined),
+  if (directory) _directoryTab(l),
   _Tab(l.tabProfile, Icons.person_rounded, Icons.person_outline_rounded),
 ];
 
@@ -66,11 +78,13 @@ class AppShell extends StatefulWidget {
     required this.session,
     required this.theme,
     required this.connectivity,
+    required this.directory,
   });
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
   final ConnectivityService connectivity;
+  final DirectoryService directory;
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -112,6 +126,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _wasOnline = online;
   }
 
+  void _onDirectoryChange() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -125,6 +143,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     ShortcutService.instance.addListener(_handleShortcut);
     widget.connectivity.addListener(_onConnectivityChange);
+    // Preguntar por el acceso al directorio: si lo hay, aparece su pestaña.
+    widget.directory.addListener(_onDirectoryChange);
+    unawaited(widget.directory.ensureResolved());
     _handleShortcut();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) maybeShowWhatsappInvite(context);
@@ -143,6 +164,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     ShortcutService.instance.removeListener(_handleShortcut);
     widget.connectivity.removeListener(_onConnectivityChange);
+    widget.directory.removeListener(_onDirectoryChange);
     for (final c in _scrollControllers) {
       c.dispose();
     }
@@ -194,13 +216,15 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
     final List<_Tab> tabs;
     final List<Widget> pages;
+    final showDirectory = widget.directory.hasAccess;
     if (isTeacher) {
-      tabs = _teacherTabs(l);
+      tabs = _teacherTabs(l, directory: showDirectory);
       pages = <Widget>[
         wrap(TeacherScreen(store: widget.store)),
         wrap(ScheduleScreen(store: widget.store, teacher: true)),
         wrap(TeacherCoursesScreen(store: widget.store)),
         wrap(TeacherMarcacionScreen(store: widget.store)),
+        if (showDirectory) wrap(DirectoryScreen(directory: widget.directory)),
         wrap(
           TeacherProfileScreen(
             store: widget.store,
@@ -210,7 +234,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         ),
       ];
     } else {
-      tabs = _studentTabs(l);
+      tabs = _studentTabs(l, directory: showDirectory);
       pages = <Widget>[
         wrap(
           HomeScreen(
@@ -222,11 +246,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         wrap(ScheduleScreen(store: widget.store)),
         wrap(GradesScreen(store: widget.store)),
         wrap(PaymentsScreen(store: widget.store)),
+        if (showDirectory) wrap(DirectoryScreen(directory: widget.directory)),
         wrap(
           ProfileScreen(
             store: widget.store,
             session: widget.session,
             theme: widget.theme,
+            directory: widget.directory,
           ),
         ),
       ];

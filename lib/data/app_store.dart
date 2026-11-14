@@ -4,16 +4,16 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:nexo/core/data/resolver.dart';
+import 'package:nexo/data/resolver.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/teacher_repository.dart';
-import 'package:nexo/data/intranet_repository.dart';
-import 'package:nexo/data/sigma_repository.dart';
-import 'package:nexo/domain/idiomas_repository.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/data/repositories/nexo_teacher_repository.dart';
+import 'package:nexo/data/remote/backend_client.dart'
+    show BackendException, apiErrorOf;
 import 'package:nexo/domain/idiomas_models.dart';
 import 'package:nexo/domain/grade_calculator.dart';
 import 'package:nexo/domain/grade_paste.dart';
@@ -49,22 +49,18 @@ class AsyncValue<T> {
 }
 
 class AppStore extends ChangeNotifier {
+  /// Todos los datos vienen de la API de Nexo ([NexoRepository]); la app no
+  /// habla con SIGMA, la Intranet ni el Centro de Idiomas.
   AppStore(
-    this._repo, {
+    this._nexo, {
     required CacheManager cache,
     required ErrorHandler errorHandler,
     required ConnectivityService connectivity,
-    IntranetRepository? intranet,
-    TeacherRepository? teacher,
-    IdiomasRepository? idiomas,
     SessionScope? scope,
   }) : _scope = scope ?? SessionScope(),
        _cache = cache,
        _errorHandler = errorHandler,
-       _connectivity = connectivity,
-       _intranet = intranet,
-       _teacher = teacher,
-       _idiomas = idiomas {
+       _connectivity = connectivity {
     // El layout del dashboard debe cargarse SIEMPRE (no solo al hidratar):
     // tras un login fresco `hydrateFromCache` no corre y el Home quedaba con
     // spans por defecto rotos (tarjetas aplastadas en móvil).
@@ -103,118 +99,83 @@ class AppStore extends ChangeNotifier {
     return value is int ? DateTime.fromMillisecondsSinceEpoch(value) : null;
   }
 
-  DataSource<T> _sigma<T>(SourceId id, Future<T> Function() fn) => DataSource(
-    id: id,
-    fetch: () {
-      _scope.check();
-      return fn();
-    },
-  );
-  List<DataSource<T>> _intra<T>(Future<T> Function(IntranetRepository) fn) {
-    final r = _intranet;
-    if (r == null) return const [];
-    return [
-      DataSource(
-        id: 'intranet',
-        available: () async {
-          _scope.check();
-          final s = AppStorage.instance;
-          return s.credUser != null && s.credPass != null;
-        },
-        fetch: () async {
-          _scope.check();
-          final s = AppStorage.instance;
-          final ok = await r.ensureSession(s.credUser!, s.credPass!);
-          _scope.check();
-          if (!ok) throw const NetworkException('Sesión Intranet falló.');
-          return fn(r);
-        },
-      ),
-    ];
+  /// Llama a la API de Nexo y traduce sus errores a los que entienden
+  /// [ErrorHandler] y las pantallas (red → caché, sesión vencida → login).
+  Future<T> _call<T>(Future<T> Function() fn) async {
+    _scope.check();
+    try {
+      return await fn();
+    } on BackendException catch (e) {
+      throw apiErrorOf(e);
+    }
   }
 
+  /// La API de Nexo como fuente de un [Resolver].
+  List<DataSource<T>> _api<T>(Future<T> Function(NexoRepository) fn) => [
+    DataSource(
+      id: 'nexo',
+      available: () async {
+        _scope.check();
+        final s = AppStorage.instance;
+        return s.credUser != null && s.credPass != null;
+      },
+      fetch: () => _call(() => fn(_nexo)),
+    ),
+  ];
+
   static bool _emptyList(List l) => l.isEmpty;
+  static bool _emptyStudent(Student s) => s.id.isEmpty && s.fullName.isEmpty;
   late final Resolver<Student> _studentRes = Resolver(
-    sources: [
-      ..._intra((r) async {
-        final p = periodoActivo;
-        final now = DateTime.now();
-        final s = await r.infoEstudiante(
-          year: p?.year ?? now.year,
-          periodo: p?.number ?? (now.month <= 7 ? 1 : 2),
-        );
-        if (s == null) throw const NetworkException('Intranet sin perfil.');
-        return s;
-      }),
-      _sigma('sigma', _repo.infoEstudiante),
-    ],
-    merge: MergeStrategies.fold<Student>((a, b) => a.mergeWith(b)),
-    isEmpty: (s) => s.id.isEmpty && s.fullName.isEmpty,
+    sources: _api((r) => r.profile()),
+    merge: MergeStrategies.firstWins,
+    stopAfterFirst: true,
+    isEmpty: _emptyStudent,
   );
   late final Resolver<List<Payment>> _cuotasRes = Resolver(
-    sources: [..._intra((r) => r.pensionesPendientes())],
+    sources: [..._api((r) => r.pendingPayments())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Payment>> _vencidasRes = Resolver(
-    sources: [
-      ..._intra((r) async {
-        final results = await Future.wait([
-          r.pensionesVencidas(),
-          r.matriculaVencida(),
-        ]);
-        return results.expand((e) => e).toList();
-      }),
-    ],
+    sources: [..._api((r) => r.overduePayments())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<PaymentRecord>> _historicoRes = Resolver(
-    sources: [..._intra((r) => r.historicoPagos())],
+    sources: [..._api((r) => r.paymentHistory())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Fee>> _tasasRes = Resolver(
-    sources: [..._intra((r) => r.tasasIntranet())],
+    sources: _api((r) => r.fees()),
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<Term>> _periodosRes = Resolver(
-    sources: [
-      ..._intra((r) => r.periodosMatriculados()),
-      _sigma('sigma', _repo.periodosEstudiante),
-    ],
+    sources: [..._api((r) => r.terms())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
   late final Resolver<List<ScheduleClass>> _horarioRes = Resolver(
     sources: [
-      ..._intra((r) {
+      ..._api((r) {
         final p = periodoActivo;
-        final now = DateTime.now();
-        return r.horarioMatriculados(
-          p?.year ?? now.year,
-          p?.number ?? (now.month <= 7 ? 1 : 2),
-        );
+        return r.schedule(year: p?.year, number: p?.number);
       }),
-      _sigma('sigma', () => _repo.schedule()),
     ],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
     isEmpty: _emptyList,
   );
-  final SigmaRepository _repo;
   final CacheManager _cache;
   final ErrorHandler _errorHandler;
   final ConnectivityService _connectivity;
-  final IntranetRepository? _intranet;
-  final TeacherRepository? _teacher;
-  final IdiomasRepository? _idiomas;
+  final NexoRepository _nexo;
   void Function(String course, String grade)? onGradeChange;
 
   /// Operaciones que resolvieron vía caché mientras el primer chequeo de
@@ -791,49 +752,19 @@ class AppStore extends ChangeNotifier {
     operationName: 'loadHorarioActual',
   );
 
-  /// Carga la matrícula del Centro de Idiomas y fusiona el horario.
+  /// Carga los cursos del Centro de Idiomas (con sus notas) y fusiona el
+  /// horario. Un estudiante sin cuenta de Idiomas recibe una lista vacía.
   Future<void> loadIdiomasMatricula() => _scope.run(() async {
-    final r = _idiomas;
-    if (r == null) return;
     final s = AppStorage.instance;
-    final user = s.credUser;
-    final pass = s.credPass;
-    if (user == null || pass == null) return;
+    if (s.credUser == null || s.credPass == null) return;
     try {
       idiomasMatricula = const AsyncValue.loading();
       _notify();
-      final loginResult = await r.login(user, pass);
+      final result = await _call(_nexo.languages);
       if (!_scope.isCurrent) return;
-      if (loginResult == IdiomasLoginResult.invalidCredentials) {
-        // Credenciales rechazadas: no es un error de red, simplemente
-        // el estudiante no tiene cuenta de Idiomas o la contraseña difiere.
-        idiomasMatricula = const AsyncValue.data([]);
-        _notify();
-        return;
-      }
-      if (loginResult == IdiomasLoginResult.networkError) {
-        throw const NetworkException(
-          'No se pudo conectar al Centro de Idiomas.',
-        );
-      }
-      final courses = await r.getMatricula(user);
-      if (!_scope.isCurrent) return;
-      idiomasMatricula = AsyncValue.data(courses);
-
-      // B8: Paralelizar las llamadas a getNotas por curso.
-      if (courses.isNotEmpty) {
-        final notasResults = await Future.wait(
-          courses.map((c) => r.getNotas(c.detMatriculaId)),
-        );
-        if (!_scope.isCurrent) return;
-        final allNotas = notasResults.expand((n) => n).toList();
-        idiomasNotas = AsyncValue.data(allNotas);
-      } else {
-        idiomasNotas = const AsyncValue.data([]);
-      }
-
-      // La inyección en el horario ya no se hace aquí. El getter `schedule`
-      // se encarga de combinar `_baseSchedule` y `idiomasVigentes` al vuelo.
+      idiomasMatricula = AsyncValue.data(result.courses);
+      idiomasNotas = AsyncValue.data(result.grades);
+      // El getter `schedule` combina `_baseSchedule` e `idiomasVigentes`.
       _notify();
     } catch (e) {
       if (!_scope.isCurrent) return;
@@ -844,18 +775,7 @@ class AppStore extends ChangeNotifier {
   });
 
   Future<GradesSummary?> loadResumen(String pesId, String level) => _wrap(
-    () => _repo
-        .notasResumen(pesId, level)
-        .then(
-          (v) =>
-              v ??
-              const GradesSummary(
-                average: 0,
-                approvedCredits: 0,
-                totalCredits: 0,
-                enrollmentCount: 0,
-              ),
-        ),
+    () => _call(_nexo.gradesSummary),
     () => resumen,
     (v) => resumen = v,
     cached: () async {
@@ -869,7 +789,7 @@ class AppStore extends ChangeNotifier {
     operationName: 'loadResumen:$pesId:$level',
   );
   Future<List<TermAverage>?> loadPromedios() => _wrap(
-    _repo.promediosResumen,
+    () => _call(_nexo.termAverages),
     () => promedios,
     (v) => promedios = v,
     cached: () => _cache.getPromedios(),
@@ -887,10 +807,7 @@ class AppStore extends ChangeNotifier {
     final key = '$year-$periodo';
     await _wrap<List<CourseGrade>>(
       () => Resolver<List<CourseGrade>>(
-        sources: [
-          ..._intra((r) => r.boletaLegacy(year, periodo)),
-          _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
-        ],
+        sources: [..._api((r) => r.legacyGrades(year, periodo))],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
         isEmpty: _emptyList,
@@ -916,7 +833,15 @@ class AppStore extends ChangeNotifier {
     final key = '$year-$periodo';
     await _wrap<List<ReportCardCourse>>(
       () => Resolver<List<ReportCardCourse>>(
-        sources: _intra((r) => r.boleta(year, periodo)),
+        sources: [
+          ..._api((r) async {
+            final card = await r.reportCard(year, periodo);
+            card.details.forEach(
+              (id, detail) => _detalle[id] = AsyncValue.data(detail),
+            );
+            return card.courses;
+          }),
+        ],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
         isEmpty: _emptyList,
@@ -953,7 +878,7 @@ class AppStore extends ChangeNotifier {
         _notify();
         try {
           final data = await Resolver<CourseGradeDetail>(
-            sources: _intra((r) => r.detalleCurso(year, periodo, id)),
+            sources: [..._api((r) => r.courseDetail(year, periodo, id))],
             merge: MergeStrategies.firstWins,
             stopAfterFirst: true,
           ).load();
@@ -967,17 +892,12 @@ class AppStore extends ChangeNotifier {
       });
 
   Future<List<RecordCourse>?> loadRecord() => _wrap<List<RecordCourse>>(
-    () {
-      final codest = profile.value?.id.isNotEmpty == true
-          ? profile.value!.id
-          : AppStorage.instance.credUser ?? '';
-      return Resolver<List<RecordCourse>>(
-        sources: _intra((r) => r.recordAcademico(codest)),
-        merge: MergeStrategies.firstWins,
-        stopAfterFirst: true,
-        isEmpty: _emptyList,
-      ).load();
-    },
+    () => Resolver<List<RecordCourse>>(
+      sources: _api((r) => r.curriculum()),
+      merge: MergeStrategies.firstWins,
+      stopAfterFirst: true,
+      isEmpty: _emptyList,
+    ).load(),
     () => record,
     (v) => record = v,
     operationName: 'loadRecord',
@@ -1023,7 +943,7 @@ class AppStore extends ChangeNotifier {
     final per = periodo ?? p?.number ?? 0;
     return _wrap(
       () => Resolver<EnrollmentCertificate>(
-        sources: _intra((r) => r.constanciaMatricula(a, per)),
+        sources: [..._api((r) => r.enrollment(year: a, number: per))],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
       ).load(),
@@ -1035,7 +955,7 @@ class AppStore extends ChangeNotifier {
 
   Future<PaymentSchedule?> loadPaymentSchedule() => _wrap(
     () => Resolver<PaymentSchedule>(
-      sources: _intra((r) => r.cronogramaPagos()),
+      sources: [..._api((r) => r.paymentSchedule())],
       merge: MergeStrategies.firstWins,
       stopAfterFirst: true,
     ).load(),
@@ -1044,16 +964,13 @@ class AppStore extends ChangeNotifier {
     operationName: 'loadPaymentSchedule',
   );
   Future<List<Publication>?> loadPublications() => _wrap(
-    _repo.publications,
+    () => _call(_nexo.publications),
     () => publications,
     (v) => publications = v,
     operationName: 'loadPublications',
   );
   Future<WifiCredential?> loadWifi() => _wrap<WifiCredential>(
-    () async {
-      final w = await _repo.wifiCredencial();
-      return w ?? const WifiCredential(username: '', password: '');
-    },
+    () => _call(_nexo.wifi),
     () => wifi,
     (v) => wifi = v,
     operationName: 'loadWifi',
@@ -1062,35 +979,15 @@ class AppStore extends ChangeNotifier {
     final p = periodoActivo;
     if (p == null) return null;
     return _wrap<GradesCount>(
-      () async {
-        final c = await _repo.gradesCount(p.year, p.number);
-        return c ??
-            const GradesCount(
-              approved: 0,
-              disapproved: 0,
-              pending: 0,
-              total: 0,
-            );
-      },
+      () => _call(_nexo.gradesCount),
       () => gradesCount,
       (v) => gradesCount = v,
       operationName: 'loadGradesCount:${p.year}:${p.number}',
     );
   }
 
-  TeacherRepository _teacherReady() {
-    final d = _teacher;
-    if (d == null) {
-      throw Exception('Teacher module is not available.');
-    }
-    return d;
-  }
-
   Future<TeacherInfo?> loadTeacherInfo() => _wrap<TeacherInfo>(
-    () async {
-      final v = await _teacherReady().infoDocente();
-      return v ?? const TeacherInfo(code: '', firstName: '', lastName: '');
-    },
+    () => _call(_nexo.teacher.me),
     () => teacherInfo,
     (v) => teacherInfo = v,
     cached: () => _cache.getDocenteInfo(),
@@ -1098,7 +995,12 @@ class AppStore extends ChangeNotifier {
     operationName: 'loadTeacherInfo',
   );
   Future<List<TeacherSubject>?> loadTeacherSubjects() => _wrap(
-    () => _teacherReady().asignaturas(),
+    () => Resolver<List<TeacherSubject>>(
+      sources: [..._api((r) => r.teacher.sections())],
+      merge: MergeStrategies.firstWins,
+      stopAfterFirst: true,
+      isEmpty: _emptyList,
+    ).load(),
     () => teacherSubjects,
     (v) => teacherSubjects = v,
     cached: () => _cache.getDocenteCursos(),
@@ -1110,14 +1012,13 @@ class AppStore extends ChangeNotifier {
   /// single-flight) en vez de volver a pedir `GetAsignaturaDocente`.
   Future<List<ScheduleClass>?> loadDocenteHorario() => _wrap(
     () async {
-      _teacherReady();
       final subjects = await loadTeacherSubjects();
       // Sin asignaturas (ni en caché): el horario cae a su propio caché.
       if (subjects == null) {
         throw teacherSubjects.error ??
             const NetworkException('Sin asignaturas del docente.');
       }
-      return TeacherRepository.scheduleFromSubjects(subjects);
+      return teacherScheduleFromSubjects(subjects);
     },
     () => teacherSchedule,
     (v) => teacherSchedule = v,
@@ -1128,10 +1029,13 @@ class AppStore extends ChangeNotifier {
   Future<List<TeacherPunch>?> loadTeacherMarcacion() => _wrap(
     () {
       final now = DateTime.now();
-      return _teacherReady().historialMarcacion(
-        inicio: now.subtract(const Duration(days: 30)),
-        fin: now,
-      );
+      final inicio = now.subtract(const Duration(days: 30));
+      return Resolver<List<TeacherPunch>>(
+        sources: [..._api((r) => r.teacher.punches(inicio, now))],
+        merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
+        isEmpty: _emptyList,
+      ).load();
     },
     () => teacherMarcacion,
     (v) => teacherMarcacion = v,
@@ -1141,47 +1045,44 @@ class AppStore extends ChangeNotifier {
   /// Clases programadas de las últimas dos semanas con su estado de marcación
   /// (entrada/salida). Pagina hasta agotar resultados (máx. 4 páginas).
   Future<List<TeacherClassCompliance>?> loadTeacherCumplimiento() => _wrap(
-    () async {
-      final repo = _teacherReady();
+    () {
       final now = DateTime.now();
       final inicio = now.subtract(const Duration(days: 14));
-      final all = <TeacherClassCompliance>[];
-      final seen = <String>{};
-      for (var page = 1; page <= 4; page++) {
-        final chunk = await repo.cumplimiento(
-          inicio: inicio,
-          fin: now,
-          pagina: page,
-        );
-        var added = 0;
-        for (final c in chunk) {
-          final key = '${c.date}|${c.startTime}|${c.subject}|${c.section}';
-          if (seen.add(key)) {
-            all.add(c);
-            added++;
-          }
-        }
-        // Página vacía o repetida (el backend ignora `pagina`): no hay más.
-        if (added == 0) break;
-      }
-      return all;
+      // La API ya recorre las páginas y quita repetidos.
+      return Resolver<List<TeacherClassCompliance>>(
+        sources: [..._api((r) => r.teacher.compliance(inicio, now))],
+        merge: MergeStrategies.firstWins,
+        stopAfterFirst: true,
+        isEmpty: _emptyList,
+      ).load();
     },
     () => teacherCumplimiento,
     (v) => teacherCumplimiento = v,
     operationName: 'loadTeacherCumplimiento',
   );
 
+  NexoTeacherRepository get _nexoTeacher => _nexo.teacher;
+
+  /// Unidades de notas desde la API; sus tipos de nota quedan memorizados.
+  Future<List<TeacherUnitCatalog>> _nexoGradeUnits(String sectionId) async {
+    final list = await _call(() => _nexoTeacher.gradeUnits(sectionId));
+    for (final u in list) {
+      _gradeTypes[u.unit.id] = Future.value(u.types);
+    }
+    return [for (final u in list) u.unit];
+  }
+
   /// Memoiza un catálogo por clave durante la sesión; si la carga falla se
   /// descarta para reintentar en la próxima llamada.
   Future<T> _memo<K, T>(
     Map<K, Future<T>> cache,
     K key,
-    Future<T> Function(TeacherRepository repo) load,
+    Future<T> Function() load,
   ) {
     final hit = cache[key];
     if (hit != null) return hit;
     final fut = _scope.run(() async {
-      final r = await load(_teacherReady());
+      final r = await load();
       _scope.check();
       return r;
     });
@@ -1197,16 +1098,27 @@ class AppStore extends ChangeNotifier {
 
   /// Unidades de la sección para registrar notas.
   Future<List<TeacherUnitCatalog>> docenteUnidades(TeacherSubject course) =>
-      _memo(_teacherUnits, course.id, (r) => r.unidadesNotas(course));
+      _memo(_teacherUnits, course.id, () => _nexoGradeUnits(course.id));
 
   /// Unidades de la sección para registrar asistencia.
   Future<List<TeacherUnitCatalog>> docenteUnidadesAsistencia(
     TeacherSubject course,
-  ) => _memo(_teacherAttUnits, course.id, (r) => r.unidadesAsistencia(course));
+  ) => _memo(
+    _teacherAttUnits,
+    course.id,
+    () async => (await _call(() => _nexoTeacher.attendance(course.id))).units,
+  );
 
-  /// Tipos de nota (EV/DE/PR…) de una unidad.
+  /// Tipos de nota (EV/DE/PR…) de una unidad. Llegan con las unidades de
+  /// la sección ([docenteUnidades]), que se cargan antes.
   Future<List<GradeType>> docenteTiposNota(int unidadId) =>
-      _memo(_gradeTypes, unidadId, (r) => r.tiposNota(unidadId));
+      _gradeTypes[unidadId] ??
+      Future.error(
+        const BadRequestException(
+          'Vuelve a abrir la sección para cargar sus tipos de nota.',
+          status: 409,
+        ),
+      );
 
   final Map<String, AsyncValue<AttendanceSheet>> _attendance = {};
 
@@ -1215,35 +1127,42 @@ class AppStore extends ChangeNotifier {
       _attendance[courseId] ?? const AsyncValue.idle();
 
   /// Carga (o recarga) la hoja de asistencia completa de la sección.
-  Future<void> loadDocenteAsistencia(TeacherSubject course) =>
-      _scope.run(() async {
-        _attendance[course.id] = AsyncValue.loading(
-          _attendance[course.id]?.value,
-        );
-        _notify();
-        try {
-          final r = await _teacherReady().asistencia(course);
-          if (!_scope.isCurrent) return;
-          _attendance[course.id] = AsyncValue.data(r);
-        } catch (e) {
-          if (!_scope.isCurrent) return;
-          _attendance[course.id] = AsyncValue.failure(
-            e,
-            _attendance[course.id]?.value,
-          );
-        }
-        _notify();
-      });
+  Future<void> loadDocenteAsistencia(
+    TeacherSubject course,
+  ) => _scope.run(() async {
+    _attendance[course.id] = AsyncValue.loading(_attendance[course.id]?.value);
+    _notify();
+    try {
+      final r = (await _call(() => _nexoTeacher.attendance(course.id))).sheet;
+      if (!_scope.isCurrent) return;
+      _attendance[course.id] = AsyncValue.data(r);
+    } catch (e) {
+      if (!_scope.isCurrent) return;
+      _attendance[course.id] = AsyncValue.failure(
+        e,
+        _attendance[course.id]?.value,
+      );
+    }
+    _notify();
+  });
 
-  /// Hora oficial de SIGMA (para la hora de la sesión de asistencia).
-  Future<DateTime> docenteHoraServidor() =>
-      _scope.run(() => _teacherReady().horaServidor());
+  /// Hora oficial de la universidad (para la hora de la sesión de
+  /// asistencia). Sin respuesta, la hora del dispositivo.
+  Future<DateTime> docenteHoraServidor() => _scope.run(() async {
+    try {
+      return await _call(_nexoTeacher.serverTime);
+    } on StaleSessionException {
+      rethrow;
+    } catch (_) {
+      return DateTime.now();
+    }
+  });
 
   Future<SaveResult> _save(
-    Future<String?> Function(TeacherRepository) op,
+    Future<String?> Function() op,
   ) => _scope.run(() async {
     try {
-      final msg = await op(_teacherReady());
+      final msg = await _call(op);
       if (!_scope.isCurrent) {
         return (error: const StaleSessionException().toString(), message: null);
       }
@@ -1264,8 +1183,12 @@ class AppStore extends ChangeNotifier {
     required List<({AttendanceStudent student, int state})> marks,
   }) async {
     final res = await _save(
-      (r) =>
-          r.registrarAsistencia(fecha: fecha, unidadId: unidadId, marks: marks),
+      // La hora de la sesión la pone el reloj de la universidad.
+      () => _nexoTeacher.takeAttendance(
+        course.id,
+        unidadId: unidadId,
+        marks: marks,
+      ),
     );
     await loadDocenteAsistencia(course);
     return res;
@@ -1276,25 +1199,20 @@ class AppStore extends ChangeNotifier {
     TeacherSubject course,
     List<({AttendanceMark mark, AttendanceStudent student, int state})> changes,
   ) async {
-    final res = await _save((r) => r.actualizarAsistencia(changes));
+    final res = await _save(
+      () => _nexoTeacher.correctAttendance(course.id, changes),
+    );
     await loadDocenteAsistencia(course);
     return res;
   }
 
-  /// Guarda notas: las nuevas van a `InsertarNotas` y las existentes a
-  /// `UpdateNota`, cada grupo en una sola petición. Luego recarga el roster.
+  /// Guarda notas (el backend decide insertar o actualizar por alumno) y
+  /// recarga el roster.
   Future<SaveResult> guardarNotas(
     TeacherSubject course,
     List<GradeWrite> rows,
   ) async {
-    final inserts = rows.where((r) => !r.isUpdate).toList();
-    final updates = rows.where((r) => r.isUpdate).toList();
-    final res = await _save((r) async {
-      String? msg;
-      if (inserts.isNotEmpty) msg = await r.insertarNotas(inserts);
-      if (updates.isNotEmpty) msg = await r.actualizarNotas(updates);
-      return msg;
-    });
+    final res = await _save(() => _nexoTeacher.saveGrades(course.id, rows));
     // Aunque una parte falle, la otra pudo guardarse: siempre recargar.
     await loadDocenteAlumnos(course.id, tipoCalif: course.tipoCalif);
     return res;
@@ -1305,14 +1223,19 @@ class AppStore extends ChangeNotifier {
     TeacherSubject course, {
     required String tipo,
   }) => _scope.run(() async {
-    final r = await _teacherReady().reporteAuxiliar(course, tipo: tipo);
+    final r = await _call(() => _nexoTeacher.report(course, format: tipo));
     _scope.check();
     return r;
   });
 
   /// Clases del día para marcación virtual.
   Future<List<VirtualClass>?> loadTeacherVirtual() => _wrap(
-    () => _teacherReady().clasesVirtuales(),
+    () => Resolver<List<VirtualClass>>(
+      sources: [..._api((r) => r.teacher.virtualClasses())],
+      merge: MergeStrategies.firstWins,
+      stopAfterFirst: true,
+      isEmpty: _emptyList,
+    ).load(),
     () => teacherVirtual,
     (v) => teacherVirtual = v,
     operationName: 'loadTeacherVirtual',
@@ -1320,7 +1243,7 @@ class AppStore extends ChangeNotifier {
 
   /// Marca entrada/salida virtual y recarga las clases del día.
   Future<SaveResult> marcarVirtual(String codigo) async {
-    final res = await _save((r) => r.marcarVirtual(codigo));
+    final res = await _save(() => _nexoTeacher.punch(codigo));
     await loadTeacherVirtual();
     return res;
   }
@@ -1335,10 +1258,7 @@ class AppStore extends ChangeNotifier {
     _notify();
     try {
       final v = await _errorHandler.withFallback<List<TeacherStudent>>(
-        remote: () => _teacherReady().estudiantesSeccion(
-          cleAuto: cleAuto,
-          tipoCalif: tipoCalif,
-        ),
+        remote: () => _call(() => _nexoTeacher.roster(cleAuto)),
         // Versiones anteriores guardaban `[]` (leían ListarEstudianteComple,
         // que siempre viene vacío). Un roster vacío no sirve de caché: así
         // se intenta la red aunque el arranque crea que no hay internet.
@@ -1547,17 +1467,14 @@ class AppStore extends ChangeNotifier {
     _notify();
   }
 
-  bool get tieneDocente => _teacher != null;
-  Future<void> changePassword(String actual, String nueva) =>
-      _scope.run(() async {
-        await _repo.changePassword(actual, nueva);
-        _scope.check();
-        final user = AppStorage.instance.credUser;
-        if (user != null) await AppStorage.instance.setCredentials(user, nueva);
-        _scope.check();
-        _intranet?.invalidate();
-        await AppStorage.instance.setIntranetSession(null, null);
-      });
+  /// Cambiar la contraseña de la universidad aún no pasa por la API de
+  /// Nexo: se hace en el portal de la UPLA.
+  Future<void> changePassword(String actual, String nueva) => Future.error(
+    const BadRequestException(
+      'Por ahora cambia tu contraseña desde el portal de la UPLA.',
+      status: 501,
+    ),
+  );
   Future<List<CourseGrade>?> loadNotas(int year, int periodo) =>
       _scope.run(() async {
         final key = '$year-$periodo';
@@ -1567,10 +1484,7 @@ class AppStore extends ChangeNotifier {
         try {
           final v = await _errorHandler.withFallback<List<CourseGrade>>(
             remote: () => Resolver<List<CourseGrade>>(
-              sources: [
-                ..._intra((r) => r.boletaLegacy(year, periodo)),
-                _sigma('sigma', () => _repo.notasPeriodo(year, periodo)),
-              ],
+              sources: [..._api((r) => r.legacyGrades(year, periodo))],
               merge: MergeStrategies.firstWins,
               stopAfterFirst: true,
               isEmpty: _emptyList,
@@ -1631,8 +1545,6 @@ class AppStore extends ChangeNotifier {
     _gradeTypes.clear();
     _attendance.clear();
     _teacherStudents.clear();
-    _intranet?.invalidate();
-    _idiomas?.invalidate();
     _notify();
     return cleared;
   }

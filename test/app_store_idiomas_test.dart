@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
+import 'package:nexo/data/local/cache_manager.dart';
 import 'package:nexo/core/error_handler.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
 import 'package:nexo/domain/idiomas_models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/core/secret_store.dart';
 
-class FakeSigmaRepository extends Fake implements SigmaRepository {}
+class FakeNexoRepository extends Fake implements NexoRepository {}
 
 class FakeCacheManager extends Fake implements CacheManager {}
 
@@ -27,7 +27,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       await AppStorage.init(secrets: MemorySecretStore());
       store = AppStore(
-        FakeSigmaRepository(),
+        FakeNexoRepository(),
         cache: FakeCacheManager(),
         errorHandler: FakeErrorHandler(),
         connectivity: FakeConnectivityService(),

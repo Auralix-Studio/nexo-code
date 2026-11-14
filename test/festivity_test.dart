@@ -4,10 +4,16 @@ import 'package:nexo/core/festivity/festivity.dart';
 void main() {
   group('nthWeekdayOfMonth', () {
     test('Día del Padre 2026 = 3er domingo de junio = 21 jun', () {
-      expect(nthWeekdayOfMonth(2026, 6, DateTime.sunday, 3), DateTime(2026, 6, 21));
+      expect(
+        nthWeekdayOfMonth(2026, 6, DateTime.sunday, 3),
+        DateTime(2026, 6, 21),
+      );
     });
     test('Día de la Madre 2026 = 2º domingo de mayo = 10 may', () {
-      expect(nthWeekdayOfMonth(2026, 5, DateTime.sunday, 2), DateTime(2026, 5, 10));
+      expect(
+        nthWeekdayOfMonth(2026, 5, DateTime.sunday, 2),
+        DateTime(2026, 5, 10),
+      );
     });
   });
 

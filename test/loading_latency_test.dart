@@ -8,9 +8,9 @@ import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 
@@ -27,7 +27,7 @@ class _Network extends Fake implements Connectivity {
   }
 }
 
-class _Repo extends Fake implements SigmaRepository {}
+class _Repo extends Fake implements NexoRepository {}
 
 class _Cache extends Fake implements CacheManager {}
 

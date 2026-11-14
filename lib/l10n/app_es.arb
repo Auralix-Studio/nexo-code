@@ -16,10 +16,6 @@
   "@tabPayments": {
     "description": "Etiqueta de la pestaña Pagos"
   },
-  "tabTeacher": "Docente",
-  "@tabTeacher": {
-    "description": "Etiqueta de la pestaña Docente"
-  },
   "tabCourses": "Cursos",
   "@tabCourses": {
     "description": "Etiqueta de la pestaña Cursos del docente"
@@ -28,7 +24,6 @@
   "@tabProfile": {
     "description": "Etiqueta de la pestaña Perfil"
   },
-  "titleHome": "Inicio",
   "titleSchedule": "Horario",
   "titleGrades": "Notas",
   "titlePayments": "Pagos",
@@ -42,13 +37,11 @@
   "titleChangePassword": "Cambiar contraseña",
   "titleNotifications": "Notificaciones",
   "subtitlePayments": "Cuotas, tasas e historial",
-  "subtitleTeacher": "Tus cursos y estudiantes",
   "language": "Idioma",
   "timeFormat": "Formato de hora",
   "hours24": "24 horas",
   "hours12": "12 horas",
   "actionLogout": "Cerrar sesión",
-  "actionAccept": "Aceptar",
   "actionCancel": "Cancelar",
   "actionRetry": "Reintentar",
   "actionClose": "Cerrar",
@@ -59,7 +52,6 @@
   },
   "detailSchedule": "Horario",
   "detailLocation": "Ubicación",
-  "detailRoom": "Aula",
   "detailPavilion": "Pabellón",
   "weekdayFull": "{day, select, mon{Lunes} tue{Martes} wed{Miércoles} thu{Jueves} fri{Viernes} sat{Sábado} sun{Domingo} other{—}}",
   "@weekdayFull": {
@@ -93,7 +85,6 @@
       }
     }
   },
-  "detailBuilding": "Local",
   "detailCampus": "Sede",
   "detailTeacher": "Docente",
   "detailSessions": "Sesiones",
@@ -255,7 +246,6 @@
   "scheduleToggleWeek": "Semana",
   "scheduleToggleList": "Lista",
   "scheduleNoClassesScheduled": "Sin clases programadas",
-  "gradesTitle": "Notas",
   "gradesSubtitleNoPeriod": "Boleta de notas",
   "gradesSubtitleUnits": "Por unidades · {period}",
   "@gradesSubtitleUnits": {
@@ -347,29 +337,10 @@
   "wifiPasswordCopied": "Contraseña copiada",
   "actionSave": "Guardar",
   "actionCodeCopied": "Código copiado",
-  "profileSettingsSubtitle": "Apariencia, idioma, hora y notificaciones",
-  "profileChangePasswordSubtitle": "Para tu cuenta institucional UPLA",
-  "profileAboutSubtitle": "Versión {version}",
-  "@profileAboutSubtitle": {
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
-  },
   "logoutConfirmTitle": "Cerrar sesión",
   "logoutConfirmBody": "¿Quieres salir de tu cuenta?",
-  "docenteChangeDate": "Cambiar",
   "docenteSaveAttendance": "Guardar asistencia",
   "docenteAttendanceSaved": "Asistencia guardada",
-  "docenteAttendanceError": "Error: {error}",
-  "@docenteAttendanceError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "docenteGradeLabel": "Nota (0 - 20)",
   "docenteGradeEnter": "Ingresa una nota",
   "docenteGradeInvalidNumber": "Número inválido",
@@ -437,36 +408,7 @@
   "docenteMetricCursos": "Cursos",
   "docenteMetricAlumnos": "Alumnos",
   "docenteMetricPeriodo": "Periodo",
-  "docenteNoClassesToday": "No dictas hoy",
-  "docenteToday": "Hoy",
-  "docenteClassCount": "{count, plural, =1{{count} clase} other{{count} clases}}",
-  "@docenteClassCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteTypeTeoria": "TEO",
-  "docenteTypePractica": "PRÁC",
   "docenteLoadingClasses": "Cargando clases...",
-  "docenteSessionsWeeklyCount": "Mis clases · {count, plural, =1{1 sesión esta semana} other{{count} sesiones esta semana}}",
-  "@docenteSessionsWeeklyCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteNoClassesRegistered": "No tienes clases registradas",
-  "docenteCourseCount": "{count, plural, =1{{count} curso} other{{count} cursos}}",
-  "@docenteCourseCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "docenteCoursesCountPlural": "{count, plural, =1{{count} asignatura} other{{count} asignaturas}}",
   "@docenteCoursesCountPlural": {
     "placeholders": {
@@ -488,18 +430,6 @@
   "docenteTabAlumnos": "Alumnos",
   "docenteTabAsistencia": "Asistencia",
   "docenteTabNotas": "Notas",
-  "docenteNoCode": "Sin código",
-  "docenteSectionPeriod": "Sección {seccion} · {periodo}",
-  "@docenteSectionPeriod": {
-    "placeholders": {
-      "seccion": {
-        "type": "String"
-      },
-      "periodo": {
-        "type": "String"
-      }
-    }
-  },
   "docenteNoAlumnosRegistered": "Sin alumnos registrados",
   "docenteAsisPercent": "{percent}% asist.",
   "@docenteAsisPercent": {
@@ -509,23 +439,7 @@
       }
     }
   },
-  "docenteAttendancePresentShort": "Pres.",
-  "docenteAttendanceTardanzaShort": "Tard.",
-  "docenteAttendanceFaltaShort": "Falta",
   "docenteNoAlumnosInCourse": "Sin alumnos en este curso",
-  "docenteAprobadosCount": "{aprobados} de {total} aprobados",
-  "@docenteAprobadosCount": {
-    "placeholders": {
-      "aprobados": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteTapToEdit": "Toca para editar →",
-  "docentePromedioParcial": "PROMEDIO PARCIAL",
   "docenteCoursePercentGraded": "{percent}% del curso\nya calificado",
   "@docenteCoursePercentGraded": {
     "placeholders": {
@@ -537,32 +451,15 @@
   "docenteEvalPending": "PENDIENTE",
   "docenteNoAttendanceRecords": "Sin registros de asistencia.",
   "docenteAttendanceLabel": "ASISTENCIA",
-  "docenteSessionsRegisteredCount": "{presentes} de {total}\nsesiones registradas",
-  "@docenteSessionsRegisteredCount": {
-    "placeholders": {
-      "presentes": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteAttendancePresent": "Presente",
-  "docenteAttendanceTardanza": "Tardanza",
-  "docenteAttendanceFalta": "Falta",
-  "docenteAttendanceJustificada": "Justificada",
   "docenteInfoTitle": "Información del docente",
   "docenteInfoFieldNombres": "Nombres",
   "docenteInfoFieldApellidos": "Apellidos",
   "docenteInfoFieldFacultad": "Facultad",
   "docenteInfoFieldEspecialidad": "Especialidad",
-  "docenteSupportSubtitle": "Contactar por WhatsApp o Correo",
   "connectivityStatusTitle": "Estado de Conexión",
   "connectivityDiagnosticsSubtitle": "Diagnóstico en tiempo real",
   "connectivityInternet": "Conexión a Internet",
-  "connectivitySigma": "Servidor SIGMA",
-  "connectivityIntranet": "Servidor INTRANET",
+  "connectivityNexo": "Servidor de Nexo",
   "connectivityBackupNote": "Los datos locales de respaldo se usarán automáticamente cuando no haya conexión con los servidores.",
   "connectivityOnline": "En línea",
   "connectivityOffline": "Caído",
@@ -572,7 +469,6 @@
   "homeVerifyConnectivity": "Verificar Estado de Conexión",
   "homeMetricPromedio": "Promedio",
   "homeMetricPromedioCiclo": "Prom. ciclo",
-  "homeMetricPromedioAcumulado": "Prom. acum.",
   "homeMetricCreditos": "Créditos",
   "homeMetricClasesHoy": "Clases hoy",
   "homeMetricPorPagar": "Por pagar",
@@ -583,7 +479,6 @@
   "gradesEvidenciaConocimiento": "Evidencia de conocimiento",
   "gradesEvidenciaDesempeno": "Evidencia de desempeño",
   "gradesEvidenciaProducto": "Evidencia de producto",
-  "gradesPromedioAcumulado": "Promedio acumulado",
   "gradesNoCreditsData": "Sin datos de créditos",
   "gradesNoHistoryYet": "Sin historial aún",
   "gradesEvolutionByPeriod": "Evolución por periodo",
@@ -751,7 +646,6 @@
   "setupProgressCopied": "Copiando archivos de programa...",
   "setupProgressShortcuts": "Creando accesos directos...",
   "setupProgressRegister": "Registrando en Windows...",
-  "setupProgressDone": "¡Instalación completada exitosamente!",
   "setupSuccessTitle": "¡Instalación Exitosa!",
   "setupSuccessDesc": "Nexo UPLA ha sido instalado y registrado correctamente.",
   "setupBtnStart": "Iniciar Aplicación",
@@ -826,19 +720,6 @@
     }
   },
   "updDismiss": "Descartar",
-  "assignmentNoDate": "Sin fecha de entrega",
-  "assignmentOverdue": "Venció",
-  "assignmentDueToday": "Vence hoy",
-  "assignmentDueTomorrow": "Vence mañana",
-  "assignmentDueInDays": "En {days} días",
-  "@assignmentDueInDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "assignmentEmpty": "No tienes asignaciones pendientes.",
   "widgetNoPendingDebts": "Sin deudas pendientes",
   "widgetUpToDate": "✓ Al día",
   "widgetOverdue": "Vencida hace {d} d",
@@ -956,8 +837,6 @@
       }
     }
   },
-  "widgetAssignmentsTitle": "Tareas",
-  "widgetAssignmentsSubtitle": "Próximas a vencer",
   "whatsappBannerTitle": "Únete al canal de Nexo",
   "whatsappBannerDesc": "Sigue el canal de WhatsApp para enterarte de novedades, mejoras y avisos importantes sobre Nexo.",
   "whatsappBannerFollow": "Seguir canal",
@@ -1021,22 +900,7 @@
       }
     }
   },
-  "dataSaved": "Datos guardados",
-  "dataServer": "Consultado al servidor",
-  "dataRefreshing": "Actualizando…",
-  "dataRefreshFailed": "No se pudo actualizar",
-  "dataUnknownDate": "Fecha de actualización desconocida",
-  "dataUpdatedAt": "Última actualización: {date}",
-  "@dataUpdatedAt": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "docenteSearchStudent": "Buscar alumno…",
-  "docenteSearchNoResults": "Sin resultados",
-  "docenteAttendanceComingSoon": "El registro de asistencia desde la app estará disponible pronto. Por ahora puedes consultar lo registrado en SIGMA.",
   "tabMarcacion": "Marcación",
   "titleMarcacion": "Mi marcación",
   "marcacionSubtitlePlural": "{count,plural, =0{Sin marcas (30 días)} =1{1 marca · últimos 30 días} other{{count} marcas · últimos 30 días}}",
@@ -1058,14 +922,11 @@
     }
   },
   "docenteTabReporte": "Reporte",
-  "docenteReportLoadError": "No se pudo cargar el reporte de asistencia.",
   "docenteReportEmpty": "Aún no hay asistencias registradas en esta sección.",
   "docenteReportAll": "Todos",
   "docenteReportAtRisk": "En riesgo",
-  "docenteReportNoRisk": "Ningún alumno en riesgo por faltas.",
   "docenteReportSessions": "Sesiones",
   "docenteReportAverage": "Asistencia prom.",
-  "docenteReportRiskHint": "En riesgo: 30% o más de faltas injustificadas sobre las sesiones registradas.",
   "docenteReportCounts": "{presentes} P · {faltas} F · {justificadas} J",
   "@docenteReportCounts": {
     "placeholders": {
@@ -1639,5 +1500,191 @@
   "uninstallSuccessTitle": "¡Desinstalación exitosa!",
   "uninstallSuccessBody": "Nexo UPLA ha sido removido. Limpiando directorios...",
   "uninstallErrorTitle": "Error al desinstalar",
-  "gradesPromedioCiclo": "Promedio del ciclo"
+  "gradesPromedioCiclo": "Promedio del ciclo",
+  "tabDirectory": "Estudiantes",
+  "directoryTitle": "Estudiantes",
+  "directorySubtitle": "Directorio institucional",
+  "directoryCount": "{count, plural, =0{Sin estudiantes} =1{1 estudiante} other{{count} estudiantes}}",
+  "@directoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directorySearchHint": "Buscar por nombre o código",
+  "directoryFilterSchool": "Escuela",
+  "directoryAllSchools": "Todas las escuelas",
+  "directoryCycle": "Ciclo {n}",
+  "@directoryCycle": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryNoResults": "Sin resultados",
+  "directoryNoResultsHint": "Prueba con otro nombre, código o filtro.",
+  "directoryEndOfList": "{count, plural, =1{1 estudiante en total} other{{count} estudiantes en total}}",
+  "@directoryEndOfList": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryManageAccess": "Gestionar acceso",
+  "directoryDeniedTitle": "Sin acceso al directorio",
+  "directoryDeniedHint": "Tu cuenta no está autorizada. Pídeselo a un administrador del sistema.",
+  "directoryUnavailableTitle": "No se pudo conectar",
+  "directoryUnavailableHint": "Revisa tu conexión e inténtalo de nuevo.",
+  "directoryRecordTitle": "Ficha del estudiante",
+  "directoryTabGrades": "Notas",
+  "directoryTabSchedule": "Horario",
+  "directoryTabPayments": "Pagos",
+  "directoryEmptyModule": "Sin datos que mostrar.",
+  "directoryRecordMissing": "Ficha no encontrada",
+  "directoryRecordMissingHint": "Ese código ya no está en el directorio.",
+  "directoryStatAverage": "Promedio",
+  "directoryStatCredits": "Créditos aprobados",
+  "directoryPersonalData": "Datos del estudiante",
+  "directoryFieldCode": "Código",
+  "directoryFieldEmail": "Correo",
+  "directoryFieldPhone": "Teléfono",
+  "directoryFieldFaculty": "Facultad",
+  "directoryFieldSchool": "Escuela",
+  "directoryFieldPlan": "Plan",
+  "directoryFieldEntry": "Ingreso",
+  "directoryProgressByTerm": "Promedio por ciclo",
+  "directoryCourseCredits": "{value} créditos",
+  "@directoryCourseCredits": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryAttendance": "Asistencia {value}%",
+  "@directoryAttendance": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryAccessExplainer": "El acceso al directorio se concede por código. Los administradores del sistema se configuran en el servidor y no se pueden cambiar desde aquí.",
+  "directoryAdmins": "Administradores del sistema",
+  "directoryAdminsHint": "Pueden entrar siempre y repartir el acceso.",
+  "directoryGrantsActive": "{count, plural, =0{Con acceso} =1{Con acceso · 1} other{Con acceso · {count}}}",
+  "@directoryGrantsActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryGrantsRevoked": "Acceso revocado",
+  "directoryNoGrants": "Todavía no autorizaste a nadie.",
+  "directoryGrantAdd": "Dar acceso",
+  "directoryGrantCodeLabel": "Código o DNI",
+  "directoryGrantCodeHelp": "Tal como aparece en la Intranet.",
+  "directoryGrantConfirm": "Conceder",
+  "directoryGrantFailed": "No se pudo cambiar el acceso.",
+  "directoryGrantedBy": "Concedido por {code}",
+  "@directoryGrantedBy": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryGrant": "Dar acceso",
+  "directoryRevoke": "Revocar",
+  "directoryAdminOnlyTitle": "Solo administradores",
+  "directoryAdminOnlyHint": "Repartir el acceso está reservado a los administradores del sistema.",
+  "termsItemDirectoryTitle": "El apartado Estudiantes",
+  "termsItemDirectoryBody": "Es un directorio al que solo entran las cuentas autorizadas, y aparece en la app únicamente si la tuya lo está. Para comprobarlo, tu usuario y tu contraseña viajan una sola vez al servidor de Nexo, que los verifica contra SIGMA y no los guarda; a partir de ahí se usa una sesión temporal. Cada vez que abres la ficha de un estudiante queda registrado tu código, la fecha y a quién consultaste.",
+  "termsItemThirdPartyTitle": "Datos de otras personas",
+  "termsItemThirdPartyBody": "Si tienes acceso al directorio estarás viendo información de terceros. Úsala solo para aquello que te fue autorizado: no la descargues, copies, compartas ni publiques. La Ley 29733 de Protección de Datos Personales también te alcanza a ti, y el acceso puede revocarse en cualquier momento.",
+  "termsItemDemoDataTitle": "Datos de demostración",
+  "termsItemDemoDataBody": "Mientras no exista autorización institucional para consultar el directorio real, el apartado Estudiantes muestra datos generados para pruebas: personas que no existen. Cuando se sustituyan por datos reales actualizaremos estos términos y te pediremos aceptarlos otra vez.",
+  "directoryClearFilters": "Limpiar filtros",
+  "directoryFieldCycle": "Ciclo",
+  "directoryCumulativeAverage": "Promedio acumulado",
+  "directoryApprovedCourses": "Cursos aprobados",
+  "directoryCoursesCount": "{count, plural, =1{1 curso} other{{count} cursos}}",
+  "@directoryCoursesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryOverdueCount": "{count, plural, =1{1 vencida} other{{count} vencidas}}",
+  "@directoryOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guardianEntry": "Soy padre, madre o apoderado",
+  "guardianTitle": "Acceso de apoderado",
+  "guardianHeadline": "Consulta la ficha de tu hijo",
+  "guardianIntro": "Ingresa con tu DNI y el PIN que te entregaron. No necesitas cuenta de la universidad.",
+  "guardianDniLabel": "DNI",
+  "guardianDniInvalid": "Ingresa los 8 dígitos de tu DNI",
+  "guardianPinLabel": "PIN",
+  "guardianPinHelp": "Los 6 dígitos que te dio la universidad",
+  "guardianPinInvalid": "El PIN tiene 6 dígitos",
+  "guardianEnter": "Entrar",
+  "guardianBadCredentials": "DNI o PIN incorrectos. Revísalos e inténtalo de nuevo.",
+  "guardianLocked": "Demasiados intentos fallidos. Espera unos minutos antes de volver a probar.",
+  "guardianUnavailable": "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.",
+  "guardianAuditNotice": "Cada consulta queda registrada.",
+  "guardianPickTitle": "¿A quién quieres ver?",
+  "guardianNoStudents": "Todavía no hay ningún estudiante vinculado a tu DNI.",
+  "guardianSignOut": "Salir",
+  "integTitle": "Conexiones",
+  "integSubtitle": "Comparte tu horario con tu calendario o con otras apps. Tú decides y puedes quitarlo cuando quieras.",
+  "integShareTitle": "Compartir mi horario",
+  "integShareBody": "Se comparte tu código, nombre, carrera, facultad y tu horario semanal. Nunca tus notas ni tus pagos.",
+  "integShareOn": "Compartiendo tu horario",
+  "integShareOff": "No estás compartiendo nada",
+  "integShareStart": "Compartir",
+  "integShareSync": "Actualizar horario",
+  "integShareStop": "Dejar de compartir",
+  "integShareStopConfirm": "Se borrarán tus datos compartidos, el enlace del calendario y el acceso de todas las apps.",
+  "integCalendarTitle": "Calendario",
+  "integCalendarBody": "Suscribe tu horario en Google Calendar, Outlook o el calendario de tu teléfono. Se actualiza solo.",
+  "integCalendarCreate": "Crear enlace",
+  "integCalendarRotate": "Generar nuevo enlace",
+  "integCalendarActive": "Enlace activo. Por seguridad solo se muestra al crearlo.",
+  "integCalendarGoogle": "Añadir a Google Calendar",
+  "integCalendarOpen": "Abrir en mi calendario",
+  "integCalendarCopy": "Copiar enlace",
+  "integCalendarDisable": "Desactivar",
+  "integCalendarNeedsShare": "Primero comparte tu horario.",
+  "integAppsTitle": "Apps conectadas",
+  "integAppsEmpty": "Ninguna app tiene acceso.",
+  "integAppsConnect": "Conectar una app",
+  "integAppsRevoke": "Quitar acceso",
+  "integConnectHint": "Escribe el código que te muestra la otra app",
+  "integConnectCode": "Código",
+  "integConnectContinue": "Continuar",
+  "integConnectAsks": "{app} quiere ver:",
+  "integScopeProfile": "Tu perfil: código, nombre, carrera y facultad",
+  "integScopeSchedule": "Tu horario semanal",
+  "integConnectNever": "No podrá ver tus notas, pagos ni tu contraseña.",
+  "integConnectApprove": "Permitir",
+  "integConnectDeny": "No permitir",
+  "integConnectNotFound": "El código no existe o ya venció.",
+  "integError": "No se pudo completar. Intenta de nuevo.",
+  "@integConnectAsks": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  }
 }

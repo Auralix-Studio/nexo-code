@@ -6,7 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/data/notification_service.dart';
+import 'package:nexo/data/services/notification_service.dart';
 import 'package:nexo/domain/notification_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:nexo/domain/saved_account.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';

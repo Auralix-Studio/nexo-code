@@ -1,9 +1,11 @@
+import 'package:nexo/features/integrations/integrations_screen.dart';
+import 'package:nexo/data/services/directory_service.dart';
 import 'package:flutter/material.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/domain/idiomas_models.dart';
@@ -30,10 +32,14 @@ class ProfileScreen extends StatelessWidget {
     required this.store,
     required this.session,
     required this.theme,
+    this.directory,
   });
   final AppStore store;
   final SessionService session;
   final ThemeController theme;
+
+  /// Sesión con el backend; habilita la entrada a Conexiones.
+  final DirectoryService? directory;
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -97,6 +103,7 @@ class ProfileScreen extends StatelessWidget {
                               showAccountSwitcher(context, session),
                           store: store,
                           theme: theme,
+                          directory: directory,
                         ),
                       ),
                     ],
@@ -612,11 +619,13 @@ class _ActionsCard extends StatelessWidget {
   final VoidCallback onSwitchAccount;
   final AppStore store;
   final ThemeController theme;
+  final DirectoryService? directory;
   const _ActionsCard({
     required this.onLogout,
     required this.onSwitchAccount,
     required this.store,
     required this.theme,
+    this.directory,
   });
   @override
   Widget build(BuildContext context) {
@@ -650,6 +659,34 @@ class _ActionsCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, indent: 70),
+          if (directory != null) ...[
+            ListTile(
+              leading: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: NexoTheme.info.withValues(alpha: AppOpacity.tint),
+                  borderRadius: AppRadii.rSm,
+                ),
+                child: const Icon(
+                  Icons.hub_rounded,
+                  color: NexoTheme.info,
+                  size: AppIcon.lg,
+                ),
+              ),
+              title: Text(
+                l.integTitle,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              trailing: Icon(Icons.chevron_right, color: NexoTheme.textMuted),
+              onTap: () => IntegrationsScreen.open(
+                context,
+                store: store,
+                directory: directory!,
+              ),
+            ),
+            const Divider(height: 1, indent: 70),
+          ],
           ListTile(
             leading: Container(
               width: 38,

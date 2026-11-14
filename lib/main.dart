@@ -15,28 +15,26 @@ import 'package:nexo/core/win_setup_service.dart';
 import 'package:nexo/core/windows_startup.dart';
 import 'package:nexo/features/settings/setup_view.dart';
 import 'package:nexo/features/settings/install_dialog.dart';
-import 'package:nexo/widgets/custom_title_bar.dart';
+import 'package:nexo/shared/widgets/custom_title_bar.dart';
 import 'package:nexo/app/shell.dart';
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/data/api_client.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/home_widget_service.dart';
-import 'package:nexo/data/notification_service.dart';
-import 'package:nexo/data/session.dart';
-import 'package:nexo/data/sigma_repository.dart';
+import 'package:nexo/data/services/directory_service.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/home_widget_service.dart';
+import 'package:nexo/data/services/notification_service.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:nexo/core/shortcuts.dart';
-import 'package:nexo/data/teacher_repository.dart';
-import 'package:nexo/data/intranet_client.dart';
-import 'package:nexo/data/intranet_repository.dart';
-import 'package:nexo/domain/idiomas_repository.dart';
-import 'package:nexo/data/secure_http.dart';
-import 'package:nexo/data/update_service.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/data/remote/backend_client.dart';
+import 'package:nexo/core/session_scope.dart';
+import 'package:nexo/data/remote/secure_http.dart';
+import 'package:nexo/data/services/update_service.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/features/auth/login_screen.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
@@ -121,29 +119,23 @@ Future<void> main(List<String> args) async {
   // del sistema: es peor arrancar sin app que arrancar sin ese extra.
   final secureHttp =
       await _startupValue('http', createSecureClient) ?? http.Client();
-  final api = ApiClient(transport: secureHttp);
-  final repo = SigmaRepository(api);
-  final session = SessionService(apiClient: api, repo: repo);
+  // La app solo habla con la API de Nexo: un cliente, una sesión.
+  final scope = SessionScope();
+  final backend = BackendClient(transport: secureHttp, scope: scope);
+  final session = SessionService(client: backend);
   final connectivity = ConnectivityService(httpClient: secureHttp);
-  final cache = CacheManager(scope: api.scope);
+  final cache = CacheManager(scope: scope);
   final errorHandler = ErrorHandler(
     connectivity: connectivity,
     session: session,
   );
-  final intranet = IntranetRepository(
-    IntranetClient(transport: secureHttp, scope: api.scope),
-  );
-  final teacher = TeacherRepository(api);
-  final idiomas = IdiomasRepository(client: secureHttp, scope: api.scope);
+  final directory = DirectoryService(client: backend);
   final store = AppStore(
-    repo,
+    NexoRepository(directory),
     cache: cache,
     errorHandler: errorHandler,
     connectivity: connectivity,
-    intranet: intranet,
-    teacher: teacher,
-    idiomas: idiomas,
-    scope: api.scope,
+    scope: scope,
   );
   final theme = ThemeController()..load();
   // Sin esperar: el splash usa su propia fuente y, cuando esta termina de
@@ -155,6 +147,7 @@ Future<void> main(List<String> args) async {
       NotificationService.instance.showGradeChanged(course, grade);
   session.onSessionEnded = () async {
     final cleared = store.clear(invalidateSession: false);
+    directory.reset();
     await Future.wait<void>([
       cleared,
       widgets.sync(store),
@@ -186,6 +179,7 @@ Future<void> main(List<String> args) async {
       store: store,
       theme: theme,
       connectivity: connectivity,
+      directory: directory,
       isSetup: isSetup,
       isUninstall: isUninstall,
     ),
@@ -300,6 +294,7 @@ class NexoApp extends StatelessWidget {
     required this.store,
     required this.theme,
     required this.connectivity,
+    required this.directory,
     required this.isSetup,
     required this.isUninstall,
   });
@@ -307,6 +302,7 @@ class NexoApp extends StatelessWidget {
   final AppStore store;
   final ThemeController theme;
   final ConnectivityService connectivity;
+  final DirectoryService directory;
   final bool isSetup;
   final bool isUninstall;
   @override
@@ -345,6 +341,7 @@ class NexoApp extends StatelessWidget {
             session: session,
             store: store,
             theme: theme,
+            directory: directory,
             connectivity: connectivity,
             isSetup: isSetup,
             isUninstall: isUninstall,
@@ -361,6 +358,7 @@ class _Gate extends StatefulWidget {
     required this.store,
     required this.theme,
     required this.connectivity,
+    required this.directory,
     required this.isSetup,
     required this.isUninstall,
   });
@@ -368,6 +366,7 @@ class _Gate extends StatefulWidget {
   final AppStore store;
   final ThemeController theme;
   final ConnectivityService connectivity;
+  final DirectoryService directory;
   final bool isSetup;
   final bool isUninstall;
   @override
@@ -504,6 +503,7 @@ class _GateState extends State<_Gate> {
                 session: widget.session,
                 theme: widget.theme,
                 connectivity: widget.connectivity,
+                directory: widget.directory,
               ),
               SessionStatus.unauthenticated => LoginScreen(
                 session: widget.session,

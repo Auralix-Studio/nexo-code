@@ -4,10 +4,8 @@
   "tabSchedule": "Pacha",
   "tabGrades": "Yupana",
   "tabPayments": "Qullqi",
-  "tabTeacher": "Yachachiq",
   "tabCourses": "Yachay",
   "tabProfile": "Runa",
-  "titleHome": "Wasi",
   "titleSchedule": "Pacha",
   "titleGrades": "Yupana",
   "titlePayments": "Qullqi",
@@ -15,7 +13,6 @@
   "language": "Simi",
   "timeFormat": "Pachap rikuchinan",
   "detailTeacher": "Yachachiq",
-  "detailRoom": "Wasi",
   "detailPavilion": "Pabellón",
   "weekdayFull": "{day, select, mon{Killachaw} tue{Atipachaw} wed{Quyllurchaw} thu{Chaskachaw} fri{Illapachaw} sat{Kuychichaw} sun{Intichaw} other{—}}",
   "weekdayShort": "{day, select, mon{Kil} tue{Ati} wed{Quy} thu{Cha} fri{Illa} sat{Kuy} sun{Inti} other{—}}",
@@ -25,7 +22,6 @@
   "detailSection": "Sección",
   "detailLevel": "Nivel",
   "detailToday": "Kunan",
-  "actionAccept": "Arí",
   "actionCancel": "Mana",
   "actionClose": "Wichqay",
   "settingsTitle": "Configuración",
@@ -77,7 +73,6 @@
   "scheduleToggleWeek": "Semana",
   "scheduleToggleList": "Lista",
   "scheduleNoClassesScheduled": "Sin clases programadas",
-  "gradesTitle": "Notas",
   "gradesSubtitleNoPeriod": "Boleta de notas",
   "gradesSubtitleUnits": "Por unidades · {period}",
   "@gradesSubtitleUnits": {
@@ -169,29 +164,10 @@
   "wifiPasswordCopied": "Contraseña copiada",
   "actionSave": "Guardar",
   "actionCodeCopied": "Código copiado",
-  "profileSettingsSubtitle": "Apariencia, idioma, hora y notificaciones",
-  "profileChangePasswordSubtitle": "Para tu cuenta institucional UPLA",
-  "profileAboutSubtitle": "Versión {version}",
-  "@profileAboutSubtitle": {
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
-  },
   "logoutConfirmTitle": "Cerrar sesión",
   "logoutConfirmBody": "¿Quieres salir de tu cuenta?",
-  "docenteChangeDate": "Cambiar",
   "docenteSaveAttendance": "Guardar asistencia",
   "docenteAttendanceSaved": "Asistencia guardada",
-  "docenteAttendanceError": "Error: {error}",
-  "@docenteAttendanceError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "docenteGradeLabel": "Nota (0 - 20)",
   "docenteGradeEnter": "Ingresa una nota",
   "docenteGradeInvalidNumber": "Número inválido",
@@ -259,36 +235,7 @@
   "docenteMetricCursos": "Yachaykuna",
   "docenteMetricAlumnos": "Yachakuqkuna",
   "docenteMetricPeriodo": "Periodo",
-  "docenteNoClassesToday": "Mana kunan yachachinkichu",
-  "docenteToday": "Kunan",
-  "docenteClassCount": "{count, plural, =1{{count} clase} other{{count} clases}}",
-  "@docenteClassCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteTypeTeoria": "TEO",
-  "docenteTypePractica": "PRÁC",
   "docenteLoadingClasses": "Clasesta qapichkan...",
-  "docenteSessionsWeeklyCount": "Yachayniykuna · {count, plural, =1{1 sesión esta semana} other{{count} sesiones esta semana}}",
-  "@docenteSessionsWeeklyCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteNoClassesRegistered": "Mana yachachinayki qillqasqachu kachkan",
-  "docenteCourseCount": "{count, plural, =1{{count} yachay} other{{count} yachaykuna}}",
-  "@docenteCourseCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "docenteCoursesCountPlural": "{count, plural, =1{{count} asignatura} other{{count} asignaturas}}",
   "@docenteCoursesCountPlural": {
     "placeholders": {
@@ -310,18 +257,6 @@
   "docenteTabAlumnos": "Yachakuqkuna",
   "docenteTabAsistencia": "Asistencia",
   "docenteTabNotas": "Yupana",
-  "docenteNoCode": "Mana yupana",
-  "docenteSectionPeriod": "Sección {seccion} · {periodo}",
-  "@docenteSectionPeriod": {
-    "placeholders": {
-      "seccion": {
-        "type": "String"
-      },
-      "periodo": {
-        "type": "String"
-      }
-    }
-  },
   "docenteNoAlumnosRegistered": "Mana yachakuqkuna qillqasqachu kachkan",
   "docenteAsisPercent": "{percent}% asist.",
   "@docenteAsisPercent": {
@@ -331,23 +266,7 @@
       }
     }
   },
-  "docenteAttendancePresentShort": "Pres.",
-  "docenteAttendanceTardanzaShort": "Tard.",
-  "docenteAttendanceFaltaShort": "Falta",
   "docenteNoAlumnosInCourse": "Mana yachakuqkuna kay yachaypi",
-  "docenteAprobadosCount": "{aprobados} de {total} aprobados",
-  "@docenteAprobadosCount": {
-    "placeholders": {
-      "aprobados": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteTapToEdit": "Llamiy llankapashanapaq →",
-  "docentePromedioParcial": "PROMEDIO PARCIAL",
   "docenteCoursePercentGraded": "{percent}% del curso\\ya calificado",
   "@docenteCoursePercentGraded": {
     "placeholders": {
@@ -359,32 +278,15 @@
   "docenteEvalPending": "PENDIENTE",
   "docenteNoAttendanceRecords": "Mana asistencia qillqasqa kachkanchu.",
   "docenteAttendanceLabel": "ASISTENCIA",
-  "docenteSessionsRegisteredCount": "{presentes} de {total}\nsesiones registradas",
-  "@docenteSessionsRegisteredCount": {
-    "placeholders": {
-      "presentes": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteAttendancePresent": "Presente",
-  "docenteAttendanceTardanza": "Tardanza",
-  "docenteAttendanceFalta": "Falta",
-  "docenteAttendanceJustificada": "Justificada",
   "docenteInfoTitle": "Yachachiq willakuy",
   "docenteInfoFieldNombres": "Sutikuna",
   "docenteInfoFieldApellidos": "Apellidokuna",
   "docenteInfoFieldFacultad": "Facultad",
   "docenteInfoFieldEspecialidad": "Especialidad",
-  "docenteSupportSubtitle": "Contactar por WhatsApp o Correo",
   "connectivityStatusTitle": "Estado de Conexión",
   "connectivityDiagnosticsSubtitle": "Diagnóstico en tiempo real",
   "connectivityInternet": "Conexión a Internet",
-  "connectivitySigma": "Servidor SIGMA",
-  "connectivityIntranet": "Servidor INTRANET",
+  "connectivityNexo": "Servidor de Nexo",
   "connectivityBackupNote": "Los datos locales de respaldo se usarán automáticamente cuando no haya conexión con los servidores.",
   "connectivityOnline": "En línea",
   "connectivityOffline": "Caído",
@@ -394,7 +296,6 @@
   "homeVerifyConnectivity": "Conexión allin kayninta rikukuy",
   "homeMetricPromedio": "Promedio",
   "homeMetricPromedioCiclo": "Promedio del ciclo",
-  "homeMetricPromedioAcumulado": "Promedio acumulado",
   "homeMetricCreditos": "Créditos",
   "homeMetricClasesHoy": "Kunan yachaykuna",
   "homeMetricPorPagar": "Manu",
@@ -405,7 +306,6 @@
   "gradesEvidenciaConocimiento": "Yachay rikuchiy",
   "gradesEvidenciaDesempeno": "Desempeño rikuchiy",
   "gradesEvidenciaProducto": "Producto rikuchiy",
-  "gradesPromedioAcumulado": "Promedio acumulado",
   "gradesNoCreditsData": "Mana créditos willakuy",
   "gradesNoHistoryYet": "Manaraq ñawpa willakuyniyuq",
   "gradesEvolutionByPeriod": "Evolución por periodo",
@@ -566,7 +466,6 @@
   "setupProgressCopied": "Imakuna patachaypi churanayta copiaq...",
   "setupProgressShortcuts": "Sutikuna paqarichiq...",
   "setupProgressRegister": "Windows llikaman riqsichiy...",
-  "setupProgressDone": "¡Allillam churanay tukusqa!",
   "setupSuccessTitle": "¡Tukusqa Churanay!",
   "setupSuccessDesc": "Nexo UPLA allillam antañiqichaypi churasqa kachkan.",
   "setupBtnStart": "Llikachata qallariy",
@@ -612,7 +511,6 @@
   "titleChangePassword": "Kichanata wakinchay",
   "titleNotifications": "Willakuykuna",
   "subtitlePayments": "Qullqi qunakuna",
-  "subtitleTeacher": "Yachakuqniykikuna",
   "hours24": "24 pacha",
   "hours12": "12 pacha",
   "actionLogout": "Lluqsiy",
@@ -621,24 +519,10 @@
   "scheduleDetailTitle": "Sut'inchanakuna",
   "detailSchedule": "Pachakuna",
   "detailLocation": "Maypi",
-  "detailBuilding": "Wasi",
   "detailCampus": "Kancha",
   "detailSessions": "Tinkuykuna",
   "detailNotes": "Qillqakuna",
   "detailDuration": "Unaynin",
-  "assignmentNoDate": "Mana kachkanchu",
-  "assignmentOverdue": "Pasaq",
-  "assignmentDueToday": "Kunan p'unchaw",
-  "assignmentDueTomorrow": "Paqarin p'unchaw",
-  "assignmentDueInDays": "{days} p'unchawpi",
-  "@assignmentDueInDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "assignmentEmpty": "Mana ruranayki kanchu.",
   "widgetNoPendingDebts": "Mana manu kanchu",
   "widgetUpToDate": "✓ P'unchawninpi",
   "widgetOverdue": "{d} p'unchaw pasasqa",
@@ -756,8 +640,6 @@
       }
     }
   },
-  "widgetAssignmentsTitle": "Ruranakuna",
-  "widgetAssignmentsSubtitle": "Pisi p'unchawkunallañam puchun",
   "whatsappBannerTitle": "Nexo waqyayman hukllawakuy",
   "whatsappBannerDesc": "WhatsApp waqyayta qatiy Nexomanta musuq willakuykunata yachanaykipaq.",
   "whatsappBannerFollow": "Waqyayta qatiy",
@@ -772,22 +654,7 @@
   },
   "termsItemRightsTitle": "Derechoykikuna",
   "termsItemRightsBody": "Willasqaykikunata qawanki, allichanki utaq pichanki, hinaspa mayqin pachapipas Ajustespi permisoykita qichunki. Soporte sectionmanta qillqamuwayku.",
-  "dataSaved": "Waqaychasqa willakuy",
-  "dataServer": "Servidor nisqamanta willakuy",
-  "dataRefreshing": "Musuqyachispa…",
-  "dataRefreshFailed": "Mana musuqyachiy atikunchu",
-  "dataUnknownDate": "Musuqyachisqa pacha mana yachasqa",
-  "dataUpdatedAt": "Qhipa musuqyachiy: {date}",
-  "@dataUpdatedAt": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "docenteSearchStudent": "Yachaqaqta maskay…",
-  "docenteSearchNoResults": "Mana tariytaqa",
-  "docenteAttendanceComingSoon": "Asistencia qillqayqa appimanta ñaqhallam kanqa. Kunanqa SIGMApi qillqasqata qawariy atinki.",
   "tabMarcacion": "Marcación",
   "titleMarcacion": "Ñuqap marcaciónniy",
   "marcacionSubtitlePlural": "{count,plural, =0{Mana marcakuna (30 p'unchaw)} =1{1 marca · q(ipa 30 p'unchaw} other{{count} marcakuna · q(ipa 30 p'unchaw}}",

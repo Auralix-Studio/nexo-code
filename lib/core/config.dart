@@ -23,12 +23,6 @@ class StoreBuild {
 class AppConfig {
   static const String appVersion = '1.12.4';
   static const int appBuild = 32;
-  static const String apiBaseUrl = 'https://sigma.upla.edu.pe/api';
-  static const String nomSys = 'SIGMA';
-  static const Duration httpTimeout = Duration(seconds: 30);
-  static const String userAgent =
-      'Nexo-UPLA/$appVersion (Flutter; multiplatform)';
-  static const String tipDI = '12';
 
   /// Foto institucional. Igual que el cliente oficial de SIGMA: los códigos
   /// de alumno (7 caracteres, p. ej. U01025B) están en `FotosAlum/037000…`;
@@ -46,4 +40,16 @@ class LegalTerms {
   // Política de Cookies) con ley aplicable y límites de responsabilidad.
   static const int version = 4;
   static final DateTime updatedAt = DateTime(2026, 10, 8);
+}
+
+/// Nexo's own API (repository nexo-backend): the only server the app talks
+/// to. It reads SIGMA, the Intranet and the Language Center on the app's
+/// behalf.
+class BackendConfig {
+  static const String baseUrl = String.fromEnvironment(
+    'NEXO_BACKEND_URL',
+    defaultValue: 'https://api.nexo.aurx.pro',
+  );
+  static String get apiBaseUrl => '$baseUrl/api/v1';
+  static const Duration timeout = Duration(seconds: 25);
 }

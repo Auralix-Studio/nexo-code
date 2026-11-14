@@ -234,6 +234,8 @@ class AppStorage {
   static const _kRunPortable = 'nexo.runPortable';
   static const _kWhatsappInvite = 'nexo.seenWhatsappInvite';
   static const _kFestivityDecor = 'nexo.festivityDecor';
+  // Versiones anteriores guardaban aquí la sesión de la Intranet. Ya no se
+  // usa; las claves quedan solo para borrarla al cerrar sesión.
   static const _kIntranetCookies = 'nexo.intranet.cookies';
   static const _kIntranetUser = 'nexo.intranet.user';
   static const _kUpdLastCheckMs = 'nexo.upd.lastCheckMs';
@@ -282,10 +284,6 @@ class AppStorage {
       _prefs.setBool(_kWhatsappInvite, v);
   bool get festivityDecor => _prefs.getBool(_kFestivityDecor) ?? true;
   Future<void> setFestivityDecor(bool v) => _prefs.setBool(_kFestivityDecor, v);
-  String? get intranetCookies => _auth[_kIntranetCookies];
-  String? get intranetUser => _auth[_kIntranetUser];
-  Future<void> setIntranetSession(String? cookies, String? user) =>
-      _updateAuth({_kIntranetCookies: cookies, _kIntranetUser: user});
 
   String? get themeMode => _prefs.getString(_kTheme);
   Future<void> setThemeMode(String value) => _prefs.setString(_kTheme, value);

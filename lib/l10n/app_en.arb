@@ -4,10 +4,8 @@
   "tabSchedule": "Schedule",
   "tabGrades": "Grades",
   "tabPayments": "Payments",
-  "tabTeacher": "Teacher",
   "tabCourses": "Courses",
   "tabProfile": "Profile",
-  "titleHome": "Home",
   "titleSchedule": "Schedule",
   "titleGrades": "Grades",
   "titlePayments": "Payments",
@@ -21,13 +19,11 @@
   "titleChangePassword": "Change password",
   "titleNotifications": "Notifications",
   "subtitlePayments": "Fees, charges and history",
-  "subtitleTeacher": "Your courses and students",
   "language": "Language",
   "timeFormat": "Time format",
   "hours24": "24-hour",
   "hours12": "12-hour",
   "actionLogout": "Sign out",
-  "actionAccept": "Accept",
   "actionCancel": "Cancel",
   "actionRetry": "Retry",
   "actionClose": "Close",
@@ -35,13 +31,11 @@
   "scheduleDetailTitle": "Class details",
   "detailSchedule": "Schedule",
   "detailLocation": "Location",
-  "detailRoom": "Room",
   "detailPavilion": "Building",
   "weekdayFull": "{day, select, mon{Monday} tue{Tuesday} wed{Wednesday} thu{Thursday} fri{Friday} sat{Saturday} sun{Sunday} other{—}}",
   "weekdayShort": "{day, select, mon{Mon} tue{Tue} wed{Wed} thu{Thu} fri{Fri} sat{Sat} sun{Sun} other{—}}",
   "monthShort": "{month, select, jan{Jan} feb{Feb} mar{Mar} apr{Apr} may{May} jun{Jun} jul{Jul} aug{Aug} sep{Sep} oct{Oct} nov{Nov} dec{Dec} other{—}}",
   "timeGreeting": "{period, select, morning{Good morning} afternoon{Good afternoon} evening{Good evening} other{Hello}}",
-  "detailBuilding": "Building",
   "detailCampus": "Campus",
   "detailTeacher": "Teacher",
   "detailSessions": "Sessions",
@@ -129,7 +123,6 @@
   "scheduleToggleWeek": "Week",
   "scheduleToggleList": "List",
   "scheduleNoClassesScheduled": "No classes scheduled",
-  "gradesTitle": "Grades",
   "gradesSubtitleNoPeriod": "Grade report",
   "gradesSubtitleUnits": "By units · {period}",
   "@gradesSubtitleUnits": {
@@ -221,29 +214,10 @@
   "wifiPasswordCopied": "Password copied",
   "actionSave": "Save",
   "actionCodeCopied": "Code copied",
-  "profileSettingsSubtitle": "Appearance, language, time and notifications",
-  "profileChangePasswordSubtitle": "For your institutional UPLA account",
-  "profileAboutSubtitle": "Version {version}",
-  "@profileAboutSubtitle": {
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
-  },
   "logoutConfirmTitle": "Sign out",
   "logoutConfirmBody": "Do you want to sign out of your account?",
-  "docenteChangeDate": "Change",
   "docenteSaveAttendance": "Save attendance",
   "docenteAttendanceSaved": "Attendance saved",
-  "docenteAttendanceError": "Error: {error}",
-  "@docenteAttendanceError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "docenteGradeLabel": "Grade (0 - 20)",
   "docenteGradeEnter": "Enter a grade",
   "docenteGradeInvalidNumber": "Invalid number",
@@ -311,36 +285,7 @@
   "docenteMetricCursos": "Courses",
   "docenteMetricAlumnos": "Students",
   "docenteMetricPeriodo": "Term",
-  "docenteNoClassesToday": "No classes to teach today",
-  "docenteToday": "Today",
-  "docenteClassCount": "{count, plural, =1{{count} class} other{{count} classes}}",
-  "@docenteClassCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteTypeTeoria": "THEO",
-  "docenteTypePractica": "PRAC",
   "docenteLoadingClasses": "Loading classes...",
-  "docenteSessionsWeeklyCount": "My classes · {count, plural, =1{1 session this week} other{{count} sessions this week}}",
-  "@docenteSessionsWeeklyCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "docenteNoClassesRegistered": "You have no registered classes",
-  "docenteCourseCount": "{count, plural, =1{{count} course} other{{count} courses}}",
-  "@docenteCourseCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "docenteCoursesCountPlural": "{count, plural, =1{{count} subject} other{{count} subjects}}",
   "@docenteCoursesCountPlural": {
     "placeholders": {
@@ -362,18 +307,6 @@
   "docenteTabAlumnos": "Students",
   "docenteTabAsistencia": "Attendance",
   "docenteTabNotas": "Grades",
-  "docenteNoCode": "No code",
-  "docenteSectionPeriod": "Section {seccion} · {periodo}",
-  "@docenteSectionPeriod": {
-    "placeholders": {
-      "seccion": {
-        "type": "String"
-      },
-      "periodo": {
-        "type": "String"
-      }
-    }
-  },
   "docenteNoAlumnosRegistered": "No registered students",
   "docenteAsisPercent": "{percent}% attend.",
   "@docenteAsisPercent": {
@@ -383,23 +316,7 @@
       }
     }
   },
-  "docenteAttendancePresentShort": "Pres.",
-  "docenteAttendanceTardanzaShort": "Late",
-  "docenteAttendanceFaltaShort": "Abs.",
   "docenteNoAlumnosInCourse": "No students in this course",
-  "docenteAprobadosCount": "{aprobados} of {total} passed",
-  "@docenteAprobadosCount": {
-    "placeholders": {
-      "aprobados": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteTapToEdit": "Tap to edit →",
-  "docentePromedioParcial": "PARTIAL AVERAGE",
   "docenteCoursePercentGraded": "{percent}% of the course\nalready graded",
   "@docenteCoursePercentGraded": {
     "placeholders": {
@@ -411,32 +328,15 @@
   "docenteEvalPending": "PENDING",
   "docenteNoAttendanceRecords": "No attendance records.",
   "docenteAttendanceLabel": "ATTENDANCE",
-  "docenteSessionsRegisteredCount": "{presentes} of {total}\nsessions recorded",
-  "@docenteSessionsRegisteredCount": {
-    "placeholders": {
-      "presentes": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "docenteAttendancePresent": "Present",
-  "docenteAttendanceTardanza": "Late",
-  "docenteAttendanceFalta": "Absent",
-  "docenteAttendanceJustificada": "Excused",
   "docenteInfoTitle": "Teacher information",
   "docenteInfoFieldNombres": "First Names",
   "docenteInfoFieldApellidos": "Last Names",
   "docenteInfoFieldFacultad": "Faculty",
   "docenteInfoFieldEspecialidad": "Specialty",
-  "docenteSupportSubtitle": "Contact via WhatsApp or Email",
   "connectivityStatusTitle": "Connection Status",
   "connectivityDiagnosticsSubtitle": "Real-time diagnostics",
   "connectivityInternet": "Internet Connection",
-  "connectivitySigma": "SIGMA Server",
-  "connectivityIntranet": "INTRANET Server",
+  "connectivityNexo": "Nexo server",
   "connectivityBackupNote": "Local backup data will be used automatically when there is no connection to the servers.",
   "connectivityOnline": "Online",
   "connectivityOffline": "Offline",
@@ -446,7 +346,6 @@
   "homeVerifyConnectivity": "Verify Connection Status",
   "homeMetricPromedio": "GPA",
   "homeMetricPromedioCiclo": "Term average",
-  "homeMetricPromedioAcumulado": "Cumulative GPA",
   "homeMetricCreditos": "Credits",
   "homeMetricClasesHoy": "Classes today",
   "homeMetricPorPagar": "To pay",
@@ -457,7 +356,6 @@
   "gradesEvidenciaConocimiento": "Evidence of knowledge",
   "gradesEvidenciaDesempeno": "Evidence of performance",
   "gradesEvidenciaProducto": "Evidence of product",
-  "gradesPromedioAcumulado": "Cumulative GPA",
   "gradesNoCreditsData": "No credit data",
   "gradesNoHistoryYet": "No history yet",
   "gradesEvolutionByPeriod": "Evolution by term",
@@ -618,7 +516,6 @@
   "setupProgressCopied": "Copying program files...",
   "setupProgressShortcuts": "Creating shortcuts...",
   "setupProgressRegister": "Registering in Windows...",
-  "setupProgressDone": "Installation completed successfully!",
   "setupSuccessTitle": "Installation Successful!",
   "setupSuccessDesc": "Nexo UPLA has been successfully installed and registered.",
   "setupBtnStart": "Start Application",
@@ -658,19 +555,6 @@
   "updBannerReadyBody": "Tap to install Nexo {version}.",
   "updBannerAvailableBody": "Tap to download Nexo {version}.",
   "updDismiss": "Dismiss",
-  "assignmentNoDate": "No due date",
-  "assignmentOverdue": "Overdue",
-  "assignmentDueToday": "Due today",
-  "assignmentDueTomorrow": "Due tomorrow",
-  "assignmentDueInDays": "In {days} days",
-  "@assignmentDueInDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "assignmentEmpty": "No pending assignments.",
   "widgetNoPendingDebts": "No pending debts",
   "widgetUpToDate": "✓ Up to date",
   "widgetOverdue": "Overdue by {d} d",
@@ -788,8 +672,6 @@
       }
     }
   },
-  "widgetAssignmentsTitle": "Assignments",
-  "widgetAssignmentsSubtitle": "Nearing deadline",
   "whatsappBannerTitle": "Join Nexo's channel",
   "whatsappBannerDesc": "Follow the WhatsApp channel to learn about news, improvements, and important notices about Nexo.",
   "whatsappBannerFollow": "Follow channel",
@@ -853,22 +735,7 @@
       }
     }
   },
-  "dataSaved": "Saved data",
-  "dataServer": "Retrieved from server",
-  "dataRefreshing": "Updating…",
-  "dataRefreshFailed": "Could not update",
-  "dataUnknownDate": "Update time unknown",
-  "dataUpdatedAt": "Last updated: {date}",
-  "@dataUpdatedAt": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "docenteSearchStudent": "Search student…",
-  "docenteSearchNoResults": "No results",
-  "docenteAttendanceComingSoon": "Marking attendance from the app is coming soon. For now you can review what is already recorded in SIGMA.",
   "tabMarcacion": "Clock-in",
   "titleMarcacion": "My clock-ins",
   "marcacionSubtitlePlural": "{count,plural, =0{No punches (30 days)} =1{1 punch · last 30 days} other{{count} punches · last 30 days}}",
@@ -890,14 +757,11 @@
     }
   },
   "docenteTabReporte": "Report",
-  "docenteReportLoadError": "Couldn't load the attendance report.",
   "docenteReportEmpty": "No attendance has been recorded for this section yet.",
   "docenteReportAll": "All",
   "docenteReportAtRisk": "At risk",
-  "docenteReportNoRisk": "No students at risk from absences.",
   "docenteReportSessions": "Sessions",
   "docenteReportAverage": "Avg. attendance",
-  "docenteReportRiskHint": "At risk: 30% or more unexcused absences over recorded sessions.",
   "docenteReportCounts": "{presentes} P · {faltas} A · {justificadas} E",
   "@docenteReportCounts": {
     "placeholders": {
@@ -1315,5 +1179,191 @@
   "uninstallSuccessTitle": "Uninstalled successfully!",
   "uninstallSuccessBody": "Nexo UPLA has been removed. Cleaning up folders...",
   "uninstallErrorTitle": "Uninstall failed",
-  "gradesPromedioCiclo": "Term average"
+  "gradesPromedioCiclo": "Term average",
+  "tabDirectory": "Students",
+  "directoryTitle": "Students",
+  "directorySubtitle": "Institutional directory",
+  "directoryCount": "{count, plural, =0{No students} =1{1 student} other{{count} students}}",
+  "@directoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directorySearchHint": "Search by name or code",
+  "directoryFilterSchool": "Program",
+  "directoryAllSchools": "All programs",
+  "directoryCycle": "Term {n}",
+  "@directoryCycle": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryNoResults": "No results",
+  "directoryNoResultsHint": "Try another name, code or filter.",
+  "directoryEndOfList": "{count, plural, =1{1 student in total} other{{count} students in total}}",
+  "@directoryEndOfList": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryManageAccess": "Manage access",
+  "directoryDeniedTitle": "No directory access",
+  "directoryDeniedHint": "Your account is not authorized. Ask a system administrator.",
+  "directoryUnavailableTitle": "Could not connect",
+  "directoryUnavailableHint": "Check your connection and try again.",
+  "directoryRecordTitle": "Student record",
+  "directoryTabGrades": "Grades",
+  "directoryTabSchedule": "Schedule",
+  "directoryTabPayments": "Payments",
+  "directoryEmptyModule": "Nothing to show.",
+  "directoryRecordMissing": "Record not found",
+  "directoryRecordMissingHint": "That code is no longer in the directory.",
+  "directoryStatAverage": "Average",
+  "directoryStatCredits": "Credits passed",
+  "directoryPersonalData": "Student details",
+  "directoryFieldCode": "Code",
+  "directoryFieldEmail": "Email",
+  "directoryFieldPhone": "Phone",
+  "directoryFieldFaculty": "Faculty",
+  "directoryFieldSchool": "Program",
+  "directoryFieldPlan": "Curriculum",
+  "directoryFieldEntry": "Enrolled",
+  "directoryProgressByTerm": "Average per term",
+  "directoryCourseCredits": "{value} credits",
+  "@directoryCourseCredits": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryAttendance": "Attendance {value}%",
+  "@directoryAttendance": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryAccessExplainer": "Directory access is granted per code. System administrators are configured on the server and cannot be changed from here.",
+  "directoryAdmins": "System administrators",
+  "directoryAdminsHint": "They always have access and can grant it.",
+  "directoryGrantsActive": "{count, plural, =0{With access} =1{With access · 1} other{With access · {count}}}",
+  "@directoryGrantsActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryGrantsRevoked": "Access revoked",
+  "directoryNoGrants": "You have not authorized anyone yet.",
+  "directoryGrantAdd": "Grant access",
+  "directoryGrantCodeLabel": "Code or ID",
+  "directoryGrantCodeHelp": "As it appears on the intranet.",
+  "directoryGrantConfirm": "Grant",
+  "directoryGrantFailed": "Could not change the access.",
+  "directoryGrantedBy": "Granted by {code}",
+  "@directoryGrantedBy": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryGrant": "Grant",
+  "directoryRevoke": "Revoke",
+  "directoryAdminOnlyTitle": "Administrators only",
+  "directoryAdminOnlyHint": "Granting access is reserved for system administrators.",
+  "termsItemDirectoryTitle": "The Students section",
+  "termsItemDirectoryBody": "It is a directory only authorized accounts can enter, and it shows up in the app only if yours is one of them. To check that, your username and password travel once to the Nexo server, which verifies them against SIGMA and does not store them; from then on a temporary session is used. Every time you open a student record, your code, the date and whose record you opened are logged.",
+  "termsItemThirdPartyTitle": "Other people's data",
+  "termsItemThirdPartyBody": "If you have directory access you will be seeing other people's information. Use it only for what you were authorized to: do not download, copy, share or publish it. Peru's Personal Data Protection Act (Law 29733) applies to you too, and access can be revoked at any time.",
+  "termsItemDemoDataTitle": "Demo data",
+  "termsItemDemoDataBody": "Until there is institutional authorization to query the real directory, the Students section shows generated test data: people who do not exist. When it is replaced with real data we will update these terms and ask you to accept them again.",
+  "directoryClearFilters": "Clear filters",
+  "directoryFieldCycle": "Term",
+  "directoryCumulativeAverage": "Cumulative average",
+  "directoryApprovedCourses": "Courses passed",
+  "directoryCoursesCount": "{count, plural, =1{1 course} other{{count} courses}}",
+  "@directoryCoursesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryOverdueCount": "{count, plural, =1{1 overdue} other{{count} overdue}}",
+  "@directoryOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guardianEntry": "I'm a parent or guardian",
+  "guardianTitle": "Guardian access",
+  "guardianHeadline": "Check your child's record",
+  "guardianIntro": "Sign in with your ID number and the PIN you were given. No university account needed.",
+  "guardianDniLabel": "ID number",
+  "guardianDniInvalid": "Enter the 8 digits of your ID",
+  "guardianPinLabel": "PIN",
+  "guardianPinHelp": "The 6 digits the university gave you",
+  "guardianPinInvalid": "The PIN has 6 digits",
+  "guardianEnter": "Enter",
+  "guardianBadCredentials": "Wrong ID or PIN. Check them and try again.",
+  "guardianLocked": "Too many failed attempts. Wait a few minutes before trying again.",
+  "guardianUnavailable": "Could not connect. Check your connection and try again.",
+  "guardianAuditNotice": "Every lookup is logged.",
+  "guardianPickTitle": "Who do you want to see?",
+  "guardianNoStudents": "No student is linked to your ID yet.",
+  "guardianSignOut": "Sign out",
+  "integTitle": "Connections",
+  "integSubtitle": "Share your schedule with your calendar or other apps. You decide, and you can take it back any time.",
+  "integShareTitle": "Share my schedule",
+  "integShareBody": "Your code, name, career, faculty and weekly schedule are shared. Never your grades or payments.",
+  "integShareOn": "Sharing your schedule",
+  "integShareOff": "You are not sharing anything",
+  "integShareStart": "Share",
+  "integShareSync": "Update schedule",
+  "integShareStop": "Stop sharing",
+  "integShareStopConfirm": "Your shared data, the calendar link and every app's access will be deleted.",
+  "integCalendarTitle": "Calendar",
+  "integCalendarBody": "Subscribe to your schedule in Google Calendar, Outlook or your phone's calendar. It updates by itself.",
+  "integCalendarCreate": "Create link",
+  "integCalendarRotate": "Generate a new link",
+  "integCalendarActive": "Link active. For security it is shown only when created.",
+  "integCalendarGoogle": "Add to Google Calendar",
+  "integCalendarOpen": "Open in my calendar",
+  "integCalendarCopy": "Copy link",
+  "integCalendarDisable": "Turn off",
+  "integCalendarNeedsShare": "Share your schedule first.",
+  "integAppsTitle": "Connected apps",
+  "integAppsEmpty": "No app has access.",
+  "integAppsConnect": "Connect an app",
+  "integAppsRevoke": "Remove access",
+  "integConnectHint": "Type the code the other app shows you",
+  "integConnectCode": "Code",
+  "integConnectContinue": "Continue",
+  "integConnectAsks": "{app} wants to see:",
+  "integScopeProfile": "Your profile: code, name, career and faculty",
+  "integScopeSchedule": "Your weekly schedule",
+  "integConnectNever": "It will not see your grades, payments or password.",
+  "integConnectApprove": "Allow",
+  "integConnectDeny": "Don't allow",
+  "integConnectNotFound": "The code does not exist or has expired.",
+  "integError": "Could not complete. Try again.",
+  "@integConnectAsks": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  }
 }

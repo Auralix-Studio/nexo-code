@@ -5,7 +5,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/update_service.dart';
+import 'package:nexo/data/services/update_service.dart';
 import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/features/settings/typography_card.dart';
 import 'package:nexo/l10n/app_localizations.dart';

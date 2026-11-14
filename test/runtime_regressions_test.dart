@@ -9,8 +9,8 @@ import 'package:http/testing.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/home_widget_service.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/home_widget_service.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,7 +112,7 @@ void main() {
     await start;
 
     expect(connection.hasInternet, isFalse);
-    expect(connection.sigmaStatus, ServerStatus.offline);
+    expect(connection.apiStatus, ServerStatus.offline);
   });
 
   test('disposing during a check preserves the shared HTTP client', () async {

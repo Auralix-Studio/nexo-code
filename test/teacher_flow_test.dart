@@ -8,20 +8,21 @@ import 'package:http/testing.dart';
 import 'package:nexo/core/error_handler.dart';
 import 'package:nexo/core/secret_store.dart';
 import 'package:nexo/core/storage.dart';
-import 'package:nexo/data/api_client.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/cache_manager.dart';
-import 'package:nexo/data/connectivity_service.dart';
-import 'package:nexo/data/sigma_repository.dart';
-import 'package:nexo/data/teacher_repository.dart';
+import 'package:nexo/data/local/cache_manager.dart';
+import 'package:nexo/data/remote/backend_client.dart';
+import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/data/repositories/nexo_teacher_repository.dart';
+import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/directory_service.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
-import 'package:nexo/features/teacher/teacher_course_detail.dart';
+import 'package:nexo/features/teacher/courses/teacher_course_detail.dart';
 import 'package:nexo/features/teacher/teacher_screen.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _Repository extends Fake implements SigmaRepository {}
+import 'support/fake_nexo_api.dart';
 
 class _Cache extends Fake implements CacheManager {
   @override
@@ -51,71 +52,56 @@ class _Handler extends Fake implements ErrorHandler {
   }) => remote();
 }
 
-const notasRow = <String, dynamic>{
-  'id': '1365838',
+/// Una sección de `GET /teaching/sections`.
+const sectionJson = <String, dynamic>{
+  'id': 'sec_1',
+  'term': '2026-2',
   'nrc': '332142',
-  'asignatura': 'BASE DE DATOS I (2026-2)',
-  'carrera': 'INGENIERÍA DE SISTEMAS Y COMPUTACIÓN',
-  'seccion': 'A1',
-  'plan': '2022',
-  'ciclo': '04',
-  'tipoCalif': 12,
+  'course': {'code': '332142', 'name': 'BASE DE DATOS I (2026-2)'},
+  'section': 'A1',
+  'career': 'INGENIERÍA DE SISTEMAS Y COMPUTACIÓN',
+  'modality': 'in_person',
+  'cycle': 4,
+  'elective': false,
+  'enrolled': 3,
+  'campus': 'HUANCAYO',
+  'room': {'building': 'PABELLON H', 'name': 'H 302', 'capacity': 60},
+  'schedule': [
+    {'weekday': 4, 'start': '11:30', 'end': '13:00', 'kind': 'practice'},
+    {'weekday': 3, 'start': '10:45', 'end': '11:30', 'kind': 'theory'},
+  ],
 };
 
-const asistenciaRow = <String, dynamic>{
-  'id': '419329, 419321',
-  'nrc': '332142',
-  'asignatura': 'BASE DE DATOS I (2026-2)',
-  'modalidad': 'Presencial',
-  'carrera': 'INGENIERÍA DE SISTEMAS Y COMPUTACIÓN - PRESENCIAL',
-  'seccion': 'A1',
-  'aula': 'PABELLON H - H 302 - AFORO: 60',
-  'horario': 'Jueves 11:30:00 13:00:00 P, Miércoles 10:45:00 11:30:00 T',
-  'plan': '2022',
-  'ciclo': '4',
-  'tipoCalif': 12,
-};
-
-/// SIGMA simulado con las formas reales de las respuestas. Guarda cada POST.
-class _FakeSigma {
-  final posts = <String, List<Object?>>{};
+/// API de Nexo simulada (`/teaching/*`) con las formas del contrato.
+/// Guarda cada escritura por `MÉTODO ruta`.
+class _FakeNexo {
+  final writes = <String, List<Map<String, dynamic>>>{};
   final gets = <String, int>{};
-
-  static Map<String, dynamic> _ok(Object? data, [String msg = 'OK']) => {
-    'success': true,
-    'data': data,
-    'mensaje': msg,
-  };
 
   Map<String, dynamic> _student(
     String code,
-    String name,
-    String mat, {
+    String name, {
     double? ev,
-    String att = '100',
+    int att = 100,
   }) => {
-    'matriculaAsignaturaId': mat,
-    'codigo': code,
-    'nombreCompleto': name,
-    'tipoCalificacion': 12,
-    'asistencia': att,
-    'notaFinal': ev ?? 0,
-    'unidades': [
+    'code': code,
+    'name': name,
+    'attendance_percent': att,
+    'final_grade': ev,
+    'suspended': false,
+    'units': [
       {
-        'unidadId': 121,
-        'nombre': 'UNIDAD 1',
-        'porcentaje': 20,
-        'promedioUnidad': ev,
-        'grupos': [
+        'unit_id': 121,
+        'name': 'UNIDAD 1',
+        'weight_percent': 20,
+        'average': ev,
+        'evaluations': [
           if (ev != null)
             {
-              'idTipoNota': 11,
-              'tipoNotaAbr': 'EV',
-              'peso': 100,
-              'promedio': ev,
-              'notas': [
-                {'idNota': 5000 + code.hashCode % 100, 'valor': ev},
-              ],
+              'type_id': 11,
+              'abbr': 'EV',
+              'weight_percent': 100,
+              'grades': [ev],
             },
         ],
       },
@@ -123,129 +109,131 @@ class _FakeSigma {
   };
 
   Future<http.Response> handle(http.Request req) async {
-    final path = req.url.path.split('/api/').last;
-    Object? body;
-    if (req.method == 'POST') {
-      body = req.body.isEmpty ? null : jsonDecode(req.body);
-      posts.putIfAbsent(path, () => []).add(body ?? req.url.queryParameters);
-      return http.Response(jsonEncode(_ok(null, 'S - Registro exitoso')), 200);
+    final path = req.url.path;
+    if (req.method != 'GET') {
+      writes
+          .putIfAbsent('${req.method} $path', () => [])
+          .add(
+            req.body.isEmpty
+                ? const {}
+                : (jsonDecode(req.body) as Map).cast<String, dynamic>(),
+          );
+      return nexoOk({'saved': 1, 'failed': []});
     }
     gets[path] = (gets[path] ?? 0) + 1;
     final data = switch (path) {
-      'Docente/GetAsignaturaDocente' =>
-        req.url.queryParameters['modo'] == 'Asistencia'
-            ? [asistenciaRow]
-            : [notasRow],
-      'Login/GetDatosEntidad' => {
-        'codigo': '46996068',
-        'nombres': 'JOHN',
-        'apellidos': ' GUERRA FLORES',
-        'isDocente': true,
-        'dependencia': {'facultad': 'FACULTAD DE INGENIERÍA'},
+      '/teaching/sections' => [sectionJson],
+      '/teaching/me' => {
+        'code': '46996068',
+        'first_name': 'JOHN',
+        'last_name': 'GUERRA FLORES',
+        'full_name': 'JOHN GUERRA FLORES',
+        'faculty': 'FACULTAD DE INGENIERÍA',
+        'specialty': null,
+        'photo_url': null,
       },
-      'Docente/getHistorialMarcacion' => const [],
-      'Docente/NotasEstudianteResumenV1' => [
-        _student('U001', 'ALVAREZ PEREZ ANA LUCIA', 'm1', ev: 14),
-        _student('U002', 'BENITO ROJAS BRUNO', 'm2', att: '65'),
-        _student('U003', 'CASTRO DIAZ CARLA', 'm3'),
-      ],
-      'Docente/GetAsistencia' => [
-        {
-          'codigo': 'U001',
-          'nombreCompleto': 'ALVAREZ PEREZ ANA LUCIA',
-          'observacion': '---',
-          'matricula_asignatura_id': 'm1',
-          'cod_cursal': '419329',
-          'asistencia': 100,
-          'detalle': [
-            {
-              'asistencia_id': 1,
-              'fecha_asistencia': '2026-10-01T10:46:00',
-              'estado_asist_id': 1,
-              'tipo_unidad_id': 121,
-            },
-          ],
-        },
-        {
-          'codigo': 'U002',
-          'nombreCompleto': 'BENITO ROJAS BRUNO',
-          'observacion': '---',
-          'matricula_asignatura_id': 'm2',
-          'cod_cursal': '419329',
-          'asistencia': 50,
-          'detalle': [
-            {
-              'asistencia_id': 2,
-              'fecha_asistencia': '2026-10-01T10:46:00',
-              'estado_asist_id': 2,
-              'tipo_unidad_id': 121,
-            },
-          ],
-        },
-        {
-          'codigo': 'U003',
-          'nombreCompleto': 'CASTRO DIAZ CARLA',
-          'observacion': 'Suspensión',
-          'matricula_asignatura_id': 'm3',
-          'cod_cursal': '419329',
-          'asistencia': 0,
-          'detalle': [],
-        },
-      ],
-      'Asignatura/getTipoUnidadesV2' => [
-        {'tipo_unidad_id': 121, 'descripcion': 'UNIDAD 1', 'habilitado': true},
-        {'tipo_unidad_id': 122, 'descripcion': 'UNIDAD 2', 'habilitado': true},
-        {'tipo_unidad_id': 123, 'descripcion': 'UNIDAD 3', 'habilitado': false},
-      ],
-      'Asignatura/getTipoNota' => [
-        for (final t in const [
-          (11, 'EV', 'EVIDENCIA DE CONOCIMIENTO'),
-          (12, 'DE', 'EVIDENCIA DE DESEMPEÑO'),
-          (13, 'PR', 'EVIDENCIA DE PRODUCTO'),
+      '/teaching/punches' || '/teaching/compliance' => const [],
+      '/teaching/virtual-classes' => const [],
+      '/teaching/sections/sec_1/students' => {
+        'students': [
+          _student('U001', 'ALVAREZ PEREZ ANA LUCIA', ev: 14),
+          _student('U002', 'BENITO ROJAS BRUNO', att: 65),
+          _student('U003', 'CASTRO DIAZ CARLA'),
+        ],
+      },
+      '/teaching/sections/sec_1/attendance' => {
+        'units': [
+          {'unit_id': 121, 'name': 'UNIDAD 1', 'open': true},
+          {'unit_id': 122, 'name': 'UNIDAD 2', 'open': true},
+        ],
+        'sessions': [
+          {'id': '2026-10-01T10:46:00', 'unit_id': 121},
+        ],
+        'students': [
+          {
+            'code': 'U001',
+            'name': 'ALVAREZ PEREZ ANA LUCIA',
+            'suspended': false,
+            'percent': 100,
+            'marks': [
+              {'session': '2026-10-01T10:46:00', 'state': 'present'},
+            ],
+          },
+          {
+            'code': 'U002',
+            'name': 'BENITO ROJAS BRUNO',
+            'suspended': false,
+            'percent': 50,
+            'marks': [
+              {'session': '2026-10-01T10:46:00', 'state': 'absent'},
+            ],
+          },
+          {
+            'code': 'U003',
+            'name': 'CASTRO DIAZ CARLA',
+            'suspended': true,
+            'percent': 0,
+            'marks': [],
+          },
+        ],
+      },
+      '/teaching/sections/sec_1/grade-units' => [
+        for (final u in const [
+          (121, 'UNIDAD 1', true),
+          (122, 'UNIDAD 2', true),
+          (123, 'UNIDAD 3', false),
         ])
           {
-            'tipo_nota_id': t.$1,
-            'tipo_nota_abr': t.$2,
-            'tipo_nota_desc': t.$3,
-            'tipo_nota_escala': '0 - 20    ',
-            'tipo_nota_cant_max': 1,
-            'minimo_aprob': 10.5,
-            'tipo_nota_color': '#8CCD8C',
+            'unit_id': u.$1,
+            'name': u.$2,
+            'open': u.$3,
+            'types': [
+              for (final t in const [
+                (11, 'EV', 'EVIDENCIA DE CONOCIMIENTO'),
+                (12, 'DE', 'EVIDENCIA DE DESEMPEÑO'),
+                (13, 'PR', 'EVIDENCIA DE PRODUCTO'),
+              ])
+                {
+                  'type_id': t.$1,
+                  'abbr': t.$2,
+                  'name': t.$3,
+                  'max': 20,
+                  'passing': 10.5,
+                  'max_columns': 1,
+                  'color': '#8CCD8C',
+                },
+            ],
           },
       ],
-      'Docente/GetHora' => '2026-10-07T10:50:00.123-05:00',
+      '/teaching/server-time' => {'now': '2026-10-07T10:50:00-05:00'},
       _ => null,
     };
-    return http.Response.bytes(
-      utf8.encode(jsonEncode(_ok(data))),
-      200,
-      headers: {'content-type': 'application/json; charset=utf-8'},
-    );
+    if (data == null) return nexoError('not_found', 404);
+    return nexoOk(data);
   }
 }
 
 void main() {
-  final course = TeacherRepository.mergeAsignaturas(
-    [notasRow],
-    [asistenciaRow],
-  ).single;
+  final course = teacherSubjectFromNexo(sectionJson);
 
-  late _FakeSigma sigma;
+  late _FakeNexo nexo;
   late AppStore store;
   late ConnectivityService connection;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await AppStorage.init(secrets: MemorySecretStore());
-    sigma = _FakeSigma();
-    final api = ApiClient(transport: MockClient(sigma.handle))..setToken('t');
+    await AppStorage.instance.setCredentials('46996068', 'clave');
+    nexo = _FakeNexo();
+    final api = BackendClient(transport: MockClient(nexo.handle))
+      ..setToken('t');
     connection = ConnectivityService();
     store = AppStore(
-      _Repository(),
+      NexoRepository(DirectoryService(client: api)),
       cache: _Cache(),
       errorHandler: _Handler(),
       connectivity: connection,
-      teacher: TeacherRepository(api),
+      scope: api.scope,
     );
   });
 
@@ -274,7 +262,7 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets('tomar asistencia en el celular envía el payload de SIGMA', (
+  testWidgets('tomar asistencia en el celular envía las marcas a la API', (
     tester,
   ) async {
     await pumpPhone(tester);
@@ -319,29 +307,17 @@ void main() {
     await settle(tester);
 
     final body =
-        sigma.posts['Docente/InsertaRegistroAsistencia']!.single
-            as Map<String, dynamic>;
-    expect(body['fecha_asistencia'], '2026-10-07 10:50:0');
-    expect(body['asistencia'], [
-      {
-        'matricula_asignatura_id': 'm1',
-        'estado_asist_id': 1,
-        'cod_cursal': '419329',
-        'tipo_unidad_id': 121,
-      },
-      {
-        'matricula_asignatura_id': 'm2',
-        'estado_asist_id': 2,
-        'cod_cursal': '419329',
-        'tipo_unidad_id': 121,
-      },
-      {
-        'matricula_asignatura_id': 'm3',
-        'estado_asist_id': 4,
-        'cod_cursal': '419329',
-        'tipo_unidad_id': 121,
-      },
-    ]);
+        nexo.writes['POST /teaching/sections/sec_1/attendance']!.single;
+    // La hora la pone el reloj de la universidad en el backend.
+    expect(body.containsKey('date'), isFalse);
+    expect(body['unit_id'], 121);
+    final marks = {
+      for (final m in body['marks'] as List) m['student']: m['state'],
+    };
+    expect(marks['U001'], 'present');
+    expect(marks['U002'], 'absent');
+    // La suspendida va como presente: el backend la registra suspendida.
+    expect(marks['U003'], anyOf(isNull, 'present'));
   });
 
   testWidgets('corregir una sesión pasada solo permite falta/justificado', (
@@ -369,21 +345,17 @@ void main() {
     await settle(tester);
     await tester.tap(find.text(l.actionSave).last);
     await settle(tester);
-    final body =
-        sigma.posts['Docente/ActualizarRegistroAsistencia']!.single
-            as Map<String, dynamic>;
+    final body = nexo
+        .writes['PATCH /teaching/sections/sec_1/attendance/2026-10-01T10:46:00']!
+        .single;
     expect(body, {
-      'asistencia': [
-        {
-          'asistencia_id': 2,
-          'matricula_asignatura_id': 'm2',
-          'estado_asist_id': 3,
-        },
+      'marks': [
+        {'student': 'U002', 'state': 'justified'},
       ],
     });
   });
 
-  testWidgets('registrar una evaluación inserta y actualiza por separado', (
+  testWidgets('registrar una evaluación: nuevas y corregidas en un envío', (
     tester,
   ) async {
     await pumpPhone(tester);
@@ -407,7 +379,7 @@ void main() {
     await tester.tap(find.text(l.tchSaveChanges(2)));
     await settle(tester);
     // La nota fuera de rango bloquea el guardado.
-    expect(sigma.posts, isEmpty);
+    expect(nexo.writes, isEmpty);
     // Esperar a que se oculte el aviso de error, que tapa el botón.
     await tester.pump(const Duration(seconds: 6));
     await settle(tester);
@@ -418,23 +390,18 @@ void main() {
     await tester.tap(find.text(l.actionSave).last);
     await settle(tester);
 
-    final ins =
-        (sigma.posts['Docente/InsertarNotas']!.single
-                as Map<String, dynamic>)['Notas']
-            as List;
-    expect(ins.map((e) => (e['matricula_asignatura_id'], e['nota'])), [
-      ('m2', 12.5),
-      ('m3', 9.0),
-    ]);
-    final upd =
-        (sigma.posts['Docente/UpdateNota']!.single
-                as Map<String, dynamic>)['Notas']
-            as List;
-    expect(upd.single['matricula_asignatura_id'], 'm1');
-    expect(upd.single['nota'], 16.0);
-    expect(upd.single['nota_id'], isNotNull);
-    expect(upd.single['tipo_unidad_id'], 121);
-    expect(upd.single['tipo_nota_id'], 11);
+    final body = nexo.writes['PUT /teaching/sections/sec_1/grades']!.single;
+    expect((body['unit_id'], body['type_id']), (121, 11));
+    final grades = {
+      for (final g in body['grades'] as List)
+        g['student']: (g['value'], g['column']),
+    };
+    // U001 ya tenía nota en la columna 0: se corrige esa columna.
+    expect(grades, {
+      'U001': (16.0, 0),
+      'U002': (12.5, null),
+      'U003': (9.0, null),
+    });
   });
 
   testWidgets('reporte de asistencia y notas sin desbordes', (tester) async {
@@ -469,8 +436,8 @@ void main() {
     await settle(tester);
     final l = AppLocalizations.of(tester.element(find.byType(TeacherScreen)));
     expect(tester.takeException(), isNull);
-    // Una sola carga de asignaturas por modo: el horario sale de ellas.
-    expect(sigma.gets['Docente/GetAsignaturaDocente'], 2);
+    // Una sola carga de secciones: el horario sale de ellas.
+    expect(nexo.gets['/teaching/sections'], 1);
     expect(find.text('John'), findsOneWidget);
     expect(find.text(l.tchAgendaTitle), findsOneWidget);
     expect(find.text(l.tchPhaseOngoing), findsOneWidget);
@@ -556,14 +523,11 @@ void main() {
     await settle(tester);
     await tester.tap(find.text(l.actionSave).last);
     await settle(tester);
-    final ins =
-        (sigma.posts['Docente/InsertarNotas']!.single
-                as Map<String, dynamic>)['Notas']
-            as List;
-    expect(ins.map((e) => (e['matricula_asignatura_id'], e['nota'])), [
-      ('m2', 13.0),
-      ('m3', 8.5),
-    ]);
+    final body = nexo.writes['PUT /teaching/sections/sec_1/grades']!.single;
+    expect(
+      {for (final g in body['grades'] as List) g['student']: g['value']},
+      {'U002': 13.0, 'U003': 8.5},
+    );
   });
 
   testWidgets('tabla de notas de la sección sin desbordes', (tester) async {
@@ -581,63 +545,64 @@ void main() {
     expect(find.text('EV'), findsOneWidget);
   });
 
-  testWidgets('borrador de notas se guarda al escribir, se muestra y descarta', (
-    tester,
-  ) async {
-    await pumpPhone(tester);
-    final l = AppLocalizations.of(
-      tester.element(find.byType(TeacherCourseDetailScreen)),
-    );
-    await tester.tap(find.text(l.docenteTabNotas));
-    await settle(tester);
-    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
-    await settle(tester);
+  testWidgets(
+    'borrador de notas se guarda al escribir, se muestra y descarta',
+    (tester) async {
+      await pumpPhone(tester);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(TeacherCourseDetailScreen)),
+      );
+      await tester.tap(find.text(l.docenteTabNotas));
+      await settle(tester);
+      await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+      await settle(tester);
 
-    final fields = find.byType(TextField);
-    await tester.enterText(fields.at(1), '18');
-    await tester.enterText(fields.at(2), '15');
-    await settle(tester);
-    expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
-    expect(find.text(l.tchGradeSaveDraft), findsOneWidget);
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(1), '18');
+      await tester.enterText(fields.at(2), '15');
+      await settle(tester);
+      expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
+      expect(find.text(l.tchGradeSaveDraft), findsOneWidget);
 
-    await tester.tap(find.text(l.tchGradeSaveDraft));
-    await settle(tester);
-    expect(sigma.posts, isEmpty);
-    // La tarjeta de la evaluación muestra el aviso de borrador pendiente.
-    expect(find.text(l.tchGradeDraftBadge(2)), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pump(const Duration(seconds: 6));
-    await settle(tester);
+      await tester.tap(find.text(l.tchGradeSaveDraft));
+      await settle(tester);
+      expect(nexo.writes, isEmpty);
+      // La tarjeta de la evaluación muestra el aviso de borrador pendiente.
+      expect(find.text(l.tchGradeDraftBadge(2)), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 6));
+      await settle(tester);
 
-    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
-    await settle(tester);
-    expect(find.text(l.tchDraftRestored), findsOneWidget);
-    expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+      await settle(tester);
+      expect(find.text(l.tchDraftRestored), findsOneWidget);
+      expect(find.text(l.tchSaveChanges(2)), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text(l.tchDraftDiscard));
-    await settle(tester);
-    expect(find.text(l.tchDraftRestored), findsNothing);
-    expect(find.text(l.tchSaveChanges(2)), findsNothing);
+      await tester.tap(find.text(l.tchDraftDiscard));
+      await settle(tester);
+      expect(find.text(l.tchDraftRestored), findsNothing);
+      expect(find.text(l.tchSaveChanges(2)), findsNothing);
 
-    await tester.tap(find.byType(BackButton));
-    await settle(tester);
-    expect(find.text(l.tchGradeDraftBadge(2)), findsNothing);
+      await tester.tap(find.byType(BackButton));
+      await settle(tester);
+      expect(find.text(l.tchGradeDraftBadge(2)), findsNothing);
 
-    // Unidad cerrada en SIGMA (UNIDAD 3): permite guardar borrador igualmente.
-    await tester.ensureVisible(find.text('UNIDAD 3'));
-    await tester.tap(find.text('UNIDAD 3'));
-    await settle(tester);
-    await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
-    await settle(tester);
-    expect(find.text(l.tchGradeLockedDraftHint), findsOneWidget);
-    await tester.enterText(find.byType(TextField).at(1), '17');
-    await settle(tester);
-    await tester.tap(find.text(l.tchGradeSaveDraft));
-    await settle(tester);
-    expect(find.text(l.tchGradeDraftBadge(1)), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      // Unidad cerrada en la universidad (UNIDAD 3): permite guardar borrador.
+      await tester.ensureVisible(find.text('UNIDAD 3'));
+      await tester.tap(find.text('UNIDAD 3'));
+      await settle(tester);
+      await tester.tap(find.text('EVIDENCIA DE CONOCIMIENTO'));
+      await settle(tester);
+      expect(find.text(l.tchGradeLockedDraftHint), findsOneWidget);
+      await tester.enterText(find.byType(TextField).at(1), '17');
+      await settle(tester);
+      await tester.tap(find.text(l.tchGradeSaveDraft));
+      await settle(tester);
+      expect(find.text(l.tchGradeDraftBadge(1)), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 /// Avanza animaciones y peticiones simuladas sin esperar a que terminen las

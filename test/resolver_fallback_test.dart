@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/core/data/resolver.dart';
+import 'package:nexo/data/resolver.dart';
 import 'package:nexo/core/errors.dart';
 
 /// Verifica el contrato que distingue "vacío legítimo" de "backend caído".
@@ -13,36 +13,40 @@ void main() {
         isEmpty: (l) => l.isEmpty,
       );
 
-  test('todas las fuentes vacías → NoDataAvailable SIN causa (vacío real)',
-      () async {
-    final r = resolver([
-      DataSource(id: 'a', fetch: () async => const <String>[]),
-      DataSource(id: 'b', fetch: () async => const <String>[]),
-    ]);
-    try {
-      await r.load();
-      fail('debió lanzar NoDataAvailableException');
-    } on NoDataAvailableException catch (e) {
-      expect(e.cause, isNull); // sin causa → la app lo trata como []
-    }
-  });
+  test(
+    'todas las fuentes vacías → NoDataAvailable SIN causa (vacío real)',
+    () async {
+      final r = resolver([
+        DataSource(id: 'a', fetch: () async => const <String>[]),
+        DataSource(id: 'b', fetch: () async => const <String>[]),
+      ]);
+      try {
+        await r.load();
+        fail('debió lanzar NoDataAvailableException');
+      } on NoDataAvailableException catch (e) {
+        expect(e.cause, isNull); // sin causa → la app lo trata como []
+      }
+    },
+  );
 
-  test('una fuente falla → NoDataAvailable CON causa (backend caído)',
-      () async {
-    final r = resolver([
-      DataSource(
-        id: 'a',
-        fetch: () async => throw const NetworkException('SIGMA caído'),
-      ),
-      DataSource(id: 'b', fetch: () async => const <String>[]),
-    ]);
-    try {
-      await r.load();
-      fail('debió lanzar NoDataAvailableException');
-    } on NoDataAvailableException catch (e) {
-      expect(e.cause, isA<NetworkException>()); // con causa → cae a cache
-    }
-  });
+  test(
+    'una fuente falla → NoDataAvailable CON causa (backend caído)',
+    () async {
+      final r = resolver([
+        DataSource(
+          id: 'a',
+          fetch: () async => throw const NetworkException('SIGMA caído'),
+        ),
+        DataSource(id: 'b', fetch: () async => const <String>[]),
+      ]);
+      try {
+        await r.load();
+        fail('debió lanzar NoDataAvailableException');
+      } on NoDataAvailableException catch (e) {
+        expect(e.cause, isA<NetworkException>()); // con causa → cae a cache
+      }
+    },
+  );
 
   test('fuente no disponible (sin creds) no cuenta como caída', () async {
     final r = resolver([

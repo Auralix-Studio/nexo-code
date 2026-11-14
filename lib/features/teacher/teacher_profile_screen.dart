@@ -4,7 +4,7 @@ import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/data/app_store.dart';
-import 'package:nexo/data/session.dart';
+import 'package:nexo/data/services/session.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/legal/about_screen.dart';
