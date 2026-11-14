@@ -33,7 +33,9 @@ class CacheManager {
     final path = join(await getDatabasesPath(), 'nexo_cache.db');
     _db = await openDatabase(
       path,
-      version: 3,
+      // 4: los datos ya vienen de la API de Nexo (ids y formatos nuevos); lo
+      // guardado con el formato de SIGMA/Intranet se descarta al actualizar.
+      version: 4,
       onCreate: _createTables,
       onUpgrade: (db, oldVersion, newVersion) async {
         final tables = [

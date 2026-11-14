@@ -154,6 +154,15 @@ class BackendClient {
   Future<Map<String, dynamic>> gradesSummary() =>
       _send('GET', '/grades/summary', module: true);
 
+  /// Cambia la contraseña de la universidad (`POST /auth/password`). El
+  /// backend no la guarda.
+  Future<void> changePassword(String current, String newPassword) => _send(
+    'POST',
+    '/auth/password',
+    body: {'current_password': current, 'new_password': newPassword},
+    module: true,
+  );
+
   /// Avance curricular (`GET /curriculum`).
   Future<Map<String, dynamic>> curriculum() =>
       _send('GET', '/curriculum', module: true);
@@ -702,7 +711,10 @@ ApiException apiErrorOf(BackendException e) {
   return switch (e.code) {
     'sin_conexion' when e.detail?.contains('TimeoutException') ?? false =>
       const TimeoutException('El servidor no respondió a tiempo.'),
-    'sin_conexion' => NetworkException('Error de red: ${e.detail ?? ''}'),
+    'sin_conexion' => const NetworkException(
+      'No hay conexión con el servidor de Nexo. Revisa tu internet e '
+      'inténtalo de nuevo.',
+    ),
     'session_expired' ||
     'sin_credenciales' => SessionExpiredException(e.detail),
     // Un 401 que sigue después de renovar la sesión no es motivo para

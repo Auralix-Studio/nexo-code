@@ -14,6 +14,10 @@ class Student {
   final double? gpa;
   final int? creditsApproved;
   final int? creditsTotal;
+
+  /// Nombre de pila tal como lo envía la API ("Alessandro"). Si falta, la
+  /// app lo deduce del nombre completo.
+  final String? givenName;
   const Student({
     required this.id,
     required this.fullName,
@@ -28,6 +32,7 @@ class Student {
     this.gpa,
     this.creditsApproved,
     this.creditsTotal,
+    this.givenName,
   });
 
   Student mergeWith(Student other) {
@@ -45,6 +50,7 @@ class Student {
       gpa: gpa ?? other.gpa,
       creditsApproved: creditsApproved ?? other.creditsApproved,
       creditsTotal: creditsTotal ?? other.creditsTotal,
+      givenName: givenName ?? other.givenName,
     );
   }
 
@@ -62,6 +68,7 @@ class Student {
     'gpa': gpa,
     'creditsApproved': creditsApproved,
     'creditsTotal': creditsTotal,
+    'givenName': givenName,
   };
   factory Student.fromJson(Map<String, dynamic> json) => Student(
     id: json['id'] as String? ?? '',
@@ -77,6 +84,7 @@ class Student {
     gpa: (json['gpa'] as num?)?.toDouble(),
     creditsApproved: json['creditsApproved'] as int?,
     creditsTotal: json['creditsTotal'] as int?,
+    givenName: json['givenName'] as String?,
   );
 }
 

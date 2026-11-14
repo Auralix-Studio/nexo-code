@@ -123,7 +123,6 @@ class AppStore extends ChangeNotifier {
     ),
   ];
 
-  static bool _emptyList(List l) => l.isEmpty;
   static bool _emptyStudent(Student s) => s.id.isEmpty && s.fullName.isEmpty;
   late final Resolver<Student> _studentRes = Resolver(
     sources: _api((r) => r.profile()),
@@ -135,31 +134,26 @@ class AppStore extends ChangeNotifier {
     sources: [..._api((r) => r.pendingPayments())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   late final Resolver<List<Payment>> _vencidasRes = Resolver(
     sources: [..._api((r) => r.overduePayments())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   late final Resolver<List<PaymentRecord>> _historicoRes = Resolver(
     sources: [..._api((r) => r.paymentHistory())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   late final Resolver<List<Fee>> _tasasRes = Resolver(
     sources: _api((r) => r.fees()),
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   late final Resolver<List<Term>> _periodosRes = Resolver(
     sources: [..._api((r) => r.terms())],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   late final Resolver<List<ScheduleClass>> _horarioRes = Resolver(
     sources: [
@@ -170,7 +164,6 @@ class AppStore extends ChangeNotifier {
     ],
     merge: MergeStrategies.firstWins,
     stopAfterFirst: true,
-    isEmpty: _emptyList,
   );
   final CacheManager _cache;
   final ErrorHandler _errorHandler;
@@ -810,7 +803,6 @@ class AppStore extends ChangeNotifier {
         sources: [..._api((r) => r.legacyGrades(year, periodo))],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
-        isEmpty: _emptyList,
       ).load(),
       () => boletaLegacyOf(year, periodo),
       (value) => _boletaLegacy[key] = value,
@@ -844,7 +836,6 @@ class AppStore extends ChangeNotifier {
         ],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
-        isEmpty: _emptyList,
       ).load(),
       () => boletaOf(year, periodo),
       (value) => _boleta[key] = value,
@@ -896,7 +887,6 @@ class AppStore extends ChangeNotifier {
       sources: _api((r) => r.curriculum()),
       merge: MergeStrategies.firstWins,
       stopAfterFirst: true,
-      isEmpty: _emptyList,
     ).load(),
     () => record,
     (v) => record = v,
@@ -999,7 +989,6 @@ class AppStore extends ChangeNotifier {
       sources: [..._api((r) => r.teacher.sections())],
       merge: MergeStrategies.firstWins,
       stopAfterFirst: true,
-      isEmpty: _emptyList,
     ).load(),
     () => teacherSubjects,
     (v) => teacherSubjects = v,
@@ -1034,7 +1023,6 @@ class AppStore extends ChangeNotifier {
         sources: [..._api((r) => r.teacher.punches(inicio, now))],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
-        isEmpty: _emptyList,
       ).load();
     },
     () => teacherMarcacion,
@@ -1053,7 +1041,6 @@ class AppStore extends ChangeNotifier {
         sources: [..._api((r) => r.teacher.compliance(inicio, now))],
         merge: MergeStrategies.firstWins,
         stopAfterFirst: true,
-        isEmpty: _emptyList,
       ).load();
     },
     () => teacherCumplimiento,
@@ -1234,7 +1221,6 @@ class AppStore extends ChangeNotifier {
       sources: [..._api((r) => r.teacher.virtualClasses())],
       merge: MergeStrategies.firstWins,
       stopAfterFirst: true,
-      isEmpty: _emptyList,
     ).load(),
     () => teacherVirtual,
     (v) => teacherVirtual = v,
@@ -1467,14 +1453,15 @@ class AppStore extends ChangeNotifier {
     _notify();
   }
 
-  /// Cambiar la contraseña de la universidad aún no pasa por la API de
-  /// Nexo: se hace en el portal de la UPLA.
-  Future<void> changePassword(String actual, String nueva) => Future.error(
-    const BadRequestException(
-      'Por ahora cambia tu contraseña desde el portal de la UPLA.',
-      status: 501,
-    ),
-  );
+  /// Cambia la contraseña de la universidad a través de la API de Nexo y
+  /// guarda la nueva solo en el dispositivo, para los reingresos.
+  Future<void> changePassword(String actual, String nueva) =>
+      _scope.run(() async {
+        await _call(() => _nexo.changePassword(actual, nueva));
+        _scope.check();
+        final user = AppStorage.instance.credUser;
+        if (user != null) await AppStorage.instance.setCredentials(user, nueva);
+      });
   Future<List<CourseGrade>?> loadNotas(int year, int periodo) =>
       _scope.run(() async {
         final key = '$year-$periodo';
@@ -1487,7 +1474,6 @@ class AppStore extends ChangeNotifier {
               sources: [..._api((r) => r.legacyGrades(year, periodo))],
               merge: MergeStrategies.firstWins,
               stopAfterFirst: true,
-              isEmpty: _emptyList,
             ).load(),
             cached: () =>
                 _cache.getBoletaLegacy(year.toString(), periodo.toString()),

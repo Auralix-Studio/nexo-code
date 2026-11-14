@@ -148,7 +148,8 @@ class _Header extends StatelessWidget {
                           child: Text(
                             profile == null
                                 ? '...'
-                                : Fmt.firstName(profile.fullName),
+                                : profile.givenName ??
+                                      Fmt.firstName(profile.fullName),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

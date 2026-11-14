@@ -102,6 +102,11 @@ class NexoRepository {
     );
   }
 
+  Future<void> changePassword(String current, String newPassword) async {
+    await _directory.ensureConnected();
+    await _directory.client.changePassword(current, newPassword);
+  }
+
   Future<List<RecordCourse>> curriculum() async {
     await _directory.ensureConnected();
     final body = await _directory.client.curriculum();
@@ -549,7 +554,15 @@ Student studentFromNexo(Map<String, dynamic> json) {
     gpa: (average['cumulative'] as num?)?.toDouble(),
     creditsApproved: (credits['approved'] as num?)?.toInt(),
     creditsTotal: (credits['required'] as num?)?.toInt(),
+    givenName: _given(name['first']),
   );
+}
+
+/// Primer nombre en tipo título: "ALESSANDRO JOSE" → "Alessandro".
+String? _given(Object? first) {
+  final word = _text(first).trim().split(RegExp(r'\s+')).first;
+  if (word.isEmpty) return null;
+  return word[0].toUpperCase() + word.substring(1).toLowerCase();
 }
 
 /// `GET /terms` → [Term]. El id conserva el formato que ya usa la app
