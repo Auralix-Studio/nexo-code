@@ -81,7 +81,7 @@ class _Store extends AppStore {
   @override
   Future<void> loadIdiomasMatricula() => idiomasReady.future;
   @override
-  Future<GradesSummary?> loadResumen(String plan, String level) async {
+  Future<GradesSummary?> loadResumen() async {
     summaryStarted.complete();
     return null;
   }

@@ -2,77 +2,89 @@
 
 ## 1. Purpose and acceptance
 
-These Terms and Conditions govern the use of the Nexo application ("Nexo" or "the app"), developed by Auralix Studio ("the Developer"), in its Android, iOS, Windows and web versions.
+These Terms and Conditions govern the use of the Nexo application ("Nexo" or "the app") and of the Nexo API that powers it, developed by Auralix Studio ("the Developer"), in its Android, iOS, Windows and web versions.
 
-By tapping "Accept and continue", the user states that they have read, understood and accepted these Terms, the Privacy Policy and the Cookies Policy. Anyone who does not agree must refrain from using Nexo.
+By tapping "Accept and continue", the user declares that they have read, understood and accepted these Terms, the Privacy Policy and the Cookie Policy. Users who do not agree must not use Nexo. If the user is signed in, their acceptance is recorded on the Nexo server with the accepted version and date, as evidence.
 
 ## 2. Nature of the service
 
-Nexo is an independent, unofficial app that presents, in an organized way, the academic and administrative information that Universidad Peruana Los Andes (UPLA) makes available to each user in its own systems (SIGMA, Intranet and other institutional services).
+Nexo is an independent, unofficial app that shows, in an organized way, the academic and administrative information that Universidad Peruana Los Andes (UPLA) makes available to each user in its own systems (SIGMA, Intranet and Language Center).
 
-- Nexo is **not affiliated with, sponsored by or endorsed by UPLA**. The university's names and marks are mentioned only to identify the services the app communicates with.
-- The only official information is the one shown in UPLA's systems. In case of any difference, the institutional information prevails.
-- Nexo depends on the availability of UPLA's services, which may change or stop without notice, without any liability for the Developer.
+- The app talks **only to the Nexo API** (api.nexo.aurx.pro), the Developer's own server hosted on Microsoft Azure. That API signs in to the UPLA systems **on the user's behalf** and with their credentials, reads their information and returns it organized.
+- Nexo is **not affiliated with, sponsored or endorsed by UPLA**. The university's names and marks are mentioned only to identify the services Nexo talks to.
+- The official information is exclusively the one shown in the UPLA systems. In case of any difference, the institutional information prevails.
+- Nexo depends on the availability of the UPLA services and of its cloud providers, which may change or stop without notice and without liability for the Developer.
 
 ## 3. Account and credentials
 
-- Nexo is used with the user's own institutional credentials. The user is solely responsible for keeping them safe and for all activity carried out with them.
-- Signing in with another person's credentials is forbidden, even with their permission. Unauthorized access to computer systems may be a crime under Peru's **Law No. 30096 on Computer Crimes** and its amendments.
-- If the user suspects their credentials have been compromised, they must change them immediately through UPLA's official channels.
+- Nexo is used with the user's own institutional credentials. The user is solely responsible for keeping them safe and for any activity carried out with them.
+- The password is sent encrypted to the Nexo API, which uses it **only once** to sign in to UPLA and **never stores it on the server**. To sign in again when the university session expires, the app keeps the credentials only in the device's secure storage.
+- Signing in with someone else's credentials is forbidden, even with their permission. Unauthorized access to computer systems may be a crime under **Law No. 30096, Computer Crimes Law**, and its amendments.
+- If the user suspects their credentials were compromised, they must change them right away through UPLA's official channels and sign out of Nexo.
 
 ## 4. Permitted use and misuse
 
 The user agrees to use Nexo in good faith, for personal and academic purposes, and in accordance with the university's regulations and Peruvian law. Among other things, it is forbidden to:
 
-- Access or attempt to access third-party information that does not belong to the user.
-- Run massive or automated queries, or take any action that could overload or affect UPLA's services.
-- Alter, falsify or record academic information that does not reflect reality.
-- Copy, disclose, publish or sell personal data obtained through the app.
-- Modify, decompile or redistribute altered versions of Nexo to bypass its security measures.
+- Access or try to access third-party information that does not belong to the user.
+- Make massive or automated requests, or anything that may overload or affect the Nexo API or the UPLA services. The API limits the number of requests and may temporarily block whoever exceeds those limits.
+- Alter, forge or record academic information that does not match reality.
+- Copy, spread, publish or sell personal data obtained through the app.
+- Modify, decompile or redistribute altered versions of Nexo, or call the API from unauthorized programs, to bypass its security measures.
 
-Any breach of these rules is the user's sole responsibility.
+Breaking these rules is the user's sole responsibility and may lead to access being suspended.
 
 ## 5. Teacher module
 
-Teacher features allow viewing and recording attendance and grades for the sections the teacher is in charge of, in the same way SIGMA allows the teacher to do.
+The teacher features let teachers view and record attendance and grades for their own sections, just as SIGMA allows the teacher.
 
-- Every record or correction is executed in SIGMA with the teacher's credentials, after the teacher reviews and confirms it. The teacher is **solely responsible** for what they record and must verify it in SIGMA.
-- Student data accessed by the teacher is confidential. It may only be used for academic purposes within the teaching relationship, and it is forbidden to disclose, capture or share it with third parties. This duty of confidentiality continues even after that relationship ends, under Peru's **Law No. 29733 on Personal Data Protection**.
-- Indicators computed by Nexo (such as students at risk or classes without attendance) are a management aid and do not replace official records or decisions.
+- Every record or correction is executed by the Nexo API in SIGMA with the teacher's own session, after the teacher reviews and confirms it, and it is kept in the audit log. The teacher is **solely responsible** for what they record and must verify it in SIGMA.
+- The API only lets a teacher reach **their own sections**: each request is checked against the list of sections SIGMA assigns to them.
+- The student data a teacher accesses is confidential. It may only be used for academic purposes and within the teaching relationship, and it may not be disclosed, captured or shared with third parties. This duty of confidentiality continues even after that relationship ends, under **Law No. 29733, Personal Data Protection Law**.
+- The indicators Nexo calculates (for example, students at risk or classes without attendance) are a management aid and do not replace official records or decisions.
 
-## 6. Disclaimer and limitation of liability
+## 6. Optional features
 
-Nexo is provided "as is" and "as available", free of charge and without warranties of any kind. To the fullest extent permitted by Peruvian law, the Developer **is not liable** for:
+Some features are only enabled if the user or an administrator turns them on, and they can be turned off at any time:
 
-- Misuse of the app, the credentials or the information obtained through it, by the user or by third parties.
+- **Student directory:** only for accounts an administrator grants access to. Each lookup is recorded and access can be revoked.
+- **Guardian access:** a parent or guardian can view the student's information with their ID number (DNI) and a PIN, only when the corresponding consent exists.
+- **Integrations:** students can share their profile and schedule through a calendar link (.ics) or through "Connect with Nexo", which gives a third-party app limited access to the permissions the student approves (profile, schedule). The student can revoke each access or stop sharing at any time. What the third-party app does with that data is governed by its own terms.
+- **Grade alerts:** when available, the server may periodically check for new grades and send a notification. It will be optional and can be turned off in the app's notification settings.
+
+## 7. Disclaimer and limitation of liability
+
+Nexo is provided "as is" and "as available", free of charge and without warranties of any kind. To the maximum extent allowed by Peruvian law, the Developer is **not liable** for:
+
+- Misuse of the app, the credentials or the information obtained through it, by the user or third parties.
 - Academic, financial or any other decisions made based on the information shown.
-- Errors, omissions, delays or changes in the information coming from UPLA's systems.
+- Errors, omissions, delays or changes in the information coming from the UPLA systems.
 - Loss of information stored on the device due to uninstalling, signing out, or device or operating system failures.
-- Damage arising from compromised devices, insecure networks or third-party access to the user's device.
-- Interruption, suspension or termination of the service.
+- Damage resulting from compromised devices, insecure networks or third-party access to the user's device.
+- Interruption, suspension or termination of the service, including that of the Nexo API or its cloud providers.
 
-None of the above excludes liability that, under article 1328 of the Peruvian Civil Code, cannot be excluded or limited by agreement, nor the non-waivable rights the law grants the user.
+Nothing above excludes the liability that, under article 1328 of the Civil Code, cannot be excluded or limited by agreement, nor the non-waivable rights the law grants the user.
 
-## 7. Indemnity
+## 8. Indemnity
 
-The user is liable to the Developer and to third parties for any damage caused by using Nexo in breach of these Terms or the law, and agrees to hold the Developer harmless from any claim arising from such use.
+The user is liable to the Developer and to third parties for damage caused by using Nexo against these Terms or the law, and agrees to hold the Developer harmless from any claim arising from such use.
 
-## 8. Intellectual property
+## 9. Intellectual property
 
-Nexo's own code, design, texts and graphics belong to its developers and are protected by Peru's **Legislative Decree No. 822 on Copyright**. The names, logos and marks of UPLA and third parties belong to their respective owners.
+Nexo's own code, design, texts and graphics belong to its developers and are protected by **Legislative Decree No. 822, Copyright Law**. The names, logos and marks of UPLA and third parties belong to their respective owners.
 
-## 9. Updates
+## 10. Updates
 
-Nexo may periodically query the project's public repository on GitHub to check whether a new version exists. Installing updates requires action by the user or by the corresponding app store.
+Nexo periodically checks the project's site (nexo.aurx.pro) and, as a fallback, its public GitHub repository to see whether a new version exists. Installing updates requires action from the user or from the corresponding app store.
 
-## 10. Changes
+## 11. Changes
 
-The Developer may modify these Terms. When a change is relevant, the app will show the new version and ask for acceptance again before continuing. The version and its effective date appear at the top of each document.
+The Developer may change these Terms. The current version is published by the Nexo API, so the app detects it when it opens or is used again, without needing an update. When a change is relevant, the app shows a summary of what changed and asks for a new acceptance before continuing. The version and its effective date appear in each document.
 
-## 11. Governing law and jurisdiction
+## 12. Governing law and jurisdiction
 
-These Terms are governed by the laws of the Republic of Peru. Any dispute shall be submitted to the competent judges and courts of Peru, without prejudice to the rights granted to the user by Peru's **Law No. 29571, Consumer Protection and Defense Code**.
+These Terms are governed by the laws of the Republic of Peru. Any dispute will be submitted to the competent judges and courts of Peru, without prejudice to the rights that **Law No. 29571, Consumer Protection and Defense Code**, grants the user.
 
-## 12. Contact
+## 13. Contact
 
-For questions about these Terms, the user may write to alessandro@aurx.pro or use the app's Support section.
+For questions about these Terms, the user can write to alessandrovillogas@outlook.es or use the app's Support section.

@@ -69,6 +69,9 @@ void main() {
       250,
       scrollable: find.byType(Scrollable).first,
     );
+    // Los textos son largos: que quede entero en pantalla antes de tocarlo.
+    await tester.ensureVisible(find.text(l.legalPrivacyTitle));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l.legalPrivacyTitle));
     // Leer el asset es E/S real: se le da tiempo fuera del reloj simulado.
     for (var i = 0; i < 20; i++) {

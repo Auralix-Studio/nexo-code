@@ -10,11 +10,11 @@ Nexo **no utiliza** cookies ni tecnologías de publicidad, analítica, medición
 
 ## 3. Lo que Nexo sí usa: elementos estrictamente necesarios
 
-**a) Cookies de sesión de la Intranet de la UPLA.** Al iniciar sesión, la Intranet de la universidad emite cookies de sesión. Nexo las guarda en el almacenamiento seguro del dispositivo con el único fin de mantener abierta tu sesión. Se eliminan al cerrar sesión o cuando la universidad las da por vencidas.
+**a) Sesiones de la universidad, en el servidor.** Al iniciar sesión, la API de Nexo recibe de la UPLA las cookies de sesión de la Intranet y los tokens de SIGMA y del Centro de Idiomas. Se guardan **cifrados (AES-256-GCM) en el servidor de Nexo**, no en tu dispositivo, con el único fin de atender tus consultas. Se eliminan al cerrar sesión o cuando la universidad las da por vencidas.
 
-**b) Almacenamiento seguro.** Guarda tus credenciales y los tokens de sesión mientras la sesión esté abierta. Se elimina al cerrar sesión.
+**b) Almacenamiento seguro del dispositivo.** Guarda tus credenciales y los tokens de acceso a la API de Nexo mientras la sesión esté abierta, para volver a entrar cuando la sesión vence. Se elimina al cerrar sesión.
 
-**c) Almacenamiento local de preferencias.** Recuerda el tema, el idioma, el formato de hora, la configuración de notificaciones y del inicio, y si ya aceptaste estos documentos. Permanece hasta que cambies la preferencia o desinstales la aplicación; cerrar sesión no la borra.
+**c) Almacenamiento local de preferencias.** Recuerda el tema, el idioma, el formato de hora, la configuración de notificaciones y del inicio, y qué versión de estos documentos aceptaste. Permanece hasta que cambies la preferencia o desinstales la aplicación; cerrar sesión no la borra.
 
 **d) Caché local de información.** Copia de tu horario, notas, pagos y, para docentes, de las listas de sus secciones, para que la aplicación funcione sin conexión. Se elimina al cerrar sesión.
 
@@ -22,11 +22,11 @@ Nexo **no utiliza** cookies ni tecnologías de publicidad, analítica, medición
 
 ## 4. Versión web
 
-En la versión web, Nexo usa el almacenamiento local del navegador (localStorage) para las preferencias y la caché descritas, y mantiene la sesión solo en memoria, por lo que se cierra al recargar la página. Nexo no instala cookies propias con fines distintos al funcionamiento del servicio.
+En la versión web, Nexo usa el almacenamiento local del navegador (localStorage) para las preferencias y la caché descritas, y mantiene la sesión solo en memoria, por lo que se cierra al recargar la página. La API de Nexo no instala cookies en tu navegador.
 
 ## 5. Servicios de terceros
 
-Los servicios de la UPLA, GitHub y WhatsApp pueden usar sus propias cookies cuando los visitas desde un navegador o una aplicación. Ese uso se rige por las políticas de cada uno de ellos, y no por esta Política.
+Los servicios de la UPLA, GitHub y WhatsApp pueden usar sus propias cookies cuando los visitas desde un navegador o una aplicación, y las aplicaciones de terceros que conectes con «Conectar con Nexo» o con el calendario se rigen por sus propias políticas, y no por esta.
 
 ## 6. Consentimiento
 
@@ -34,6 +34,6 @@ Como Nexo solo utiliza elementos estrictamente necesarios para prestar el servic
 
 ## 7. Cómo eliminarlas
 
-- Cierra sesión desde Perfil: se eliminan la sesión, las credenciales, la caché y los borradores.
+- Cierra sesión desde Perfil: se eliminan las sesiones de la universidad en el servidor y, en el dispositivo, las credenciales, la caché y los borradores.
 - Borra los datos de la aplicación desde los ajustes del sistema o desinstálala.
 - En la versión web, borra los datos del sitio desde la configuración de tu navegador.

@@ -4,7 +4,6 @@ import 'package:nexo/core/errors.dart';
 import 'package:nexo/data/remote/backend_client.dart';
 import 'package:nexo/data/local/cache_manager.dart';
 import 'package:nexo/data/services/connectivity_service.dart';
-import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/data/services/session.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
@@ -51,46 +50,6 @@ class MockSessionService extends Fake implements SessionService {
 }
 
 void main() {
-  group('Unified Models Tests', () {
-    test('Student merges correctly, prioritizing primary fields', () {
-      const student1 = Student(
-        id: '123',
-        fullName: 'John Doe',
-        career: 'Systems Engineering',
-        faculty: 'Engineering',
-        campus: 'Huancayo',
-        level: 'VI',
-        studyPlan: '2020',
-        modality: 'Presencial',
-        isEnrolled: true,
-        creditsApproved: 100,
-      );
-
-      const student2 = Student(
-        id: '',
-        fullName: 'John D.',
-        career: '',
-        faculty: '',
-        campus: '',
-        level: '',
-        studyPlan: '',
-        modality: '',
-        isEnrolled: false,
-        lastEnrollment: '2026-1',
-        creditsApproved: null,
-        creditsTotal: 200,
-      );
-
-      final merged = student1.mergeWith(student2);
-
-      expect(merged.id, '123');
-      expect(merged.fullName, 'John Doe');
-      expect(merged.lastEnrollment, '2026-1');
-      expect(merged.creditsApproved, 100);
-      expect(merged.creditsTotal, 200);
-    });
-  });
-
   group('ErrorHandler Tests', () {
     test('withFallback executes remote action if online', () async {
       final conn = ConnectivityService(

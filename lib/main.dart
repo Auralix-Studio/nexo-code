@@ -37,6 +37,7 @@ import 'package:nexo/data/remote/secure_http.dart';
 import 'package:nexo/data/services/update_service.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/features/auth/login_screen.dart';
+import 'package:nexo/features/legal/legal_updates.dart';
 import 'package:nexo/features/legal/terms_screen.dart';
 import 'package:nexo/features/onboarding/onboarding_screen.dart';
 
@@ -130,6 +131,8 @@ Future<void> main(List<String> args) async {
     session: session,
   );
   final directory = DirectoryService(client: backend);
+  // Versión vigente de los documentos legales, publicada por el backend.
+  final legal = LegalUpdates.backend(backend);
   final store = AppStore(
     NexoRepository(directory),
     cache: cache,
@@ -180,6 +183,7 @@ Future<void> main(List<String> args) async {
       theme: theme,
       connectivity: connectivity,
       directory: directory,
+      legal: legal,
       isSetup: isSetup,
       isUninstall: isUninstall,
     ),
@@ -297,6 +301,7 @@ class NexoApp extends StatelessWidget {
     required this.directory,
     required this.isSetup,
     required this.isUninstall,
+    this.legal,
   });
   final SessionService session;
   final AppStore store;
@@ -305,6 +310,7 @@ class NexoApp extends StatelessWidget {
   final DirectoryService directory;
   final bool isSetup;
   final bool isUninstall;
+  final LegalUpdates? legal;
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -338,6 +344,7 @@ class NexoApp extends StatelessWidget {
           },
           theme: NexoTheme.light(fontFamily: theme.fontFamily),
           home: _Gate(
+            legal: legal,
             session: session,
             store: store,
             theme: theme,
@@ -361,6 +368,7 @@ class _Gate extends StatefulWidget {
     required this.directory,
     required this.isSetup,
     required this.isUninstall,
+    this.legal,
   });
   final SessionService session;
   final AppStore store;
@@ -369,11 +377,12 @@ class _Gate extends StatefulWidget {
   final DirectoryService directory;
   final bool isSetup;
   final bool isUninstall;
+  final LegalUpdates? legal;
   @override
   State<_Gate> createState() => _GateState();
 }
 
-class _GateState extends State<_Gate> {
+class _GateState extends State<_Gate> with WidgetsBindingObserver {
   bool _accepted = AppStorage.instance.acceptedTerms;
   bool _seenOnboarding = AppStorage.instance.seenOnboarding;
   late bool _isSetup = widget.isSetup;
@@ -381,9 +390,12 @@ class _GateState extends State<_Gate> {
   InstallOptions? _installOptions;
   bool _minSplashDone = false;
 
+  SessionStatus? _lastStatus;
+
   @override
   void initState() {
     super.initState();
+    _watchLegal();
     final active = FestivityService.active(DateTime.now());
     final isFiestasPatrias =
         AppStorage.instance.festivityDecor &&
@@ -396,6 +408,64 @@ class _GateState extends State<_Gate> {
     } else {
       _minSplashDone = true;
     }
+  }
+
+  // Documentos legales: la versión vigente la publica el backend, así que
+  // un cambio llega sin actualizar la app. Se consulta al abrir y al volver
+  // (LegalUpdates limita a una vez por hora); si hay una versión nueva se
+  // vuelve a pedir la aceptación. La constancia en el servidor se envía en
+  // cuanto hay sesión.
+  void _watchLegal() {
+    final legal = widget.legal;
+    if (legal == null || widget.isUninstall) return;
+    WidgetsBinding.instance.addObserver(this);
+    legal.addListener(_onLegalChanged);
+    widget.session.addListener(_onSessionChanged);
+    unawaited(legal.check());
+  }
+
+  @override
+  void dispose() {
+    if (widget.legal != null && !widget.isUninstall) {
+      WidgetsBinding.instance.removeObserver(this);
+      widget.legal!.removeListener(_onLegalChanged);
+      widget.session.removeListener(_onSessionChanged);
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(widget.legal?.check());
+  }
+
+  void _onLegalChanged() {
+    final accepted = AppStorage.instance.acceptedTerms;
+    if (mounted && accepted != _accepted) {
+      setState(() => _accepted = accepted);
+    }
+  }
+
+  void _onSessionChanged() {
+    final status = widget.session.status;
+    if (status == _lastStatus) return;
+    _lastStatus = status;
+    final legal = widget.legal!;
+    if (status == SessionStatus.authenticated) {
+      unawaited(legal.syncAcceptance());
+    } else if (status == SessionStatus.unauthenticated) {
+      unawaited(legal.signedOut());
+    }
+  }
+
+  Future<void> _acceptTerms() async {
+    final legal = widget.legal;
+    if (legal != null) {
+      await legal.accept();
+    } else {
+      await AppStorage.instance.setAcceptedTerms(true);
+    }
+    if (mounted) setState(() => _accepted = true);
   }
 
   @override
@@ -459,14 +529,15 @@ class _GateState extends State<_Gate> {
     String key;
     if (!_accepted) {
       key = 'terms';
+      final legal = widget.legal;
       gated = TermsScreen(
         // Quien ya había aceptado una versión anterior no está "empezando":
         // está viendo unos términos que cambiaron.
         isUpdate: AppStorage.instance.acceptedTermsVersion > 0,
-        onAccept: () async {
-          await AppStorage.instance.setAcceptedTerms(true);
-          if (mounted) setState(() => _accepted = true);
-        },
+        version: AppStorage.instance.requiredTermsVersion,
+        changes: legal?.changes ?? const [],
+        onlineDocuments: legal?.onlineDocuments ?? const [],
+        onAccept: _acceptTerms,
       );
     } else {
       gated = ListenableBuilder(

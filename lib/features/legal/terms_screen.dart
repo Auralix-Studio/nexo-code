@@ -4,8 +4,10 @@ import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/features/legal/legal_document_screen.dart';
+import 'package:nexo/features/legal/legal_updates.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/app_logo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class _Item {
   final IconData icon;
@@ -93,8 +95,24 @@ List<_Item> _items(AppLocalizations l) => <_Item>[
 ];
 
 class TermsScreen extends StatelessWidget {
-  const TermsScreen({super.key, this.onAccept, this.isUpdate = false});
+  const TermsScreen({
+    super.key,
+    this.onAccept,
+    this.isUpdate = false,
+    this.version,
+    this.changes = const [],
+    this.onlineDocuments = const [],
+  });
   final VoidCallback? onAccept;
+
+  /// Versión que se acepta; por defecto, la que trae la app.
+  final int? version;
+
+  /// Resumen de cambios que publicó el backend (`GET /legal`).
+  final List<String> changes;
+
+  /// Documentos en la web, cuando son más nuevos que los que trae la app.
+  final List<OnlineLegalDoc> onlineDocuments;
 
   /// El usuario ya había aceptado una versión anterior: conviene decírselo en
   /// vez de darle la bienvenida como si fuera la primera vez.
@@ -109,6 +127,9 @@ class TermsScreen extends StatelessWidget {
       isGate: _isGate,
       isUpdate: isUpdate,
       onAccept: onAccept,
+      version: version ?? LegalTerms.version,
+      changes: changes,
+      onlineDocuments: onlineDocuments,
     );
     if (isDesktop && _isGate) {
       return Scaffold(
@@ -148,10 +169,16 @@ class _Content extends StatelessWidget {
   final bool isGate;
   final bool isUpdate;
   final VoidCallback? onAccept;
+  final int version;
+  final List<String> changes;
+  final List<OnlineLegalDoc> onlineDocuments;
   const _Content({
     required this.isGate,
     required this.isUpdate,
     required this.onAccept,
+    required this.version,
+    required this.changes,
+    required this.onlineDocuments,
   });
   @override
   Widget build(BuildContext context) {
@@ -214,7 +241,11 @@ class _Content extends StatelessWidget {
                 const Gap(AppSpacing.xxl),
               ],
               if (isGate && isUpdate) ...[
-                _UpdatedBanner(text: l.termsUpdatedNotice),
+                _UpdatedBanner(
+                  text: l.termsUpdatedNotice,
+                  changes: changes,
+                  changesTitle: l.termsChangesTitle,
+                ),
                 const Gap(AppSpacing.lg),
               ],
               for (final it in _items(l)) ...[
@@ -222,13 +253,13 @@ class _Content extends StatelessWidget {
                 const Gap(AppSpacing.md),
               ],
               const Gap(AppSpacing.sm),
-              const _DocumentsCard(),
+              _DocumentsCard(onlineDocuments: onlineDocuments),
               const Gap(AppSpacing.md),
               const Gap(AppSpacing.sm),
               Center(
                 child: Text(
                   l.termsVersionLine(
-                    '${LegalTerms.version}',
+                    '$version',
                     MaterialLocalizations.of(
                       context,
                     ).formatFullDate(LegalTerms.updatedAt),
@@ -328,11 +359,24 @@ class _Content extends StatelessWidget {
 /// Aviso de que los términos cambiaron. Solo se muestra a quien ya había
 /// aceptado una versión anterior.
 class _UpdatedBanner extends StatelessWidget {
-  const _UpdatedBanner({required this.text});
+  const _UpdatedBanner({
+    required this.text,
+    required this.changes,
+    required this.changesTitle,
+  });
   final String text;
+
+  /// Qué cambió, según el backend. Sin él se muestra [text].
+  final List<String> changes;
+  final String changesTitle;
 
   @override
   Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: AppFont.small,
+      height: 1.45,
+      color: NexoTheme.textSecondary,
+    );
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -350,14 +394,24 @@ class _UpdatedBanner extends StatelessWidget {
           ),
           const Gap.h(AppSpacing.md),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: AppFont.small,
-                height: 1.45,
-                color: NexoTheme.textSecondary,
-              ),
-            ),
+            child: changes.isEmpty
+                ? Text(text, style: style)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        changesTitle,
+                        style: style.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: NexoTheme.textPrimary,
+                        ),
+                      ),
+                      for (final change in changes) ...[
+                        const Gap(AppSpacing.xs),
+                        Text('•  $change', style: style),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
@@ -422,7 +476,10 @@ class _SectionCard extends StatelessWidget {
 
 /// Acceso a los documentos completos: el resumen de arriba no los reemplaza.
 class _DocumentsCard extends StatelessWidget {
-  const _DocumentsCard();
+  const _DocumentsCard({required this.onlineDocuments});
+
+  /// Si hay versión más nueva en la web, se abren esos y no los de la app.
+  final List<OnlineLegalDoc> onlineDocuments;
 
   @override
   Widget build(BuildContext context) {
@@ -456,26 +513,45 @@ class _DocumentsCard extends StatelessWidget {
               ),
             ),
           ),
-          for (final doc in LegalDoc.values)
+          for (final doc in onlineDocuments)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xl,
               ),
-              leading: Icon(doc.icon, color: NexoTheme.primary),
+              leading: Icon(Icons.open_in_new, color: NexoTheme.primary),
               title: Text(
-                doc.title(l),
+                doc.title,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: NexoTheme.textPrimary,
                 ),
               ),
-              subtitle: Text(doc.subtitle(l)),
-              trailing: Icon(
-                Icons.chevron_right_rounded,
-                color: NexoTheme.textMuted,
+              onTap: () => launchUrl(
+                Uri.parse(doc.url),
+                mode: LaunchMode.externalApplication,
               ),
-              onTap: () => LegalDocumentScreen.open(context, doc),
             ),
+          if (onlineDocuments.isEmpty)
+            for (final doc in LegalDoc.values)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                ),
+                leading: Icon(doc.icon, color: NexoTheme.primary),
+                title: Text(
+                  doc.title(l),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: NexoTheme.textPrimary,
+                  ),
+                ),
+                subtitle: Text(doc.subtitle(l)),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: NexoTheme.textMuted,
+                ),
+                onTap: () => LegalDocumentScreen.open(context, doc),
+              ),
           const Gap(AppSpacing.sm),
         ],
       ),

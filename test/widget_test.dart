@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/data/repositories/nexo_repository.dart';
 import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/features/legal/support_screen.dart';
@@ -98,28 +97,13 @@ void main() {
     expect(n.secondTerm.isEmpty, false);
   });
 
-  test('formatGrade y RecordCourse manejan decimales', () {
+  test('formatGrade maneja decimales', () {
     expect(formatGrade('14.00'), '14.00');
     expect(formatGrade('14.50'), '14.50');
     expect(formatGrade('15'), '15.00');
     expect(formatGrade('  '), '—');
     expect(formatGrade('--'), '—');
     expect(parseGrade('14,5'), 14.5);
-
-    final c = recordCourseFromNexo({
-      'code': '33111A',
-      'name': 'METODOLOGÍA',
-      'cycle': 1,
-      'credits': 2,
-      'type': 'mandatory',
-      'status': 'completed',
-      'grade': 14.0,
-    });
-    expect(c.name, 'METODOLOGÍA');
-    expect(c.grade, 14.0);
-    expect(c.notaText, '14.00');
-    expect(c.isApproved, true);
-    expect(c.isFinished, true);
   });
 
   test(

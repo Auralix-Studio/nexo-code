@@ -54,7 +54,7 @@ void main() {
 
   for (final populated in [false, true]) {
     test(
-      'version 2 migration repairs schema and discards unowned data ($populated)',
+      'old schema migration repairs tables and discards unowned data ($populated)',
       () async {
         final old = await openDatabase(
           p.join(temp.path, 'nexo_cache.db'),
@@ -74,7 +74,7 @@ void main() {
         );
         await old.close();
         await cache.activateAccount('B');
-        expect(await cache.db.getVersion(), 3);
+        expect(await cache.db.getVersion(), 4);
         expect(await cache.getStudent(), isNull);
         await cache.saveHorario([]);
         expect(await cache.getHorario(), isEmpty);

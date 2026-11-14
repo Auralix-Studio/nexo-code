@@ -64,3 +64,5 @@ android/key.properties
 
 # Prototipo de endpoinds extractor
 prototype-ts
+# Firebase config (public repo): kept local
+android/app/google-services.json

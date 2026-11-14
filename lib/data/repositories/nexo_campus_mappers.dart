@@ -48,22 +48,6 @@ EnrollmentCertificate enrollmentFromNexo(Map<String, dynamic> json) {
   );
 }
 
-/// Un anuncio de `GET /publications` → [Publication].
-Publication publicationFromNexo(Map<String, dynamic> json) {
-  final width = (json['width'] as num?)?.toInt();
-  final height = (json['height'] as num?)?.toInt();
-  return Publication(
-    publicationId: (json['id'] as num?)?.toInt() ?? 0,
-    contentType: _text(json['kind']),
-    mainUrl: _text(json['url']),
-    adaptableUrl: json['adaptive_url'] as String?,
-    referenceUrl: json['link_url'] as String?,
-    buttonText: json['button_text'] as String?,
-    allowsDownload: json['downloadable'] == true,
-    mainDimension: width != null && height != null ? '${width}x$height' : '',
-  );
-}
-
 /// `GET /wifi` → [WifiCredential]; vacía si la universidad no tiene una.
 WifiCredential wifiFromNexo(Map<String, dynamic> json) => WifiCredential(
   username: _text(json['user']),

@@ -1159,7 +1159,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemPrivacyBody.
   ///
   /// In es, this message translates to:
-  /// **'Tus credenciales y tus datos académicos se guardan en tu dispositivo. Nexo no tiene servidores propios: las consultas van directamente a los servicios de la UPLA, igual que el portal oficial. Solo se consulta GitHub para buscar actualizaciones, sin enviar datos académicos. No hay publicidad ni analítica.'**
+  /// **'La app solo habla con la API de Nexo (api.nexo.aurx.pro), alojada en Microsoft Azure con MongoDB Atlas como base de datos. La API inicia sesión en SIGMA, la Intranet y el Centro de Idiomas en tu nombre: tu contraseña se usa una vez y nunca se guarda en el servidor. Las sesiones de la universidad se guardan cifradas y se borran al cerrar sesión. No hay publicidad ni analítica.'**
   String get termsItemPrivacyBody;
 
   /// No description provided for @termsItemSecurityTitle.
@@ -1171,7 +1171,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemSecurityBody.
   ///
   /// In es, this message translates to:
-  /// **'En móvil y escritorio, las credenciales se protegen con el almacén seguro del sistema. En el navegador, la sesión permanece en memoria y debes iniciar sesión de nuevo al recargar. Los datos académicos se guardan localmente sin cifrado adicional. Cerrar sesión elimina credenciales y caché.'**
+  /// **'Todo viaja cifrado (TLS). En el servidor, las sesiones de la universidad se cifran con AES-256-GCM, las peticiones tienen límites y las acciones sensibles quedan en un registro de auditoría. En el dispositivo, las credenciales se guardan en el almacén seguro del sistema (en el navegador, solo en memoria). Cerrar sesión borra las sesiones del servidor, las credenciales y la caché.'**
   String get termsItemSecurityBody;
 
   /// No description provided for @termsItemResponsibleTitle.
@@ -2671,7 +2671,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemRightsBody.
   ///
   /// In es, this message translates to:
-  /// **'Tus datos están en tu dispositivo, así que los controlas tú: puedes revisarlos, actualizarlos en los sistemas de la UPLA o borrarlos cerrando sesión. Para ejercer tus derechos de acceso, rectificación, cancelación y oposición, escríbenos desde Soporte; también puedes acudir a la Autoridad Nacional de Protección de Datos Personales.'**
+  /// **'Puedes revisar tus datos en la app, actualizarlos en los sistemas de la UPLA, borrar tus sesiones y la caché cerrando sesión y desactivar cada función opcional. Para ejercer tus derechos de acceso, rectificación, cancelación y oposición, o pedir que borremos lo que el servidor guarda de ti, escríbenos desde Soporte; también puedes acudir a la Autoridad Nacional de Protección de Datos Personales.'**
   String get termsItemRightsBody;
 
   /// No description provided for @termsHeaderUpdatedPre.
@@ -2683,8 +2683,14 @@ abstract class AppLocalizations {
   /// No description provided for @termsUpdatedNotice.
   ///
   /// In es, this message translates to:
-  /// **'Actualizamos nuestros documentos: ahora hay Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con la ley peruana aplicable y los límites de responsabilidad. Léelos antes de continuar.'**
+  /// **'Actualizamos nuestros documentos: ahora la app se conecta a la API de Nexo, que inicia sesión en la UPLA por ti sin guardar tu contraseña. Léelos antes de continuar.'**
   String get termsUpdatedNotice;
+
+  /// No description provided for @termsChangesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Qué cambió'**
+  String get termsChangesTitle;
 
   /// No description provided for @termsItemDeviceTitle.
   ///
@@ -2707,7 +2713,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsItemChangesBody.
   ///
   /// In es, this message translates to:
-  /// **'Si cambia algo importante en cómo se tratan tus datos, actualizaremos estos términos y volveremos a mostrártelos antes de que sigas usando la app. Puedes releerlos cuando quieras desde Perfil, en Términos y privacidad.'**
+  /// **'Si cambia algo importante en cómo se tratan tus datos, publicaremos una nueva versión y la app te la mostrará con un resumen de los cambios antes de que sigas, sin necesidad de actualizarla. Puedes releerlos cuando quieras desde Perfil, en Términos y privacidad.'**
   String get termsItemChangesBody;
 
   /// No description provided for @termsVersionLine.

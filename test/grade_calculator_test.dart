@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/domain/grade_calculator.dart';
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/domain/unified_models.dart';
 
 // ─── Helpers ───
 
@@ -99,41 +98,6 @@ void main() {
     test('ignora courses sin grade', () {
       final courses = [_legacy(3, '15'), _legacy(3, '')];
       expect(GradeCalculator.promedioPonderadoLegacy(courses), 15.0);
-    });
-  });
-
-  group('promedioAcumulado', () {
-    TermAverage t(int year, int number, double avg) =>
-        TermAverage(year: year, number: number, average: avg);
-
-    test('excluye el periodo activo en course', () {
-      final periodos = [t(2024, 1, 14), t(2024, 2, 16), t(2025, 1, 0)];
-      expect(
-        GradeCalculator.promedioAcumulado(
-          periodos,
-          activeYear: 2025,
-          activeNumber: 1,
-        ),
-        15.0,
-      );
-    });
-
-    test('excluye periodos con average 0', () {
-      expect(
-        GradeCalculator.promedioAcumulado([t(2024, 1, 0), t(2024, 2, 15)]),
-        15.0,
-      );
-    });
-
-    test('sin periodos cerrados → null', () {
-      expect(
-        GradeCalculator.promedioAcumulado(
-          [t(2025, 1, 0)],
-          activeYear: 2025,
-          activeNumber: 1,
-        ),
-        isNull,
-      );
     });
   });
 }

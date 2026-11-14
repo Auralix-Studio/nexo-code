@@ -1,5 +1,4 @@
 import 'package:nexo/domain/models.dart';
-import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/domain/passing_rule.dart';
 
 class GradeCalculator {
@@ -46,27 +45,5 @@ class GradeCalculator {
           })
           .map((c) => (c.currentGradeNum, c.credit)),
     );
-  }
-
-  /// Promedio acumulado de respaldo usando un **promedio simple** de todos los
-  /// promedios de ciclo. Matemáticamente esto no pondera por créditos, así
-  /// que solo se usa como último recurso cuando falla la carga del resumen oficial.
-  static double? promedioAcumulado(
-    List<TermAverage> periodos, {
-    int? activeYear,
-    int? activeNumber,
-  }) {
-    final cerrados = periodos.where((p) {
-      if (p.average == 0) return false;
-      final esActivo =
-          activeYear != null &&
-          activeNumber != null &&
-          p.year == activeYear &&
-          p.number == activeNumber;
-      return !esActivo;
-    }).toList();
-    if (cerrados.isEmpty) return null;
-    final suma = cerrados.fold<double>(0, (a, b) => a + b.average);
-    return suma / cerrados.length;
   }
 }

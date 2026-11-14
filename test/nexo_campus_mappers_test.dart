@@ -43,23 +43,7 @@ void main() {
     expect(c.totalCredits, 22);
   });
 
-  test('a publication and the wifi credential', () {
-    final p = publicationFromNexo({
-      'id': 1009,
-      'kind': 'image',
-      'url': 'https://x/a.jpeg',
-      'adaptive_url': null,
-      'link_url': null,
-      'button_text': null,
-      'downloadable': false,
-      'width': 1080,
-      'height': 1350,
-    });
-    expect(p.publicationId, 1009);
-    expect(p.isImage, isTrue);
-    expect(p.mainDimension, '1080x1350');
-    expect(p.allowsDownload, isFalse);
-
+  test('the wifi credential', () {
     final w = wifiFromNexo({'user': 'u-e001', 'password': 's'});
     expect((w.username, w.password), ('u-e001', 's'));
     expect(wifiFromNexo({'user': null, 'password': null}).username, '');

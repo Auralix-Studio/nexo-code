@@ -38,21 +38,7 @@ class CacheManager {
       version: 4,
       onCreate: _createTables,
       onUpgrade: (db, oldVersion, newVersion) async {
-        final tables = [
-          'student_profile',
-          'boleta_cursos',
-          'boleta_legacy',
-          'schedule',
-          'periodos',
-          'promedios',
-          'pagos',
-          'docente_info',
-          'docente_cursos',
-          'docente_alumnos',
-          'unified_student',
-          'unified_teacher',
-        ];
-        for (final t in tables) {
+        for (final t in _tables) {
           await db.execute('DROP TABLE IF EXISTS $t');
         }
         await db.execute('DROP TABLE IF EXISTS cache_owner');
@@ -598,30 +584,6 @@ class CacheManager {
     }
   }
 
-  Future<void> saveTeacher(Teacher teacher) async {
-    if (!isReady) return;
-    await db.insert('unified_teacher', {
-      'id': teacher.id.isNotEmpty ? teacher.id : 'current',
-      'json_data': jsonEncode(teacher.toJson()),
-      'updated_at': DateTime.now().millisecondsSinceEpoch,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<Teacher?> getTeacher() async {
-    final List<Map<String, dynamic>> maps = await db.query(
-      'unified_teacher',
-      limit: 1,
-    );
-    if (maps.isEmpty) return null;
-    try {
-      return Teacher.fromJson(
-        jsonDecode(maps.first['json_data'] as String) as Map<String, dynamic>,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> clearAll() async {
     _account = null;
     final database = _db;
@@ -632,51 +594,5 @@ class CacheManager {
       }
       await txn.delete('cache_owner');
     });
-  }
-
-  Future<void> clearExpired(Duration maxAge) async {
-    if (!isReady) return;
-    final cutoff =
-        DateTime.now().millisecondsSinceEpoch - maxAge.inMilliseconds;
-    final tables = [
-      'student_profile',
-      'boleta_cursos',
-      'boleta_legacy',
-      'schedule',
-      'periodos',
-      'promedios',
-      'pagos',
-      'docente_info',
-      'docente_cursos',
-      'docente_alumnos',
-      'unified_student',
-      'unified_teacher',
-    ];
-    for (final table in tables) {
-      await db.delete(table, where: 'updated_at < ?', whereArgs: [cutoff]);
-    }
-  }
-
-  Future<bool> isFresh(
-    String table,
-    String keyColumn,
-    String keyValue,
-    Duration maxAge,
-  ) async {
-    try {
-      final List<Map<String, dynamic>> maps = await db.query(
-        table,
-        columns: ['updated_at'],
-        where: '$keyColumn = ?',
-        whereArgs: [keyValue],
-        limit: 1,
-      );
-      if (maps.isEmpty) return false;
-      final updatedAt = maps.first['updated_at'] as int;
-      final age = DateTime.now().millisecondsSinceEpoch - updatedAt;
-      return age < maxAge.inMilliseconds;
-    } catch (_) {
-      return false;
-    }
   }
 }

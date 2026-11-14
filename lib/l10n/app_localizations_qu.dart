@@ -658,14 +658,14 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get termsItemPrivacyBody =>
-      'Credencialniykikuna hinaspa yachay willakuyniykikunaqa dispositivoykipillam waqaychakun. Nexoqa manam servidorninman nitaq hukkunamanpas apachinchu: UPLA servicionkunamanmi chawpillanpi rin.';
+      'La app solo habla con la API de Nexo (api.nexo.aurx.pro), alojada en Microsoft Azure con MongoDB Atlas como base de datos. La API inicia sesión en SIGMA, la Intranet y el Centro de Idiomas en tu nombre: tu contraseña se usa una vez y nunca se guarda en el servidor. Las sesiones de la universidad se guardan cifradas y se borran al cerrar sesión. No hay publicidad ni analítica.';
 
   @override
   String get termsItemSecurityTitle => 'Seguridad';
 
   @override
   String get termsItemSecurityBody =>
-      'En móvil y escritorio, las credenciales se protegen con el almacén seguro del sistema. En el navegador, la sesión permanece en memoria y debes iniciar sesión de nuevo al recargar. Los datos académicos se guardan localmente sin cifrado adicional. Cerrar sesión elimina credenciales y caché.';
+      'Todo viaja cifrado (TLS). En el servidor, las sesiones de la universidad se cifran con AES-256-GCM, las peticiones tienen límites y las acciones sensibles quedan en un registro de auditoría. En el dispositivo, las credenciales se guardan en el almacén seguro del sistema (en el navegador, solo en memoria). Cerrar sesión borra las sesiones del servidor, las credenciales y la caché.';
 
   @override
   String get termsItemResponsibleTitle => 'Uso responsable';
@@ -1546,7 +1546,10 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get termsUpdatedNotice =>
-      'Actualizamos nuestros documentos: ahora hay Términos y Condiciones, Política de Privacidad y Política de Cookies completos, con la ley peruana aplicable y los límites de responsabilidad. Léelos antes de continuar.';
+      'Actualizamos nuestros documentos: ahora la app se conecta a la API de Nexo, que inicia sesión en la UPLA por ti sin guardar tu contraseña. Léelos antes de continuar.';
+
+  @override
+  String get termsChangesTitle => 'Qué cambió';
 
   @override
   String get termsItemDeviceTitle => 'Lo que queda en tu dispositivo';
@@ -1560,7 +1563,7 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get termsItemChangesBody =>
-      'Si cambia algo importante en cómo se tratan tus datos, actualizaremos estos términos y volveremos a mostrártelos antes de que sigas usando la app. Puedes releerlos cuando quieras desde Perfil, en Términos y privacidad.';
+      'Si cambia algo importante en cómo se tratan tus datos, publicaremos una nueva versión y la app te la mostrará con un resumen de los cambios antes de que sigas, sin necesidad de actualizarla. Puedes releerlos cuando quieras desde Perfil, en Términos y privacidad.';
 
   @override
   String termsVersionLine(String version, String date) {

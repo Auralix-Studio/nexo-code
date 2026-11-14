@@ -36,10 +36,14 @@ class AppConfig {
 }
 
 class LegalTerms {
-  // v4: documentos formales (Términos y Condiciones, Política de Privacidad y
-  // Política de Cookies) con ley aplicable y límites de responsabilidad.
-  static const int version = 4;
-  static final DateTime updatedAt = DateTime(2026, 10, 8);
+  // v5: la app solo habla con la API de Nexo (Azure + MongoDB Atlas), que
+  // inicia sesión en la UPLA en nombre del usuario sin guardar contraseñas.
+  //
+  // Es la versión que viaja con la app (textos en assets/legal/). La vigente
+  // la publica el backend (`GET /legal`, `Nexo.Legal`): si es mayor, se pide
+  // aceptarla sin esperar una actualización (ver LegalUpdates).
+  static const int version = 5;
+  static final DateTime updatedAt = DateTime(2026, 11, 14);
 }
 
 /// Nexo's own API (repository nexo-backend): the only server the app talks

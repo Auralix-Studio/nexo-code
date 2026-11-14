@@ -14,7 +14,7 @@ dependencies:
   intl: any
   # Cliente HTTP base oficial del equipo Dart (no SDK de terceros).
   # Lo usamos como transporte; la autenticación, sesión y manejo
-  # de respuestas son 100% propios (ver lib/data/remote/api_client.dart).
+  # de respuestas son 100% propios (ver lib/data/remote/backend_client.dart).
   http: ^1.2.2
   crypto: ^3.0.7
   # Persistencia local del token y datos cacheados.
@@ -112,8 +112,8 @@ flutter:
     - assets/icon.png
 
     # Bundle de root CAs de Mozilla (mismo que usa curl).
-    # Lo cargamos en un SecurityContext para arreglar el handshake TLS de
-    # SIGMA en dispositivos cuyo almacén raíz está desactualizado o cuando
+    # Lo cargamos en un SecurityContext para que el handshake TLS con la API
+    # funcione en dispositivos cuyo almacén raíz está desactualizado o cuando
     # el servidor omite el intermedio. Ver lib/data/remote/secure_http.dart.
     - assets/certs/cacert.pem
 

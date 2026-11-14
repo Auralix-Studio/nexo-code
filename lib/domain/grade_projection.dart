@@ -21,7 +21,7 @@ enum ProjectionStatus {
 /// Cuánto necesitas sacar en lo que te queda.
 ///
 /// El promedio del curso es la media de las unidades ponderada por su peso
-/// (ver `CourseGradeDetail.computedAverage`). Esto es esa misma cuenta al
+/// (la API lo entrega en `CourseGradeDetail.serverAverage`). Esto es esa misma cuenta al
 /// revés: se conoce lo ya obtenido y se despeja la nota que falta.
 ///
 ///     promedio = (Σ obtenido·peso + nota·pesoPendiente) / pesoTotal

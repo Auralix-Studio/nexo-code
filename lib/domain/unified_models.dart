@@ -1,5 +1,3 @@
-import 'package:nexo/domain/models.dart';
-
 class Student {
   final String id;
   final String fullName;
@@ -34,25 +32,6 @@ class Student {
     this.creditsTotal,
     this.givenName,
   });
-
-  Student mergeWith(Student other) {
-    return Student(
-      id: id.isNotEmpty ? id : other.id,
-      fullName: fullName.isNotEmpty ? fullName : other.fullName,
-      career: career.isNotEmpty ? career : other.career,
-      faculty: faculty.isNotEmpty ? faculty : other.faculty,
-      campus: campus.isNotEmpty ? campus : other.campus,
-      level: level.isNotEmpty ? level : other.level,
-      studyPlan: studyPlan.isNotEmpty ? studyPlan : other.studyPlan,
-      modality: modality.isNotEmpty ? modality : other.modality,
-      isEnrolled: isEnrolled || other.isEnrolled,
-      lastEnrollment: lastEnrollment ?? other.lastEnrollment,
-      gpa: gpa ?? other.gpa,
-      creditsApproved: creditsApproved ?? other.creditsApproved,
-      creditsTotal: creditsTotal ?? other.creditsTotal,
-      givenName: givenName ?? other.givenName,
-    );
-  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -237,7 +216,6 @@ class ScheduleClass {
     required this.endTime,
     required this.typeCode,
   });
-  String get roomShort => room.isNotEmpty ? room : '—';
   String get locationFull {
     final parts = <String>[
       if (building.isNotEmpty) building,
@@ -579,97 +557,4 @@ class TermAverage {
   };
   factory TermAverage.fromJson(Map<String, dynamic> j) =>
       TermAverage.fromSigmaJson(j);
-}
-
-class Teacher {
-  final String id;
-  final String fullName;
-  final String? email;
-  final String? department;
-  final List<TeacherCourse> courses;
-  const Teacher({
-    required this.id,
-    required this.fullName,
-    this.email,
-    this.department,
-    required this.courses,
-  });
-  Teacher mergeWith(Teacher other) {
-    return Teacher(
-      id: id.isNotEmpty ? id : other.id,
-      fullName: fullName.isNotEmpty ? fullName : other.fullName,
-      email: email ?? other.email,
-      department: department ?? other.department,
-      courses: courses.isNotEmpty ? courses : other.courses,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'fullName': fullName,
-    'email': email,
-    'department': department,
-    'courses': courses.map((c) => c.toJson()).toList(),
-  };
-  factory Teacher.fromJson(Map<String, dynamic> json) {
-    final list = json['courses'] as List?;
-    return Teacher(
-      id: json['id'] as String? ?? '',
-      fullName: json['fullName'] as String? ?? '',
-      email: json['email'] as String?,
-      department: json['department'] as String?,
-      courses: list != null
-          ? list
-                .map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>))
-                .toList()
-          : const [],
-    );
-  }
-}
-
-class TeacherCourse {
-  final String id;
-  final String subjectName;
-  final String subjectCode;
-  final String section;
-  final String period;
-  final int? enrolledCount;
-  final String? schedule;
-  const TeacherCourse({
-    required this.id,
-    required this.subjectName,
-    required this.subjectCode,
-    required this.section,
-    required this.period,
-    this.enrolledCount,
-    this.schedule,
-  });
-  factory TeacherCourse.fromDocenteAsignatura(TeacherSubject a) {
-    return TeacherCourse(
-      id: a.id,
-      subjectName: a.subject,
-      subjectCode: a.code,
-      section: a.section,
-      period: a.periodo,
-      enrolledCount: a.enrolledCount,
-    );
-  }
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'subjectName': subjectName,
-    'subjectCode': subjectCode,
-    'seccion': section,
-    'period': period,
-    'matriculados': enrolledCount,
-    'schedule': schedule,
-  };
-  factory TeacherCourse.fromJson(Map<String, dynamic> json) => TeacherCourse(
-    id: json['id'] as String? ?? '',
-    subjectName: json['subjectName'] as String? ?? '',
-    subjectCode: json['subjectCode'] as String? ?? '',
-    section: json['seccion'] as String? ?? '',
-    period: json['period'] as String? ?? '',
-    enrolledCount: json['matriculados'] as int?,
-    schedule: json['schedule'] as String?,
-  );
 }

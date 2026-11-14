@@ -10,6 +10,7 @@ import 'package:nexo/data/app_store.dart';
 import 'package:nexo/data/local/cache_manager.dart';
 import 'package:nexo/data/services/connectivity_service.dart';
 import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/domain/models.dart';
 import 'package:nexo/domain/unified_models.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/data_status.dart';
@@ -167,6 +168,20 @@ void main() {
     expect(store.promedios.hasValue, isFalse);
     expect(store.freshnessOf('loadPromedios'), isNull);
     expect(cache.writes, 0);
+  });
+
+  test('logout forgets every account-specific value', () async {
+    store.paymentSchedule = const AsyncValue.data(
+      PaymentSchedule(totalAmount: 1, installments: []),
+    );
+    store.setEditingDashboardWidget('next_class');
+    var notified = 0;
+    store.addListener(() => notified++);
+    await store.clear();
+    expect(store.paymentSchedule.isIdle, isTrue);
+    expect(store.editingDashboardWidgetId, isNull);
+    // Los cambios del mismo ciclo llegan en una sola notificación.
+    expect(notified, 1);
   });
 
   test('first valid source avoids unnecessary fallback requests', () async {

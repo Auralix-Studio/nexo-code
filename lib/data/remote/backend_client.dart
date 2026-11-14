@@ -671,6 +671,24 @@ class BackendClient {
       return false;
     }
   }
+
+  // --- Documentos legales ---------------------------------------------------
+
+  /// Versión vigente de los documentos legales (`GET /legal`, pública):
+  /// `{version, updated_at, summary, documents}`.
+  Future<Map<String, dynamic>> legalInfo() =>
+      _send('GET', '/legal', authorize: false, module: true);
+
+  /// Deja constancia en el servidor de que el usuario aceptó [version]
+  /// (`POST /me/legal/accept`). Requiere sesión.
+  Future<void> acceptLegal(int version) async {
+    await _send(
+      'POST',
+      '/me/legal/accept',
+      body: {'version': version},
+      module: true,
+    );
+  }
 }
 
 /// Nombre sugerido en `content-disposition` (`filename*=UTF-8''…` primero).

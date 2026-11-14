@@ -102,24 +102,20 @@ class GradesSummary {
   final double average;
   final int approvedCredits;
   final int totalCredits;
-  final int enrollmentCount;
   const GradesSummary({
     required this.average,
     required this.approvedCredits,
     required this.totalCredits,
-    required this.enrollmentCount,
   });
   factory GradesSummary.fromJson(Map<String, dynamic> j) => GradesSummary(
     average: _toDouble(j['promedio']) ?? 0,
     approvedCredits: _toInt(j['creditosAprobados']) ?? 0,
     totalCredits: _toInt(j['creditosTotales']) ?? 0,
-    enrollmentCount: _toInt(j['cantMatricula']) ?? 0,
   );
   Map<String, dynamic> toJson() => {
     'promedio': average,
     'creditosAprobados': approvedCredits,
     'creditosTotales': totalCredits,
-    'cantMatricula': enrollmentCount,
   };
 }
 
@@ -265,35 +261,6 @@ class TermGrades {
       exam.isEmpty;
 }
 
-class RecordCourse {
-  final String faculty;
-  final String career;
-  final String plan;
-  final String state;
-  final String type;
-  final String code;
-  final String name;
-  final String cycle;
-  final String rawGrade;
-  final double creditos;
-  const RecordCourse({
-    required this.faculty,
-    required this.career,
-    required this.plan,
-    required this.state,
-    required this.type,
-    required this.code,
-    required this.name,
-    required this.cycle,
-    required this.rawGrade,
-    this.creditos = 0,
-  });
-  double? get grade => parseGrade(rawGrade);
-  String get notaText => formatGrade(rawGrade);
-  bool get isApproved => PassingRule.current.passes(grade);
-  bool get isFinished => state.toLowerCase().contains('conclu');
-}
-
 class ReportCardCourse {
   final String enrollmentSubjectId;
   final String plan;
@@ -389,25 +356,13 @@ class UnitGrades {
   });
 
   /// Promedio ya calculado por la API de Nexo (ponderado por evidencias).
-  /// Si existe, la app no lo recalcula.
   final double? serverAverage;
   double? get weight => parseGrade(rawWeight);
 
-  double? get predictedAverage {
-    if (serverAverage != null) return serverAverage;
-    final validGrades = evidences
-        .map((e) => e.grade)
-        .where((g) => g != null && g > 0)
-        .toList();
-    if (validGrades.isEmpty) return parseGrade(rawAverage);
-    final sum = validGrades.fold<double>(0, (a, b) => a + b!);
-    return sum / validGrades.length;
-  }
-
-  double? get average => predictedAverage ?? parseGrade(rawAverage);
+  double? get average => serverAverage ?? parseGrade(rawAverage);
 
   String get promedioText {
-    final p = predictedAverage;
+    final p = average;
     if (p != null) return formatGrade(p.toStringAsFixed(2));
     return formatGrade(rawAverage);
   }
@@ -426,38 +381,8 @@ class CourseGradeDetail {
     this.serverAverage,
   });
 
-  /// Promedio real del curso calculado por la API de Nexo.
+  /// Promedio real del curso (con decimales) calculado por la API de Nexo.
   final double? serverAverage;
-  double? get promedioFinal => parseGrade(rawFinalAverage);
-  String get finalAverageText => formatGrade(rawFinalAverage);
-
-  /// Promedio real del curso calculado desde las unidades (con decimales),
-  /// ponderado por el peso de cada unidad. El servidor entrega el promedio
-  /// del curso redondeado (11.60 → 12); este getter permite mostrar el valor
-  /// real de forma consistente en la lista y en el detalle.
-  double? get computedAverage {
-    if (serverAverage != null) return serverAverage;
-    double weighted = 0, weights = 0;
-    final plain = <double>[];
-    var allWeighted = true;
-    for (final u in units) {
-      final a = u.average;
-      if (a == null) continue;
-      plain.add(a);
-      final w = u.weight;
-      if (w != null && w > 0) {
-        weighted += a * w;
-        weights += w;
-      } else {
-        allWeighted = false;
-      }
-    }
-    if (plain.isEmpty) return promedioFinal;
-    if (allWeighted && weights > 0) return weighted / weights;
-    return plain.reduce((a, b) => a + b) / plain.length;
-  }
-
-  String get sustitutorioText => formatGrade(rawSubstitute);
   bool get hasSubstitute => parseGrade(rawSubstitute) != null;
 }
 
@@ -536,46 +461,10 @@ class PaymentInstallment {
   }
 }
 
-class Publication {
-  final int publicationId;
-  final String contentType;
-  final String mainUrl;
-  final String? adaptableUrl;
-  final String? referenceUrl;
-  final String? buttonText;
-  final bool allowsDownload;
-  final String mainDimension;
-  const Publication({
-    required this.publicationId,
-    required this.contentType,
-    required this.mainUrl,
-    required this.adaptableUrl,
-    required this.referenceUrl,
-    required this.buttonText,
-    required this.allowsDownload,
-    required this.mainDimension,
-  });
-  bool get isImage => contentType.toLowerCase() == 'image';
-}
-
 class WifiCredential {
   final String username;
   final String password;
   const WifiCredential({required this.username, required this.password});
-}
-
-class GradesCount {
-  final int approved;
-  final int disapproved;
-  final int pending;
-  final int total;
-  const GradesCount({
-    required this.approved,
-    required this.disapproved,
-    required this.pending,
-    required this.total,
-  });
-  double get approvedPercentage => total == 0 ? 0 : approved / total;
 }
 
 class TeacherInfo {
@@ -657,9 +546,6 @@ class TeacherSubject {
   /// Alias semántico: en SIGMA la sección se identifica como `codSaltem`.
   String get codSaltem => id;
 
-  /// `codSaltem` para asistencia (cae al id de notas si no se pudo cruzar).
-  String get attendanceCodSaltem => asistenciaId.isNotEmpty ? asistenciaId : id;
-
   /// Nombre sin el periodo final, p. ej. "BASE DE DATOS I".
   String get shortName =>
       subject.replaceAll(RegExp(r'\s*\([^)]*\d{4}[^)]*\)\s*$'), '').trim();
@@ -694,28 +580,6 @@ class TeacherSubject {
     }
     return null;
   }
-
-  /// Completa esta sección (de `modo=Notas`) con los datos de la misma sección
-  /// en `modo=Asistencia`: id de asistencia, horario, aula, modalidad…
-  TeacherSubject mergeAttendance(Map<String, dynamic> a) => TeacherSubject(
-    id: id,
-    code: code,
-    subject: subject,
-    section: section,
-    periodo: periodo,
-    enrolledCount: enrolledCount,
-    plan: plan.isNotEmpty ? plan : _toStr(a['plan']),
-    nrc: nrc,
-    tipoCalif: tipoCalif,
-    asistenciaId: _toStr(a['id']).trim(),
-    carrera: _toStr(a['carrera']).ifEmpty(carrera),
-    modalidad: _toStr(a['modalidad']).ifEmpty(modalidad),
-    sede: _toStr(a['sede']).ifEmpty(sede),
-    local: _toStr(a['local']).ifEmpty(local),
-    aula: _toStr(a['aula']).ifEmpty(aula),
-    ciclo: _toStr(a['ciclo']).ifEmpty(ciclo),
-    blocks: TeacherBlock.parse(a['horario']?.toString(), _toStr(a['id'])),
-  );
 
   Map<String, dynamic> toJson() => {
     'cleAuto': id,
@@ -1027,21 +891,6 @@ class TeacherClassCompliance {
       start == PunchStatus.marked && end == PunchStatus.marked;
   bool get hasMissing =>
       start == PunchStatus.missing || end == PunchStatus.missing;
-
-  /// SIGMA manda `fecha` como `MM/dd/yyyy HH:mm:ss`; se acepta también ISO.
-  static DateTime? parseFecha(String raw) {
-    final s = raw.trim();
-    if (s.isEmpty) return null;
-    final iso = DateTime.tryParse(s);
-    if (iso != null) return DateTime(iso.year, iso.month, iso.day);
-    final p = s.split(' ').first.split('/');
-    if (p.length != 3) return null;
-    final m = int.tryParse(p[0]);
-    final d = int.tryParse(p[1]);
-    final y = int.tryParse(p[2]);
-    if (m == null || d == null || y == null) return null;
-    return DateTime(y, m, d);
-  }
 }
 
 /// Unidad de evaluación de una sección (`Asignatura/getTipoUnidadesV2`).

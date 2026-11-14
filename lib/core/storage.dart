@@ -257,10 +257,46 @@ class AppStorage {
   Future<void> setDashboardConfigJson(String value) =>
       _prefs.setString(_kDashboardConfig, value);
 
-  /// Aceptados **estos** términos, no unos cualesquiera: si sube
-  /// `LegalTerms.version` la aceptación anterior deja de valer y se vuelven a
-  /// mostrar.
-  bool get acceptedTerms => acceptedTermsVersion >= LegalTerms.version;
+  /// Aceptados **estos** términos, no unos cualesquiera: si sube la versión
+  /// vigente ([requiredTermsVersion]) la aceptación anterior deja de valer y
+  /// se vuelven a mostrar.
+  bool get acceptedTerms => acceptedTermsVersion >= requiredTermsVersion;
+
+  static const _kLegalServerVersion = 'nexo.legal.serverVersion';
+  static const _kLegalSummary = 'nexo.legal.summary';
+  static const _kLegalCheckedMs = 'nexo.legal.checkedMs';
+  static const _kLegalSyncedVersion = 'nexo.legal.syncedVersion';
+  static const _kLegalDocuments = 'nexo.legal.documents';
+
+  /// Versión vigente: la que trae la app o, si es mayor, la última que
+  /// publicó el backend (`GET /legal`). Sin red vale la que trae la app.
+  int get requiredTermsVersion {
+    final server = _prefs.getInt(_kLegalServerVersion) ?? 0;
+    return server > LegalTerms.version ? server : LegalTerms.version;
+  }
+
+  /// Resumen de cambios de la versión que publicó el backend.
+  List<String> get legalSummary =>
+      _prefs.getStringList(_kLegalSummary) ?? const [];
+
+  Future<void> setLegalServerInfo(int version, List<String> summary) async {
+    await _prefs.setInt(_kLegalServerVersion, version);
+    await _prefs.setStringList(_kLegalSummary, summary);
+  }
+
+  int get legalCheckedAtMs => _prefs.getInt(_kLegalCheckedMs) ?? 0;
+  Future<void> setLegalCheckedAtMs(int ms) =>
+      _prefs.setInt(_kLegalCheckedMs, ms);
+
+  /// `documents` de `GET /legal` (título y URL de cada documento), en JSON.
+  String? get legalDocumentsJson => _prefs.getString(_kLegalDocuments);
+  Future<void> setLegalDocumentsJson(String json) =>
+      _prefs.setString(_kLegalDocuments, json);
+
+  /// Última versión cuya aceptación ya quedó registrada en el servidor.
+  int get legalSyncedVersion => _prefs.getInt(_kLegalSyncedVersion) ?? 0;
+  Future<void> setLegalSyncedVersion(int v) =>
+      _prefs.setInt(_kLegalSyncedVersion, v);
 
   int get acceptedTermsVersion {
     final stored = _prefs.getInt(_kTermsVersion);
@@ -272,7 +308,7 @@ class AppStorage {
 
   Future<void> setAcceptedTerms(bool v) async {
     await _prefs.setBool(_kTerms, v);
-    await _prefs.setInt(_kTermsVersion, v ? LegalTerms.version : 0);
+    await _prefs.setInt(_kTermsVersion, v ? requiredTermsVersion : 0);
   }
 
   bool get seenOnboarding => _prefs.getBool(_kOnboard) ?? false;

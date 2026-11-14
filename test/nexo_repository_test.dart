@@ -1,5 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
+import 'package:nexo/data/remote/backend_client.dart';
 import 'package:nexo/data/repositories/nexo_repository.dart';
+import 'package:nexo/data/services/directory_service.dart';
+import 'package:nexo/domain/models.dart';
+
+import 'support/fake_nexo_api.dart';
 
 void main() {
   test('the backend profile maps to the Student the screens use', () {
@@ -170,8 +176,8 @@ void main() {
       });
       expect(d.units.first.average, 14.6);
       expect(d.units.last.average, isNull);
-      expect(d.computedAverage, 14.6);
-      expect(d.promedioFinal, 3);
+      expect(d.serverAverage, 14.6);
+      expect(parseGrade(d.rawFinalAverage), 3);
     });
 
     test('a legacy course rebuilds both halves', () {
@@ -221,21 +227,7 @@ void main() {
       expect(g.year, 2025);
     });
 
-    test('curriculum, summary, term averages and counts', () {
-      final r = recordCourseFromNexo({
-        'code': 'IS-101',
-        'name': 'Introducción',
-        'cycle': 1,
-        'credits': 3,
-        'type': 'mandatory',
-        'status': 'completed',
-        'grade': 15,
-      }, career: 'Sistemas');
-      expect(r.cycle, '1');
-      expect(r.creditos, 3);
-      expect(r.grade, 15);
-      expect(r.isFinished, isTrue);
-
+    test('summary and term averages', () {
       final summary = {
         'cumulative_average': 14.12,
         'credits': {'approved': 168, 'required': 220},
@@ -248,7 +240,6 @@ void main() {
       expect(gradesSummaryFromNexo(summary).totalCredits, 220);
       final avg = termAveragesFromNexo(summary).single;
       expect((avg.year, avg.number, avg.average), (2026, 1, 13.8));
-      expect(gradesCountFromNexo(summary).total, 4);
     });
   });
 
@@ -315,4 +306,29 @@ void main() {
       expect(rows.first.dateAsDate, DateTime(2026, 5, 20));
     });
   });
+
+  test(
+    'screens asking at once share one /payments and one summary call',
+    () async {
+      final gets = <String, int>{};
+      final api = BackendClient(
+        transport: MockClient((req) async {
+          gets[req.url.path] = (gets[req.url.path] ?? 0) + 1;
+          return nexoOk(switch (req.url.path) {
+            '/payments' => {'pending': [], 'overdue': [], 'fees': []},
+            _ => {'cumulative_average': 14.1, 'terms': []},
+          });
+        }),
+      )..setToken('t');
+      final repo = NexoRepository(DirectoryService(client: api));
+      await Future.wait([
+        repo.pendingPayments(),
+        repo.overduePayments(),
+        repo.fees(),
+        repo.gradesSummary(),
+        repo.termAverages(),
+      ]);
+      expect(gets.values.toList(), [1, 1]);
+    },
+  );
 }

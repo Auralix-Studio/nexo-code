@@ -660,14 +660,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemPrivacyBody =>
-      'Your credentials and academic data are stored on your device. Nexo has no servers of its own: requests go straight to UPLA services, just like the official portal. GitHub is only queried to look for updates, without sending academic data. There is no advertising or analytics.';
+      'The app only talks to the Nexo API (api.nexo.aurx.pro), hosted on Microsoft Azure with MongoDB Atlas as its database. The API signs in to SIGMA, the Intranet and the Language Center on your behalf: your password is used once and never stored on the server. University sessions are stored encrypted and deleted when you sign out. There is no advertising or analytics.';
 
   @override
   String get termsItemSecurityTitle => 'Security';
 
   @override
   String get termsItemSecurityBody =>
-      'On mobile and desktop, credentials are protected by the operating system secure storage. In the browser, the session stays in memory and requires signing in again after reloading. Academic data is cached locally without additional encryption. Signing out removes credentials and cached data.';
+      'Everything travels encrypted (TLS). On the server, university sessions are encrypted with AES-256-GCM, requests are rate limited and sensitive actions are kept in an audit log. On the device, credentials are kept in the system\'s secure storage (in the browser, only in memory). Signing out deletes the server sessions, the credentials and the cache.';
 
   @override
   String get termsItemResponsibleTitle => 'Responsible use';
@@ -1534,14 +1534,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemRightsBody =>
-      'Your data lives on your device, so you are in control: you can review it, update it in UPLA\'s systems, or delete it by signing out. To exercise your rights of access, rectification, cancellation and objection, write to us from Support; you can also turn to Peru\'s National Personal Data Protection Authority.';
+      'You can review your data in the app, update it in UPLA\'s systems, delete your sessions and cache by signing out, and turn off each optional feature. To exercise your rights of access, rectification, cancellation and objection, or to ask us to delete what the server keeps about you, write to us from Support; you can also go to the National Authority for Personal Data Protection.';
 
   @override
   String get termsHeaderUpdatedPre => 'Something changed';
 
   @override
   String get termsUpdatedNotice =>
-      'We updated our documents: there are now full Terms and Conditions, a Privacy Policy and a Cookies Policy, with the applicable Peruvian law and the limits of liability. Please read them before continuing.';
+      'We updated our documents: the app now connects to the Nexo API, which signs in to UPLA for you without storing your password. Please read them before continuing.';
+
+  @override
+  String get termsChangesTitle => 'What changed';
 
   @override
   String get termsItemDeviceTitle => 'What stays on your device';
@@ -1555,7 +1558,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsItemChangesBody =>
-      'If something important changes in how your data is handled, we will update these terms and show them to you again before you keep using the app. You can reread them any time from Profile, under Terms & Privacy.';
+      'If something important changes in how your data is handled, we will publish a new version and the app will show it to you with a summary of the changes before you continue, without needing an update. You can reread them any time from Profile, under Terms and privacy.';
 
   @override
   String termsVersionLine(String version, String date) {

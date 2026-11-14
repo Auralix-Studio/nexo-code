@@ -8,9 +8,7 @@ import 'package:nexo/domain/unified_models.dart';
 /// Datos del estudiante servidos por la API de Nexo, ya ordenados por el
 /// backend (ver `nexo-backend/docs/api-models.md`).
 ///
-/// Convierte ese formato limpio a los modelos que ya usan las pantallas,
-/// para migrar módulo por módulo sin tocarlas. Mientras dura la migración,
-/// `AppStore` lo usa primero y conserva SIGMA e Intranet como respaldo.
+/// Convierte ese formato limpio a los modelos que ya usan las pantallas.
 class NexoRepository {
   NexoRepository(this._directory);
 
@@ -107,28 +105,8 @@ class NexoRepository {
     await _directory.client.changePassword(current, newPassword);
   }
 
-  Future<List<RecordCourse>> curriculum() async {
-    await _directory.ensureConnected();
-    final body = await _directory.client.curriculum();
-    final career = _text(body['career']);
-    final plan = _text(body['plan']);
-    final raw = body['courses'];
-    return raw is List
-        ? raw
-              .whereType<Map>()
-              .map(
-                (e) => recordCourseFromNexo(
-                  e.cast<String, dynamic>(),
-                  career: career,
-                  plan: plan,
-                ),
-              )
-              .toList()
-        : const [];
-  }
-
   // Una respuesta sirve a varias pantallas que la piden casi juntas
-  // (`/grades/summary`: resumen, promedios y conteo; `/payments`: pendientes,
+  // (`/grades/summary`: resumen y promedios; `/payments`: pendientes,
   // vencidos y tasas). Se comparte 30 s para no repetir la llamada.
   final Map<String, ({Future<Map<String, dynamic>> future, DateTime at})>
   _shared = {};
@@ -136,21 +114,26 @@ class NexoRepository {
   Future<Map<String, dynamic>> _sharedCall(
     String key,
     Future<Map<String, dynamic>> Function() fetch,
-  ) async {
+  ) {
     final hit = _shared[key];
     if (hit != null &&
         DateTime.now().difference(hit.at) < const Duration(seconds: 30)) {
       return hit.future;
     }
-    await _directory.ensureConnected();
-    final future = fetch();
+    // Se registra antes del primer `await`: dos pantallas que piden a la vez
+    // esperan la misma llamada en vez de lanzar dos.
+    late final Future<Map<String, dynamic>> future;
+    future = () async {
+      try {
+        await _directory.ensureConnected();
+        return await fetch();
+      } catch (_) {
+        if (identical(_shared[key]?.future, future)) _shared.remove(key);
+        rethrow;
+      }
+    }();
     _shared[key] = (future: future, at: DateTime.now());
-    try {
-      return await future;
-    } catch (_) {
-      _shared.remove(key);
-      rethrow;
-    }
+    return future;
   }
 
   Future<Map<String, dynamic>> _gradesSummary() =>
@@ -161,9 +144,6 @@ class NexoRepository {
 
   Future<List<TermAverage>> termAverages() async =>
       termAveragesFromNexo(await _gradesSummary());
-
-  Future<GradesCount> gradesCount() async =>
-      gradesCountFromNexo(await _gradesSummary());
 
   Future<Map<String, dynamic>> _payments() =>
       _sharedCall('payments', _directory.client.payments);
@@ -198,13 +178,6 @@ class NexoRepository {
         ? '$year-$number'
         : null;
     return enrollmentFromNexo(await _directory.client.enrollment(term: term));
-  }
-
-  Future<List<Publication>> publications() async {
-    await _directory.ensureConnected();
-    return (await _directory.client.publications())
-        .map(publicationFromNexo)
-        .toList();
   }
 
   /// Se pide cada vez; no se comparte ni se guarda.
@@ -378,36 +351,12 @@ CourseGrade courseGradeFromNexo(
   return CourseGrade.fromJson(keys);
 }
 
-/// Un curso de `GET /curriculum` → [RecordCourse], con ciclo y créditos
-/// leídos de las columnas correctas por el backend.
-RecordCourse recordCourseFromNexo(
-  Map<String, dynamic> json, {
-  String career = '',
-  String plan = '',
-}) => RecordCourse(
-  faculty: '',
-  career: career,
-  plan: plan,
-  state: switch (json['status']) {
-    'completed' => 'concluido',
-    'in_progress' => 'en curso',
-    _ => 'pendiente',
-  },
-  type: _typeCode(json['type']),
-  code: _text(json['code']),
-  name: _text(json['name']),
-  cycle: _text(json['cycle']),
-  rawGrade: _grade(json['grade']),
-  creditos: (json['credits'] as num?)?.toDouble() ?? 0,
-);
-
 GradesSummary gradesSummaryFromNexo(Map<String, dynamic> json) {
   final credits = _map(json['credits']);
   return GradesSummary(
     average: (json['cumulative_average'] as num?)?.toDouble() ?? 0,
     approvedCredits: (credits['approved'] as num?)?.toInt() ?? 0,
     totalCredits: (credits['required'] as num?)?.toInt() ?? 0,
-    enrollmentCount: 0,
   );
 }
 
@@ -420,19 +369,6 @@ List<TermAverage> termAveragesFromNexo(Map<String, dynamic> json) => [
         average: (t['average'] as num?)?.toDouble() ?? 0,
       ),
 ];
-
-GradesCount gradesCountFromNexo(Map<String, dynamic> json) {
-  final current = _map(json['current_term']);
-  final passed = (current['passed'] as num?)?.toInt() ?? 0;
-  final failed = (current['failed'] as num?)?.toInt() ?? 0;
-  final pending = (current['pending'] as num?)?.toInt() ?? 0;
-  return GradesCount(
-    approved: passed,
-    disapproved: failed,
-    pending: pending,
-    total: passed + failed + pending,
-  );
-}
 
 Iterable<Map<String, dynamic>> _maps(Object? value) => value is List
     ? value.whereType<Map>().map((e) => e.cast<String, dynamic>())
