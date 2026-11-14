@@ -66,10 +66,12 @@ class DeveloperScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm + 2,
+                            vertical: AppSpacing.snug,
                           ),
                           decoration: BoxDecoration(
-                            color: NexoTheme.primary.withValues(alpha: 0.06),
+                            color: NexoTheme.primary.withValues(
+                              alpha: AppOpacity.faint,
+                            ),
                             borderRadius: AppRadii.rMd,
                             border: Border.all(
                               color: NexoTheme.primary.withValues(alpha: 0.2),

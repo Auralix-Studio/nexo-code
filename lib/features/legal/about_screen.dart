@@ -101,7 +101,7 @@ class _Hero extends StatelessWidget {
         borderRadius: AppRadii.rXxl,
         boxShadow: [
           BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -129,7 +129,7 @@ class _Hero extends StatelessWidget {
                 Text(
                   l.aboutHeroSubtitle(AppConfig.appVersion),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: Colors.white.withValues(alpha: AppOpacity.onColor),
                     fontSize: AppFont.body,
                     fontWeight: FontWeight.w500,
                   ),
@@ -162,7 +162,7 @@ class _FeatureCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: feature.color.withValues(alpha: 0.12),
+              color: feature.color.withValues(alpha: AppOpacity.tint),
               borderRadius: AppRadii.rMd,
             ),
             child: Icon(feature.icon, size: AppIcon.lg, color: feature.color),
@@ -253,12 +253,12 @@ class _WhatsappRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: whatsappGreen.withValues(alpha: 0.12),
+                color: whatsappGreen.withValues(alpha: AppOpacity.tint),
                 borderRadius: AppRadii.rMd,
               ),
               child: const Icon(
                 Icons.campaign_rounded,
-                size: 18,
+                size: AppIcon.md,
                 color: whatsappGreen,
               ),
             ),
@@ -287,7 +287,7 @@ class _WhatsappRow extends StatelessWidget {
             ),
             Icon(
               Icons.open_in_new_rounded,
-              size: 16,
+              size: AppIcon.sm,
               color: NexoTheme.textMuted,
             ),
           ],

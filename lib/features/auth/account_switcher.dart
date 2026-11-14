@@ -149,7 +149,7 @@ class AccountTile extends StatelessWidget {
     return Material(
       color: isCurrent
           ? Color.alphaBlend(
-              NexoTheme.primary.withValues(alpha: 0.08),
+              NexoTheme.primary.withValues(alpha: AppOpacity.subtle),
               NexoTheme.card,
             )
           : NexoTheme.card,
@@ -167,7 +167,7 @@ class AccountTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm + 2,
+            vertical: AppSpacing.snug,
           ),
           child: Row(
             children: [
@@ -203,11 +203,11 @@ class AccountTile extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs + 2,
+                            horizontal: AppSpacing.tight,
                             vertical: 1,
                           ),
                           decoration: BoxDecoration(
-                            color: roleColor.withValues(alpha: 0.12),
+                            color: roleColor.withValues(alpha: AppOpacity.tint),
                             borderRadius: AppRadii.rPill,
                           ),
                           child: Text(
@@ -215,13 +215,13 @@ class AccountTile extends StatelessWidget {
                                 ? l.accountRoleTeacher
                                 : l.accountRoleStudent,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: AppFont.micro,
                               fontWeight: FontWeight.w800,
                               color: roleColor,
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.xs + 2),
+                        const SizedBox(width: AppSpacing.tight),
                         Expanded(
                           child: Text(
                             subtitle,

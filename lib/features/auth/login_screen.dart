@@ -141,26 +141,26 @@ class _LoginScreenState extends State<LoginScreen>
               }),
             )
           : _FormCard(
-        isWide: isWide,
-        l: l,
-        formKey: _formKey,
-        userCtrl: _userCtrl,
-        passCtrl: _passCtrl,
-        passFocus: _passFocus,
-        loading: _loading,
-        showPass: _showPass,
-        capsLock: _capsLock,
-        error: _error,
-        onToggleShow: () => setState(() => _showPass = !_showPass),
-        onKey: _onKey,
-        onSubmit: _submit,
-        onBackToSaved: saved.isEmpty
-            ? null
-            : () => setState(() {
-                _showForm = false;
-                _error = null;
-              }),
-      ),
+              isWide: isWide,
+              l: l,
+              formKey: _formKey,
+              userCtrl: _userCtrl,
+              passCtrl: _passCtrl,
+              passFocus: _passFocus,
+              loading: _loading,
+              showPass: _showPass,
+              capsLock: _capsLock,
+              error: _error,
+              onToggleShow: () => setState(() => _showPass = !_showPass),
+              onKey: _onKey,
+              onSubmit: _submit,
+              onBackToSaved: saved.isEmpty
+                  ? null
+                  : () => setState(() {
+                      _showForm = false;
+                      _error = null;
+                    }),
+            ),
     );
     return Scaffold(
       body: KeyboardListener(
@@ -379,7 +379,9 @@ class _FormCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: NexoTheme.danger.withValues(alpha: 0.08),
+                        color: NexoTheme.danger.withValues(
+                          alpha: AppOpacity.subtle,
+                        ),
                         borderRadius: AppRadii.rMd,
                         border: Border.all(
                           color: NexoTheme.danger.withValues(alpha: 0.3),
@@ -600,7 +602,10 @@ class _BrandPanel extends StatelessWidget {
           Positioned(
             bottom: -100,
             left: -60,
-            child: _circle(240, Colors.white.withValues(alpha: 0.08)),
+            child: _circle(
+              240,
+              Colors.white.withValues(alpha: AppOpacity.subtle),
+            ),
           ),
           Positioned(
             top: 120,
@@ -628,7 +633,7 @@ class _BrandPanel extends StatelessWidget {
                 Text(
                   l.loginBrandTagline,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: Colors.white.withValues(alpha: AppOpacity.onColor),
                     fontSize: AppFont.h2,
                     height: 1.35,
                     fontWeight: FontWeight.w400,

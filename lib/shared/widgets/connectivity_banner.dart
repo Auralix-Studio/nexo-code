@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/data/connectivity_service.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class ConnectivityBanner extends StatelessWidget {
   const ConnectivityBanner({super.key, required this.connectivity});
@@ -62,20 +63,24 @@ class ConnectivityBanner extends StatelessWidget {
             top: false,
             child: Row(
               children: [
-                Icon(icon, color: textColor, size: 20),
-                const SizedBox(width: 12),
+                Icon(icon, color: textColor, size: AppIcon.lg),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     message,
                     style: TextStyle(
                       color: textColor,
-                      fontSize: 13,
+                      fontSize: AppFont.label,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.refresh_rounded, color: textColor, size: 18),
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: textColor,
+                    size: AppIcon.md,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   splashRadius: 16,

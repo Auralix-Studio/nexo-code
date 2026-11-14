@@ -75,7 +75,9 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -93,9 +95,9 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
       return const Column(
         children: [
           Skeleton(height: 150, radius: 16),
-          SizedBox(height: 12),
+          SizedBox(height: AppSpacing.md),
           Skeleton(height: 150, radius: 16),
-          SizedBox(height: 12),
+          SizedBox(height: AppSpacing.md),
           Skeleton(height: 150, radius: 16),
         ],
       );
@@ -176,7 +178,7 @@ class _CursoCard extends StatelessWidget {
     final ongoing = c.ongoingBlock(DateTime.now());
 
     Widget line(IconData icon, String text) => Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xs + 2),
+      padding: const EdgeInsets.only(top: AppSpacing.tight),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -220,22 +222,22 @@ class _CursoCard extends StatelessWidget {
             children: [
               if (c.careerName.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.tight),
                   child: Row(
                     children: [
                       Icon(
                         Icons.school_outlined,
-                        size: 13,
+                        size: AppIcon.xs,
                         color: NexoTheme.primary,
                       ),
-                      const Gap.h(AppSpacing.xs + 2),
+                      const Gap.h(AppSpacing.tight),
                       Expanded(
                         child: Text(
                           c.careerName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
                             color: NexoTheme.primary,
@@ -246,7 +248,7 @@ class _CursoCard extends StatelessWidget {
                         Text(
                           'NRC ${c.nrc}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             fontWeight: FontWeight.w600,
                             color: NexoTheme.textMuted,
                           ),
@@ -273,7 +275,7 @@ class _CursoCard extends StatelessWidget {
                   Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
                 ],
               ),
-              const Gap(2),
+              const Gap(AppSpacing.xxs),
               Text(
                 courseFactsLine(l, c),
                 style: TextStyle(

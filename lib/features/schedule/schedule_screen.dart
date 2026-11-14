@@ -114,7 +114,9 @@ class _HorarioScreenState extends State<ScheduleScreen> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -172,10 +174,10 @@ class _ViewToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: NexoTheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.rMd,
         border: Border.all(color: NexoTheme.border),
       ),
       child: Row(
@@ -190,21 +192,24 @@ class _ViewToggle extends StatelessWidget {
 
   Widget _toggle(String label, bool active, VoidCallback onTap) => InkWell(
     onTap: onTap,
-    borderRadius: BorderRadius.circular(8),
+    borderRadius: AppRadii.rXs,
     child: AnimatedContainer(
       duration: AppDurations.fast,
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.cozy,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: active ? NexoTheme.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.rXs,
       ),
       child: AnimatedDefaultTextStyle(
         duration: AppDurations.fast,
         style: TextStyle(
           color: active ? Colors.white : NexoTheme.textSecondary,
           fontWeight: FontWeight.w600,
-          fontSize: 13,
+          fontSize: AppFont.label,
         ),
         child: Text(label),
       ),
@@ -289,7 +294,7 @@ class _DayListView extends StatelessWidget {
     }
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           children: [
             for (var i = 0; i < gruposTotales.length; i++) ...[
@@ -332,7 +337,12 @@ class _DaySection extends StatelessWidget {
     final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          18,
+          AppSpacing.xl,
+          18,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -346,34 +356,35 @@ class _DaySection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.snug),
                 Text(
                   Fmt.dayLabel(day),
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFont.h3,
                     fontWeight: FontWeight.w800,
                     color: NexoTheme.textPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.snug),
                 if (isToday)
                   StatusChip(text: l.detailToday, color: NexoTheme.primary),
                 const Spacer(),
                 Text(
                   l.gradesCoursesCount(grupos.length),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFont.small,
                     color: NexoTheme.textMuted,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.cozy),
             for (var i = 0; i < grupos.length; i++) ...[
               _GrupoTile(grupo: grupos[i], store: store),
-              if (i < grupos.length - 1) const SizedBox(height: 10),
+              if (i < grupos.length - 1)
+                const SizedBox(height: AppSpacing.snug),
             ],
           ],
         ),
@@ -399,12 +410,12 @@ class _GrupoTileState extends State<_GrupoTile> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppDurations.fast,
         curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(_isHovered ? 6.0 : 0.0, 0.0, 0.0),
         decoration: BoxDecoration(
           color: _isHovered ? NexoTheme.card : NexoTheme.bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           border: Border.all(
             color: _isHovered ? NexoTheme.primary : NexoTheme.border,
             width: _isHovered ? 1.5 : 1.0,
@@ -412,7 +423,7 @@ class _GrupoTileState extends State<_GrupoTile> {
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: NexoTheme.primary.withValues(alpha: 0.1),
+                    color: NexoTheme.primary.withValues(alpha: AppOpacity.soft),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -427,25 +438,27 @@ class _GrupoTileState extends State<_GrupoTile> {
               widget.grupo,
               store: widget.store,
             ),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.cozy),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppDurations.fast,
                     curve: Curves.easeOutCubic,
                     width: 80,
                     padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 4,
+                      vertical: AppSpacing.sm,
+                      horizontal: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: _isHovered
-                          ? NexoTheme.primary.withValues(alpha: 0.06)
+                          ? NexoTheme.primary.withValues(
+                              alpha: AppOpacity.faint,
+                            )
                           : NexoTheme.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadii.rSm,
                       border: Border.all(
                         color: _isHovered
                             ? NexoTheme.primary.withValues(alpha: 0.4)
@@ -463,12 +476,12 @@ class _GrupoTileState extends State<_GrupoTile> {
                               Fmt.time(widget.grupo.startTime, h24: h24),
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppFont.body,
                                 fontWeight: FontWeight.w800,
                                 color: NexoTheme.primary,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: AppSpacing.hair),
                             Container(
                               width: 20,
                               height: 1.5,
@@ -476,12 +489,12 @@ class _GrupoTileState extends State<_GrupoTile> {
                                   ? NexoTheme.primary.withValues(alpha: 0.3)
                                   : NexoTheme.border,
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: AppSpacing.hair),
                             Text(
                               Fmt.time(widget.grupo.endTime, h24: h24),
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFont.small,
                                 color: NexoTheme.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -491,7 +504,7 @@ class _GrupoTileState extends State<_GrupoTile> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: AppSpacing.cozy),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,14 +514,14 @@ class _GrupoTileState extends State<_GrupoTile> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFont.subtitle,
                             fontWeight: FontWeight.w700,
                             color: NexoTheme.textPrimary,
                             height: 1.2,
                           ),
                         ),
                         if (widget.grupo.isSequentialWorkshop) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Wrap(
                             spacing: 6,
                             children: [
@@ -520,7 +533,7 @@ class _GrupoTileState extends State<_GrupoTile> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.tight),
                         Wrap(
                           spacing: 10,
                           runSpacing: 4,
@@ -562,7 +575,7 @@ class _GrupoTileState extends State<_GrupoTile> {
                           ],
                         ),
                         if (widget.grupo.teacher.isNotEmpty) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: AppSpacing.tight),
                           Row(
                             children: [
                               Icon(
@@ -570,14 +583,14 @@ class _GrupoTileState extends State<_GrupoTile> {
                                 size: 14,
                                 color: NexoTheme.textMuted,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Expanded(
                                 child: Text(
                                   widget.grupo.teacher,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFont.small,
                                     color: NexoTheme.textMuted,
                                   ),
                                 ),
@@ -585,20 +598,22 @@ class _GrupoTileState extends State<_GrupoTile> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         for (final s in widget.grupo.sessions)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.xxs,
+                            ),
                             child: Row(
                               children: [
                                 Icon(
                                   s.typeCode.toUpperCase() == 'T'
                                       ? Icons.menu_book_outlined
                                       : Icons.science_outlined,
-                                  size: 13,
+                                  size: AppIcon.xs,
                                   color: NexoTheme.textSecondary,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppSpacing.xs),
                                 Text(
                                   () {
                                     final h24 = AppStorage.instance.use24h;
@@ -607,7 +622,7 @@ class _GrupoTileState extends State<_GrupoTile> {
                                         '- ${Fmt.time(s.endTime, h24: h24)})';
                                   }(),
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFont.caption,
                                     fontWeight: FontWeight.w600,
                                     color: NexoTheme.textSecondary,
                                   ),
@@ -630,8 +645,8 @@ class _GrupoTileState extends State<_GrupoTile> {
   Widget _meta(IconData icon, String text, {Color? color}) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 13, color: color ?? NexoTheme.textSecondary),
-      const SizedBox(width: 4),
+      Icon(icon, size: AppIcon.xs, color: color ?? NexoTheme.textSecondary),
+      const SizedBox(width: AppSpacing.xs),
       Flexible(
         child: Text(
           text,
@@ -639,7 +654,7 @@ class _GrupoTileState extends State<_GrupoTile> {
           overflow: TextOverflow.ellipsis,
           softWrap: false,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppFont.small,
             color: color ?? NexoTheme.textSecondary,
             fontWeight: FontWeight.w500,
           ),
@@ -659,20 +674,20 @@ class _Loading extends StatelessWidget {
         for (var i = 0; i < 3; i++) ...[
           const Card(
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Skeleton(height: 18, width: 120),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Skeleton(height: 64, radius: 14),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.snug),
                   Skeleton(height: 64, radius: 14),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.cozy),
         ],
       ],
     );

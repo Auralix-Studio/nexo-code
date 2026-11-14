@@ -23,6 +23,7 @@ import 'package:nexo/shared/widgets/logout_dialog.dart';
 import 'package:nexo/features/auth/account_switcher.dart';
 import 'package:nexo/shared/widgets/update_banner.dart';
 import 'package:nexo/shared/widgets/whatsapp_invite_dialog.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class _Tab {
   final String label;
@@ -475,37 +476,42 @@ class _BottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.tight,
+            vertical: AppSpacing.tight,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               for (var i = 0; i < tabs.length; i++)
                 Expanded(
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadii.rLg,
                     onTap: () => onChange(i),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      duration: AppDurations.fast,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
+                            duration: AppDurations.fast,
                             child: Icon(
                               i == index ? tabs[i].icon : tabs[i].iconOutlined,
                               key: ValueKey(i == index),
                               color: i == index
                                   ? NexoTheme.primary
                                   : NexoTheme.textMuted,
-                              size: 24,
+                              size: AppIcon.xl,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             tabs[i].label,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFont.caption,
                               fontWeight: i == index
                                   ? FontWeight.w700
                                   : FontWeight.w500,
@@ -550,7 +556,7 @@ class _SideRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: AppDurations.fast,
       curve: Curves.easeOutCubic,
       width: collapsed ? 68 : 232,
       color: NexoTheme.surface,
@@ -577,7 +583,7 @@ class _SideRail extends StatelessWidget {
                     cacheHeight: 96,
                     fit: BoxFit.contain,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppSpacing.snug),
                   const Expanded(child: FestivityWordmark()),
                 ],
                 IconButton(
@@ -587,7 +593,7 @@ class _SideRail extends StatelessWidget {
                     collapsed
                         ? Icons.chevron_right_rounded
                         : Icons.chevron_left_rounded,
-                    size: 20,
+                    size: AppIcon.lg,
                     color: NexoTheme.textMuted,
                   ),
                   onPressed: onToggleCollapse,
@@ -603,7 +609,7 @@ class _SideRail extends StatelessWidget {
               breadcrumb: i == index ? breadcrumb : null,
               onTap: () => onChange(i),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
           ],
           const Spacer(),
           Padding(
@@ -611,7 +617,7 @@ class _SideRail extends StatelessWidget {
               collapsed ? 8 : 16,
               0,
               collapsed ? 8 : 16,
-              16,
+              AppSpacing.lg,
             ),
             child: collapsed
                 ? Column(
@@ -621,14 +627,17 @@ class _SideRail extends StatelessWidget {
                         tooltip: l.accountSwitchTitle,
                         icon: const Icon(
                           Icons.switch_account_rounded,
-                          size: 20,
+                          size: AppIcon.lg,
                         ),
                         color: NexoTheme.textSecondary,
                         onPressed: onSwitchAccount,
                       ),
                       IconButton(
                         tooltip: l.actionLogout,
-                        icon: const Icon(Icons.logout_rounded, size: 20),
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          size: AppIcon.lg,
+                        ),
                         color: NexoTheme.textSecondary,
                         onPressed: onLogout,
                       ),
@@ -642,7 +651,7 @@ class _SideRail extends StatelessWidget {
                         onPressed: onSwitchAccount,
                         icon: const Icon(
                           Icons.switch_account_rounded,
-                          size: 18,
+                          size: AppIcon.md,
                         ),
                         label: Text(l.accountSwitchTitle),
                         style: TextButton.styleFrom(
@@ -650,16 +659,19 @@ class _SideRail extends StatelessWidget {
                           minimumSize: const Size.fromHeight(40),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.tight),
                       OutlinedButton.icon(
                         onPressed: onLogout,
-                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          size: AppIcon.md,
+                        ),
                         label: Text(l.actionLogout),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: NexoTheme.textSecondary,
                           minimumSize: const Size.fromHeight(44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadii.rMd,
                           ),
                           side: BorderSide(color: NexoTheme.border),
                         ),
@@ -700,7 +712,7 @@ class _RailItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppFont.body,
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
               color: color,
             ),
@@ -711,7 +723,7 @@ class _RailItem extends StatelessWidget {
                 TextSpan(
                   text: tab.label,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFont.body,
                     fontWeight: FontWeight.w700,
                     color: color,
                   ),
@@ -719,7 +731,7 @@ class _RailItem extends StatelessWidget {
                 TextSpan(
                   text: '  ›  $breadcrumb',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFont.label,
                     fontWeight: FontWeight.w500,
                     color: NexoTheme.textMuted,
                   ),
@@ -739,7 +751,7 @@ class _RailItem extends StatelessWidget {
         : Row(
             children: [
               icon,
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.cozy),
               Expanded(child: label),
             ],
           );
@@ -747,16 +759,16 @@ class _RailItem extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: collapsed ? 10 : 12),
       child: Material(
         color: active
-            ? NexoTheme.primary.withValues(alpha: 0.10)
+            ? NexoTheme.primary.withValues(alpha: AppOpacity.soft)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.rMd,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.rMd,
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: collapsed ? 0 : 14,
-              vertical: 12,
+              vertical: AppSpacing.md,
             ),
             child: content,
           ),

@@ -82,7 +82,7 @@ class _TeacherAlertsScreenState extends State<TeacherAlertsScreen> {
                   Text(
                     l.tchAlertsHint,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFont.caption,
                       color: NexoTheme.textMuted,
                       height: 1.35,
                     ),

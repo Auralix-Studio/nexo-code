@@ -35,7 +35,7 @@ class EmptyState extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: c.withValues(alpha: 0.12),
+              color: c.withValues(alpha: AppOpacity.tint),
               borderRadius: AppRadii.rXl,
             ),
             child: Icon(icon, color: c, size: 28),
@@ -55,14 +55,17 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: NexoTheme.textSecondary),
+              style: TextStyle(
+                fontSize: AppFont.label,
+                color: NexoTheme.textSecondary,
+              ),
             ),
           ],
           if (onRetry != null) ...[
             const Gap(AppSpacing.lg),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
+              icon: const Icon(Icons.refresh_rounded, size: AppIcon.md),
               label: Text(
                 retryLabel ?? AppLocalizations.of(context).actionRetry,
               ),

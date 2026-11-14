@@ -2603,4 +2603,58 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accountLogoutKeepHint =>
       'Tu cuenta actual seguirá guardada para volver con un toque.';
+
+  @override
+  String get homeIdlePhrase1 => 'Nos alegra verte';
+
+  @override
+  String get homeIdlePhrase2 => 'Qué bueno tenerte por aquí';
+
+  @override
+  String get homeIdlePhrase3 => 'Tu UPLA en un solo lugar';
+
+  @override
+  String get homeIdlePhrase4 => 'Al día con tu vida académica';
+
+  @override
+  String get homeIdlePhrase5 => 'Todo tu campus, a la mano';
+
+  @override
+  String get homeIdlePhrase6 => '¿Todo listo para hoy?';
+
+  @override
+  String get homeIdlePhrase7 => '¿Qué tenemos para hoy?';
+
+  @override
+  String get homeIdlePhrase8 => 'Qué gusto verte de nuevo';
+
+  @override
+  String get uninstallTitle => 'Desinstalar Nexo UPLA';
+
+  @override
+  String get uninstallSubtitle =>
+      'Se removerá la aplicación y todos sus componentes de tu sistema.';
+
+  @override
+  String get uninstallPurgeTitle => 'Purgar todos mis datos locales';
+
+  @override
+  String get uninstallPurgeHint =>
+      'Elimina bases de datos locales, historial de grades y sesión.';
+
+  @override
+  String get uninstallAction => 'Desinstalar';
+
+  @override
+  String get uninstallSuccessTitle => '¡Desinstalación exitosa!';
+
+  @override
+  String get uninstallSuccessBody =>
+      'Nexo UPLA ha sido removido. Limpiando directorios...';
+
+  @override
+  String get uninstallErrorTitle => 'Error al desinstalar';
+
+  @override
+  String get gradesPromedioCiclo => 'Promedio del ciclo';
 }

@@ -8,22 +8,44 @@ class Reveal extends StatelessWidget {
   final Duration baseDuration;
   final Offset offsetFrom;
   final Curve curve;
+
+  /// Tiempo que suma cada posición de la entrada escalonada.
+  final Duration step;
+
+  /// Cuántas posiciones se escalonan como máximo; el resto entra a la vez.
+  static const int maxSteps = 8;
+
+  /// Desplazamiento de entrada por defecto.
+  static const Offset defaultOffset = Offset(0, 28);
+
+  /// Desplazamiento corto para elementos de lista.
+  static const Offset listOffset = Offset(0, 14);
+
   const Reveal({
     super.key,
     required this.child,
     this.index = 0,
     this.baseDuration = AppDurations.slow,
-    this.offsetFrom = const Offset(0, 28),
-    this.curve = Curves.easeOutCubic,
+    this.offsetFrom = defaultOffset,
+    this.curve = Motion.enter,
+    this.step = AppDurations.stagger,
   });
+
+  /// Entrada de un elemento de lista: rápida y con poco recorrido, para no
+  /// frenar el desplazamiento.
+  const Reveal.list({super.key, required this.child, this.index = 0})
+    : baseDuration = AppDurations.normal,
+      offsetFrom = listOffset,
+      curve = Motion.enter,
+      step = AppDurations.listStagger;
+
   @override
   Widget build(BuildContext context) {
     // Con "reducir movimiento" el contenido aparece directo.
     if (Motion.reduced(context)) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration:
-          baseDuration + Duration(milliseconds: 110 * (index.clamp(0, 8))),
+      duration: baseDuration + step * index.clamp(0, maxSteps),
       curve: curve,
       builder: (_, value, child) => Opacity(
         opacity: value,

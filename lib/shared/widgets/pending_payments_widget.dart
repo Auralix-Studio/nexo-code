@@ -5,6 +5,7 @@ import 'package:nexo/features/payments/payment_detail_screen.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class PendingPaymentsWidget extends StatelessWidget {
   final List<Payment> installments;
@@ -47,15 +48,18 @@ class PendingPaymentsWidget extends StatelessWidget {
       icon: Icons.payments_outlined,
       iconColor: vencidas > 0 ? NexoTheme.danger : NexoTheme.warning,
       trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.snug,
+          vertical: AppSpacing.xs,
+        ),
         decoration: BoxDecoration(
-          color: NexoTheme.textPrimary.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(999),
+          color: NexoTheme.textPrimary.withValues(alpha: AppOpacity.faint),
+          borderRadius: AppRadii.rPill,
         ),
         child: Text(
           Fmt.currency(total),
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppFont.label,
             fontWeight: FontWeight.w700,
             color: NexoTheme.textPrimary,
           ),
@@ -72,10 +76,10 @@ class PendingPaymentsWidget extends StatelessWidget {
                 ) ...[
                   _CuotaRow(cuota: sorted[i], now: now),
                   if (i < sorted.length.clamp(0, isCompact ? 2 : 4) - 1)
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.snug),
                 ],
                 if (sorted.length > (isCompact ? 2 : 4)) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Center(
                     child: Text(
                       AppLocalizations.of(context).homePendingPaymentsMore(
@@ -83,7 +87,7 @@ class PendingPaymentsWidget extends StatelessWidget {
                       ),
                       style: TextStyle(
                         color: NexoTheme.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFont.label,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -95,16 +99,16 @@ class PendingPaymentsWidget extends StatelessWidget {
   }
 
   Widget _empty(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 28),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.wide),
     alignment: Alignment.center,
     child: Column(
       children: [
         const Icon(Icons.verified_outlined, size: 36, color: NexoTheme.success),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           AppLocalizations.of(context).paymentsUpToDateTitle,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppFont.body,
             color: NexoTheme.textSecondary,
             fontWeight: FontWeight.w500,
           ),
@@ -143,14 +147,14 @@ class _CuotaRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => PaymentDetailScreen.openCuota(context, cuota),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: isOverdue
                 ? NexoTheme.danger.withValues(alpha: 0.04)
                 : NexoTheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             border: Border.all(
               color: isOverdue
                   ? NexoTheme.danger.withValues(alpha: 0.3)
@@ -168,12 +172,12 @@ class _CuotaRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFont.body,
                         fontWeight: FontWeight.w600,
                         color: NexoTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Wrap(
                       spacing: 8,
                       runSpacing: 4,
@@ -187,11 +191,11 @@ class _CuotaRow extends StatelessWidget {
                               size: 14,
                               color: NexoTheme.textSecondary,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             Text(
                               cuota.dueDateRaw,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFont.small,
                                 color: NexoTheme.textSecondary,
                               ),
                             ),
@@ -200,17 +204,19 @@ class _CuotaRow extends StatelessWidget {
                         if (tagText != null)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xxs,
                             ),
                             decoration: BoxDecoration(
-                              color: tagColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(999),
+                              color: tagColor.withValues(
+                                alpha: AppOpacity.tint,
+                              ),
+                              borderRadius: AppRadii.rPill,
                             ),
                             child: Text(
                               tagText,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFont.caption,
                                 fontWeight: FontWeight.w700,
                                 color: tagColor,
                                 letterSpacing: 0.2,
@@ -222,11 +228,11 @@ class _CuotaRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFont.subtitle,
                   fontWeight: FontWeight.w700,
                   color: NexoTheme.textPrimary,
                 ),

@@ -3,6 +3,7 @@ import 'package:nexo/core/config.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/data/update_service.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class UpdateBanner extends StatefulWidget {
   const UpdateBanner({super.key});
@@ -35,19 +36,22 @@ class _UpdateBannerState extends State<UpdateBanner> {
         final ready = status.state == UpdateState.ready;
         final version = status.latestVersion ?? '';
         return Material(
-          color: NexoTheme.primary.withValues(alpha: 0.12),
+          color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
           child: InkWell(
             onTap: updater.isBusy ? null : () => updater.installDownloaded(),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.cozy,
+                vertical: AppSpacing.snug,
+              ),
               child: Row(
                 children: [
                   Icon(
                     Icons.system_update_alt_rounded,
-                    size: 20,
+                    size: AppIcon.lg,
                     color: NexoTheme.primary,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppSpacing.snug),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,7 +63,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
                               ? l.updBannerReadyTitle
                               : l.updBannerAvailableTitle,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFont.label,
                             fontWeight: FontWeight.w700,
                             color: NexoTheme.textPrimary,
                           ),
@@ -71,7 +75,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
                               ? l.updBannerReadyBody(version)
                               : l.updBannerAvailableBody(version),
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             color: NexoTheme.textSecondary,
                           ),
                         ),
@@ -88,7 +92,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
                     IconButton(
                       icon: Icon(
                         Icons.close_rounded,
-                        size: 18,
+                        size: AppIcon.md,
                         color: NexoTheme.textMuted,
                       ),
                       visualDensity: VisualDensity.compact,

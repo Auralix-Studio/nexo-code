@@ -22,11 +22,7 @@ Future<void> showProfilePhotoViewer(
       pageBuilder: (ctx, animation, secondaryAnimation) {
         return FadeTransition(
           opacity: animation,
-          child: ProfilePhotoViewer(
-            code: code,
-            name: name,
-            heroTag: heroTag,
-          ),
+          child: ProfilePhotoViewer(code: code, name: name, heroTag: heroTag),
         );
       },
     ),
@@ -79,7 +75,8 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
     final hasCode = widget.code != null && widget.code!.trim().isNotEmpty;
     final photoUrl = hasCode ? AppConfig.photoUrlFor(widget.code!) : null;
 
-    final backgroundOpacity = (1.0 - (_dragOffsetY.abs() / 400).clamp(0.0, 0.7)) * 0.94;
+    final backgroundOpacity =
+        (1.0 - (_dragOffsetY.abs() / 400).clamp(0.0, 0.7)) * 0.94;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -109,7 +106,8 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                 });
               },
               onVerticalDragEnd: (details) {
-                if (_dragOffsetY.abs() > 100 || (details.primaryVelocity?.abs() ?? 0) > 400) {
+                if (_dragOffsetY.abs() > 100 ||
+                    (details.primaryVelocity?.abs() ?? 0) > 400) {
                   Navigator.of(context).pop();
                 } else {
                   setState(() {
@@ -128,7 +126,9 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                     child: Hero(
                       tag: widget.heroTag,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xxl,
+                        ),
                         constraints: const BoxConstraints(
                           maxWidth: 380,
                           maxHeight: 460,
@@ -138,7 +138,9 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.5),
+                              color: Colors.black.withValues(
+                                alpha: AppOpacity.scrim,
+                              ),
                               blurRadius: 32,
                               offset: const Offset(0, 16),
                             ),
@@ -159,9 +161,12 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                                         children: [
                                           _LargeInitials(name: widget.name),
                                           CircularProgressIndicator(
-                                            value: progress.expectedTotalBytes != null
+                                            value:
+                                                progress.expectedTotalBytes !=
+                                                    null
                                                 ? progress.cumulativeBytesLoaded /
-                                                    progress.expectedTotalBytes!
+                                                      progress
+                                                          .expectedTotalBytes!
                                                 : null,
                                             color: NexoTheme.primary,
                                             strokeWidth: 2.5,
@@ -193,7 +198,10 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
             child: Align(
               alignment: Alignment.topCenter,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
                 child: Row(
                   children: [
                     // Botón cerrar
@@ -201,7 +209,7 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                       icon: Icons.close_rounded,
                       onTap: () => Navigator.of(context).pop(),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: AppSpacing.cozy),
 
                     // Nombre y código
                     Expanded(
@@ -215,7 +223,7 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: AppFont.title,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -224,7 +232,7 @@ class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
                               widget.code!,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 13,
+                                fontSize: AppFont.label,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.8,
                               ),
@@ -262,11 +270,7 @@ class _GlassButton extends StatelessWidget {
   final VoidCallback onTap;
   final String? tooltip;
 
-  const _GlassButton({
-    required this.icon,
-    required this.onTap,
-    this.tooltip,
-  });
+  const _GlassButton({required this.icon, required this.onTap, this.tooltip});
 
   @override
   Widget build(BuildContext context) {
@@ -277,7 +281,7 @@ class _GlassButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         splashColor: Colors.white.withValues(alpha: 0.2),
-        highlightColor: Colors.white.withValues(alpha: 0.1),
+        highlightColor: Colors.white.withValues(alpha: AppOpacity.soft),
         child: SizedBox(
           width: 44,
           height: 44,
@@ -297,10 +301,7 @@ class _LargeInitials extends StatelessWidget {
   final String name;
   final String? subtitle;
 
-  const _LargeInitials({
-    required this.name,
-    this.subtitle,
-  });
+  const _LargeInitials({required this.name, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -326,15 +327,15 @@ class _LargeInitials extends StatelessWidget {
             ),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
               child: Text(
                 subtitle!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 13,
+                  fontSize: AppFont.label,
                   fontWeight: FontWeight.w500,
                 ),
               ),

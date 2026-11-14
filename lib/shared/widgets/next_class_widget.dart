@@ -97,7 +97,7 @@ class NextClassWidget extends StatelessWidget {
             borderRadius: AppRadii.rXxl,
             boxShadow: [
               BoxShadow(
-                color: NexoTheme.primary.withValues(alpha: 0.25),
+                color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -190,7 +190,7 @@ class NextClassWidget extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Icon(icon, size: AppIcon.sm, color: Colors.white.withValues(alpha: 0.85)),
-      const Gap.h(AppSpacing.xs + 2),
+      const Gap.h(AppSpacing.tight),
       ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 220),
         child: Text(

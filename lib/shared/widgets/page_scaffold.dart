@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class PageHeader extends StatelessWidget {
   final String title;
@@ -17,9 +18,9 @@ class PageHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.contentPadding,
-        24,
+        AppSpacing.xxl,
         context.contentPadding,
-        16,
+        AppSpacing.lg,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -35,18 +36,18 @@ class PageHeader extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: AppFont.h1,
                         fontWeight: FontWeight.w800,
                         color: NexoTheme.textPrimary,
                         letterSpacing: -0.6,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppFont.body,
                           color: NexoTheme.textSecondary,
                         ),
                       ),
@@ -74,7 +75,7 @@ class PageBody extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: context.contentPadding,
-            vertical: 4,
+            vertical: AppSpacing.xs,
           ),
           child: child,
         ),

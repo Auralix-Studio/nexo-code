@@ -189,6 +189,16 @@ class TeacherBlock {
 }
 
 /// Catálogo de estados de asistencia de SIGMA (`estado_asist_id`).
+/// Umbrales de asistencia (porcentaje) con los que se evalúa a un alumno.
+/// Viven aquí para que la regla sea una sola en toda la app.
+abstract final class AttendanceRule {
+  /// Con este porcentaje o menos el alumno está en riesgo de inhabilitación.
+  static const double riskPercent = 70;
+
+  /// Desde este porcentaje la asistencia se considera saludable.
+  static const double healthyPercent = 80;
+}
+
 abstract final class AttendanceCode {
   static const none = 0;
   static const present = 1;
@@ -255,7 +265,7 @@ class AttendanceStudent {
   }
 
   /// SIGMA resalta en rojo a quien tiene ≤ 70 % de asistencia.
-  bool get atRisk => percent != null && percent! <= 70;
+  bool get atRisk => percent != null && percent! <= AttendanceRule.riskPercent;
 
   String get firstCodCursal => codCursal.split(',').first.trim();
 

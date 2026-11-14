@@ -4243,6 +4243,108 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu cuenta actual seguirá guardada para volver con un toque.'**
   String get accountLogoutKeepHint;
+
+  /// No description provided for @homeIdlePhrase1.
+  ///
+  /// In es, this message translates to:
+  /// **'Nos alegra verte'**
+  String get homeIdlePhrase1;
+
+  /// No description provided for @homeIdlePhrase2.
+  ///
+  /// In es, this message translates to:
+  /// **'Qué bueno tenerte por aquí'**
+  String get homeIdlePhrase2;
+
+  /// No description provided for @homeIdlePhrase3.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu UPLA en un solo lugar'**
+  String get homeIdlePhrase3;
+
+  /// No description provided for @homeIdlePhrase4.
+  ///
+  /// In es, this message translates to:
+  /// **'Al día con tu vida académica'**
+  String get homeIdlePhrase4;
+
+  /// No description provided for @homeIdlePhrase5.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo tu campus, a la mano'**
+  String get homeIdlePhrase5;
+
+  /// No description provided for @homeIdlePhrase6.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Todo listo para hoy?'**
+  String get homeIdlePhrase6;
+
+  /// No description provided for @homeIdlePhrase7.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué tenemos para hoy?'**
+  String get homeIdlePhrase7;
+
+  /// No description provided for @homeIdlePhrase8.
+  ///
+  /// In es, this message translates to:
+  /// **'Qué gusto verte de nuevo'**
+  String get homeIdlePhrase8;
+
+  /// No description provided for @uninstallTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Desinstalar Nexo UPLA'**
+  String get uninstallTitle;
+
+  /// No description provided for @uninstallSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Se removerá la aplicación y todos sus componentes de tu sistema.'**
+  String get uninstallSubtitle;
+
+  /// No description provided for @uninstallPurgeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Purgar todos mis datos locales'**
+  String get uninstallPurgeTitle;
+
+  /// No description provided for @uninstallPurgeHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Elimina bases de datos locales, historial de grades y sesión.'**
+  String get uninstallPurgeHint;
+
+  /// No description provided for @uninstallAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Desinstalar'**
+  String get uninstallAction;
+
+  /// No description provided for @uninstallSuccessTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Desinstalación exitosa!'**
+  String get uninstallSuccessTitle;
+
+  /// No description provided for @uninstallSuccessBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Nexo UPLA ha sido removido. Limpiando directorios...'**
+  String get uninstallSuccessBody;
+
+  /// No description provided for @uninstallErrorTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al desinstalar'**
+  String get uninstallErrorTitle;
+
+  /// No description provided for @gradesPromedioCiclo.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio del ciclo'**
+  String get gradesPromedioCiclo;
 }
 
 class _AppLocalizationsDelegate

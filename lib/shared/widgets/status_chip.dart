@@ -15,11 +15,11 @@ class StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm + 2,
+        horizontal: AppSpacing.snug,
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: AppOpacity.tint),
         borderRadius: AppRadii.rPill,
       ),
       child: Row(

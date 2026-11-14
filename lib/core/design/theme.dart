@@ -1,12 +1,13 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class NexoTheme {
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color danger = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-  static Color softOf(Color c) => c.withValues(alpha: 0.10);
+  static Color softOf(Color c) => c.withValues(alpha: AppOpacity.soft);
   static Color primary = NexoColors.light.primary;
   static Color primaryDark = NexoColors.light.primaryDark;
   static Color accent = NexoColors.light.accent;
@@ -71,7 +72,7 @@ class NexoTheme {
         titleTextStyle: TextStyle(
           color: p.textPrimary,
           fontFamily: fontFamily,
-          fontSize: 22,
+          fontSize: AppFont.h2,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.4,
         ),
@@ -82,7 +83,7 @@ class NexoTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xxl)),
           side: BorderSide(color: p.border),
         ),
       ),
@@ -90,19 +91,19 @@ class NexoTheme {
         filled: true,
         fillColor: p.surface,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           borderSide: BorderSide(color: p.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           borderSide: BorderSide(color: p.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           borderSide: BorderSide(color: p.primary, width: 1.5),
         ),
         labelStyle: TextStyle(color: p.textSecondary, fontFamily: fontFamily),
@@ -112,11 +113,9 @@ class NexoTheme {
           backgroundColor: p.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.rLg),
           textStyle: TextStyle(
-            fontSize: 16,
+            fontSize: AppFont.title,
             fontWeight: FontWeight.w600,
             fontFamily: fontFamily,
           ),
@@ -128,12 +127,12 @@ class NexoTheme {
         unselectedLabelColor: p.textSecondary,
         indicatorSize: TabBarIndicatorSize.label,
         labelStyle: TextStyle(
-          fontSize: 14,
+          fontSize: AppFont.body,
           fontWeight: FontWeight.w700,
           fontFamily: fontFamily,
         ),
         unselectedLabelStyle: TextStyle(
-          fontSize: 14,
+          fontSize: AppFont.body,
           fontWeight: FontWeight.w500,
           fontFamily: fontFamily,
         ),

@@ -46,6 +46,8 @@ abstract final class Fmt {
   ];
   static String dayLabel(int idDia) =>
       idDia >= 1 && idDia <= 7 ? _l.weekdayFull(_dayKeys[idDia]) : '';
+  static String monthLabel(int month) =>
+      month >= 1 && month <= 12 ? _l.monthShort(_monthKeys[month]) : '';
   static String shortDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} '
       '${_l.monthShort(_monthKeys[d.month])} ${d.year}';

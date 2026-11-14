@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/errors.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 abstract final class ClipboardHelper {
   static Future<void> copyAndShow(
@@ -17,15 +18,19 @@ abstract final class ClipboardHelper {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.copy_all_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
+            const Icon(
+              Icons.copy_all_rounded,
+              color: Colors.white,
+              size: AppIcon.lg,
+            ),
+            const SizedBox(width: AppSpacing.snug),
             Expanded(
               child: Text(
                 'Copiado: $displayLabel',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -36,8 +41,11 @@ abstract final class ClipboardHelper {
         behavior: SnackBarBehavior.floating,
         backgroundColor: NexoTheme.primary,
         duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.rMd),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
       ),
     );
   }
@@ -51,16 +59,16 @@ abstract final class ClipboardHelper {
             const Icon(
               Icons.check_circle_outline_rounded,
               color: Colors.white,
-              size: 20,
+              size: AppIcon.lg,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.snug),
             Expanded(
               child: Text(
                 message,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -71,8 +79,11 @@ abstract final class ClipboardHelper {
         behavior: SnackBarBehavior.floating,
         backgroundColor: NexoTheme.success,
         duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.rMd),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
       ),
     );
   }
@@ -93,16 +104,16 @@ abstract final class ClipboardHelper {
             const Icon(
               Icons.error_outline_rounded,
               color: Colors.white,
-              size: 20,
+              size: AppIcon.lg,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.snug),
             Expanded(
               child: Text(
                 message,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -113,8 +124,11 @@ abstract final class ClipboardHelper {
         behavior: SnackBarBehavior.floating,
         backgroundColor: NexoTheme.danger,
         duration: const Duration(seconds: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.rMd),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
       ),
     );
   }

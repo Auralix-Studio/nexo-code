@@ -137,13 +137,15 @@ class _TeacherMarcacionScreenState extends State<TeacherMarcacionScreen> {
                                   isToday: _sameDay(days[i], today),
                                 ),
                               ),
-                              const Gap(AppSpacing.md + 2),
+                              const Gap(AppSpacing.cozy),
                             ],
                           ],
                         ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -180,7 +182,7 @@ class _DayCard extends StatelessWidget {
         children: [
           for (var i = 0; i < punches.length; i++) ...[
             _PunchRow(punch: punches[i]),
-            if (i < punches.length - 1) const Gap(AppSpacing.sm + 2),
+            if (i < punches.length - 1) const Gap(AppSpacing.snug),
           ],
         ],
       ),
@@ -196,7 +198,7 @@ class _PunchRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final color = punch.isVirtual ? NexoTheme.info : NexoTheme.success;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md + 2),
+      padding: const EdgeInsets.all(AppSpacing.cozy),
       decoration: BoxDecoration(
         color: NexoTheme.surface,
         borderRadius: AppRadii.rLg,
@@ -233,7 +235,7 @@ class _PunchRow extends StatelessWidget {
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   punch.location.isEmpty
                       ? punch.mode
@@ -252,8 +254,8 @@ class _PunchRow extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm + 2,
-              vertical: 3,
+              horizontal: AppSpacing.snug,
+              vertical: AppSpacing.hair,
             ),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.14),
@@ -262,7 +264,7 @@ class _PunchRow extends StatelessWidget {
             child: Text(
               punch.isVirtual ? l.marcacionVirtual : 'Huella',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppFont.micro,
                 fontWeight: FontWeight.w800,
                 color: color,
                 letterSpacing: 0.4,

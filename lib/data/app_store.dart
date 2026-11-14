@@ -358,6 +358,16 @@ class AppStore extends ChangeNotifier {
     );
   }
 
+  /// La boleta del ciclo activo aún está cargando por primera vez (el
+  /// promedio del ciclo sale de ella).
+  bool get promedioCicloLoading {
+    final activo = periodoActivo;
+    if (activo == null) return periodos.showSkeleton;
+    return isNewModel(activo.year, activo.number)
+        ? boletaOf(activo.year, activo.number).showSkeleton
+        : boletaLegacyOf(activo.year, activo.number).showSkeleton;
+  }
+
   double? get promedioCicloActual {
     final activo = periodoActivo;
     if (activo == null) return null;

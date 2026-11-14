@@ -11,6 +11,8 @@ import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/formatters.dart';
 import 'package:nexo/shared/widgets/empty_state.dart';
+import 'package:nexo/shared/widgets/progress_ring.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 
 /// Pestaña Asistencia del curso: tomar asistencia, estado de hoy, indicadores
 /// (los mismos 5 de SIGMA) e historial de sesiones con corrección.
@@ -22,9 +24,31 @@ class TeacherAttendanceTab extends StatefulWidget {
   });
   final AppStore store;
   final TeacherSubject course;
+
+  /// Sesiones que se listan antes de pedir "ver todas".
+  static const int recentSessions = 8;
+
   @override
   State<TeacherAttendanceTab> createState() => _TeacherAttendanceTabState();
 }
+
+/// Conteo de marcas de una sesión.
+typedef _SessionCounts = ({int present, int absent, int justified});
+
+_SessionCounts _countsOf(AttendanceSheet sheet, DateTime session) {
+  var p = 0, a = 0, j = 0;
+  for (final s in sheet.students) {
+    for (final m in s.marks) {
+      if (m.date != session) continue;
+      if (m.state == AttendanceCode.present) p++;
+      if (m.state == AttendanceCode.absent) a++;
+      if (m.state == AttendanceCode.justified) j++;
+    }
+  }
+  return (present: p, absent: a, justified: j);
+}
+
+String _hm(DateTime d) => '${two(d.hour)}:${two(d.minute)}';
 
 class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
     with AutomaticKeepAliveClientMixin {
@@ -84,7 +108,8 @@ class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
     final todaySessions = sessions
         .where((d) => DateTime(d.year, d.month, d.day) == today)
         .toList();
-    final visible = _showAll ? sessions : sessions.take(8).toList();
+    const recent = TeacherAttendanceTab.recentSessions;
+    final visible = _showAll ? sessions : sessions.take(recent).toList();
     return RefreshIndicator(
       key: const ValueKey('data'),
       onRefresh: () => widget.store.loadDocenteAsistencia(widget.course),
@@ -92,22 +117,24 @@ class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _TakeCard(
-            course: widget.course,
-            todaySessions: todaySessions,
-            sheet: sheet,
-            onTake: () => TeacherTakeAttendanceScreen.open(
-              context,
-              store: widget.store,
+          Reveal.list(
+            child: _TakeCard(
               course: widget.course,
+              todaySessions: todaySessions,
+              sheet: sheet,
+              onTake: () => TeacherTakeAttendanceScreen.open(
+                context,
+                store: widget.store,
+                course: widget.course,
+              ),
+              onFix: todaySessions.isEmpty
+                  ? null
+                  : () => _openSession(todaySessions.first),
             ),
-            onFix: todaySessions.isEmpty
-                ? null
-                : () => _openSession(todaySessions.first),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          _Kpis(sheet: sheet),
-          const SizedBox(height: AppSpacing.xl),
+          const Gap(AppSpacing.md),
+          Reveal.list(index: 1, child: _Summary(sheet: sheet)),
+          const Gap(AppSpacing.xl),
           Row(
             children: [
               Expanded(
@@ -120,29 +147,34 @@ class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
                   ),
                 ),
               ),
-              if (sessions.length > 8)
+              if (sessions.length > recent)
                 TextButton(
                   onPressed: () => setState(() => _showAll = !_showAll),
                   child: Text(_showAll ? l.tchShowLess : l.tchShowAll),
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const Gap(AppSpacing.sm),
           if (sessions.isEmpty)
             EmptyState(
               icon: Icons.event_note_outlined,
               title: l.docenteReportEmpty,
             )
           else
-            for (final d in visible) ...[
-              _SessionTile(
-                session: d,
-                sheet: sheet,
-                unitName: _unitName(_unitOf(sheet, d)),
-                onTap: () => _openSession(d),
+            for (final (i, d) in visible.indexed)
+              Padding(
+                key: ValueKey(d),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Reveal.list(
+                  index: i + 2,
+                  child: _SessionTile(
+                    session: d,
+                    counts: _countsOf(sheet, d),
+                    unitName: _unitName(_unitOf(sheet, d)),
+                    onTap: () => _openSession(d),
+                  ),
+                ),
               ),
-              const SizedBox(height: 8),
-            ],
         ],
       ),
     );
@@ -170,6 +202,7 @@ class _TeacherAttendanceTabState extends State<TeacherAttendanceTab>
   }
 }
 
+/// Llamado a la acción principal: tomar la asistencia de hoy.
 class _TakeCard extends StatelessWidget {
   final TeacherSubject course;
   final List<DateTime> todaySessions;
@@ -183,6 +216,9 @@ class _TakeCard extends StatelessWidget {
     required this.onTake,
     required this.onFix,
   });
+
+  static const Color _onColor = Colors.white;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -190,22 +226,12 @@ class _TakeCard extends StatelessWidget {
     String? todayText;
     if (todaySessions.isNotEmpty) {
       final last = todaySessions.first;
-      var p = 0, a = 0;
-      for (final s in sheet.students) {
-        for (final m in s.marks) {
-          if (m.date != last) continue;
-          if (m.state == AttendanceCode.present) p++;
-          if (m.state == AttendanceCode.absent) a++;
-        }
-      }
-      todayText = l.tchTodayRegistered(
-        '${two(last.hour)}:${two(last.minute)}',
-        p,
-        a,
-      );
+      final c = _countsOf(sheet, last);
+      todayText = l.tchTodayRegistered(_hm(last), c.present, c.absent);
     }
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    const labelStyle = TextStyle(fontWeight: FontWeight.w700);
+    const shape = RoundedRectangleBorder(borderRadius: AppRadii.rMd);
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
@@ -213,73 +239,193 @@ class _TakeCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadii.rXxl,
+        boxShadow: [
+          BoxShadow(
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
+            blurRadius: AppSpacing.xl,
+            offset: const Offset(0, AppSpacing.sm),
+          ),
+        ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                if (ongoing != null)
+                  const PulseDot(color: _onColor)
+                else
+                  const Icon(Icons.fact_check_rounded, color: _onColor),
+                const Gap.h(AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    ongoing != null
+                        ? l.tchOngoingNow(ongoing.start, ongoing.end)
+                        : l.tchAttTodayTitle,
+                    style: const TextStyle(
+                      color: _onColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: AppFont.subtitle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(AppSpacing.xs),
+            Text(
+              todayText ?? l.tchTodayNotRegistered,
+              style: TextStyle(
+                color: _onColor.withValues(alpha: AppOpacity.onColor),
+                fontSize: AppFont.small,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Gap(AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: PressScale(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(AppSizes.touch),
+                        backgroundColor: _onColor,
+                        foregroundColor: NexoTheme.primary,
+                        shape: shape,
+                      ),
+                      onPressed: onTake,
+                      icon: const Icon(Icons.how_to_reg_rounded),
+                      label: Text(
+                        todaySessions.isEmpty
+                            ? l.tchAttTake
+                            : l.tchAttTakeAnother,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: labelStyle,
+                      ),
+                    ),
+                  ),
+                ),
+                if (onFix != null) ...[
+                  const Gap.h(AppSpacing.sm),
+                  PressScale(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, AppSizes.touch),
+                        foregroundColor: _onColor,
+                        side: BorderSide(
+                          color: _onColor.withValues(alpha: AppOpacity.onColor),
+                        ),
+                        shape: shape,
+                      ),
+                      onPressed: onFix,
+                      icon: const Icon(Icons.edit_rounded, size: AppIcon.md),
+                      label: Text(
+                        l.tchFix,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: labelStyle,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Resumen de asistencia de la sección: porcentaje general en un anillo, el
+/// reparto en una barra y los indicadores de SIGMA debajo.
+class _Summary extends StatelessWidget {
+  final AttendanceSheet sheet;
+  const _Summary({required this.sheet});
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = sheet.totals();
+    final pct = t.total == 0 ? null : (t.present * 100 / t.total).round();
+    final risk = sheet.students.where((s) => s.atRisk).length;
+    return TeacherCard(
+      radius: AppRadii.rXxl,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_rounded, color: Colors.white),
-              const Gap.h(AppSpacing.sm),
+              ProgressRing(percent: pct, color: attendanceColor(pct)),
+              const Gap.h(AppSpacing.lg),
               Expanded(
-                child: Text(
-                  ongoing != null
-                      ? l.tchOngoingNow(ongoing.start, ongoing.end)
-                      : l.tchAttTodayTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: AppFont.subtitle,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.tchKpiGeneral,
+                      style: TextStyle(
+                        fontSize: AppFont.title,
+                        fontWeight: FontWeight.w800,
+                        color: NexoTheme.textPrimary,
+                      ),
+                    ),
+                    const Gap(AppSpacing.xs),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        TeacherPill(
+                          icon: Icons.checklist_rounded,
+                          text: '${t.total} ${l.tchKpiTotal}',
+                          color: NexoTheme.textSecondary,
+                        ),
+                        if (risk > 0)
+                          TeacherPill(
+                            icon: Icons.warning_amber_rounded,
+                            text: '$risk ${l.docenteReportAtRisk}',
+                            color: NexoTheme.danger,
+                          ),
+                      ],
+                    ),
+                    const Gap(AppSpacing.md),
+                    SplitBar(
+                      parts: attendanceParts(
+                        present: t.present,
+                        absent: t.absent,
+                        justified: t.justified,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            todayText ?? l.tchTodayNotRegistered,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.88),
-              fontSize: AppFont.small,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          const Gap(AppSpacing.lg),
           Row(
             children: [
               Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: NexoTheme.primary,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.rLg,
-                    ),
-                  ),
-                  onPressed: onTake,
-                  icon: const Icon(Icons.how_to_reg_rounded),
-                  label: Text(
-                    todaySessions.isEmpty ? l.tchAttTake : l.tchAttTakeAnother,
-                  ),
+                child: TeacherStat(
+                  value: t.present,
+                  label: l.tchKpiPresent,
+                  color: NexoTheme.success,
                 ),
               ),
-              if (onFix != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white70),
-                    minimumSize: const Size(0, 48),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.rLg,
-                    ),
-                  ),
-                  onPressed: onFix,
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: Text(l.tchFix),
+              Expanded(
+                child: TeacherStat(
+                  value: t.justified,
+                  label: l.tchKpiJustified,
+                  color: NexoTheme.warning,
                 ),
-              ],
+              ),
+              Expanded(
+                child: TeacherStat(
+                  value: t.absent,
+                  label: l.tchKpiAbsent,
+                  color: NexoTheme.danger,
+                ),
+              ),
             ],
           ),
         ],
@@ -288,150 +434,68 @@ class _TakeCard extends StatelessWidget {
   }
 }
 
-class _Kpis extends StatelessWidget {
-  final AttendanceSheet sheet;
-  const _Kpis({required this.sheet});
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final t = sheet.totals();
-    final pct = t.total == 0 ? null : (t.present * 100 / t.total).round();
-    Widget kpi(Object value, String label, Color color) => Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: NexoTheme.card,
-          borderRadius: AppRadii.rLg,
-          border: Border.all(color: NexoTheme.border),
-        ),
-        child: Column(
-          children: [
-            if (value is int)
-              AnimatedCount(
-                value: value,
-                style: TextStyle(
-                  fontSize: AppFont.h3,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
-              )
-            else
-              Text(
-                '$value',
-                style: TextStyle(
-                  fontSize: AppFont.h3,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
-              ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: NexoTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return Column(
-      children: [
-        Row(
-          children: [
-            kpi(pct == null ? '—' : '$pct%', l.tchKpiGeneral, NexoTheme.info),
-            const SizedBox(width: 6),
-            kpi(t.present, l.tchKpiPresent, NexoTheme.success),
-            const SizedBox(width: 6),
-            kpi(t.absent, l.tchKpiAbsent, NexoTheme.danger),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            kpi(t.justified, l.tchKpiJustified, NexoTheme.warning),
-            const SizedBox(width: 6),
-            kpi(t.total, l.tchKpiTotal, NexoTheme.textSecondary),
-            const SizedBox(width: 6),
-            kpi(
-              sheet.students.where((s) => s.atRisk).length,
-              l.docenteReportAtRisk,
-              NexoTheme.danger,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 class _SessionTile extends StatelessWidget {
   final DateTime session;
-  final AttendanceSheet sheet;
+  final _SessionCounts counts;
   final String unitName;
   final VoidCallback onTap;
   const _SessionTile({
     required this.session,
-    required this.sheet,
+    required this.counts,
     required this.unitName,
     required this.onTap,
   });
+
   @override
   Widget build(BuildContext context) {
-    var p = 0, a = 0, j = 0;
-    for (final s in sheet.students) {
-      for (final m in s.marks) {
-        if (m.date != session) continue;
-        if (m.state == AttendanceCode.present) p++;
-        if (m.state == AttendanceCode.absent) a++;
-        if (m.state == AttendanceCode.justified) j++;
-      }
-    }
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.rLg,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: NexoTheme.card,
-            borderRadius: AppRadii.rLg,
-            border: Border.all(color: NexoTheme.border),
-          ),
-          child: Row(
+    final dayName = Fmt.dayLabel(session.weekday);
+    final states = [
+      (AttendanceCode.present, counts.present),
+      (AttendanceCode.justified, counts.justified),
+      (AttendanceCode.absent, counts.absent),
+    ];
+    return TeacherCard(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Row(
             children: [
-              Container(
-                width: 46,
-                padding: const EdgeInsets.symmetric(vertical: 6),
+              DecoratedBox(
                 decoration: BoxDecoration(
-                  color: NexoTheme.primary.withValues(alpha: 0.1),
+                  color: NexoTheme.softOf(NexoTheme.primary),
                   borderRadius: AppRadii.rMd,
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      '${session.day}',
-                      style: TextStyle(
-                        fontSize: AppFont.h3,
-                        fontWeight: FontWeight.w900,
-                        color: NexoTheme.primary,
-                        height: 1,
+                child: SizedBox.square(
+                  dimension: AppSizes.badge,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xxs),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${session.day}',
+                            style: TextStyle(
+                              fontSize: AppFont.title,
+                              fontWeight: FontWeight.w800,
+                              color: NexoTheme.textPrimary,
+                              height: 1.1,
+                            ),
+                          ),
+                          Text(
+                            Fmt.monthLabel(session.month).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: AppFont.caption,
+                              fontWeight: FontWeight.w700,
+                              color: NexoTheme.primary,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      Fmt.dayLabel(session.weekday).substring(0, 3),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: NexoTheme.primary,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const Gap.h(AppSpacing.md),
@@ -440,39 +504,71 @@ class _SessionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${Fmt.shortDate(session)} · '
-                      '${two(session.hour)}:${two(session.minute)}',
+                      '$dayName · ${_hm(session)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                       ),
                     ),
-                    if (unitName.isNotEmpty)
+                    if (unitName.isNotEmpty) ...[
+                      const Gap(AppSpacing.xxs),
                       Text(
                         unitName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFont.caption,
+                          fontWeight: FontWeight.w600,
                           color: NexoTheme.textMuted,
                         ),
                       ),
-                    const SizedBox(height: 4),
+                    ],
+                    const Gap(AppSpacing.sm),
                     Wrap(
-                      spacing: 4,
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
                       children: [
-                        TeacherPill(text: '✓ $p', color: NexoTheme.success),
-                        TeacherPill(text: '✕ $a', color: NexoTheme.danger),
-                        if (j > 0)
-                          TeacherPill(text: 'J $j', color: NexoTheme.warning),
+                        for (final (state, count) in states)
+                          if (count > 0 || state != AttendanceCode.justified)
+                            Builder(
+                              builder: (context) {
+                                final look = attendanceLook(context, state);
+                                return Tooltip(
+                                  message: look.label,
+                                  child: TeacherPill(
+                                    icon: look.icon,
+                                    text: '$count',
+                                    color: look.color,
+                                  ),
+                                );
+                              },
+                            ),
                       ],
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: NexoTheme.textMuted),
+              const Gap.h(AppSpacing.sm),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: NexoTheme.textMuted,
+                size: AppIcon.lg,
+              ),
             ],
           ),
-        ),
+          const Gap(AppSpacing.md),
+          SplitBar(
+            height: AppSizes.handleHeight,
+            parts: attendanceParts(
+              present: counts.present,
+              absent: counts.absent,
+              justified: counts.justified,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -205,7 +205,7 @@ class TeacherGradesGrid extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFont.caption,
             fontWeight: FontWeight.w800,
             color: color ?? NexoTheme.textSecondary,
             decoration: onTap == null ? null : TextDecoration.underline,
@@ -240,7 +240,7 @@ class TeacherGradesGrid extends StatelessWidget {
           child: Text(
             l.tchGridStudent,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFont.caption,
               fontWeight: FontWeight.w800,
               color: NexoTheme.textSecondary,
             ),
@@ -332,7 +332,7 @@ class TeacherGradesGrid extends StatelessWidget {
                   width: _finalW,
                   color: gradeColor(f?.toString()),
                   bold: true,
-                  bg: NexoTheme.primary.withValues(alpha: 0.06),
+                  bg: NexoTheme.primary.withValues(alpha: AppOpacity.faint),
                 ),
             ],
           ),
@@ -344,7 +344,10 @@ class TeacherGradesGrid extends StatelessWidget {
       children: [
         Text(
           l.tchGridHint,
-          style: TextStyle(fontSize: 11, color: NexoTheme.textMuted),
+          style: TextStyle(
+            fontSize: AppFont.caption,
+            color: NexoTheme.textMuted,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(

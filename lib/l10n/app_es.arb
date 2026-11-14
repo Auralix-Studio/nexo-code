@@ -1622,5 +1622,22 @@
       }
     }
   },
-  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque."
+  "accountLogoutKeepHint": "Tu cuenta actual seguirá guardada para volver con un toque.",
+  "homeIdlePhrase1": "Nos alegra verte",
+  "homeIdlePhrase2": "Qué bueno tenerte por aquí",
+  "homeIdlePhrase3": "Tu UPLA en un solo lugar",
+  "homeIdlePhrase4": "Al día con tu vida académica",
+  "homeIdlePhrase5": "Todo tu campus, a la mano",
+  "homeIdlePhrase6": "¿Todo listo para hoy?",
+  "homeIdlePhrase7": "¿Qué tenemos para hoy?",
+  "homeIdlePhrase8": "Qué gusto verte de nuevo",
+  "uninstallTitle": "Desinstalar Nexo UPLA",
+  "uninstallSubtitle": "Se removerá la aplicación y todos sus componentes de tu sistema.",
+  "uninstallPurgeTitle": "Purgar todos mis datos locales",
+  "uninstallPurgeHint": "Elimina bases de datos locales, historial de grades y sesión.",
+  "uninstallAction": "Desinstalar",
+  "uninstallSuccessTitle": "¡Desinstalación exitosa!",
+  "uninstallSuccessBody": "Nexo UPLA ha sido removido. Limpiando directorios...",
+  "uninstallErrorTitle": "Error al desinstalar",
+  "gradesPromedioCiclo": "Promedio del ciclo"
 }

@@ -826,5 +826,6 @@
   "tchGradeDraftBadge": "{count, plural, =1{Borrador · 1 cambio} other{Borrador · {count} cambios}}",
   "tchGradeSaveDraft": "Guardar borrador",
   "tchGradeDraftSaved": "Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.",
-  "tchGradeLockedDraftHint": "Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite."
+  "tchGradeLockedDraftHint": "Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite.",
+  "gradesPromedioCiclo": "Promedio del ciclo"
 }

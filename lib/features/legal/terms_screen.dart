@@ -318,7 +318,7 @@ class _UpdatedBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: NexoTheme.info.withValues(alpha: 0.10),
+        color: NexoTheme.info.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rXl,
         border: Border.all(color: NexoTheme.info.withValues(alpha: 0.30)),
       ),
@@ -366,7 +366,7 @@ class _SectionCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: item.color.withValues(alpha: 0.12),
+              color: item.color.withValues(alpha: AppOpacity.tint),
               borderRadius: AppRadii.rMd,
             ),
             child: Icon(item.icon, size: AppIcon.lg, color: item.color),
@@ -512,7 +512,7 @@ class _BrandPane extends StatelessWidget {
                 Text(
                   l.termsBrandBody,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: Colors.white.withValues(alpha: AppOpacity.onColor),
                     fontSize: AppFont.h3,
                     height: 1.4,
                   ),

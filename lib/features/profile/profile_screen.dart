@@ -22,6 +22,7 @@ import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 import 'package:nexo/shared/widgets/profile_photo_viewer.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -78,16 +79,16 @@ class ProfileScreen extends StatelessWidget {
                           creditsTotal: store.totalCredits,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.cozy),
                       Reveal(index: 1, child: _AcademicCard(profile: p)),
                       if (store.idiomasVigentes.isNotEmpty) ...[
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.cozy),
                         Reveal(
                           index: 2,
                           child: _IdiomasCard(courses: store.idiomasVigentes),
                         ),
                       ],
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.cozy),
                       Reveal(
                         index: 3,
                         child: _ActionsCard(
@@ -102,7 +103,9 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -126,7 +129,7 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [NexoTheme.primary, NexoTheme.primaryDark],
@@ -136,7 +139,7 @@ class _HeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -151,11 +154,11 @@ class _HeroCard extends StatelessWidget {
                 onTap: profile == null
                     ? null
                     : () => showProfilePhotoViewer(
-                          context,
-                          code: profile?.id,
-                          name: profile?.fullName ?? '',
-                          heroTag: 'profile_hero_avatar',
-                        ),
+                        context,
+                        code: profile?.id,
+                        name: profile?.fullName ?? '',
+                        heroTag: 'profile_hero_avatar',
+                      ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -168,8 +171,8 @@ class _HeroCard extends StatelessWidget {
                         radius: 22,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.white.withValues(alpha: 0.25),
-                            Colors.white.withValues(alpha: 0.12),
+                            Colors.white.withValues(alpha: AppOpacity.glow),
+                            Colors.white.withValues(alpha: AppOpacity.tint),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -181,7 +184,7 @@ class _HeroCard extends StatelessWidget {
                       bottom: -2,
                       right: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         decoration: BoxDecoration(
                           color: NexoTheme.primaryDark.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
@@ -191,7 +194,9 @@ class _HeroCard extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
+                              color: Colors.black.withValues(
+                                alpha: AppOpacity.glow,
+                              ),
                               blurRadius: 4,
                             ),
                           ],
@@ -199,14 +204,14 @@ class _HeroCard extends StatelessWidget {
                         child: const Icon(
                           Icons.fullscreen_rounded,
                           color: Colors.white,
-                          size: 13,
+                          size: AppIcon.xs,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,12 +222,12 @@ class _HeroCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: AppFont.h3,
                         fontWeight: FontWeight.w800,
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     GestureDetector(
                       onTap: () {
                         if (profile?.id != null) {
@@ -240,16 +245,16 @@ class _HeroCard extends StatelessWidget {
                             profile?.id ?? '',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 13,
+                              fontSize: AppFont.label,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: AppSpacing.tight),
                           Icon(
                             Icons.copy_rounded,
                             color: Colors.white.withValues(alpha: 0.7),
-                            size: 13,
+                            size: AppIcon.xs,
                           ),
                         ],
                       ),
@@ -259,7 +264,7 @@ class _HeroCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
           Row(
             children: [
               _heroStat(
@@ -305,17 +310,17 @@ class _HeroCard extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 10,
+                  fontSize: AppFont.micro,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.3,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 value,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: AppFont.heading,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
                 ),
@@ -328,7 +333,7 @@ class _HeroCard extends StatelessWidget {
     width: 1,
     height: 36,
     color: Colors.white.withValues(alpha: 0.18),
-    margin: const EdgeInsets.symmetric(horizontal: 12),
+    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
   );
 }
 
@@ -406,7 +411,8 @@ class _AcademicCard extends StatelessWidget {
               children: [
                 for (var i = 0; i < tiles.length; i++) ...[
                   tiles[i],
-                  if (i < tiles.length - 1) const SizedBox(height: 8),
+                  if (i < tiles.length - 1)
+                    const SizedBox(height: AppSpacing.sm),
                 ],
               ],
             );
@@ -425,7 +431,7 @@ class _AcademicCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(child: _InfoTile(item: items[i])),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(child: _InfoTile(item: items[i + 1])),
                     ],
                   ),
@@ -442,7 +448,7 @@ class _AcademicCard extends StatelessWidget {
             children: [
               for (var k = 0; k < rows.length; k++) ...[
                 rows[k],
-                if (k < rows.length - 1) const SizedBox(height: 8),
+                if (k < rows.length - 1) const SizedBox(height: AppSpacing.sm),
               ],
             ],
           );
@@ -485,7 +491,7 @@ class _IdiomasCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < courses.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
+            if (i > 0) const SizedBox(height: AppSpacing.md),
             _InfoTile(
               item: _InfoItem(
                 icon: Icons.language_rounded,
@@ -495,7 +501,7 @@ class _IdiomasCard extends StatelessWidget {
                 color: Colors.orange.shade400,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             _InfoTile(
               item: _InfoItem(
                 icon: Icons.calendar_month_outlined,
@@ -503,7 +509,7 @@ class _IdiomasCard extends StatelessWidget {
                 value: '${courses[i].anio}-${monthName(courses[i].mes)}',
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             _InfoTile(
               item: _InfoItem(
                 icon: Icons.school_outlined,
@@ -545,12 +551,12 @@ class _InfoTile extends StatelessWidget {
       child: InkWell(
         onTap: () =>
             ClipboardHelper.copyAndShow(context, item.value, label: item.label),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: NexoTheme.bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             border: Border.all(color: NexoTheme.border),
           ),
           child: Row(
@@ -560,12 +566,12 @@ class _InfoTile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: color.withValues(alpha: AppOpacity.tint),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(item.icon, size: 18, color: color),
+                child: Icon(item.icon, size: AppIcon.md, color: color),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,17 +580,17 @@ class _InfoTile extends StatelessWidget {
                     Text(
                       item.label.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppFont.micro,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textMuted,
                         letterSpacing: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       item.value,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
                         color: item.color ?? NexoTheme.textPrimary,
                         height: 1.25,
@@ -623,13 +629,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: Icon(
                 Icons.settings_outlined,
                 color: NexoTheme.primary,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -649,13 +655,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.warning.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.warning.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.lock_reset_rounded,
                 color: NexoTheme.warning,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -675,13 +681,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.success.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.success.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.help_outline_rounded,
                 color: NexoTheme.success,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -697,13 +703,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.info.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.info.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.info_outline,
                 color: NexoTheme.info,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -721,13 +727,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.info.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.info.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.privacy_tip_outlined,
                 color: NexoTheme.info,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -745,13 +751,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: Icon(
                 Icons.code_rounded,
                 color: NexoTheme.primary,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -769,13 +775,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: Icon(
                 Icons.switch_account_rounded,
                 color: NexoTheme.primary,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -795,13 +801,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.danger.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.danger.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.logout_rounded,
                 color: NexoTheme.danger,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(

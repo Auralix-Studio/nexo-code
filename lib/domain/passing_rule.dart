@@ -17,6 +17,12 @@ class PassingRule {
   /// Nota mínima con la que se aprueba, en la escala vigesimal.
   final int minimumGrade;
 
+  /// Nota máxima de la escala vigesimal.
+  static const double scaleMax = 20;
+
+  /// Desde esta nota el rendimiento se destaca como bueno.
+  static const double goodGrade = 14;
+
   /// La regla de toda la vida.
   static const standard = PassingRule(minimumGrade: 11);
 

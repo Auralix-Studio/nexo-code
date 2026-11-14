@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 const whatsappChannelUrl =
     'https://whatsapp.com/channel/0029VbDh4pf2ZjCfpiccSj3Y';
@@ -37,7 +38,12 @@ class _WhatsappInviteDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+            18,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -45,14 +51,14 @@ class _WhatsappInviteDialog extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: whatsappGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  color: whatsappGreen.withValues(alpha: AppOpacity.tint),
+                  borderRadius: AppRadii.rXl,
                   border: Border.all(
                     color: whatsappGreen.withValues(alpha: 0.3),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: whatsappGreen.withValues(alpha: 0.12),
+                      color: whatsappGreen.withValues(alpha: AppOpacity.tint),
                       blurRadius: 16,
                     ),
                   ],
@@ -63,62 +69,66 @@ class _WhatsappInviteDialog extends StatelessWidget {
                   color: whatsappGreen,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 AppLocalizations.of(context).whatsappBannerTitle,
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: AppFont.lead,
                   fontWeight: FontWeight.w900,
                   color: NexoTheme.textPrimary,
                   letterSpacing: -0.4,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 AppLocalizations.of(context).whatsappBannerDesc,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppFont.small,
                   color: NexoTheme.textSecondary,
                   height: 1.45,
                   letterSpacing: -0.2,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => _open(context),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  icon: const Icon(Icons.open_in_new_rounded, size: AppIcon.sm),
                   label: Text(
                     AppLocalizations.of(context).whatsappBannerFollow,
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: whatsappGreen,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
                     textStyle: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFont.label,
                       fontWeight: FontWeight.w800,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadii.rSm,
                     ),
                     elevation: 0,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
                     foregroundColor: NexoTheme.textMuted,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.snug,
+                    ),
                     textStyle: const TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFont.small,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

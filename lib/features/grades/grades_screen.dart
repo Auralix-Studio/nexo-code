@@ -19,6 +19,7 @@ import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
 import 'package:nexo/domain/passing_rule.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 Color _gradeColor(num? n) {
   if (n == null) return NexoTheme.textMuted;
@@ -139,7 +140,7 @@ class _GradesScreenState extends State<GradesScreen> {
                         index: 0,
                         child: _ResumenCard(store: widget.store),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.cozy),
                       if (periodos.isNotEmpty) ...[
                         Reveal(
                           index: 1,
@@ -149,10 +150,10 @@ class _GradesScreenState extends State<GradesScreen> {
                             onSelect: _select,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.cozy),
                       ] else if (widget.store.periodos.loading) ...[
                         const Skeleton(height: 40, radius: 999, width: 200),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.cozy),
                       ],
                       if (current == null)
                         SectionCard(
@@ -182,7 +183,7 @@ class _GradesScreenState extends State<GradesScreen> {
                           ),
                         ),
                       if (widget.store.idiomasVigentes.isNotEmpty) ...[
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.cozy),
                         Reveal(
                           index: 3,
                           child: _IdiomasGradesList(store: widget.store),
@@ -192,7 +193,9 @@ class _GradesScreenState extends State<GradesScreen> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -227,15 +230,15 @@ class _BoletaList extends StatelessWidget {
     if (state.showSkeleton) {
       return const Card(
         child: Padding(
-          padding: EdgeInsets.all(20),
+          padding: EdgeInsets.all(AppSpacing.xl),
           child: Column(
             children: [
               Skeleton(height: 18, width: 160),
-              SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
               Skeleton(height: 64, radius: 14),
-              SizedBox(height: 10),
+              SizedBox(height: AppSpacing.snug),
               Skeleton(height: 64, radius: 14),
-              SizedBox(height: 10),
+              SizedBox(height: AppSpacing.snug),
               Skeleton(height: 64, radius: 14),
             ],
           ),
@@ -256,7 +259,7 @@ class _BoletaList extends StatelessWidget {
               subtitle: humanizeError(state.error),
               color: NexoTheme.danger,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             OutlinedButton(
               onPressed: () => store.loadBoleta(periodo!.year, periodo!.number),
               child: Text(l.actionRetry),
@@ -312,9 +315,9 @@ class _CursoTile extends StatelessWidget {
     final color = _gradeColor(avg);
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadii.rLg,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         onTap: () {
           store.loadDetalle(
             periodo.year,
@@ -329,10 +332,10 @@ class _CursoTile extends StatelessWidget {
           );
         },
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: NexoTheme.bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             border: Border.all(color: NexoTheme.border),
           ),
           child: Row(
@@ -341,22 +344,22 @@ class _CursoTile extends StatelessWidget {
                 width: 54,
                 height: 54,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: color.withValues(alpha: AppOpacity.tint),
+                  borderRadius: AppRadii.rLg,
                   border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Center(
                   child: Text(
                     avgText,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: AppFont.lead,
                       fontWeight: FontWeight.w900,
                       color: color,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.cozy),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,13 +369,13 @@ class _CursoTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.tight),
                     Wrap(
                       spacing: 10,
                       runSpacing: 4,
@@ -417,12 +420,12 @@ class _CursoTile extends StatelessWidget {
   Widget _meta(IconData icon, String text) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 13, color: NexoTheme.textMuted),
-      const SizedBox(width: 3),
+      Icon(icon, size: AppIcon.xs, color: NexoTheme.textMuted),
+      const SizedBox(width: AppSpacing.hair),
       Text(
         text,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppFont.small,
           color: NexoTheme.textSecondary,
           fontWeight: FontWeight.w500,
         ),
@@ -445,20 +448,22 @@ class _DetalleSheet extends StatelessWidget {
       builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadii.xxxl),
+          ),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.snug),
             Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: NexoTheme.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadii.rTiny,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: BoletaDetalleBody(
                 course: course,
@@ -501,7 +506,12 @@ class BoletaDetalleBody extends StatelessWidget {
             : avg.toStringAsFixed(2);
         return ListView(
           controller: controller,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            0,
+            AppSpacing.xl,
+            28,
+          ),
           children: [
             GradeHeader(
               titulo: course.name,
@@ -510,12 +520,12 @@ class BoletaDetalleBody extends StatelessWidget {
               notaFinalText: notaText,
               inProgress: course.inProgress,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             if (st.loading && det == null)
               const Column(
                 children: [
                   Skeleton(height: 90, radius: 16),
-                  SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.md),
                   Skeleton(height: 90, radius: 16),
                 ],
               )
@@ -529,7 +539,7 @@ class BoletaDetalleBody extends StatelessWidget {
             else if (det != null) ...[
               if (course.inProgress) ...[
                 ProjectionCard(detail: det),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
               ],
               for (final u in det.units) ...[
                 GradeSectionCard(
@@ -547,7 +557,7 @@ class BoletaDetalleBody extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
               ],
               if (det.hasSubstitute)
                 _Banner(
@@ -592,21 +602,21 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        color: color.withValues(alpha: AppOpacity.subtle),
+        borderRadius: AppRadii.rXl,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
+          Icon(icon, color: color, size: AppIcon.lg),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFont.body,
                 fontWeight: FontWeight.w700,
                 color: NexoTheme.textPrimary,
               ),
@@ -615,7 +625,7 @@ class _Banner extends StatelessWidget {
           Text(
             formatGrade(valueRaw),
             style: TextStyle(
-              fontSize: 18,
+              fontSize: AppFont.h3,
               fontWeight: FontWeight.w900,
               color: color,
             ),
@@ -633,12 +643,13 @@ class _ResumenCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final promedios = store.promedios.value ?? const <TermAverage>[];
-    final acumulado = store.promedioAcumulado;
+    // Solo el ciclo en curso: el histórico ya se ve en el gráfico de al lado.
+    final ciclo = store.promedioCicloActual;
     final creditosAprob = store.approvedCredits;
     final creditosTotal = store.totalCredits;
     final metric = _BigMetric(
-      label: l.gradesPromedioAcumulado,
-      value: acumulado == null ? '—' : acumulado.toStringAsFixed(2),
+      label: l.gradesPromedioCiclo,
+      value: ciclo == null ? '—' : ciclo.toStringAsFixed(2),
       hint: creditosAprob == null
           ? l.gradesNoCreditsData
           : creditosTotal != null && creditosTotal > 0
@@ -655,7 +666,7 @@ class _ResumenCard extends StatelessWidget {
     );
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
@@ -665,14 +676,18 @@ class _ResumenCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(flex: 2, child: metric),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.lg),
                         Expanded(flex: 3, child: chart),
                       ],
                     ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [metric, const SizedBox(height: 16), chart],
+                    children: [
+                      metric,
+                      const SizedBox(height: AppSpacing.lg),
+                      chart,
+                    ],
                   );
           },
         ),
@@ -699,14 +714,14 @@ class _BigMetric extends StatelessWidget {
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [NexoTheme.primary, NexoTheme.primaryDark],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.rXl,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,12 +732,12 @@ class _BigMetric extends StatelessWidget {
               label.toUpperCase(),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 11,
+                fontSize: AppFont.caption,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -730,19 +745,19 @@ class _BigMetric extends StatelessWidget {
                 value,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 48,
+                  fontSize: AppFont.display,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -2,
                   height: 1,
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.tight),
             Text(
               hint,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 12,
+                fontSize: AppFont.small,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -788,24 +803,27 @@ class _PromediosChart extends StatelessWidget {
     }
     if (data.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.rXl,
           border: Border.all(color: NexoTheme.border),
         ),
         child: Row(
           children: [
             Icon(
               Icons.show_chart_rounded,
-              size: 20,
+              size: AppIcon.lg,
               color: NexoTheme.textMuted,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.snug),
             Expanded(
               child: Text(
                 l.gradesNoHistoryYet,
-                style: TextStyle(fontSize: 13, color: NexoTheme.textMuted),
+                style: TextStyle(
+                  fontSize: AppFont.label,
+                  color: NexoTheme.textMuted,
+                ),
               ),
             ),
           ],
@@ -818,10 +836,10 @@ class _PromediosChart extends StatelessWidget {
         return byYear != 0 ? byYear : a.number.compareTo(b.number);
       });
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: NexoTheme.bg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.rXl,
         border: Border.all(color: NexoTheme.border),
       ),
       child: Column(
@@ -831,13 +849,13 @@ class _PromediosChart extends StatelessWidget {
           Text(
             l.gradesEvolutionByPeriod,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFont.label,
               fontWeight: FontWeight.w700,
               color: NexoTheme.textSecondary,
               letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.cozy),
           SizedBox(
             height: 130,
             child: Row(
@@ -871,7 +889,7 @@ class _BarColumn extends StatelessWidget {
         ? [NexoTheme.success, NexoTheme.accent]
         : const [NexoTheme.warning, NexoTheme.danger];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.tight),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -880,7 +898,7 @@ class _BarColumn extends StatelessWidget {
             child: Text(
               p.average == 0 ? '—' : p.average.toStringAsFixed(1),
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppFont.caption,
                 fontWeight: FontWeight.w700,
                 color: inProgress && p.average != 0
                     ? NexoTheme.primary
@@ -888,7 +906,7 @@ class _BarColumn extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.tight),
           Expanded(
             child: LayoutBuilder(
               builder: (ctx, c) {
@@ -897,7 +915,7 @@ class _BarColumn extends StatelessWidget {
                 return Align(
                   alignment: Alignment.bottomCenter,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
+                    duration: AppDurations.slow,
                     curve: Curves.easeOutCubic,
                     width: double.infinity,
                     height: value.clamp(4.0, h),
@@ -916,14 +934,14 @@ class _BarColumn extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.tight),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               p.label,
               maxLines: 1,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppFont.micro,
                 color: inProgress ? NexoTheme.primary : NexoTheme.textMuted,
                 fontWeight: inProgress ? FontWeight.w700 : FontWeight.w600,
               ),
@@ -957,7 +975,7 @@ class _PeriodChips extends StatelessWidget {
               onTap: () => onSelect(p),
               activo: p.isActive,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
         ],
       ),
@@ -980,13 +998,16 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppRadii.rPill,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.snug,
+        ),
         decoration: BoxDecoration(
           color: active ? NexoTheme.primary : NexoTheme.surface,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadii.rPill,
           border: Border.all(
             color: active ? NexoTheme.primary : NexoTheme.border,
           ),
@@ -997,13 +1018,13 @@ class _Chip extends StatelessWidget {
             Text(
               text,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFont.label,
                 fontWeight: FontWeight.w700,
                 color: active ? Colors.white : NexoTheme.textPrimary,
               ),
             ),
             if (activo) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.tight),
               Container(
                 width: 6,
                 height: 6,
@@ -1068,9 +1089,9 @@ class _IdiomasGradesList extends StatelessWidget {
 
               return Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppRadii.rLg,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadii.rLg,
                   onTap: () {
                     showModalBottomSheet<void>(
                       context: context,
@@ -1081,10 +1102,10 @@ class _IdiomasGradesList extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(AppSpacing.cozy),
                     decoration: BoxDecoration(
                       color: NexoTheme.bg,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadii.rLg,
                       border: Border.all(color: NexoTheme.border),
                     ),
                     child: Row(
@@ -1093,8 +1114,8 @@ class _IdiomasGradesList extends StatelessWidget {
                           width: 54,
                           height: 54,
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
+                            color: color.withValues(alpha: AppOpacity.tint),
+                            borderRadius: AppRadii.rLg,
                             border: Border.all(
                               color: color.withValues(alpha: 0.3),
                             ),
@@ -1104,13 +1125,13 @@ class _IdiomasGradesList extends StatelessWidget {
                               avgText,
                               style: TextStyle(
                                 color: color,
-                                fontSize: 17,
+                                fontSize: AppFont.lead,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: AppSpacing.cozy),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,13 +1141,13 @@ class _IdiomasGradesList extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppFont.body,
                                   fontWeight: FontWeight.w700,
                                   color: NexoTheme.textPrimary,
                                   height: 1.2,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: AppSpacing.tight),
                               Wrap(
                                 spacing: 10,
                                 runSpacing: 4,
@@ -1177,12 +1198,12 @@ class _IdiomasGradesList extends StatelessWidget {
   Widget _meta(IconData icon, String text) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 13, color: NexoTheme.textMuted),
-      const SizedBox(width: 3),
+      Icon(icon, size: AppIcon.xs, color: NexoTheme.textMuted),
+      const SizedBox(width: AppSpacing.hair),
       Text(
         text,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppFont.small,
           color: NexoTheme.textSecondary,
           fontWeight: FontWeight.w500,
         ),
@@ -1206,24 +1227,26 @@ class _IdiomasDetalleSheet extends StatelessWidget {
       builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadii.xxxl),
+          ),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.snug),
             Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: NexoTheme.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadii.rTiny,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Expanded(
               child: ListView(
                 controller: controller,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                 children: [
                   Builder(
                     builder: (context) {
@@ -1287,7 +1310,7 @@ class _IdiomasDetalleSheet extends StatelessWidget {
                                 '${course.anio}-${monthName(course.mes)} · ${course.idiomaNombre}',
                             notaFinalText: notaText,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           if (match.isEmpty || notasList.isEmpty)
                             EmptyState(
                               icon: Icons.access_time_rounded,

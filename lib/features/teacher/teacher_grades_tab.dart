@@ -97,12 +97,18 @@ class _TeacherGradesTabState extends State<TeacherGradesTab>
                     segments: [
                       ButtonSegment(
                         value: false,
-                        icon: const Icon(Icons.view_agenda_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.view_agenda_outlined,
+                          size: AppIcon.md,
+                        ),
                         label: Text(l.tchViewCards),
                       ),
                       ButtonSegment(
                         value: true,
-                        icon: const Icon(Icons.table_chart_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.table_chart_outlined,
+                          size: AppIcon.md,
+                        ),
                         label: Text(l.tchViewGrid),
                       ),
                     ],
@@ -140,7 +146,7 @@ class _TeacherGradesTabState extends State<TeacherGradesTab>
                                         onSelected: (_) =>
                                             setState(() => _unit = u),
                                       ),
-                                      const SizedBox(width: 6),
+                                      const SizedBox(width: AppSpacing.tight),
                                     ],
                                   ],
                                 ),
@@ -289,7 +295,7 @@ class _TypesListState extends State<_TypesList> {
             );
             children.add(
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _TypeCard(
                   type: t,
                   ordinal: i,
@@ -362,7 +368,7 @@ class _TypeCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadii.rXl,
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md + 2),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: NexoTheme.card,
             borderRadius: AppRadii.rXl,
@@ -404,7 +410,7 @@ class _TypeCard extends StatelessWidget {
                         color: NexoTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.tight),
                     ClipRRect(
                       borderRadius: AppRadii.rPill,
                       child: LinearProgressIndicator(
@@ -416,7 +422,7 @@ class _TypeCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       [
                         l.tchGradeFilled(values.length, total),
@@ -424,13 +430,13 @@ class _TypeCard extends StatelessWidget {
                           l.tchGradeAverage(avg.toStringAsFixed(1)),
                       ].join(' · '),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         color: NexoTheme.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (hasDraft) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.tight),
                       TeacherPill(
                         text: l.tchGradeDraftBadge(draftCount),
                         color: NexoTheme.warning,

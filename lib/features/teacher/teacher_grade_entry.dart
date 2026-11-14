@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nexo/core/design/motion.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
@@ -8,6 +9,7 @@ import 'package:nexo/domain/models.dart';
 import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/util/clipboard_helper.dart';
+import 'package:nexo/shared/widgets/progress_ring.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 
 /// Registro de una evaluación (unidad + tipo de nota) para toda la sección.
@@ -374,17 +376,20 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${widget.type.abbr} · ${widget.unit.name}'),
+                Text(
+                  readableName(widget.type.description),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 Text(
                   [
+                    readableName(widget.unit.name),
                     widget.course.displayName,
-                    if (widget.course.careerName.isNotEmpty)
-                      widget.course.careerName,
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w600,
                     color: NexoTheme.textSecondary,
                   ),
@@ -410,6 +415,9 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
             child: Column(
               children: [
                 Container(
+                  // Sin ancho explícito la cabecera se encogía al contenido y
+                  // quedaba como un recuadro suelto en medio de la pantalla.
+                  width: double.infinity,
                   color: NexoTheme.surface,
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
@@ -420,18 +428,20 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.type.description,
-                        style: TextStyle(
-                          fontSize: AppFont.body,
-                          fontWeight: FontWeight.w700,
-                          color: NexoTheme.textSecondary,
-                        ),
+                      // Avance del registro: cuántos alumnos ya tienen nota.
+                      SplitBar(
+                        parts: [
+                          (count: values.length, color: NexoTheme.primary),
+                          (
+                            count: students.length - values.length,
+                            color: NexoTheme.border,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const Gap(AppSpacing.sm),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
                         children: [
                           TeacherPill(
                             text: l.tchGradeFilled(
@@ -464,53 +474,47 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                     ],
                   ),
                 ),
-                if (locked)
-                  TeacherBanner(
-                    color: NexoTheme.warning,
-                    icon: Icons.edit_note_rounded,
-                    text: l.tchGradeLockedDraftHint,
-                  ),
-                if (_draftRestored)
-                  TeacherBanner(
-                    color: NexoTheme.info,
-                    icon: Icons.restore_rounded,
-                    text: l.tchDraftRestored,
-                    action: l.tchDraftDiscard,
-                    onAction: () => _discardDraft(students),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                    AppSpacing.lg,
-                    0,
-                  ),
-                  child: TextField(
-                    onChanged: (v) =>
-                        setState(() => _q = v.trim().toLowerCase()),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: l.docenteSearchStudent,
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                      filled: true,
-                      fillColor: NexoTheme.card,
-                      border: OutlineInputBorder(
-                        borderRadius: AppRadii.rLg,
-                        borderSide: BorderSide(color: NexoTheme.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppRadii.rLg,
-                        borderSide: BorderSide(color: NexoTheme.border),
-                      ),
-                    ),
-                  ),
-                ),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: shown.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) {
+                    // +1: los avisos y el buscador van como primer elemento
+                    // y se desplazan con la lista; fijos arriba no dejaban
+                    // sitio en pantallas pequeñas o con letra grande.
+                    itemCount: shown.length + 1,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (_, index) {
+                      if (index == 0) {
+                        const bannerMargin = EdgeInsets.only(
+                          bottom: AppSpacing.sm,
+                        );
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (locked)
+                              TeacherBanner(
+                                margin: bannerMargin,
+                                color: NexoTheme.warning,
+                                icon: Icons.edit_note_rounded,
+                                text: l.tchGradeLockedDraftHint,
+                              ),
+                            if (_draftRestored)
+                              TeacherBanner(
+                                margin: bannerMargin,
+                                color: NexoTheme.info,
+                                icon: Icons.restore_rounded,
+                                text: l.tchDraftRestored,
+                                action: l.tchDraftDiscard,
+                                onAction: () => _discardDraft(students),
+                              ),
+                            TeacherSearchField(
+                              onChanged: (v) =>
+                                  setState(() => _q = v.trim().toLowerCase()),
+                            ),
+                          ],
+                        );
+                      }
+                      final i = index - 1;
                       final s = shown[i];
                       final next = i + 1 < shown.length ? shown[i + 1] : null;
                       return _GradeRow(
@@ -537,81 +541,84 @@ class _TeacherGradeEntryScreenState extends State<TeacherGradeEntryScreen> {
                     },
                   ),
                 ),
-                if (pending.writes.isNotEmpty)
-                  SafeArea(
-                    minimum: const EdgeInsets.all(AppSpacing.lg),
-                    child: locked
-                        ? FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              backgroundColor: NexoTheme.primary,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: AppRadii.rLg,
-                              ),
-                            ),
-                            onPressed: _saving
-                                ? null
-                                : () => _saveDraft(students),
-                            icon: const Icon(Icons.save_outlined),
-                            label: Text(l.tchGradeSaveDraft),
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
-                                    side: BorderSide(color: NexoTheme.border),
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: AppRadii.rLg,
-                                    ),
-                                  ),
-                                  onPressed: _saving
-                                      ? null
-                                      : () => _saveDraft(students),
-                                  icon: const Icon(
-                                    Icons.save_outlined,
-                                    size: 18,
-                                  ),
-                                  label: Text(l.tchGradeSaveDraft),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: FilledButton.icon(
-                                  style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
-                                    backgroundColor: NexoTheme.primary,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: AppRadii.rLg,
-                                    ),
-                                  ),
-                                  onPressed: _saving
-                                      ? null
-                                      : () => _save(students),
-                                  icon: _saving
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Icon(Icons.cloud_upload_rounded),
-                                  label: Text(
-                                    l.tchSaveChanges(pending.writes.length),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
+                // La barra de guardado entra y sale deslizándose, sin saltos.
+                AnimatedSize(
+                  duration: Motion.of(context, AppDurations.normal),
+                  curve: Motion.enter,
+                  alignment: Alignment.topCenter,
+                  child: pending.writes.isEmpty
+                      ? const SizedBox(width: double.infinity)
+                      : _saveBar(l, students, pending.writes.length, locked),
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _saveBar(
+    AppLocalizations l,
+    List<TeacherStudent> students,
+    int changes,
+    bool locked,
+  ) {
+    return SafeArea(
+      minimum: const EdgeInsets.all(AppSpacing.lg),
+      child: locked
+          ? FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                backgroundColor: NexoTheme.primary,
+                shape: const RoundedRectangleBorder(borderRadius: AppRadii.rLg),
+              ),
+              onPressed: _saving ? null : () => _saveDraft(students),
+              icon: const Icon(Icons.save_outlined),
+              label: Text(l.tchGradeSaveDraft),
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      side: BorderSide(color: NexoTheme.border),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadii.rLg,
+                      ),
+                    ),
+                    onPressed: _saving ? null : () => _saveDraft(students),
+                    icon: const Icon(Icons.save_outlined, size: AppIcon.md),
+                    label: Text(l.tchGradeSaveDraft),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      backgroundColor: NexoTheme.primary,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadii.rLg,
+                      ),
+                    ),
+                    onPressed: _saving ? null : () => _save(students),
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.cloud_upload_rounded),
+                    label: Text(l.tchSaveChanges(changes)),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -652,33 +659,23 @@ class _GradeRow extends StatelessWidget {
         : v >= minPass
         ? NexoTheme.success
         : NexoTheme.danger;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.sm + 2,
-        AppSpacing.sm,
-        AppSpacing.sm,
-        AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: NexoTheme.card,
-        borderRadius: AppRadii.rLg,
-        border: Border.all(
-          color: invalid
-              ? NexoTheme.danger
-              : changed
-              ? NexoTheme.primary
-              : NexoTheme.border,
-          width: invalid || changed ? 1.5 : 1,
-        ),
-      ),
+    return TeacherCard(
+      radius: AppRadii.rLg,
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      borderColor: invalid
+          ? NexoTheme.danger
+          : changed
+          ? NexoTheme.primary
+          : null,
+      emphasized: invalid || changed,
       child: Row(
         children: [
           StudentAvatar(
             code: student.code,
             name: student.displayName,
-            size: 38,
+            size: AppSizes.avatarSm,
           ),
-          const Gap.h(AppSpacing.sm + 2),
+          const Gap.h(AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,13 +693,16 @@ class _GradeRow extends StatelessWidget {
                 ),
                 Text(
                   student.code,
-                  style: TextStyle(fontSize: 11, color: NexoTheme.textMuted),
+                  style: TextStyle(
+                    fontSize: AppFont.caption,
+                    color: NexoTheme.textMuted,
+                  ),
                 ),
               ],
             ),
           ),
           SizedBox(
-            width: 78,
+            width: AppSizes.gradeField,
             child: TextField(
               controller: controller,
               focusNode: focus,
@@ -728,7 +728,9 @@ class _GradeRow extends StatelessWidget {
               decoration: InputDecoration(
                 isDense: true,
                 hintText: '—',
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.snug,
+                ),
                 filled: true,
                 fillColor: NexoTheme.surface,
                 border: OutlineInputBorder(

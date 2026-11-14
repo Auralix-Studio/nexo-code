@@ -10,6 +10,7 @@ import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/features/settings/typography_card.dart';
 import 'package:nexo/l10n/app_localizations.dart';
 import 'package:nexo/shared/widgets/section_card.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.store, required this.theme});
@@ -25,18 +26,18 @@ class SettingsScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 _AppearanceCard(theme: theme),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.cozy),
                 TypographyCard(theme: theme),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.cozy),
                 _PreferencesCard(theme: theme),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.cozy),
                 _NotificationsCard(store: store),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.cozy),
                 const UpdateCard(),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),
@@ -68,17 +69,17 @@ class _AppearanceCard extends StatelessWidget {
                 selected: selection == 'system',
                 onTap: () => theme.setSelection('system'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 l.settingsPalette.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFont.caption,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                   color: NexoTheme.textMuted,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.snug),
               LayoutBuilder(
                 builder: (ctx, c) {
                   final cols = c.maxWidth >= 480 ? 3 : 2;
@@ -127,15 +128,18 @@ class _SystemOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadii.rLg,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.cozy,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: selected
-              ? NexoTheme.primary.withValues(alpha: 0.10)
+              ? NexoTheme.primary.withValues(alpha: AppOpacity.soft)
               : NexoTheme.bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           border: Border.all(
             color: selected ? NexoTheme.primary : NexoTheme.border,
             width: selected ? 1.5 : 1,
@@ -148,7 +152,7 @@ class _SystemOption extends StatelessWidget {
               color: selected ? NexoTheme.primary : NexoTheme.textSecondary,
               size: 22,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +161,7 @@ class _SystemOption extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFont.body,
                       fontWeight: FontWeight.w700,
                       color: selected
                           ? NexoTheme.primary
@@ -167,7 +171,7 @@ class _SystemOption extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFont.small,
                       color: NexoTheme.textSecondary,
                     ),
                   ),
@@ -177,7 +181,7 @@ class _SystemOption extends StatelessWidget {
             if (selected)
               Icon(
                 Icons.check_circle_rounded,
-                size: 20,
+                size: AppIcon.lg,
                 color: NexoTheme.primary,
               ),
           ],
@@ -202,13 +206,13 @@ class _PaletteTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadii.rLg,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.rLg,
           border: Border.all(
             color: selected ? NexoTheme.primary : NexoTheme.border,
             width: selected ? 1.8 : 1,
@@ -217,7 +221,7 @@ class _PaletteTile extends StatelessWidget {
         child: Row(
           children: [
             _PalettePreview(palette: palette),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +230,7 @@ class _PaletteTile extends StatelessWidget {
                   Text(
                     palette.label,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFont.small,
                       fontWeight: FontWeight.w700,
                       color: selected
                           ? NexoTheme.primary
@@ -237,7 +241,7 @@ class _PaletteTile extends StatelessWidget {
                     Text(
                       activeLabel,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppFont.micro,
                         color: NexoTheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -328,13 +332,13 @@ class _PreferencesCard extends StatelessWidget {
               Text(
                 l.language.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFont.caption,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                   color: NexoTheme.textMuted,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.snug),
               Row(
                 children: [
                   for (final loc in AppLocale.values) ...[
@@ -345,21 +349,22 @@ class _PreferencesCard extends StatelessWidget {
                         onTap: () => theme.setLocale(loc),
                       ),
                     ),
-                    if (loc != AppLocale.values.last) const SizedBox(width: 8),
+                    if (loc != AppLocale.values.last)
+                      const SizedBox(width: AppSpacing.sm),
                   ],
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.roomy),
               Text(
                 l.timeFormat.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFont.caption,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                   color: NexoTheme.textMuted,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.snug),
               Row(
                 children: [
                   Expanded(
@@ -369,7 +374,7 @@ class _PreferencesCard extends StatelessWidget {
                       onTap: () => theme.setUse24h(true),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _PrefChip(
                       label: l.hours12,
@@ -379,7 +384,7 @@ class _PreferencesCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.roomy),
               const _FestivityToggle(),
             ],
           ),
@@ -410,13 +415,13 @@ class _FestivityToggleState extends State<_FestivityToggle> {
         Text(
           'ADORNOS DE FESTIVIDADES',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFont.caption,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
             color: NexoTheme.textMuted,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.snug),
         Row(
           children: [
             Expanded(
@@ -426,7 +431,7 @@ class _FestivityToggleState extends State<_FestivityToggle> {
                 onTap: () => _set(true),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: _PrefChip(
                 label: 'Desactivado',
@@ -454,15 +459,15 @@ class _PrefChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadii.rMd,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: selected
-              ? NexoTheme.primary.withValues(alpha: 0.12)
+              ? NexoTheme.primary.withValues(alpha: AppOpacity.tint)
               : NexoTheme.bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.rMd,
           border: Border.all(
             color: selected ? NexoTheme.primary : NexoTheme.border,
             width: selected ? 1.5 : 1,
@@ -472,7 +477,7 @@ class _PrefChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFont.label,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               color: selected ? NexoTheme.primary : NexoTheme.textSecondary,
             ),
@@ -495,13 +500,13 @@ class _NotificationsCard extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: NexoTheme.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+            borderRadius: AppRadii.rSm,
           ),
           child: Icon(
             Icons.notifications_active_outlined,
             color: NexoTheme.primary,
-            size: 20,
+            size: AppIcon.lg,
           ),
         ),
         title: Text(
@@ -554,17 +559,17 @@ class UpdateCard extends StatelessWidget {
                         Text(
                           l.updInstalledVersion,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.0,
                             color: NexoTheme.textMuted,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           'Nexo ${AppConfig.appVersion}',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFont.subtitle,
                             fontWeight: FontWeight.w700,
                             color: NexoTheme.textPrimary,
                           ),
@@ -575,7 +580,7 @@ class UpdateCard extends StatelessWidget {
                   _StatusPill(status: status, busy: busy),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.cozy),
               _UpdateAction(updater: updater, status: status, busy: busy),
             ],
           ),
@@ -618,10 +623,13 @@ class _StatusPill extends StatelessWidget {
       }
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.snug,
+        vertical: AppSpacing.tight,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: AppOpacity.tint),
+        borderRadius: AppRadii.rXxl,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -631,7 +639,7 @@ class _StatusPill extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFont.caption,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -689,9 +697,12 @@ class _UpdateAction extends StatelessWidget {
         children: [
           Text(
             l.updAvailableLine(status.latestVersion ?? ''),
-            style: TextStyle(fontSize: 13, color: NexoTheme.textSecondary),
+            style: TextStyle(
+              fontSize: AppFont.label,
+              color: NexoTheme.textSecondary,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.snug),
           FilledButton.icon(
             onPressed: busy ? null : () => _install(context),
             icon: busy
@@ -700,7 +711,7 @@ class _UpdateAction extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.download_rounded, size: 18),
+                : const Icon(Icons.download_rounded, size: AppIcon.md),
             label: Text(
               status.state == UpdateState.ready
                   ? l.updInstallNow
@@ -718,7 +729,7 @@ class _UpdateAction extends StatelessWidget {
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.refresh_rounded, size: 18),
+          : const Icon(Icons.refresh_rounded, size: AppIcon.md),
       label: Text(l.updCheck),
     );
   }

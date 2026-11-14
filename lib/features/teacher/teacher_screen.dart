@@ -100,7 +100,9 @@ class _TeacherScreenState extends State<TeacherScreen> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -151,7 +153,7 @@ class _Header extends StatelessWidget {
           size: 56,
           radius: 18,
         ),
-        const Gap.h(14),
+        const Gap.h(AppSpacing.cozy),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +244,7 @@ class _StatsStrip extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppFont.caption,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
                 color: NexoTheme.textMuted,
@@ -278,7 +280,7 @@ class _StatsStrip extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             fontWeight: FontWeight.w600,
                             color: NexoTheme.textSecondary,
                           ),
@@ -394,13 +396,13 @@ class _CursoRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.primary,
                         letterSpacing: 0.3,
                       ),
                     ),
-                    const Gap(2),
+                    const Gap(AppSpacing.xxs),
                   ],
                   Text(
                     course.displayName,

@@ -27,7 +27,7 @@ extension ResponsiveX on BuildContext {
     final w = screenWidth;
     if (w >= Breakpoints.lg) return AppSpacing.huge - 8;
     if (w >= Breakpoints.md) return AppSpacing.xxxl - 4;
-    return AppSpacing.lg + 2;
+    return AppSpacing.roomy;
   }
 
   T responsive<T>({required T mobile, T? tablet, T? desktop}) =>

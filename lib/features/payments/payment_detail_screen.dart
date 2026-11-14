@@ -142,7 +142,7 @@ class _Hero extends StatelessWidget {
         borderRadius: AppRadii.rXxl,
         boxShadow: [
           BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
             blurRadius: 22,
             offset: const Offset(0, 8),
           ),
@@ -155,8 +155,8 @@ class _Hero extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm + 2,
-                  vertical: 3,
+                  horizontal: AppSpacing.snug,
+                  vertical: AppSpacing.hair,
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -199,7 +199,7 @@ class _Hero extends StatelessWidget {
             amountText,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: AppFont.metric,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
             ),
@@ -397,10 +397,10 @@ class _FieldRow extends StatelessWidget {
       children: [
         Icon(
           field.icon,
-          size: 20,
+          size: AppIcon.lg,
           color: field.isWarning ? NexoTheme.danger : NexoTheme.textSecondary,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,16 +408,16 @@ class _FieldRow extends StatelessWidget {
               Text(
                 field.label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppFont.small,
                   color: NexoTheme.textMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 field.value,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                   color: field.isWarning
                       ? NexoTheme.danger
                       : NexoTheme.textPrimary,

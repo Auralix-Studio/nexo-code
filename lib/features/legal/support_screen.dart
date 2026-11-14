@@ -78,7 +78,9 @@ class SupportScreen extends StatelessWidget {
                     borderRadius: AppRadii.rXxl,
                     boxShadow: [
                       BoxShadow(
-                        color: NexoTheme.primary.withValues(alpha: 0.25),
+                        color: NexoTheme.primary.withValues(
+                          alpha: AppOpacity.glow,
+                        ),
                         blurRadius: 22,
                         offset: const Offset(0, 8),
                       ),
@@ -89,8 +91,8 @@ class SupportScreen extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm + 2,
-                          vertical: 3,
+                          horizontal: AppSpacing.snug,
+                          vertical: AppSpacing.hair,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
@@ -122,7 +124,7 @@ class SupportScreen extends StatelessWidget {
                         l.supportHeroBody,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 14,
+                          fontSize: AppFont.body,
                           fontWeight: FontWeight.w500,
                           height: 1.4,
                         ),
@@ -139,9 +141,11 @@ class SupportScreen extends StatelessWidget {
                     children: [
                       InkWell(
                         onTap: () => _launchWhatsApp(context),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadii.rMd,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
                           child: Row(
                             children: [
                               Container(
@@ -150,16 +154,16 @@ class SupportScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: const Color(
                                     0xFF25D366,
-                                  ).withValues(alpha: 0.12),
+                                  ).withValues(alpha: AppOpacity.tint),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.phone_android_rounded,
                                   color: Color(0xFF25D366),
-                                  size: 24,
+                                  size: AppIcon.xl,
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: AppSpacing.cozy),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,16 +171,16 @@ class SupportScreen extends StatelessWidget {
                                     Text(
                                       l.supportChannelWhatsApp,
                                       style: TextStyle(
-                                        fontSize: 15,
+                                        fontSize: AppFont.subtitle,
                                         fontWeight: FontWeight.w700,
                                         color: NexoTheme.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: AppSpacing.xxs),
                                     Text(
                                       '+51 907 924 307',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: AppFont.label,
                                         color: NexoTheme.textSecondary,
                                       ),
                                     ),
@@ -194,25 +198,29 @@ class SupportScreen extends StatelessWidget {
                       Divider(color: NexoTheme.border, height: 24),
                       InkWell(
                         onTap: () => _launchEmail(context),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadii.rMd,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
                           child: Row(
                             children: [
                               Container(
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: NexoTheme.info.withValues(alpha: 0.12),
+                                  color: NexoTheme.info.withValues(
+                                    alpha: AppOpacity.tint,
+                                  ),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.mail_outline_rounded,
                                   color: NexoTheme.info,
-                                  size: 24,
+                                  size: AppIcon.xl,
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: AppSpacing.cozy),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,16 +228,16 @@ class SupportScreen extends StatelessWidget {
                                     Text(
                                       l.supportChannelEmail,
                                       style: TextStyle(
-                                        fontSize: 15,
+                                        fontSize: AppFont.subtitle,
                                         fontWeight: FontWeight.w700,
                                         color: NexoTheme.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: AppSpacing.xxs),
                                     Text(
                                       'alessandrovillogas@outlook.es',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: AppFont.label,
                                         color: NexoTheme.textSecondary,
                                       ),
                                     ),
@@ -252,7 +260,7 @@ class SupportScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: NexoTheme.surface,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadii.rLg,
                     border: Border.all(color: NexoTheme.border),
                   ),
                   child: Row(
@@ -260,14 +268,14 @@ class SupportScreen extends StatelessWidget {
                       Icon(
                         Icons.info_outline,
                         color: NexoTheme.textMuted,
-                        size: 20,
+                        size: AppIcon.lg,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           l.supportInfoNote,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFont.small,
                             color: NexoTheme.textSecondary,
                             height: 1.4,
                           ),

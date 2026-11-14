@@ -13,7 +13,7 @@ Widget gradeTileGrid(BuildContext context, List<Widget> tiles) {
       children: [
         for (var i = 0; i < tiles.length; i++) ...[
           tiles[i],
-          if (i < tiles.length - 1) const SizedBox(height: 10),
+          if (i < tiles.length - 1) const SizedBox(height: AppSpacing.snug),
         ],
       ],
     );
@@ -57,7 +57,7 @@ class GradeBadge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.12),
+        color: c.withValues(alpha: AppOpacity.tint),
         borderRadius: BorderRadius.circular(size * 0.28),
         border: Border.all(color: c.withValues(alpha: 0.32)),
       ),
@@ -108,7 +108,7 @@ class GradeHeader extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: AppRadii.rXxl,
-          border: Border.all(color: c.withValues(alpha: 0.25)),
+          border: Border.all(color: c.withValues(alpha: AppOpacity.glow)),
         ),
         child: Row(
           children: [
@@ -161,7 +161,10 @@ class GradeHeader extends StatelessWidget {
   }
 
   Widget _miniChip(String t, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xxs,
+    ),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.16),
       borderRadius: AppRadii.rPill,
@@ -169,7 +172,7 @@ class GradeHeader extends StatelessWidget {
     child: Text(
       t,
       style: TextStyle(
-        fontSize: 10,
+        fontSize: AppFont.micro,
         fontWeight: FontWeight.w800,
         color: color,
         letterSpacing: 0.4,
@@ -299,7 +302,7 @@ class GradeSectionCard extends StatelessWidget {
                   height: 20,
                   decoration: BoxDecoration(
                     color: NexoTheme.primary,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppRadii.rTiny,
                   ),
                 ),
                 const Gap.h(AppSpacing.md),
@@ -316,7 +319,7 @@ class GradeSectionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
-                      vertical: 2,
+                      vertical: AppSpacing.xxs,
                     ),
                     decoration: BoxDecoration(
                       color: NexoTheme.accent.withValues(alpha: 0.14),
@@ -325,7 +328,7 @@ class GradeSectionCard extends StatelessWidget {
                     child: Text(
                       pesoText!,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         fontWeight: FontWeight.w800,
                         color: NexoTheme.accent,
                       ),

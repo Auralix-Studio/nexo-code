@@ -12,6 +12,8 @@ class StudentAvatar extends StatelessWidget {
     this.radius,
     this.borderColor,
     this.gradient,
+    this.fit = BoxFit.cover,
+    this.alignment = Alignment.topCenter,
   });
   final String? code;
   final String name;
@@ -19,6 +21,8 @@ class StudentAvatar extends StatelessWidget {
   final double? radius;
   final Color? borderColor;
   final Gradient? gradient;
+  final BoxFit fit;
+  final Alignment alignment;
   @override
   Widget build(BuildContext context) {
     final r = radius ?? size * 0.32;
@@ -43,7 +47,8 @@ class StudentAvatar extends StatelessWidget {
             ? _Initials(name: name, size: size)
             : Image.network(
                 AppConfig.photoUrlFor(code!),
-                fit: BoxFit.cover,
+                fit: fit,
+                alignment: alignment,
                 width: size,
                 height: size,
                 cacheWidth: (size * 2).toInt(),

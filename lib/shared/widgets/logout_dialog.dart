@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 Future<bool> showLogoutConfirm(BuildContext context) async {
   final l = AppLocalizations.of(context);
   final ok = await showDialog<bool>(
     context: context,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: Colors.black.withValues(alpha: AppOpacity.scrim),
     builder: (ctx) => Dialog(
       constraints: const BoxConstraints(maxWidth: 380),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.xxl,
+      ),
       backgroundColor: NexoTheme.card,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadii.rXxxl,
         side: BorderSide(color: NexoTheme.border),
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -25,7 +29,7 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: NexoTheme.danger.withValues(alpha: 0.12),
+                  color: NexoTheme.danger.withValues(alpha: AppOpacity.tint),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -34,23 +38,23 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
                   size: 28,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 l.logoutConfirmTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: AppFont.h3,
                   fontWeight: FontWeight.w800,
                   color: NexoTheme.textPrimary,
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.snug),
               Text(
                 l.logoutConfirmBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                   color: NexoTheme.textSecondary,
                   height: 1.4,
                 ),
@@ -62,10 +66,12 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.cozy,
+                        ),
                         side: BorderSide(color: NexoTheme.border),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadii.rMd,
                         ),
                       ),
                       child: Text(
@@ -77,17 +83,19 @@ Future<bool> showLogoutConfirm(BuildContext context) async {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx, true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: NexoTheme.danger,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.cozy,
+                        ),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadii.rMd,
                         ),
                       ),
                       child: Text(

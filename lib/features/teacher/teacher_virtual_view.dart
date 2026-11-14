@@ -164,7 +164,9 @@ class _TeacherVirtualViewState extends State<TeacherVirtualView> {
                         ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xxxl),
+              ),
             ],
           ),
         );
@@ -202,7 +204,7 @@ class _VirtualCard extends StatelessWidget {
     Widget slot(String label, String scheduled, int tol, String marked) =>
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(AppSpacing.sm + 2),
+            padding: const EdgeInsets.all(AppSpacing.snug),
             decoration: BoxDecoration(
               color: NexoTheme.surface,
               borderRadius: AppRadii.rLg,
@@ -214,7 +216,7 @@ class _VirtualCard extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w700,
                     color: NexoTheme.textMuted,
                   ),
@@ -229,15 +231,18 @@ class _VirtualCard extends StatelessWidget {
                 ),
                 Text(
                   l.tchVirtualTolerance(tol),
-                  style: TextStyle(fontSize: 10, color: NexoTheme.textMuted),
+                  style: TextStyle(
+                    fontSize: AppFont.micro,
+                    color: NexoTheme.textMuted,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   marked.trim().isEmpty || marked == '00:00:00'
                       ? '—'
                       : l.tchVirtualMarkedAt(_hm(marked)),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w800,
                     color: marked.trim().isEmpty || marked == '00:00:00'
                         ? NexoTheme.textMuted
@@ -272,11 +277,11 @@ class _VirtualCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               TeacherPill(text: status, color: color),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             [
               if (c.section.isNotEmpty) l.tchSectionLabel(c.section),

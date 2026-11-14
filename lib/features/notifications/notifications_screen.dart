@@ -207,7 +207,7 @@ class _MasterCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: enabled
                   ? Colors.white.withValues(alpha: 0.2)
-                  : NexoTheme.primary.withValues(alpha: 0.12),
+                  : NexoTheme.primary.withValues(alpha: AppOpacity.tint),
               borderRadius: AppRadii.rMd,
             ),
             child: Icon(
@@ -291,7 +291,7 @@ class _CategoryCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: color.withValues(alpha: AppOpacity.tint),
                     borderRadius: AppRadii.rMd,
                   ),
                   child: Icon(icon, color: color, size: AppIcon.lg),
@@ -388,7 +388,7 @@ class _Chip extends StatelessWidget {
         duration: AppDurations.fast,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm + 2,
+          vertical: AppSpacing.snug,
         ),
         decoration: BoxDecoration(
           color: active ? NexoTheme.primary : NexoTheme.bg,
@@ -441,7 +441,7 @@ class _InfoNote extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: NexoTheme.info.withValues(alpha: 0.08),
+        color: NexoTheme.info.withValues(alpha: AppOpacity.subtle),
         borderRadius: AppRadii.rMd,
       ),
       child: Row(
@@ -504,7 +504,7 @@ class _ExactAlarmsBannerState extends State<_ExactAlarmsBanner> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: NexoTheme.warning.withValues(alpha: 0.1),
+        color: NexoTheme.warning.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rMd,
         border: Border.all(color: NexoTheme.warning.withValues(alpha: 0.3)),
       ),
@@ -516,7 +516,7 @@ class _ExactAlarmsBannerState extends State<_ExactAlarmsBanner> {
               const Icon(
                 Icons.warning_amber_rounded,
                 color: NexoTheme.warning,
-                size: 20,
+                size: AppIcon.lg,
               ),
               const Gap.h(AppSpacing.sm),
               Expanded(
@@ -545,7 +545,7 @@ class _ExactAlarmsBannerState extends State<_ExactAlarmsBanner> {
             onPressed: () =>
                 NotificationService.instance.requestExactAlarmsPermission(),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               side: const BorderSide(color: NexoTheme.warning),
               shape: const RoundedRectangleBorder(borderRadius: AppRadii.rMd),
             ),

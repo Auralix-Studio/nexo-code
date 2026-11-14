@@ -41,9 +41,9 @@ class _PublicationsWidgetState extends State<PublicationsWidget> {
             children: [
               for (var i = 0; i < widget.items.length; i++)
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
+                  duration: AppDurations.normal,
                   margin: const EdgeInsets.symmetric(
-                    horizontal: 3,
+                    horizontal: AppSpacing.hair,
                     vertical: 0,
                   ),
                   width: i == _idx ? 18 : 6,
@@ -66,7 +66,7 @@ class _Slide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.tight),
       child: ClipRRect(
         borderRadius: AppRadii.rXl,
         child: p.isImage && p.mainUrl.isNotEmpty

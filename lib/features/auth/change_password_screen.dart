@@ -176,7 +176,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: NexoTheme.danger.withValues(alpha: 0.08),
+                          color: NexoTheme.danger.withValues(
+                            alpha: AppOpacity.subtle,
+                          ),
                           borderRadius: AppRadii.rMd,
                           border: Border.all(
                             color: NexoTheme.danger.withValues(alpha: 0.3),

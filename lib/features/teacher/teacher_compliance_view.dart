@@ -99,7 +99,7 @@ class TeacherComplianceView extends StatelessWidget {
                       children: [
                         if (missing > 0) ...[
                           _MissingBanner(count: missing),
-                          const Gap(AppSpacing.md + 2),
+                          const Gap(AppSpacing.cozy),
                         ],
                         for (var i = 0; i < days.length; i++) ...[
                           Reveal(
@@ -110,13 +110,13 @@ class TeacherComplianceView extends StatelessWidget {
                               isToday: days[i] == today,
                             ),
                           ),
-                          const Gap(AppSpacing.md + 2),
+                          const Gap(AppSpacing.cozy),
                         ],
                       ],
                     ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
         ],
       ),
     );
@@ -147,7 +147,7 @@ class _DayCard extends StatelessWidget {
         children: [
           for (var i = 0; i < items.length; i++) ...[
             _ClassRow(item: items[i]),
-            if (i < items.length - 1) const Gap(AppSpacing.sm + 2),
+            if (i < items.length - 1) const Gap(AppSpacing.snug),
           ],
         ],
       ),
@@ -162,11 +162,13 @@ class _MissingBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md + 2),
+      padding: const EdgeInsets.all(AppSpacing.cozy),
       decoration: BoxDecoration(
-        color: NexoTheme.danger.withValues(alpha: 0.1),
+        color: NexoTheme.danger.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rLg,
-        border: Border.all(color: NexoTheme.danger.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: NexoTheme.danger.withValues(alpha: AppOpacity.outline),
+        ),
       ),
       child: Row(
         children: [
@@ -199,7 +201,7 @@ class _ClassRow extends StatelessWidget {
       if (item.modality.isNotEmpty) item.modality,
     ].join(' · ');
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md + 2),
+      padding: const EdgeInsets.all(AppSpacing.cozy),
       decoration: BoxDecoration(
         color: NexoTheme.surface,
         borderRadius: AppRadii.rLg,
@@ -247,7 +249,7 @@ class _ClassRow extends StatelessWidget {
                   ),
                 ),
                 if (meta.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     meta,
                     style: TextStyle(
@@ -264,7 +266,7 @@ class _ClassRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _StatusPill(label: l.marcacionIn, status: item.start),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               _StatusPill(label: l.marcacionOut, status: item.end),
             ],
           ),
@@ -304,20 +306,23 @@ class _StatusPill extends StatelessWidget {
       ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.hair,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: AppOpacity.tint),
         borderRadius: AppRadii.rPill,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: color),
-          const SizedBox(width: 3),
+          const SizedBox(width: AppSpacing.hair),
           Text(
             '$label · $text',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppFont.micro,
               fontWeight: FontWeight.w700,
               color: color,
             ),

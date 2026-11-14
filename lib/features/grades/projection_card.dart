@@ -68,7 +68,7 @@ class _ProjectionCardState extends State<ProjectionCard> {
                 height: 38,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: NexoTheme.primary.withValues(alpha: 0.12),
+                  color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
                   borderRadius: AppRadii.rSm,
                 ),
                 child: Icon(
@@ -163,7 +163,7 @@ class _Needed extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        GradeBadge(text: '${value ?? '—'}', size: 58, fontSize: 22),
+        GradeBadge(text: '${value ?? '—'}', size: 58, fontSize: AppFont.h2),
         const Gap.h(AppSpacing.lg),
         Expanded(
           child: Column(
@@ -217,7 +217,7 @@ class _Verdict extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rSm,
       ),
       child: Row(

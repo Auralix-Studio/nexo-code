@@ -7,6 +7,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/features/festivity/widgets/fiestas_patrias_effects.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 bool _decorEnabled(BuildContext context) =>
     AppStorage.instance.festivityDecor &&
@@ -258,7 +259,7 @@ class _FestivityWordmarkState extends State<FestivityWordmark> {
     final word = words[idx];
     final festive = idx != 0;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
+      duration: AppDurations.slow,
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.centerLeft,
         children: [...previous, ?current],

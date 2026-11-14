@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomTitleBar({super.key});
@@ -17,15 +18,15 @@ class CustomTitleBar extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cozy),
             child: Row(
               children: [
                 Image.asset('assets/icon.png', width: 18, height: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Nexo UPLA',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFont.small,
                     fontWeight: FontWeight.w800,
                     color: NexoTheme.textPrimary,
                     letterSpacing: -0.2,
@@ -108,7 +109,8 @@ class _ControlButtonState extends State<_ControlButton> {
   @override
   Widget build(BuildContext context) {
     final themeHoverColor =
-        widget.hoverColor ?? NexoTheme.primary.withValues(alpha: 0.08);
+        widget.hoverColor ??
+        NexoTheme.primary.withValues(alpha: AppOpacity.subtle);
     final themeIconColor = _isHovered
         ? (widget.iconHoverColor ?? NexoTheme.primary)
         : NexoTheme.textSecondary;
@@ -122,7 +124,7 @@ class _ControlButtonState extends State<_ControlButton> {
           width: 46,
           height: 40,
           color: _isHovered ? themeHoverColor : Colors.transparent,
-          child: Icon(widget.icon, size: 16, color: themeIconColor),
+          child: Icon(widget.icon, size: AppIcon.sm, color: themeIconColor),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nexo/shared/widgets/data_status.dart';
 import 'package:nexo/core/design/breakpoints.dart';
 import 'package:nexo/core/design/theme.dart';
+import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/core/errors.dart';
 import 'package:nexo/core/festivity/festivity.dart';
 import 'package:nexo/core/storage.dart';
@@ -51,7 +52,7 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsets.symmetric(
                   horizontal: context.contentPadding,
-                  vertical: 4,
+                  vertical: AppSpacing.xs,
                 ),
                 sliver: SliverToBoxAdapter(
                   child: Center(
@@ -103,9 +104,9 @@ class _Header extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.contentPadding,
-        24,
+        AppSpacing.xxl,
         context.contentPadding,
-        16,
+        AppSpacing.lg,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -130,9 +131,11 @@ class _Header extends StatelessWidget {
                   name: profile?.fullName ?? '',
                   size: 56,
                   radius: 18,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.cozy),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +164,7 @@ class _Header extends StatelessWidget {
                                   DateTime.now(),
                                 )?.festivity.id ==
                                 'fiestas_patrias') ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           const EscarapelaWidget(),
                         ],
                       ],
@@ -172,7 +175,7 @@ class _Header extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFont.small,
                           color: NexoTheme.textMuted,
                         ),
                       ),
@@ -189,16 +192,21 @@ class _Header extends StatelessWidget {
                       connectivity.intranetStatus == ServerStatus.online;
                   final isFullyOnline =
                       isOnline && sigmaOnline && intranetOnline;
-                  final color = isFullyOnline
-                      ? NexoTheme.success
-                      : NexoTheme.danger;
+                  final Color color;
+                  if (!isOnline) {
+                    color = NexoTheme.danger;
+                  } else if (isFullyOnline) {
+                    color = NexoTheme.success;
+                  } else {
+                    color = NexoTheme.warning;
+                  }
                   return Tooltip(
                     message: l.homeVerifyConnectivity,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.rMd,
                       onTap: () => _showConnectivityDialog(context),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -235,18 +243,18 @@ class _Header extends StatelessWidget {
   void _showConnectivityDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: AppOpacity.scrim),
       builder: (context) {
         final l = AppLocalizations.of(context);
         return Dialog(
           constraints: const BoxConstraints(maxWidth: 420),
           insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.xxl,
           ),
           backgroundColor: NexoTheme.card,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppRadii.rXxxl,
             side: BorderSide(color: NexoTheme.border),
           ),
           child: SingleChildScrollView(
@@ -290,42 +298,75 @@ class _Header extends StatelessWidget {
                     icon = active ? Icons.wifi_rounded : Icons.wifi_off_rounded;
                   }
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                      horizontal: AppSpacing.cozy,
+                      vertical: AppSpacing.snug,
                     ),
                     decoration: BoxDecoration(
                       color: NexoTheme.bg,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadii.rLg,
                       border: Border.all(color: NexoTheme.border),
                     ),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(icon, color: color, size: 20),
-                        const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: NexoTheme.textPrimary,
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(
+                                    alpha: AppOpacity.tint,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: color,
+                                  size: AppIcon.sm,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: color,
+                              const SizedBox(width: AppSpacing.snug),
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: AppFont.body,
+                                    fontWeight: FontWeight.w600,
+                                    color: NexoTheme.textPrimary,
+                                  ),
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.snug,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: AppOpacity.tint),
+                              borderRadius: AppRadii.rPill,
+                            ),
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: AppFont.small,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -334,7 +375,7 @@ class _Header extends StatelessWidget {
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -350,7 +391,9 @@ class _Header extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: NexoTheme.primary.withValues(alpha: 0.25),
+                              color: NexoTheme.primary.withValues(
+                                alpha: AppOpacity.glow,
+                              ),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -362,25 +405,25 @@ class _Header extends StatelessWidget {
                           size: 28,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Text(
                         l.connectivityStatusTitle,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppFont.h3,
                           fontWeight: FontWeight.w800,
                           color: NexoTheme.textPrimary,
                           letterSpacing: -0.4,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         l.connectivityDiagnosticsSubtitle,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFont.small,
                           color: NexoTheme.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                       buildStatusTile(l.connectivityInternet, isOnline, null),
                       buildStatusTile(l.connectivitySigma, isOnline, sigma),
                       buildStatusTile(
@@ -388,74 +431,104 @@ class _Header extends StatelessWidget {
                         isOnline,
                         intranet,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Text(
                         l.connectivityBackupNote,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFont.small,
                           color: NexoTheme.textMuted,
                           height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          SupportScreen.open(context);
-                        },
-                        icon: const Icon(
-                          Icons.help_outline_rounded,
-                          size: 16,
-                          color: NexoTheme.success,
-                        ),
-                        label: Text(
-                          l.supportContactButton,
-                          style: const TextStyle(
-                            color: NexoTheme.success,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      OverflowBar(
-                        alignment: MainAxisAlignment.end,
-                        spacing: 12,
-                        overflowSpacing: 8,
+                      const SizedBox(height: AppSpacing.xl),
+                      Row(
                         children: [
-                          OutlinedButton.icon(
-                            onPressed: () => connectivity.checkNow(),
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: Text(l.actionRetry),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 16,
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: () => connectivity.checkNow(),
+                                icon: Icon(
+                                  Icons.refresh_rounded,
+                                  size: AppIcon.md,
+                                  color: NexoTheme.textPrimary,
+                                ),
+                                label: Text(
+                                  l.actionRetry,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: AppFont.body,
+                                    fontWeight: FontWeight.w600,
+                                    color: NexoTheme.textPrimary,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                  ),
+                                  backgroundColor: NexoTheme.surface,
+                                  side: BorderSide(color: NexoTheme.border),
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: AppRadii.rLg,
+                                  ),
+                                ),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(color: NexoTheme.border),
                             ),
                           ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: NexoTheme.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 16,
-                              ),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: FilledButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                  ),
+                                  backgroundColor: NexoTheme.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: AppRadii.rLg,
+                                  ),
+                                ),
+                                child: Text(
+                                  l.actionClose,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: AppFont.body,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Text(l.actionClose),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: AppSpacing.snug),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            SupportScreen.open(context);
+                          },
+                          icon: Icon(
+                            Icons.help_outline_rounded,
+                            size: AppIcon.sm,
+                            color: NexoTheme.textSecondary,
+                          ),
+                          label: Text(
+                            l.supportContactButton,
+                            style: TextStyle(
+                              color: NexoTheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: AppFont.small,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -478,15 +551,15 @@ class _HomeGreeting extends StatefulWidget {
 class _HomeGreetingState extends State<_HomeGreeting> {
   late final Timer _timer;
   int _i = 0;
-  static const _idlePhrases = <String>[
-    'Nos alegra verte',
-    'Qué bueno tenerte por aquí',
-    'Tu UPLA en un solo lugar',
-    'Al día con tu vida académica',
-    'Todo tu campus, a la mano',
-    '¿Todo listo para hoy?',
-    '¿Qué tenemos para hoy?',
-    'Qué gusto verte de nuevo',
+  static List<String> _idlePhrases(AppLocalizations l) => [
+    l.homeIdlePhrase1,
+    l.homeIdlePhrase2,
+    l.homeIdlePhrase3,
+    l.homeIdlePhrase4,
+    l.homeIdlePhrase5,
+    l.homeIdlePhrase6,
+    l.homeIdlePhrase7,
+    l.homeIdlePhrase8,
   ];
   @override
   void initState() {
@@ -504,7 +577,10 @@ class _HomeGreetingState extends State<_HomeGreeting> {
 
   @override
   Widget build(BuildContext context) {
-    final base = TextStyle(fontSize: 14, color: NexoTheme.textSecondary);
+    final base = TextStyle(
+      fontSize: AppFont.body,
+      color: NexoTheme.textSecondary,
+    );
     final festive = base.copyWith(
       color: NexoTheme.primary,
       fontWeight: FontWeight.w700,
@@ -527,11 +603,11 @@ class _HomeGreetingState extends State<_HomeGreeting> {
     }
     final phrases = active != null
         ? <String>[time, ...active.greetings]
-        : <String>[time, ..._idlePhrases];
+        : <String>[time, ..._idlePhrases(AppLocalizations.of(context))];
     final idx = _i % phrases.length;
     final isFest = active != null && idx != 0;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
+      duration: AppDurations.slow,
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.centerLeft,
         children: [...previous, ?current],
@@ -582,7 +658,7 @@ class _StatTile extends StatelessWidget {
         return Container(
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 10 : 14,
-            vertical: 12,
+            vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
             color: NexoTheme.card,
@@ -595,7 +671,7 @@ class _StatTile extends StatelessWidget {
                 width: box,
                 height: box,
                 decoration: BoxDecoration(
-                  color: data.color.withValues(alpha: 0.12),
+                  color: data.color.withValues(alpha: AppOpacity.tint),
                   borderRadius: BorderRadius.circular(compact ? 10 : 12),
                 ),
                 child: Icon(
@@ -616,13 +692,13 @@ class _StatTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         color: NexoTheme.textSecondary,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     data.loading
                         ? const Skeleton(height: 18, width: 56)
                         // Un monto largo ("S/ 2,090.00") se achica para
@@ -634,7 +710,7 @@ class _StatTile extends StatelessWidget {
                               data.value,
                               maxLines: 1,
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: AppFont.h3,
                                 fontWeight: FontWeight.w800,
                                 color: NexoTheme.textPrimary,
                                 letterSpacing: -0.4,
@@ -711,7 +787,7 @@ class _DashboardWidgetWrapper extends StatelessWidget {
             value: promCiclo == null ? '—' : promCiclo.toStringAsFixed(2),
             icon: Icons.trending_up_rounded,
             color: NexoTheme.primary,
-            loading: store.promedios.showSkeleton && store.resumen.showSkeleton,
+            loading: store.promedioCicloLoading,
           ),
         );
       case 'stats_creditos':
@@ -822,7 +898,7 @@ class _DashboardWidgetWrapper extends StatelessWidget {
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: AppRadii.rXxxl,
                     border: Border.all(color: NexoTheme.primary, width: 3),
                   ),
                 ),
@@ -860,7 +936,7 @@ class _DashboardWidgetWrapper extends StatelessWidget {
                                 config.span < 4
                                     ? Icons.unfold_more_rounded
                                     : Icons.unfold_less_rounded,
-                                size: 18,
+                                size: AppIcon.md,
                                 color: Colors.white,
                               ),
                             ),
@@ -893,13 +969,13 @@ class _DashboardWidgetWrapper extends StatelessWidget {
           margin: EdgeInsets.zero,
           child: LongPressDraggable<String>(
             data: config.id,
-            delay: const Duration(milliseconds: 250),
+            delay: AppDurations.normal,
             onDragStarted: () => store.setEditingDashboardWidget(config.id),
             onDragEnd: (_) => store.saveDashboardLayout(),
             feedback: Material(
               color: Colors.transparent,
               elevation: 12,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: AppRadii.rXxxl,
               child: Opacity(
                 opacity: 0.8,
                 child: SizedBox(width: itemWidth, child: content),
@@ -970,7 +1046,7 @@ class _ClasesHoyBlock extends StatelessWidget {
         child: const Column(
           children: [
             Skeleton(height: 64, radius: 14),
-            SizedBox(height: 10),
+            SizedBox(height: AppSpacing.snug),
             Skeleton(height: 64, radius: 14),
           ],
         ),
@@ -993,12 +1069,12 @@ class _ClasesHoyBlock extends StatelessWidget {
       children: [
         TodayClassesWidget(all: state.value ?? const [], isCompact: isCompact),
         if (!isCompact) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: onSeeAll,
-              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              icon: const Icon(Icons.arrow_forward_rounded, size: AppIcon.sm),
               label: Text(l.homeSeeFullWeek),
             ),
           ),
@@ -1029,7 +1105,7 @@ class _PagosBlock extends StatelessWidget {
         child: const Column(
           children: [
             Skeleton(height: 60, radius: 14),
-            SizedBox(height: 10),
+            SizedBox(height: AppSpacing.snug),
             Skeleton(height: 60, radius: 14),
           ],
         ),
@@ -1055,12 +1131,12 @@ class _PagosBlock extends StatelessWidget {
           isCompact: isCompact,
         ),
         if (!isCompact) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: onSeeAll,
-              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              icon: const Icon(Icons.arrow_forward_rounded, size: AppIcon.sm),
               label: Text(l.homeSeeAllPayments),
             ),
           ),

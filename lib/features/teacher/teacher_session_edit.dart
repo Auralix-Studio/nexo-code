@@ -208,7 +208,8 @@ class _TeacherSessionEditScreenState extends State<TeacherSessionEditScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(AppSpacing.lg),
                           itemCount: rows.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (_, i) {
                             final r = rows[i];
                             final current =
@@ -276,7 +277,7 @@ class _Row extends StatelessWidget {
     final look = attendanceLook(context, current);
     final changed = current != original;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm + 2),
+      padding: const EdgeInsets.all(AppSpacing.snug),
       decoration: BoxDecoration(
         color: NexoTheme.card,
         borderRadius: AppRadii.rLg,
@@ -288,7 +289,7 @@ class _Row extends StatelessWidget {
       child: Row(
         children: [
           StudentAvatar(code: student.code, name: student.name, size: 40),
-          const Gap.h(AppSpacing.sm + 2),
+          const Gap.h(AppSpacing.snug),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,13 +305,13 @@ class _Row extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSpacing.hair),
                 TeacherPill(text: look.label, color: look.color),
               ],
             ),
           ),
           for (final st in allowed) ...[
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.tight),
             AttendanceToggle(
               icon: attendanceLook(context, st).icon,
               color: attendanceLook(context, st).color,

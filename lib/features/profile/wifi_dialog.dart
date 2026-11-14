@@ -190,7 +190,7 @@ class _Card extends StatelessWidget {
                           letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         l.wifiSubtitle,
                         style: const TextStyle(
@@ -286,7 +286,7 @@ class _CredentialRow extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: AppFont.micro,
                     fontWeight: FontWeight.w700,
                     color: NexoTheme.textMuted,
                     letterSpacing: 1.2,
@@ -317,7 +317,7 @@ class _CredentialRow extends StatelessWidget {
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 color: NexoTheme.textSecondary,
-                size: 20,
+                size: AppIcon.lg,
               ),
               onPressed: onToggle,
             ),
@@ -326,7 +326,7 @@ class _CredentialRow extends StatelessWidget {
             icon: Icon(
               Icons.copy_rounded,
               color: NexoTheme.textSecondary,
-              size: 20,
+              size: AppIcon.lg,
             ),
             onPressed: onCopy,
           ),

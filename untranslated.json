@@ -205,6 +205,22 @@
     "legalLoadError",
     "tchSectionLabel",
     "tchElective",
-    "tchCopyNrc"
+    "tchCopyNrc",
+    "homeIdlePhrase1",
+    "homeIdlePhrase2",
+    "homeIdlePhrase3",
+    "homeIdlePhrase4",
+    "homeIdlePhrase5",
+    "homeIdlePhrase6",
+    "homeIdlePhrase7",
+    "homeIdlePhrase8",
+    "uninstallTitle",
+    "uninstallSubtitle",
+    "uninstallPurgeTitle",
+    "uninstallPurgeHint",
+    "uninstallAction",
+    "uninstallSuccessTitle",
+    "uninstallSuccessBody",
+    "uninstallErrorTitle"
   ]
 }

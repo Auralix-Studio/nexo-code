@@ -146,7 +146,7 @@ class _AgendaRow extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: ongoing
-            ? NexoTheme.success.withValues(alpha: 0.06)
+            ? NexoTheme.success.withValues(alpha: AppOpacity.faint)
             : NexoTheme.surface,
         borderRadius: AppRadii.rLg,
         border: Border.all(
@@ -176,7 +176,7 @@ class _AgendaRow extends StatelessWidget {
                     Text(
                       _hm(session.end),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         color: NexoTheme.textMuted,
                       ),
                     ),
@@ -199,7 +199,7 @@ class _AgendaRow extends StatelessWidget {
                         height: 1.2,
                       ),
                     ),
-                    const Gap(2),
+                    const Gap(AppSpacing.xxs),
                     Text(
                       [
                         l.tchSectionLabel(c.section),
@@ -212,7 +212,7 @@ class _AgendaRow extends StatelessWidget {
                         color: NexoTheme.textSecondary,
                       ),
                     ),
-                    const Gap(AppSpacing.xs + 2),
+                    const Gap(AppSpacing.tight),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
@@ -246,7 +246,10 @@ class _AgendaRow extends StatelessWidget {
                         course: c,
                         initialDate: session.day,
                       ),
-                      icon: const Icon(Icons.how_to_reg_rounded, size: 20),
+                      icon: const Icon(
+                        Icons.how_to_reg_rounded,
+                        size: AppIcon.lg,
+                      ),
                       label: Text(
                         registered == true ? l.tchAttTakeAnother : l.tchAttTake,
                       ),
@@ -267,7 +270,7 @@ class _AgendaRow extends StatelessWidget {
                       course: c,
                       initialTab: 1,
                     ),
-                    icon: const Icon(Icons.grading_rounded, size: 20),
+                    icon: const Icon(Icons.grading_rounded, size: AppIcon.lg),
                   ),
                 ],
               ),
@@ -428,7 +431,7 @@ class _PendingHeading extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: color, size: 20),
+        Icon(icon, color: color, size: AppIcon.lg),
         const Gap.h(AppSpacing.sm),
         Expanded(
           child: Column(
@@ -661,7 +664,7 @@ class TeacherAlertTile extends StatelessWidget {
               initialTab: a.attendanceIssue ? 1 : 0,
             ),
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm + 2),
+          padding: const EdgeInsets.all(AppSpacing.snug),
           decoration: BoxDecoration(
             color: NexoTheme.surface,
             borderRadius: AppRadii.rLg,
@@ -674,7 +677,7 @@ class TeacherAlertTile extends StatelessWidget {
           child: Row(
             children: [
               StudentAvatar(code: s.code, name: s.displayName, size: 38),
-              const Gap.h(AppSpacing.sm + 2),
+              const Gap.h(AppSpacing.snug),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,7 +698,7 @@ class TeacherAlertTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFont.caption,
                           color: NexoTheme.textMuted,
                         ),
                       ),

@@ -23,10 +23,7 @@ class _SkeletonState extends State<Skeleton>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1100),
-    );
+    _ctrl = AnimationController(vsync: this, duration: AppDurations.loop);
   }
 
   @override

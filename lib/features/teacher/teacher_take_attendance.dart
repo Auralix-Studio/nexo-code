@@ -324,7 +324,7 @@ class _TeacherTakeAttendanceScreenState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w600,
                     color: NexoTheme.textSecondary,
                   ),
@@ -446,7 +446,7 @@ class _TeacherTakeAttendanceScreenState
         AppSpacing.lg,
       ),
       itemCount: students.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (_, i) {
         final s = students[i];
         return _StudentRow(
@@ -560,25 +560,25 @@ class _ContextBar extends StatelessWidget {
             child: Row(
               children: [
                 ActionChip(
-                  avatar: const Icon(Icons.event_rounded, size: 16),
+                  avatar: const Icon(Icons.event_rounded, size: AppIcon.sm),
                   label: Text(
                     '${Fmt.dayLabel(date.weekday)} ${Fmt.shortDate(date)}',
                   ),
                   onPressed: onPickDate,
                 ),
                 if (block != null) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.tight),
                   Chip(
                     avatar: const Icon(
                       Icons.play_circle_fill_rounded,
-                      size: 16,
+                      size: AppIcon.sm,
                       color: NexoTheme.success,
                     ),
                     label: Text('${block.start}–${block.end}'),
                   ),
                 ],
                 for (final u in units) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.tight),
                   ChoiceChip(
                     avatar: u.enabled
                         ? null
@@ -614,10 +614,10 @@ class _StudentRow extends StatelessWidget {
     final s = student;
     return AnimatedContainer(
       duration: AppDurations.fast,
-      padding: const EdgeInsets.all(AppSpacing.sm + 2),
+      padding: const EdgeInsets.all(AppSpacing.snug),
       decoration: BoxDecoration(
         color: state == AttendanceCode.absent
-            ? NexoTheme.danger.withValues(alpha: 0.06)
+            ? NexoTheme.danger.withValues(alpha: AppOpacity.faint)
             : NexoTheme.card,
         borderRadius: AppRadii.rLg,
         border: Border.all(
@@ -629,7 +629,7 @@ class _StudentRow extends StatelessWidget {
       child: Row(
         children: [
           StudentAvatar(code: s.code, name: s.name, size: 42),
-          const Gap.h(AppSpacing.sm + 2),
+          const Gap.h(AppSpacing.snug),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,7 +645,7 @@ class _StudentRow extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 // Wrap: con letra grande en un celular angosto el código y el
                 // porcentaje pasan a otra línea en vez de desbordar.
                 Wrap(
@@ -654,7 +654,7 @@ class _StudentRow extends StatelessWidget {
                     Text(
                       '$index · ${s.code}',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         color: NexoTheme.textMuted,
                       ),
                     ),
@@ -662,7 +662,7 @@ class _StudentRow extends StatelessWidget {
                       Text(
                         '${s.percent!.round()}%',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFont.caption,
                           fontWeight: FontWeight.w800,
                           color: s.atRisk
                               ? NexoTheme.danger
@@ -688,7 +688,7 @@ class _StudentRow extends StatelessWidget {
                   tooltip: l.tchStatePresent,
                   onTap: () => onMark!(AttendanceCode.present),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.tight),
                 AttendanceToggle(
                   icon: Icons.close_rounded,
                   color: NexoTheme.danger,
@@ -726,7 +726,9 @@ class _OneByOneCard extends StatelessWidget {
           height: 72,
           child: FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: selected ? color : color.withValues(alpha: 0.12),
+              backgroundColor: selected
+                  ? color
+                  : color.withValues(alpha: AppOpacity.tint),
               foregroundColor: selected ? Colors.white : color,
               shape: const RoundedRectangleBorder(borderRadius: AppRadii.rXl),
               textStyle: const TextStyle(
@@ -767,7 +769,7 @@ class _OneByOneCard extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             s.code,
             style: TextStyle(
@@ -805,7 +807,10 @@ class _OneByOneCard extends StatelessWidget {
           Text(
             l.tchAttSwipeHint,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: NexoTheme.textMuted),
+            style: TextStyle(
+              fontSize: AppFont.caption,
+              color: NexoTheme.textMuted,
+            ),
           ),
         ],
       ),
@@ -862,7 +867,7 @@ class _BottomBar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm + 2),
+          const SizedBox(height: AppSpacing.snug),
           Row(
             children: [
               if (onRestPresent != null) ...[

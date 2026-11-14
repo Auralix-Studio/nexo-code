@@ -88,7 +88,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
           ],
         );
       },
@@ -118,7 +118,7 @@ class _HeroCard extends StatelessWidget {
         borderRadius: AppRadii.rXxl,
         boxShadow: [
           BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -159,7 +159,9 @@ class _HeroCard extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: Colors.black.withValues(
+                            alpha: AppOpacity.glow,
+                          ),
                           blurRadius: 4,
                         ),
                       ],
@@ -183,12 +185,12 @@ class _HeroCard extends StatelessWidget {
                   l.docenteLabel,
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.4,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   info.displayName,
                   style: const TextStyle(
@@ -199,7 +201,7 @@ class _HeroCard extends StatelessWidget {
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpacing.tight),
                 GestureDetector(
                   onTap: () => ClipboardHelper.copyAndShow(
                     context,
@@ -212,17 +214,19 @@ class _HeroCard extends StatelessWidget {
                       Text(
                         info.code,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.88),
+                          color: Colors.white.withValues(
+                            alpha: AppOpacity.onColor,
+                          ),
                           fontSize: AppFont.body,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppSpacing.tight),
                       Icon(
                         Icons.copy_rounded,
                         color: Colors.white.withValues(alpha: 0.7),
-                        size: 13,
+                        size: AppIcon.xs,
                       ),
                     ],
                   ),
@@ -281,7 +285,7 @@ class _InfoCard extends StatelessWidget {
         children: [
           for (var i = 0; i < rows.length; i++) ...[
             _InfoRow(item: rows[i]),
-            if (i < rows.length - 1) const SizedBox(height: 8),
+            if (i < rows.length - 1) const SizedBox(height: AppSpacing.sm),
           ],
         ],
       ),
@@ -313,12 +317,12 @@ class _InfoRow extends StatelessWidget {
       child: InkWell(
         onTap: () =>
             ClipboardHelper.copyAndShow(context, item.value, label: item.label),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: NexoTheme.bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             border: Border.all(color: NexoTheme.border),
           ),
           child: Row(
@@ -328,12 +332,12 @@ class _InfoRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: color.withValues(alpha: AppOpacity.tint),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(item.icon, size: 18, color: color),
+                child: Icon(item.icon, size: AppIcon.md, color: color),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,17 +346,17 @@ class _InfoRow extends StatelessWidget {
                     Text(
                       item.label.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppFont.micro,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textMuted,
                         letterSpacing: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       item.value,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                         height: 1.25,
@@ -441,13 +445,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: Icon(
                 Icons.switch_account_rounded,
                 color: NexoTheme.primary,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -467,13 +471,13 @@ class _ActionsCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: NexoTheme.danger.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: NexoTheme.danger.withValues(alpha: AppOpacity.tint),
+                borderRadius: AppRadii.rSm,
               ),
               child: const Icon(
                 Icons.logout_rounded,
                 color: NexoTheme.danger,
-                size: 20,
+                size: AppIcon.lg,
               ),
             ),
             title: Text(
@@ -506,10 +510,10 @@ class _ActionsCard extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          color: color.withValues(alpha: AppOpacity.tint),
+          borderRadius: AppRadii.rSm,
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Icon(icon, color: color, size: AppIcon.lg),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle == null

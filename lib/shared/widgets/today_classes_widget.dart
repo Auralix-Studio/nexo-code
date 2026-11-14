@@ -35,11 +35,11 @@ class TodayClassesWidget extends StatelessWidget {
       iconColor: NexoTheme.primary,
       trailing: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2,
+          horizontal: AppSpacing.snug,
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: NexoTheme.primary.withValues(alpha: 0.1),
+          color: NexoTheme.primary.withValues(alpha: AppOpacity.soft),
           borderRadius: AppRadii.rPill,
         ),
         child: Text(
@@ -58,16 +58,16 @@ class TodayClassesWidget extends StatelessWidget {
                 for (var i = 0; i < (isCompact ? 1 : groups.length); i++) ...[
                   _CourseTile(group: groups[i], nowHM: nowHM),
                   if (i < (isCompact ? 1 : groups.length) - 1)
-                    const Gap(AppSpacing.sm + 2),
+                    const Gap(AppSpacing.snug),
                 ],
                 if (isCompact && groups.length > 1) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Center(
                     child: Text(
                       l.homeMoreClassesToday(groups.length - 1),
                       style: TextStyle(
                         color: NexoTheme.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFont.label,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -86,7 +86,7 @@ class _Empty extends StatelessWidget {
   const _Empty();
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl + 4),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.wide),
     alignment: Alignment.center,
     child: Column(
       children: [
@@ -134,7 +134,7 @@ class _CourseTile extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.lg - 2),
           decoration: BoxDecoration(
             color: anyOngoing
-                ? NexoTheme.success.withValues(alpha: 0.06)
+                ? NexoTheme.success.withValues(alpha: AppOpacity.faint)
                 : NexoTheme.surface,
             borderRadius: AppRadii.rLg,
             border: Border.all(
@@ -153,7 +153,7 @@ class _CourseTile extends StatelessWidget {
                     height: 38,
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppRadii.rTiny,
                     ),
                   ),
                   const Gap.h(AppSpacing.md),
@@ -211,7 +211,9 @@ class _CourseTile extends StatelessWidget {
                           const Gap(AppSpacing.xs),
                           for (final entry in group.roomsByType.entries)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 2),
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.xxs,
+                              ),
                               child: Row(
                                 children: [
                                   Icon(
@@ -260,7 +262,7 @@ class _CourseTile extends StatelessWidget {
     child: Text(
       text,
       style: const TextStyle(
-        fontSize: 10,
+        fontSize: AppFont.micro,
         fontWeight: FontWeight.w800,
         color: Colors.white,
         letterSpacing: 0.5,

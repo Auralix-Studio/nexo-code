@@ -340,7 +340,7 @@ class _FontTile extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: selected
-                ? NexoTheme.primary.withValues(alpha: 0.10)
+                ? NexoTheme.primary.withValues(alpha: AppOpacity.soft)
                 : NexoTheme.bg,
             borderRadius: AppRadii.rMd,
             border: Border.all(

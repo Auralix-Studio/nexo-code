@@ -19,7 +19,12 @@ class SectionCard extends StatelessWidget {
     this.icon,
     this.iconColor,
     this.trailing,
-    this.padding = const EdgeInsets.fromLTRB(20, 18, 20, 20),
+    this.padding = const EdgeInsets.fromLTRB(
+      AppSpacing.xl,
+      18,
+      AppSpacing.xl,
+      AppSpacing.xl,
+    ),
   });
   @override
   Widget build(BuildContext context) {
@@ -43,11 +48,11 @@ class SectionCard extends StatelessWidget {
                     ),
                     child: Icon(
                       icon,
-                      size: 20,
+                      size: AppIcon.lg,
                       color: iconColor ?? NexoTheme.primary,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                 ],
                 Expanded(
                   child: Column(
@@ -56,18 +61,18 @@ class SectionCard extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFont.title,
                           fontWeight: FontWeight.w800,
                           color: NexoTheme.textPrimary,
                           letterSpacing: -0.2,
                         ),
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           subtitle!,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFont.label,
                             color: NexoTheme.textSecondary,
                           ),
                         ),
@@ -78,7 +83,7 @@ class SectionCard extends StatelessWidget {
                 ?trailing,
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             // Al pasar de cargando a contenido la tarjeta crece suave en vez
             // de saltar.
             AnimatedSize(

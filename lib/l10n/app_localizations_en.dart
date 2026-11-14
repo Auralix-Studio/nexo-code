@@ -2596,4 +2596,58 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountLogoutKeepHint =>
       'Your current account stays saved so you can come back with one tap.';
+
+  @override
+  String get homeIdlePhrase1 => 'Glad to see you';
+
+  @override
+  String get homeIdlePhrase2 => 'Good to have you here';
+
+  @override
+  String get homeIdlePhrase3 => 'Your UPLA in one place';
+
+  @override
+  String get homeIdlePhrase4 => 'Up to date with your academic life';
+
+  @override
+  String get homeIdlePhrase5 => 'Your whole campus at hand';
+
+  @override
+  String get homeIdlePhrase6 => 'All set for today?';
+
+  @override
+  String get homeIdlePhrase7 => 'What\'s on for today?';
+
+  @override
+  String get homeIdlePhrase8 => 'Great to see you again';
+
+  @override
+  String get uninstallTitle => 'Uninstall Nexo UPLA';
+
+  @override
+  String get uninstallSubtitle =>
+      'The app and all of its components will be removed from your system.';
+
+  @override
+  String get uninstallPurgeTitle => 'Purge all my local data';
+
+  @override
+  String get uninstallPurgeHint =>
+      'Deletes local databases, grade history and session.';
+
+  @override
+  String get uninstallAction => 'Uninstall';
+
+  @override
+  String get uninstallSuccessTitle => 'Uninstalled successfully!';
+
+  @override
+  String get uninstallSuccessBody =>
+      'Nexo UPLA has been removed. Cleaning up folders...';
+
+  @override
+  String get uninstallErrorTitle => 'Uninstall failed';
+
+  @override
+  String get gradesPromedioCiclo => 'Term average';
 }

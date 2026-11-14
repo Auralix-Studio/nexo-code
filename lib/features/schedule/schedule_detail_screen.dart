@@ -114,7 +114,7 @@ class _Hero extends StatelessWidget {
         borderRadius: AppRadii.rXxl,
         boxShadow: [
           BoxShadow(
-            color: NexoTheme.primary.withValues(alpha: 0.25),
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.glow),
             blurRadius: 22,
             offset: const Offset(0, 8),
           ),
@@ -208,8 +208,8 @@ class _DayBadge extends StatelessWidget {
     final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm + 2,
-        vertical: 3,
+        horizontal: AppSpacing.snug,
+        vertical: AppSpacing.hair,
       ),
       decoration: BoxDecoration(
         color: isToday ? Colors.white : Colors.white.withValues(alpha: 0.18),
@@ -320,7 +320,8 @@ class _LocationCard extends StatelessWidget {
           ],
           if (hasMixed)
             for (final entry in uniqueSessions.entries) ...[
-              if (entry.key != uniqueSessions.keys.first) const Gap(12),
+              if (entry.key != uniqueSessions.keys.first)
+                const Gap(AppSpacing.md),
               Text(
                 entry.key.toUpperCase() == 'T' ? 'Teoría' : 'Práctica',
                 style: TextStyle(
@@ -332,7 +333,7 @@ class _LocationCard extends StatelessWidget {
                   letterSpacing: 0.5,
                 ),
               ),
-              const Gap(4),
+              const Gap(AppSpacing.xs),
               if (entry.value.building.isNotEmpty)
                 _kv(
                   label.detailPavilion,
@@ -344,7 +345,7 @@ class _LocationCard extends StatelessWidget {
               ),
             ],
           if (first.campus.isNotEmpty) ...[
-            const Gap(2),
+            const Gap(AppSpacing.xxs),
             _kv(label.detailCampus, first.campus),
           ],
         ],
@@ -353,7 +354,7 @@ class _LocationCard extends StatelessWidget {
   }
 
   Widget _kv(String k, String v) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.hair),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -448,7 +449,7 @@ class _SessionRow extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: color.withValues(alpha: AppOpacity.tint),
             borderRadius: AppRadii.rMd,
           ),
           child: Icon(

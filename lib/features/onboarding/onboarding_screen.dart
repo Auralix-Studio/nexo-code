@@ -218,7 +218,7 @@ class _Controls extends StatelessWidget {
               for (var i = 0; i < total; i++)
                 AnimatedContainer(
                   duration: AppDurations.fast,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   width: i == index ? 26 : 8,
                   height: 8,
                   decoration: BoxDecoration(
@@ -275,7 +275,7 @@ class _VisualPane extends StatelessWidget {
           Positioned(
             top: -80,
             right: -70,
-            child: _halo(260, Colors.white.withValues(alpha: 0.10)),
+            child: _halo(260, Colors.white.withValues(alpha: AppOpacity.soft)),
           ),
           Positioned(
             bottom: -100,
@@ -304,7 +304,7 @@ class _VisualPane extends StatelessWidget {
                 Text(
                   page.body,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: Colors.white.withValues(alpha: AppOpacity.onColor),
                     fontSize: AppFont.h3,
                     height: 1.45,
                   ),
@@ -341,7 +341,9 @@ class _GlassBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: AppOpacity.glow),
+          ),
         ),
         child: page.isIntro
             ? const Center(child: AppLogo(size: 60, shadow: false))
@@ -420,7 +422,7 @@ class _Illustration extends StatelessWidget {
             height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: page.color.withValues(alpha: 0.08),
+              color: page.color.withValues(alpha: AppOpacity.subtle),
             ),
           ),
           Container(
@@ -440,7 +442,7 @@ class _Illustration extends StatelessWidget {
                 height: i.isEven ? 10 : 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: page.color.withValues(alpha: 0.5),
+                  color: page.color.withValues(alpha: AppOpacity.scrim),
                 ),
               ),
             );

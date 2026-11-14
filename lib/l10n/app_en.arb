@@ -1298,5 +1298,22 @@
   "accountOtherAccount": "Use another account",
   "accountSwitchFailed": "Could not sign in as {user}. {reason}",
   "accountEnterPassword": "Enter the password for {user} to continue.",
-  "accountLogoutKeepHint": "Your current account stays saved so you can come back with one tap."
+  "accountLogoutKeepHint": "Your current account stays saved so you can come back with one tap.",
+  "homeIdlePhrase1": "Glad to see you",
+  "homeIdlePhrase2": "Good to have you here",
+  "homeIdlePhrase3": "Your UPLA in one place",
+  "homeIdlePhrase4": "Up to date with your academic life",
+  "homeIdlePhrase5": "Your whole campus at hand",
+  "homeIdlePhrase6": "All set for today?",
+  "homeIdlePhrase7": "What's on for today?",
+  "homeIdlePhrase8": "Great to see you again",
+  "uninstallTitle": "Uninstall Nexo UPLA",
+  "uninstallSubtitle": "The app and all of its components will be removed from your system.",
+  "uninstallPurgeTitle": "Purge all my local data",
+  "uninstallPurgeHint": "Deletes local databases, grade history and session.",
+  "uninstallAction": "Uninstall",
+  "uninstallSuccessTitle": "Uninstalled successfully!",
+  "uninstallSuccessBody": "Nexo UPLA has been removed. Cleaning up folders...",
+  "uninstallErrorTitle": "Uninstall failed",
+  "gradesPromedioCiclo": "Term average"
 }

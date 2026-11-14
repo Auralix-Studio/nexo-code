@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:nexo/core/design/theme.dart';
-import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/core/design/tokens.dart';
 import 'package:nexo/data/app_store.dart';
 import 'package:nexo/domain/models.dart';
+import 'package:nexo/domain/passing_rule.dart';
 import 'package:nexo/features/teacher/teacher_ui.dart';
 import 'package:nexo/l10n/app_localizations.dart';
+import 'package:nexo/shared/util/clipboard_helper.dart';
 import 'package:nexo/shared/util/formatters.dart';
-import 'package:nexo/shared/widgets/skeleton.dart';
+import 'package:nexo/shared/widgets/empty_state.dart';
+import 'package:nexo/shared/widgets/progress_ring.dart';
+import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/student_avatar.dart';
 
 Future<void> showTeacherStudentSheet({
@@ -112,20 +115,13 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
       builder: (_, controller) => DecoratedBox(
         decoration: BoxDecoration(
           color: NexoTheme.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.xxl),
+          ),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: NexoTheme.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SheetHandle(),
             _Header(student: widget.student),
             ColoredBox(
               color: NexoTheme.surface,
@@ -191,19 +187,21 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
     final formKey = GlobalKey<FormState>();
     final result = await showDialog<String>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: AppOpacity.scrim),
       builder: (dctx) {
         final l = AppLocalizations.of(dctx);
         return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: const BoxConstraints(maxWidth: AppSizes.dialogMaxWidth),
           child: Dialog(
             backgroundColor: NexoTheme.card,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: const BorderRadius.all(
+                Radius.circular(AppSpacing.xxl),
+              ),
               side: BorderSide(color: NexoTheme.border),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -211,24 +209,26 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                   Row(
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: AppSizes.avatarMd,
+                        height: AppSizes.avatarMd,
                         decoration: BoxDecoration(
-                          color: NexoTheme.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          color: NexoTheme.primary.withValues(
+                            alpha: AppOpacity.tint,
+                          ),
+                          borderRadius: AppRadii.rSm,
                         ),
                         child: Icon(
                           Icons.edit_outlined,
                           color: NexoTheme.primary,
-                          size: 22,
+                          size: AppIcon.xl,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const Gap.h(AppSpacing.md),
                       Expanded(
                         child: Text(
                           eval.description,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFont.h3,
                             fontWeight: FontWeight.w800,
                             color: NexoTheme.textPrimary,
                             letterSpacing: -0.4,
@@ -237,7 +237,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const Gap(AppSpacing.xl),
                   Form(
                     key: formKey,
                     child: TextFormField(
@@ -255,23 +255,23 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                           color: NexoTheme.textSecondary,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadii.rMd,
                           borderSide: BorderSide(color: NexoTheme.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadii.rMd,
                           borderSide: BorderSide(
                             color: NexoTheme.primary,
                             width: 2,
                           ),
                         ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: NexoTheme.danger),
+                        errorBorder: const OutlineInputBorder(
+                          borderRadius: AppRadii.rMd,
+                          borderSide: BorderSide(color: NexoTheme.danger),
                         ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
+                        focusedErrorBorder: const OutlineInputBorder(
+                          borderRadius: AppRadii.rMd,
+                          borderSide: BorderSide(
                             color: NexoTheme.danger,
                             width: 2,
                           ),
@@ -282,21 +282,23 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                         if (t.isEmpty) return l.docenteGradeEnter;
                         final n = double.tryParse(t);
                         if (n == null) return l.docenteGradeInvalidNumber;
-                        if (n < 0 || n > 20) return l.docenteGradeRange;
+                        if (n < 0 || n > PassingRule.scaleMax) {
+                          return l.docenteGradeRange;
+                        }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const Gap(AppSpacing.xxl),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(dctx).pop(),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            minimumSize: const Size.fromHeight(AppSizes.button),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadii.rMd,
                             ),
                             side: BorderSide(color: NexoTheme.border),
                           ),
@@ -309,7 +311,7 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const Gap.h(AppSpacing.md),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
@@ -320,10 +322,10 @@ class _AlumnoSheetState extends State<_AlumnoSheet>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: NexoTheme.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            minimumSize: const Size.fromHeight(AppSizes.button),
                             elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadii.rMd,
                             ),
                           ),
                           child: Text(
@@ -380,7 +382,7 @@ class _Header extends StatelessWidget {
           StudentAvatar(
             code: student.code,
             name: student.displayName,
-            size: 52,
+            size: AppSizes.avatarLg,
           ),
           const Gap.h(AppSpacing.md),
           Expanded(
@@ -395,7 +397,7 @@ class _Header extends StatelessWidget {
                     color: NexoTheme.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const Gap(AppSpacing.xxs),
                 Row(
                   children: [
                     Text(
@@ -407,7 +409,7 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      iconSize: 16,
+                      iconSize: AppIcon.sm,
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         ClipboardHelper.copyAndShow(
@@ -447,9 +449,9 @@ class _NotasTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (units.isEmpty) {
       return Center(
-        child: Text(
-          AppLocalizations.of(context).docenteNoGrades,
-          style: TextStyle(color: NexoTheme.textMuted),
+        child: EmptyState(
+          icon: Icons.grading_outlined,
+          title: AppLocalizations.of(context).docenteNoGrades,
         ),
       );
     }
@@ -457,20 +459,31 @@ class _NotasTab extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        for (final u in units) ...[
-          _PromedioCard(title: u.name, average: u.average, weight: u.weight),
-          const SizedBox(height: 12),
-          for (final e in u.grades)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _EvalRow(
-                eval: e,
-                locked: isLocked(e),
-                onEdit: () => onEdit(e),
-              ),
+        for (final (i, u) in units.indexed)
+          Reveal.list(
+            index: i,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PromedioCard(
+                  title: u.name,
+                  average: u.average,
+                  weight: u.weight,
+                ),
+                const Gap(AppSpacing.md),
+                for (final e in u.grades)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _EvalRow(
+                      eval: e,
+                      locked: isLocked(e),
+                      onEdit: () => onEdit(e),
+                    ),
+                  ),
+                const Gap(AppSpacing.lg),
+              ],
             ),
-          const SizedBox(height: 16),
-        ],
+          ),
       ],
     );
   }
@@ -494,9 +507,9 @@ class _PromedioCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rXxl,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: AppOpacity.outline)),
       ),
       child: Row(
         children: [
@@ -507,17 +520,17 @@ class _PromedioCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
                     color: NexoTheme.textMuted,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const Gap(AppSpacing.xs),
                 Text(
                   average != null ? average!.toStringAsFixed(2) : '—',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: AppFont.metric,
                     fontWeight: FontWeight.w900,
                     color: color,
                     height: 1,
@@ -555,79 +568,53 @@ class _EvalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final pending = eval.grade == null || eval.grade!.trim().isEmpty;
-    return InkWell(
-      borderRadius: AppRadii.rLg,
+    return TeacherCard(
+      radius: AppRadii.rLg,
       onTap: onEdit,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md + 2),
-        decoration: BoxDecoration(
-          color: NexoTheme.card,
-          borderRadius: AppRadii.rLg,
-          border: Border.all(color: NexoTheme.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    eval.description,
-                    style: TextStyle(
-                      fontSize: AppFont.body,
-                      fontWeight: FontWeight.w700,
-                      color: NexoTheme.textPrimary,
-                    ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eval.description,
+                  style: TextStyle(
+                    fontSize: AppFont.body,
+                    fontWeight: FontWeight.w700,
+                    color: NexoTheme.textPrimary,
                   ),
-                  Text(
-                    eval.code,
-                    style: TextStyle(
-                      fontSize: AppFont.small,
-                      color: NexoTheme.textMuted,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (pending)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
                 ),
-                decoration: BoxDecoration(
-                  color: NexoTheme.warning.withValues(alpha: 0.14),
-                  borderRadius: AppRadii.rPill,
-                ),
-                child: Text(
-                  l.docenteEvalPending,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: NexoTheme.warning,
+                Text(
+                  eval.code,
+                  style: TextStyle(
+                    fontSize: AppFont.small,
+                    color: NexoTheme.textMuted,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
                   ),
                 ),
-              )
-            else
-              Text(
-                eval.grade!,
-                style: TextStyle(
-                  fontSize: AppFont.h3,
-                  fontWeight: FontWeight.w900,
-                  color: gradeColor(eval.grade),
-                ),
-              ),
-            const SizedBox(width: 4),
-            Icon(
-              locked ? Icons.lock_outline_rounded : Icons.edit_outlined,
-              size: 16,
-              color: NexoTheme.textMuted,
+              ],
             ),
-          ],
-        ),
+          ),
+          if (pending)
+            TeacherPill(text: l.docenteEvalPending, color: NexoTheme.warning)
+          else
+            Text(
+              eval.grade!,
+              style: TextStyle(
+                fontSize: AppFont.h3,
+                fontWeight: FontWeight.w900,
+                color: gradeColor(eval.grade),
+              ),
+            ),
+          const Gap.h(AppSpacing.sm),
+          Icon(
+            locked ? Icons.lock_outline_rounded : Icons.edit_outlined,
+            size: AppIcon.sm,
+            color: NexoTheme.textMuted,
+          ),
+        ],
       ),
     );
   }
@@ -650,95 +637,127 @@ class _AsistenciaTab extends StatelessWidget {
       ..sort((a, b) => b.date.compareTo(a.date));
     if (marks.isEmpty) {
       return Center(
-        child: Text(
-          l.docenteNoAttendanceRecords,
-          style: TextStyle(color: NexoTheme.textMuted),
+        child: EmptyState(
+          icon: Icons.event_busy_outlined,
+          title: l.docenteNoAttendanceRecords,
         ),
       );
     }
-    final presentes = marks
-        .where((m) => m.state == AttendanceCode.present)
-        .length;
+    int count(int state) => marks.where((m) => m.state == state).length;
+    final present = count(AttendanceCode.present);
     final pct =
-        student?.percent?.round() ?? (presentes / marks.length * 100).round();
+        student?.percent?.round() ?? (present / marks.length * 100).round();
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        _AsistenciaResumen(total: marks.length, presentes: presentes, pct: pct),
-        const SizedBox(height: 12),
-        for (final m in marks) _DiaRow(mark: m),
+        Reveal.list(
+          child: _AsistenciaResumen(
+            pct: pct,
+            present: present,
+            absent: count(AttendanceCode.absent),
+            justified: count(AttendanceCode.justified),
+          ),
+        ),
+        const Gap(AppSpacing.md),
+        Reveal.list(
+          index: 1,
+          child: TeacherCard(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Column(
+              children: [
+                for (final (i, m) in marks.indexed) ...[
+                  if (i > 0) Divider(height: 1, color: NexoTheme.divider),
+                  _DiaRow(mark: m),
+                ],
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
 class _AsistenciaResumen extends StatelessWidget {
-  final int total;
-  final int presentes;
   final int pct;
+  final int present;
+  final int absent;
+  final int justified;
   const _AsistenciaResumen({
-    required this.total,
-    required this.presentes,
     required this.pct,
+    required this.present,
+    required this.absent,
+    required this.justified,
   });
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final color = pct >= 80
-        ? NexoTheme.success
-        : pct >= 65
-        ? NexoTheme.warning
-        : NexoTheme.danger;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    final color = attendanceColor(pct);
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppOpacity.soft),
         borderRadius: AppRadii.rXxl,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: AppOpacity.outline)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.docenteAttendanceLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: NexoTheme.textMuted,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            ProgressRing(percent: pct, color: color),
+            const Gap.h(AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.docenteAttendanceLabel,
+                    style: TextStyle(
+                      fontSize: AppFont.caption,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: NexoTheme.textMuted,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$pct%',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: color,
-                    height: 1,
+                  const Gap(AppSpacing.sm),
+                  SplitBar(
+                    parts: attendanceParts(
+                      present: present,
+                      absent: absent,
+                      justified: justified,
+                    ),
                   ),
-                ),
-              ],
+                  const Gap(AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TeacherStat(
+                          value: present,
+                          label: l.tchKpiPresent,
+                          color: NexoTheme.success,
+                        ),
+                      ),
+                      Expanded(
+                        child: TeacherStat(
+                          value: justified,
+                          label: l.tchKpiJustified,
+                          color: NexoTheme.warning,
+                        ),
+                      ),
+                      Expanded(
+                        child: TeacherStat(
+                          value: absent,
+                          label: l.tchKpiAbsent,
+                          color: NexoTheme.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            l.docenteSessionsRegisteredCount(
-              presentes.toString(),
-              total.toString(),
-            ),
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: AppFont.small,
-              color: NexoTheme.textSecondary,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -752,30 +771,47 @@ class _DiaRow extends StatelessWidget {
     final look = attendanceLook(context, mark.state);
     final d = mark.date;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(look.icon, color: look.color, size: 20),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: look.color.withValues(alpha: AppOpacity.tint),
+              shape: BoxShape.circle,
+            ),
+            child: SizedBox.square(
+              dimension: AppSizes.iconBadge,
+              child: Icon(look.icon, color: look.color, size: AppIcon.sm),
+            ),
+          ),
           const Gap.h(AppSpacing.md),
           Expanded(
-            child: Text(
-              '${Fmt.dayLabel(d.weekday)} ${Fmt.shortDate(d)} · '
-              '${two(d.hour)}:${two(d.minute)}',
-              style: TextStyle(
-                fontSize: AppFont.body,
-                color: NexoTheme.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${Fmt.dayLabel(d.weekday)} ${Fmt.shortDate(d)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppFont.body,
+                    color: NexoTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${two(d.hour)}:${two(d.minute)}',
+                  style: TextStyle(
+                    fontSize: AppFont.caption,
+                    color: NexoTheme.textMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
             ),
           ),
-          Text(
-            look.label,
-            style: TextStyle(
-              fontSize: AppFont.small,
-              color: look.color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const Gap.h(AppSpacing.sm),
+          TeacherPill(text: look.label, color: look.color),
         ],
       ),
     );
@@ -785,12 +821,6 @@ class _DiaRow extends StatelessWidget {
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
   @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: 5,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, _) => const Skeleton(height: 60, radius: 14),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const TeacherListSkeleton(count: 5, height: 60);
 }

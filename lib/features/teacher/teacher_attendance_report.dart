@@ -56,12 +56,12 @@ class _TeacherReportTabState extends State<TeacherReportTab>
               segments: [
                 ButtonSegment(
                   value: false,
-                  icon: const Icon(Icons.fact_check_outlined, size: 18),
+                  icon: const Icon(Icons.fact_check_outlined, size: AppIcon.md),
                   label: Text(l.docenteTabAsistencia),
                 ),
                 ButtonSegment(
                   value: true,
-                  icon: const Icon(Icons.grading_rounded, size: 18),
+                  icon: const Icon(Icons.grading_rounded, size: AppIcon.md),
                   label: Text(l.docenteTabNotas),
                 ),
               ],
@@ -123,7 +123,7 @@ class _TeacherReportTabState extends State<TeacherReportTab>
                           initialTab: _grades ? 0 : 1,
                         ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
               ],
           ],
         );
@@ -252,19 +252,21 @@ class _GradesSummary extends StatelessWidget {
                   for (var i = 0; i < buckets.length; i++)
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
                               '${counts[i]}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFont.caption,
                                 fontWeight: FontWeight.w800,
                                 color: NexoTheme.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppSpacing.xxs),
                             Container(
                               height: 70 * counts[i] / maxCount + 2,
                               decoration: BoxDecoration(
@@ -272,11 +274,11 @@ class _GradesSummary extends StatelessWidget {
                                 borderRadius: AppRadii.rSm,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               '${buckets[i].$1}–${buckets[i].$2}',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppFont.micro,
                                 color: NexoTheme.textMuted,
                               ),
                             ),
@@ -325,11 +327,11 @@ class _SummaryCard extends StatelessWidget {
                           color: c.$3,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         c.$2,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFont.caption,
                           fontWeight: FontWeight.w600,
                           color: NexoTheme.textSecondary,
                         ),
@@ -342,7 +344,10 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             hint,
-            style: TextStyle(fontSize: 11, color: NexoTheme.textMuted),
+            style: TextStyle(
+              fontSize: AppFont.caption,
+              color: NexoTheme.textMuted,
+            ),
           ),
         ],
       ),
@@ -402,7 +407,7 @@ class _RowTile extends StatelessWidget {
             borderRadius: AppRadii.rLg,
             border: Border.all(
               color: row.risk
-                  ? NexoTheme.danger.withValues(alpha: 0.5)
+                  ? NexoTheme.danger.withValues(alpha: AppOpacity.scrim)
                   : NexoTheme.border,
             ),
           ),
@@ -424,7 +429,7 @@ class _RowTile extends StatelessWidget {
                         color: NexoTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.tight),
                     ClipRRect(
                       borderRadius: AppRadii.rPill,
                       child: LinearProgressIndicator(
@@ -434,11 +439,11 @@ class _RowTile extends StatelessWidget {
                         valueColor: AlwaysStoppedAnimation(color),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       detail,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFont.caption,
                         color: NexoTheme.textMuted,
                         fontWeight: FontWeight.w600,
                       ),

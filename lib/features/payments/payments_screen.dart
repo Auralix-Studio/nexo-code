@@ -13,6 +13,7 @@ import 'package:nexo/shared/widgets/page_scaffold.dart';
 import 'package:nexo/shared/widgets/reveal.dart';
 import 'package:nexo/shared/widgets/skeleton.dart';
 import 'package:nexo/shared/widgets/status_chip.dart';
+import 'package:nexo/core/design/tokens.dart';
 
 class PaymentsScreen extends StatefulWidget {
   const PaymentsScreen({super.key, required this.store});
@@ -108,7 +109,7 @@ class _PagosScreenState extends State<PaymentsScreen>
                   child: _SummaryCards(store: widget.store),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
               SliverToBoxAdapter(
                 child: PageBody(child: _TabBar(controller: _tab)),
               ),
@@ -168,7 +169,7 @@ class _SummaryCards extends StatelessWidget {
               color: NexoTheme.warning,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.snug),
           Expanded(
             child: _SummaryCard(
               title: l.paymentsTabOverdue,
@@ -178,7 +179,7 @@ class _SummaryCards extends StatelessWidget {
               color: NexoTheme.danger,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.snug),
           Expanded(
             child: _SummaryCard(
               title: l.paymentsTabFees,
@@ -210,7 +211,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.cozy),
       decoration: BoxDecoration(
         color: NexoTheme.surface,
         borderRadius: BorderRadius.circular(18),
@@ -225,27 +226,27 @@ class _SummaryCard extends StatelessWidget {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: color.withValues(alpha: AppOpacity.tint),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: Icon(icon, size: 16, color: color),
+                child: Icon(icon, size: AppIcon.sm, color: color),
               ),
               const Spacer(),
               Text(
                 '$count',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFont.label,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(
             Fmt.currency(total),
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppFont.title,
               fontWeight: FontWeight.w800,
               color: NexoTheme.textPrimary,
               letterSpacing: -0.4,
@@ -254,7 +255,7 @@ class _SummaryCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFont.caption,
               color: NexoTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -272,10 +273,10 @@ class _TabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: NexoTheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         border: Border.all(color: NexoTheme.border),
       ),
       child: TabBar(
@@ -284,14 +285,17 @@ class _TabBar extends StatelessWidget {
         tabAlignment: TabAlignment.start,
         indicator: BoxDecoration(
           color: NexoTheme.primary,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.rSm,
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: Colors.white,
         unselectedLabelColor: NexoTheme.textSecondary,
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        labelStyle: const TextStyle(
+          fontSize: AppFont.label,
+          fontWeight: FontWeight.w700,
+        ),
         unselectedLabelStyle: const TextStyle(
-          fontSize: 13,
+          fontSize: AppFont.label,
           fontWeight: FontWeight.w500,
         ),
         splashFactory: NoSplash.splashFactory,
@@ -313,9 +317,9 @@ Widget _cardList(BuildContext context, List<Widget> cards) {
       final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
       if (constraints.maxWidth < 760 * textScale) {
         return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.cozy),
           itemBuilder: (_, i) => cards[i],
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.snug),
           itemCount: cards.length,
         );
       }
@@ -326,7 +330,7 @@ Widget _cardList(BuildContext context, List<Widget> cards) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: cards[i]),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: i + 1 < cards.length ? cards[i + 1] : const SizedBox(),
               ),
@@ -335,9 +339,9 @@ Widget _cardList(BuildContext context, List<Widget> cards) {
         );
       }
       return ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.cozy),
         itemBuilder: (_, i) => rows[i],
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemCount: rows.length,
       );
     },
@@ -460,12 +464,12 @@ class _CuotaCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => PaymentDetailScreen.openCuota(context, cuota),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.rXl,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: NexoTheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.rXl,
             border: Border.all(
               color: isOverdue
                   ? NexoTheme.danger.withValues(alpha: 0.4)
@@ -483,17 +487,17 @@ class _CuotaCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFont.body,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     '${cuota.currency} ${cuota.total.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: AppFont.lead,
                       fontWeight: FontWeight.w800,
                       color: NexoTheme.textPrimary,
                       letterSpacing: -0.3,
@@ -501,7 +505,7 @@ class _CuotaCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: 10,
                 runSpacing: 6,
@@ -515,11 +519,11 @@ class _CuotaCard extends StatelessWidget {
                         size: 14,
                         color: NexoTheme.textSecondary,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Text(
                         cuota.dueDateRaw,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFont.small,
                           color: NexoTheme.textSecondary,
                         ),
                       ),
@@ -539,12 +543,12 @@ class _CuotaCard extends StatelessWidget {
               ),
               if (cuota.note.trim().isNotEmpty &&
                   cuota.note.trim() != '--') ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(AppSpacing.snug),
                   decoration: BoxDecoration(
                     color: NexoTheme.bg,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadii.rSm,
                   ),
                   child: Row(
                     children: [
@@ -553,12 +557,12 @@ class _CuotaCard extends StatelessWidget {
                         size: 14,
                         color: NexoTheme.textMuted,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppSpacing.tight),
                       Expanded(
                         child: Text(
                           cuota.note,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             color: NexoTheme.textSecondary,
                           ),
                         ),
@@ -612,12 +616,12 @@ class _TasaCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => PaymentDetailScreen.openTasa(context, tasa),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.rXl,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: NexoTheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.rXl,
             border: Border.all(color: NexoTheme.border),
           ),
           child: Row(
@@ -626,16 +630,16 @@ class _TasaCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: NexoTheme.info.withValues(alpha: 0.12),
+                  color: NexoTheme.info.withValues(alpha: AppOpacity.tint),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: const Icon(
                   Icons.receipt_long_rounded,
                   color: NexoTheme.info,
-                  size: 18,
+                  size: AppIcon.md,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +647,7 @@ class _TasaCard extends StatelessWidget {
                     Text(
                       tasa.description,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFont.label,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                       ),
@@ -652,7 +656,7 @@ class _TasaCard extends StatelessWidget {
                       Text(
                         tasa.note,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFont.small,
                           color: NexoTheme.textSecondary,
                         ),
                       ),
@@ -662,7 +666,7 @@ class _TasaCard extends StatelessWidget {
               Text(
                 '${tasa.currency} ${tasa.amount.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFont.subtitle,
                   fontWeight: FontWeight.w800,
                   color: NexoTheme.textPrimary,
                 ),
@@ -729,7 +733,12 @@ class _HistorialTabState extends State<_HistorialTab> {
       children: [
         if (terms.length > 1)
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xs,
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.xs,
+            ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -739,14 +748,14 @@ class _HistorialTabState extends State<_HistorialTab> {
                     selected: _termFilter == null,
                     onTap: () => setState(() => _termFilter = null),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.tight),
                   for (final t in terms) ...[
                     _TermChip(
                       label: t,
                       selected: _termFilter == t,
                       onTap: () => setState(() => _termFilter = t),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: AppSpacing.tight),
                   ],
                 ],
               ),
@@ -759,23 +768,28 @@ class _HistorialTabState extends State<_HistorialTab> {
                   title: l.paymentsNoneInPeriod,
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   itemCount: byDate.length,
                   itemBuilder: (_, i) {
                     final date = byDate.keys.elementAt(i);
                     final list = byDate[date]!;
                     final dt = list.first.dateAsDate;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.xs,
+                              0,
+                              AppSpacing.xs,
+                              AppSpacing.sm,
+                            ),
                             child: Text(
                               dt == null ? date : Fmt.fullDate(dt),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFont.label,
                                 fontWeight: FontWeight.w700,
                                 color: NexoTheme.textSecondary,
                               ),
@@ -783,7 +797,8 @@ class _HistorialTabState extends State<_HistorialTab> {
                           ),
                           for (var j = 0; j < list.length; j++) ...[
                             _HistTile(item: list[j]),
-                            if (j < list.length - 1) const SizedBox(height: 8),
+                            if (j < list.length - 1)
+                              const SizedBox(height: AppSpacing.sm),
                           ],
                         ],
                       ),
@@ -809,13 +824,16 @@ class _TermChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppRadii.rPill,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.cozy,
+          vertical: 7,
+        ),
         decoration: BoxDecoration(
           color: selected ? NexoTheme.primary : NexoTheme.surface,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadii.rPill,
           border: Border.all(
             color: selected ? NexoTheme.primary : NexoTheme.border,
           ),
@@ -823,7 +841,7 @@ class _TermChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppFont.small,
             fontWeight: FontWeight.w700,
             color: selected ? Colors.white : NexoTheme.textPrimary,
           ),
@@ -843,12 +861,12 @@ class _HistTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => PaymentDetailScreen.openHistorico(context, item),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.rLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.cozy),
           decoration: BoxDecoration(
             color: NexoTheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadii.rLg,
             border: Border.all(color: NexoTheme.border),
           ),
           child: Row(
@@ -858,16 +876,16 @@ class _HistTile extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   color: (esDesc ? NexoTheme.warning : NexoTheme.success)
-                      .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                      .withValues(alpha: AppOpacity.tint),
+                  borderRadius: AppRadii.rSm,
                 ),
                 child: Icon(
                   esDesc ? Icons.discount_outlined : Icons.check_circle_outline,
-                  size: 18,
+                  size: AppIcon.md,
                   color: esDesc ? NexoTheme.warning : NexoTheme.success,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,12 +895,12 @@ class _HistTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFont.label,
                         fontWeight: FontWeight.w700,
                         color: NexoTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Wrap(
                       spacing: 8,
                       runSpacing: 2,
@@ -890,7 +908,7 @@ class _HistTile extends StatelessWidget {
                         Text(
                           item.term,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption,
                             color: NexoTheme.textMuted,
                             fontWeight: FontWeight.w600,
                           ),
@@ -899,7 +917,7 @@ class _HistTile extends StatelessWidget {
                           Text(
                             '· ${item.place}',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFont.caption,
                               color: NexoTheme.textMuted,
                             ),
                           ),
@@ -907,7 +925,7 @@ class _HistTile extends StatelessWidget {
                           Text(
                             '· ${item.voucher}',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFont.caption,
                               color: NexoTheme.textMuted,
                             ),
                           ),
@@ -916,11 +934,11 @@ class _HistTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 '${item.currency} ${item.amount.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFont.body,
                   fontWeight: FontWeight.w800,
                   color: esDesc ? NexoTheme.warning : NexoTheme.textPrimary,
                 ),
@@ -938,9 +956,9 @@ class _LoadingList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.cozy),
       itemBuilder: (_, _) => const Skeleton(height: 80, radius: 16),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.snug),
       itemCount: 5,
     );
   }

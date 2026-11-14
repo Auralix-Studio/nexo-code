@@ -82,3 +82,110 @@ class AnimatedCount extends StatelessWidget {
     );
   }
 }
+
+/// Respuesta táctil: el contenido se encoge apenas mientras se presiona.
+/// No captura el toque; envuelve a quien lo maneja (InkWell, botón…).
+class PressScale extends StatefulWidget {
+  const PressScale({super.key, required this.child, this.enabled = true});
+  final Widget child;
+  final bool enabled;
+
+  /// Escala mientras el dedo está abajo.
+  static const double pressed = 0.97;
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _down = false;
+
+  void _set(bool v) {
+    if (_down != v && mounted) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled || Motion.reduced(context)) return widget.child;
+    return Listener(
+      onPointerDown: (_) => _set(true),
+      onPointerUp: (_) => _set(false),
+      onPointerCancel: (_) => _set(false),
+      child: AnimatedScale(
+        scale: _down ? PressScale.pressed : 1,
+        duration: AppDurations.press,
+        curve: Motion.enter,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Punto que late para señalar algo en curso. Con "reducir movimiento" queda
+/// fijo.
+class PulseDot extends StatefulWidget {
+  const PulseDot({super.key, required this.color, this.size = AppSizes.dot});
+  final Color color;
+  final double size;
+
+  /// Opacidad con la que arranca la onda y cuánto crece.
+  static const double _waveOpacity = 0.7;
+  static const double _waveScale = 2;
+
+  @override
+  State<PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<PulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: AppDurations.loop,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.reduced(context)) {
+      _ctrl.stop();
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = DecoratedBox(
+      decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+      child: SizedBox.square(dimension: widget.size),
+    );
+    return SizedBox.square(
+      dimension: widget.size * PulseDot._waveScale,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          FadeTransition(
+            opacity: Tween<double>(
+              begin: PulseDot._waveOpacity,
+              end: 0,
+            ).animate(_ctrl),
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 1,
+                end: PulseDot._waveScale,
+              ).animate(CurvedAnimation(parent: _ctrl, curve: Motion.enter)),
+              child: dot,
+            ),
+          ),
+          dot,
+        ],
+      ),
+    );
+  }
+}
