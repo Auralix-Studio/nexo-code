@@ -2,6 +2,20 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [Sin publicar]
+
+### Cambios importantes
+- **Nueva arquitectura con servidor propio**: la aplicación ahora se comunica exclusivamente a través de la API de Nexo, con caché temporal encriptada, renovación automática de sesión sin reenviar contraseñas y protección contra sobrecarga en redes compartidas del campus.
+
+### Novedades
+- **Avisos de notas al instante (Android)**: recibe una notificación push cuando un docente registra o actualiza tus calificaciones desde Nexo, con opción para activarla o desactivarla en Ajustes.
+- **Modo docente rediseñado**: nuevo diseño de pantallas docentes, guardado automático de notas en borrador y deduplicación de asignaturas.
+- **Integraciones y calendario**: pantalla para gestionar conexiones autorizadas y suscripción de calendario académico.
+
+### Correcciones y mejoras
+- Arranque y cambio de pestaña más rápidos reutilizando datos vigentes en caché sin repetir consultas innecesarias.
+- Actualización de Términos y Condiciones, Política de Privacidad y Política de Cookies (versión 6).
+
 ## [1.12.4] - 2026-11-10
 
 ### Correcciones
