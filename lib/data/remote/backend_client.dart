@@ -31,9 +31,12 @@ enum ReauthOutcome {
 /// sesiones y devuelve los datos ya ordenados. La app no llama a SIGMA, la
 /// Intranet ni el Centro de Idiomas.
 ///
-/// Los tokens viven aquí; [SessionService] guarda el de acceso para volver a
-/// entrar al abrir la app y, si venció, inicia sesión otra vez con las
-/// credenciales del dispositivo ([reauthenticate]).
+/// Los tokens viven aquí; [SessionService] los guarda en el almacén seguro
+/// ([onTokensChanged]) para volver a entrar al abrir la app. Si el de acceso
+/// venció se renueva con `POST /auth/refresh` (una sola renovación para
+/// todas las peticiones que reciban 401 a la vez) y, si eso no basta, se
+/// inicia sesión otra vez con las credenciales del dispositivo
+/// ([reauthenticate]).
 class BackendClient {
   BackendClient({
     http.Client? transport,
@@ -66,13 +69,24 @@ class BackendClient {
   /// Las credenciales ya no sirven: la sesión debe terminar.
   void Function()? onSessionInvalid;
 
+  /// `POST /auth/refresh` entregó tokens nuevos ([access] y [refresh]) o
+  /// rechazó el refresh token (ambos `null`): [SessionService] los persiste.
+  Future<void> Function(String? access, String? refresh)? onTokensChanged;
+
+  /// Renovación en curso: las peticiones que reciben 401 a la vez esperan
+  /// esta misma, porque el refresh token es de un solo uso.
+  Future<ReauthOutcome>? _renewal;
+
   bool get isConnected => _access != null;
   String? get accessToken => _access;
+  String? get refreshToken => _refresh;
 
-  /// Restaura (o borra) el token de acceso guardado en el dispositivo.
-  void setToken(String? access) {
+  /// Restaura (o borra) los tokens guardados en el dispositivo. Sin token de
+  /// acceso también se olvida el refresh token.
+  void setToken(String? access, {String? refresh}) {
     _access = access;
-    if (access == null) _refresh = null;
+    _refresh = access == null ? null : refresh ?? _refresh;
+    if (access == null) _renewal = null;
   }
 
   Future<http.Client> _client() async =>
@@ -394,6 +408,7 @@ class BackendClient {
   void disconnect() {
     _access = null;
     _refresh = null;
+    _renewal = null;
     _user = null;
     _password = null;
   }
@@ -467,6 +482,7 @@ class BackendClient {
     final client = await _client();
     final base = module ? BackendConfig.baseUrl : BackendConfig.apiBaseUrl;
     final uri = Uri.parse('$base$path').replace(queryParameters: query);
+    final sentWith = bearer ?? _access;
 
     final res = await _request(
       client,
@@ -502,7 +518,7 @@ class BackendClient {
         : decoded['detail']?.toString();
 
     if (authorize && !retried && _needsAuth(res.statusCode, error)) {
-      await _recover(error);
+      await _recover(error, sentWith);
       return _send(
         method,
         path,
@@ -514,7 +530,12 @@ class BackendClient {
       );
     }
 
-    throw BackendException(error, detail, res.statusCode);
+    throw BackendException(
+      error,
+      detail,
+      res.statusCode,
+      retryAfterOf(res.headers['retry-after']),
+    );
   });
 
   /// Descarga un archivo (no viene en el sobre JSON); el nombre sale de
@@ -528,6 +549,7 @@ class BackendClient {
     final uri = Uri.parse(
       '${BackendConfig.baseUrl}$path',
     ).replace(queryParameters: query);
+    final sentWith = _access;
     final res = await _request(
       client,
       http.Request('GET', uri),
@@ -550,13 +572,14 @@ class BackendClient {
         ? rawError['code']?.toString() ?? 'error_${res.statusCode}'
         : 'error_${res.statusCode}';
     if (!retried && _needsAuth(res.statusCode, error)) {
-      await _recover(error);
+      await _recover(error, sentWith);
       return _download(path, query: query, retried: true);
     }
     throw BackendException(
       error,
       rawError is Map ? rawError['message']?.toString() : null,
       res.statusCode,
+      retryAfterOf(res.headers['retry-after']),
     );
   });
 
@@ -604,8 +627,24 @@ class BackendClient {
 
   /// Renueva el token o vuelve a iniciar sesión; si no se puede, lanza
   /// `session_expired` (credenciales rechazadas) o `auth_unavailable`.
-  Future<void> _recover(String error) async {
-    if (error != 'reauth_required' && await _renew()) return;
+  ///
+  /// [sentWith] es el token con el que salió la petición: si ya cambió,
+  /// otra petición renovó la sesión mientras tanto y basta con repetirla.
+  Future<void> _recover(String error, String? sentWith) async {
+    if (_access != null && _access != sentWith) return;
+    if (error != 'reauth_required') {
+      final renewed = await refreshSession();
+      scope.check();
+      if (renewed == ReauthOutcome.refreshed) return;
+      // Sin red o backend caído: un login completo tampoco saldría.
+      if (renewed == ReauthOutcome.unavailable) {
+        throw const BackendException(
+          'auth_unavailable',
+          'No se pudo verificar tu sesión en este momento.',
+          503,
+        );
+      }
+    }
     final hook = reauthenticate;
     final outcome = hook != null ? await hook() : await _relogin();
     scope.check();
@@ -655,9 +694,26 @@ class BackendClient {
     }
   }
 
-  Future<bool> _renew() async {
+  /// Renueva el token de acceso con el refresh token (`POST /auth/refresh`).
+  ///
+  /// Single-flight: el refresh token es de un solo uso, así que las
+  /// peticiones que reciben 401 a la vez comparten una sola renovación.
+  /// [ReauthOutcome.invalidCredentials] = no hay refresh token o el servidor
+  /// lo rechazó (hace falta un login); [ReauthOutcome.unavailable] = sin red
+  /// o backend caído (se conservan los tokens).
+  Future<ReauthOutcome> refreshSession() {
+    final pending = _renewal;
+    if (pending != null) return pending;
+    late final Future<ReauthOutcome> renewal;
+    renewal = _renew().whenComplete(() {
+      if (identical(_renewal, renewal)) _renewal = null;
+    });
+    return _renewal = renewal;
+  }
+
+  Future<ReauthOutcome> _renew() async {
     final token = _refresh;
-    if (token == null) return false;
+    if (token == null || token.isEmpty) return ReauthOutcome.invalidCredentials;
     try {
       final body = await _send(
         'POST',
@@ -666,15 +722,32 @@ class BackendClient {
         authorize: false,
         module: true,
       );
-      _access = body['access_token'] as String?;
-      _refresh = body['refresh_token'] as String?;
-      return _access != null;
+      final access = body['access_token'] as String?;
+      if (access == null || access.isEmpty) return ReauthOutcome.unavailable;
+      _access = access;
+      _refresh = body['refresh_token'] as String? ?? _refresh;
+      await _publishTokens(_access, _refresh);
+      return ReauthOutcome.refreshed;
     } on StaleSessionException {
       rethrow;
-    } on BackendException {
-      _access = null;
-      _refresh = null;
-      return false;
+    } on BackendException catch (e) {
+      final status = e.status;
+      final rejected =
+          status != null && status >= 400 && status < 500 && status != 429;
+      if (!rejected) return ReauthOutcome.unavailable;
+      if (identical(_refresh, token)) _refresh = null;
+      await _publishTokens(null, null);
+      return ReauthOutcome.invalidCredentials;
+    }
+  }
+
+  Future<void> _publishTokens(String? access, String? refresh) async {
+    try {
+      await onTokensChanged?.call(access, refresh);
+    } on StaleSessionException {
+      rethrow;
+    } catch (_) {
+      // Sin almacén seguro los tokens siguen en memoria para esta sesión.
     }
   }
 
@@ -757,6 +830,13 @@ class PushSettings {
       PushSettings(grades: j['grades'] == true, devices: _int(j['devices']));
 }
 
+/// `Retry-After` en segundos (lo que envía la API de Nexo); `null` si no
+/// hay o no se entiende.
+Duration? retryAfterOf(String? header) {
+  final seconds = int.tryParse(header?.trim() ?? '');
+  return seconds == null || seconds < 0 ? null : Duration(seconds: seconds);
+}
+
 /// Nombre sugerido en `content-disposition` (`filename*=UTF-8''…` primero).
 String? filenameFromDisposition(String? disposition) {
   if (disposition == null) return null;
@@ -776,12 +856,20 @@ String? filenameFromDisposition(String? disposition) {
 /// (`sin_acceso_directorio`, `solo_administradores`, `invalid_credentials`,
 /// `upstream_unavailable`, `reauth_required`, `not_found`, `sin_conexion`…).
 class BackendException implements Exception {
-  const BackendException(this.code, [this.detail, this.status]);
+  const BackendException(
+    this.code, [
+    this.detail,
+    this.status,
+    this.retryAfter,
+  ]);
   final String code;
   final String? detail;
 
   /// Código HTTP de la respuesta; `null` si no hubo respuesta.
   final int? status;
+
+  /// Espera que pidió el servidor (`Retry-After`), si la indicó.
+  final Duration? retryAfter;
   @override
   String toString() => detail ?? code;
 }
@@ -812,7 +900,12 @@ ApiException apiErrorOf(BackendException e) {
         when status == null ||
             status >= 500 ||
             e.code == 'upstream_unavailable' =>
-      ServerException(message, status: status ?? 503),
+      ServerException(
+        message,
+        status: status ?? 503,
+        code: e.code,
+        retryAfter: e.retryAfter,
+      ),
     _ => BadRequestException(message, status: status),
   };
 }

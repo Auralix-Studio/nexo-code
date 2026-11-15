@@ -59,8 +59,9 @@ String formatGrade(String? raw) {
 
 class LoginResult {
   final String token;
+  final String? refreshToken;
   final UserProfile? info;
-  const LoginResult({required this.token, this.info});
+  const LoginResult({required this.token, this.refreshToken, this.info});
 }
 
 class UserProfile {

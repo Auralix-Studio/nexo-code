@@ -1,17 +1,44 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:nexo/core/config.dart';
 
 enum ServerStatus { online, offline, degraded }
 
+/// Estado de la red y de la API de Nexo.
+///
+/// El ping a `/status` es barato pero gasta cuota del limitador por IP del
+/// backend, así que se hace poco: cada [pingInterval] y solo con la app en
+/// primer plano, al volver de segundo plano y tras un error de red.
 class ConnectivityService extends ChangeNotifier {
-  ConnectivityService({Connectivity? connectivity, http.Client? httpClient})
-    : _connectivity = connectivity ?? Connectivity(),
-      _httpClient = httpClient ?? http.Client(),
-      _ownsHttpClient = httpClient == null;
+  ConnectivityService({
+    Connectivity? connectivity,
+    http.Client? httpClient,
+    DateTime Function()? clock,
+  }) : _connectivity = connectivity ?? Connectivity(),
+       _httpClient = httpClient ?? http.Client(),
+       _ownsHttpClient = httpClient == null,
+       _clock = clock ?? DateTime.now;
+
+  /// Cada cuánto se revisa la API con la app en primer plano.
+  static const pingInterval = Duration(minutes: 3);
+
+  /// Separación mínima entre pings fuera del intervalo (al volver o tras un
+  /// error de red), para que varias fallas a la vez no disparen varios.
+  static const minPingGap = Duration(seconds: 20);
+
   final Connectivity _connectivity;
+  final DateTime Function() _clock;
+  bool _foreground = true;
+  bool _started = false;
+  DateTime? _lastPing;
+  AppLifecycleListener? _lifecycle;
+  int _pings = 0;
+
+  /// Pings a `/status` hechos (para pruebas).
+  @visibleForTesting
+  int get pingCount => _pings;
   final http.Client _httpClient;
   final bool _ownsHttpClient;
   bool _disposed = false;
@@ -66,10 +93,66 @@ class ConnectivityService extends ChangeNotifier {
       }
     }
     if (_disposed) return;
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_hasInternet) {
-        _healthCheck();
-      }
+    _started = true;
+    _startTimer();
+  }
+
+  /// Escucha el ciclo de vida de la app para pausar el ping en segundo
+  /// plano (minimizada en Windows incluida). Lo llama `main`.
+  void bindLifecycle() {
+    _lifecycle ??= AppLifecycleListener(onStateChange: handleLifecycle);
+  }
+
+  /// `inactive` sigue siendo visible (en Windows, la ventana sin foco); solo
+  /// `hidden`/`paused`/`detached` cuentan como segundo plano.
+  void handleLifecycle(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        setForeground(true);
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        setForeground(false);
+    }
+  }
+
+  bool get isForeground => _foreground;
+
+  /// En segundo plano se detiene el ping; al volver se revisa en el acto y
+  /// se reanuda el intervalo.
+  void setForeground(bool foreground) {
+    if (_disposed || foreground == _foreground) return;
+    _foreground = foreground;
+    if (!foreground) {
+      _timer?.cancel();
+      _timer = null;
+      return;
+    }
+    if (!_started) return;
+    _startTimer();
+    _pingSoon();
+  }
+
+  /// Una petición falló por la red: se revisa el estado ahora (con un
+  /// mínimo de [minPingGap] entre revisiones).
+  void reportNetworkError() {
+    if (_disposed || !_started || !_foreground) return;
+    _pingSoon();
+  }
+
+  void _pingSoon() {
+    final last = _lastPing;
+    if (last != null && _clock().difference(last) < minPingGap) return;
+    unawaited(_healthCheck());
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (!_foreground) return;
+    _timer = Timer.periodic(pingInterval, (_) {
+      if (_hasInternet) _healthCheck();
     });
   }
 
@@ -110,6 +193,8 @@ class ConnectivityService extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    _lastPing = _clock();
+    _pings++;
     final status = await _pingServer(
       Uri.parse('${BackendConfig.baseUrl}/status'),
     );
@@ -142,6 +227,7 @@ class ConnectivityService extends ChangeNotifier {
     _healthRevision++;
     _subscription?.cancel();
     _timer?.cancel();
+    _lifecycle?.dispose();
     if (_ownsHttpClient) _httpClient.close();
     super.dispose();
   }

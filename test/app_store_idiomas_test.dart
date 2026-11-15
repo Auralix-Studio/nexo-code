@@ -94,10 +94,25 @@ void main() {
       expect(vigentes.first.asigId, 'ING002');
     });
 
-    test('combina _baseSchedule y cursos vigentes en schedule getter', () {
-      final now = DateTime.now();
-
-      // Simular que el horario base cargó 1 clase de SIGMA
+    test('schedule es el de /schedule: no combina /languages', () {
+      const idiomas = ScheduleClass(
+        id: 'ING_NEW',
+        nrc: '',
+        subject: 'INGLES NUEVO',
+        modality: 'VIRTUAL',
+        section: 'A',
+        level: '',
+        campus: 'VIRTUAL',
+        building: '',
+        room: '2',
+        note: '',
+        teacher: 'Centro de Idiomas',
+        weekday: 2,
+        dayName: 'MA',
+        startTime: '10:00',
+        endTime: '11:30',
+        typeCode: 'I',
+      );
       store.setBaseScheduleForTesting(
         const AsyncValue.data([
           ScheduleClass(
@@ -118,42 +133,18 @@ void main() {
             endTime: '09:30',
             typeCode: 'T',
           ),
+          idiomas,
         ]),
       );
-
-      // Simular que cargaron idiomas (1 vigente, 1 antiguo)
+      final now = DateTime.now();
       store.idiomasMatricula = AsyncValue.data([
         IdiomasCourse(
           estNombres: 'JUAN',
           estPaterno: 'P',
           estMaterno: 'G',
-          asigId: 'ING_OLD',
-          asignatura: 'INGLES VIEJO',
-          dias: 'LU',
-          horaInicio: '08:00',
-          horaFin: '09:30',
-          aula: '1',
-          aulaNombre: '1',
-          detMatriculaId: 1,
-          modalidad: 'V',
-          idiomaNombre: 'INGLES',
-          seccion: 'A',
-          anio: 2000, // Antiguo
-          mes: 1,
-          tipoEstudio: 'REGULAR',
-          turno: 'MAÑANA',
-          capacidad: 30,
-          cantidad: 20,
-          fechRegistro: '2000',
-          promedio: 10,
-        ),
-        IdiomasCourse(
-          estNombres: 'JUAN',
-          estPaterno: 'P',
-          estMaterno: 'G',
-          asigId: 'ING_NEW',
-          asignatura: 'INGLES NUEVO',
-          dias: 'MA',
+          asigId: 'ING_OTHER',
+          asignatura: 'INGLES OTRO',
+          dias: 'JU',
           horaInicio: '10:00',
           horaFin: '11:30',
           aula: '2',
@@ -162,7 +153,7 @@ void main() {
           modalidad: 'V',
           idiomaNombre: 'INGLES',
           seccion: 'A',
-          anio: now.year, // Vigente
+          anio: now.year,
           mes: now.month,
           tipoEstudio: 'REGULAR',
           turno: 'MAÑANA',
@@ -173,25 +164,8 @@ void main() {
         ),
       ]);
 
-      // El getter `schedule` debe combinar el horario base con el curso vigente (y descartar el antiguo)
-      final combined = store.schedule.value!;
-
-      expect(combined, hasLength(2));
-      expect(
-        combined.any((c) => c.id == 'SIGMA1'),
-        isTrue,
-        reason: 'Mantiene horario base',
-      );
-      expect(
-        combined.any((c) => c.subject == 'INGLES NUEVO'),
-        isTrue,
-        reason: 'Agrega curso vigente',
-      );
-      expect(
-        combined.any((c) => c.subject == 'INGLES VIEJO'),
-        isFalse,
-        reason: 'Excluye curso caduco',
-      );
+      final schedule = store.schedule.value!;
+      expect(schedule.map((c) => c.id), ['SIGMA1', 'ING_NEW']);
     });
   });
 }

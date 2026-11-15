@@ -57,10 +57,10 @@ class _PagosScreenState extends State<PaymentsScreen>
         final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
-              widget.store.loadCuotasPendientes(),
-              widget.store.loadCuotasIntranet(),
-              widget.store.loadTasas(),
-              widget.store.loadHistorico(),
+              widget.store.loadCuotasPendientes(force: true),
+              widget.store.loadCuotasIntranet(force: true),
+              widget.store.loadTasas(force: true),
+              widget.store.loadHistorico(force: true),
             ]);
           },
           child: NestedScrollView(

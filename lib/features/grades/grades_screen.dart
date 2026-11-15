@@ -42,6 +42,9 @@ class _GradesScreenState extends State<GradesScreen> {
     super.initState();
     if (!widget.store.periodos.hasValue) widget.store.loadPeriodos();
     if (!widget.store.promedios.hasValue) widget.store.loadPromedios();
+    // La sección de Idiomas es la única que usa `/languages` (el horario ya
+    // trae esas clases); respeta su TTL.
+    widget.store.loadIdiomasMatricula();
   }
 
   Term? _currentTerm(List<Term> periodos) {
@@ -57,14 +60,14 @@ class _GradesScreenState extends State<GradesScreen> {
     return periodos.first;
   }
 
-  void _load(Term p) {
+  void _load(Term p, {bool force = false}) {
     if (isNewModel(p.year, p.number)) {
-      if (!widget.store.boletaOf(p.year, p.number).hasValue) {
-        widget.store.loadBoleta(p.year, p.number);
+      if (force || !widget.store.boletaOf(p.year, p.number).hasValue) {
+        widget.store.loadBoleta(p.year, p.number, force: force);
       }
     } else {
-      if (!widget.store.boletaLegacyOf(p.year, p.number).hasValue) {
-        widget.store.loadBoletaLegacy(p.year, p.number);
+      if (force || !widget.store.boletaLegacyOf(p.year, p.number).hasValue) {
+        widget.store.loadBoletaLegacy(p.year, p.number, force: force);
       }
     }
   }
@@ -103,9 +106,10 @@ class _GradesScreenState extends State<GradesScreen> {
         final list = RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
-              widget.store.loadPromedios(),
-              widget.store.loadPeriodos(),
-              if (current != null) Future(() => _load(current)),
+              widget.store.loadPromedios(force: true),
+              widget.store.loadPeriodos(force: true),
+              widget.store.loadIdiomasMatricula(force: true),
+              if (current != null) Future(() => _load(current, force: true)),
             ]);
           },
           child: CustomScrollView(

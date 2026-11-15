@@ -1,5 +1,3 @@
-import 'package:nexo/domain/unified_models.dart';
-
 class IdiomasCourse {
   final String estNombres;
   final String estPaterno;
@@ -74,54 +72,5 @@ class IdiomasCourse {
       fechRegistro: json['fechRegistro'] ?? '',
       promedio: json['promedio'] ?? 0,
     );
-  }
-
-  /// Convierte los días "LU-MA-MI-JU-VI" en múltiples instancias de ScheduleClass
-  List<ScheduleClass> toScheduleClasses() {
-    final classes = <ScheduleClass>[];
-
-    // No parse to int needed, ScheduleClass expects strings for startTime and endTime.
-
-    final List<String> dayTokens = dias.split('-');
-    final Map<String, int> dayMap = {
-      'LU': 1,
-      'MA': 2,
-      'MI': 3,
-      'JU': 4,
-      'VI': 5,
-      'SA': 6,
-      'DO': 7,
-    };
-
-    for (final token in dayTokens) {
-      final t = token.trim().toUpperCase();
-      if (dayMap.containsKey(t)) {
-        classes.add(
-          ScheduleClass(
-            id: asigId,
-            nrc: '',
-            subject: asignatura,
-            modality: modalidad,
-            section: seccion,
-            level: '',
-            campus: modalidad.toUpperCase() == 'VIRTUAL'
-                ? 'VIRTUAL'
-                : 'PRESENCIAL',
-            building: modalidad.toUpperCase() == 'VIRTUAL'
-                ? ''
-                : 'Centro de Idiomas',
-            room: aula,
-            note: '$tipoEstudio · $turno',
-            teacher: 'Centro de Idiomas',
-            weekday: dayMap[t]!,
-            dayName: token.trim(),
-            startTime: horaInicio,
-            endTime: horaFin,
-            typeCode: 'I',
-          ),
-        );
-      }
-    }
-    return classes;
   }
 }

@@ -48,7 +48,7 @@ class ProfileScreen extends StatelessWidget {
       builder: (context, _) {
         final p = store.profile.value;
         return RefreshIndicator(
-          onRefresh: () => store.loadProfile().then((_) {}),
+          onRefresh: () => store.loadProfile(force: true).then((_) {}),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),

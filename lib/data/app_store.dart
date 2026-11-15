@@ -14,6 +14,7 @@ import 'package:nexo/data/repositories/nexo_repository.dart';
 import 'package:nexo/data/repositories/nexo_teacher_repository.dart';
 import 'package:nexo/data/resolver.dart';
 import 'package:nexo/data/services/connectivity_service.dart';
+import 'package:nexo/data/services/grade_push_log.dart';
 import 'package:nexo/data/store/async_value.dart';
 import 'package:nexo/domain/course_status.dart';
 import 'package:nexo/domain/dashboard_widget_config.dart';
@@ -98,23 +99,26 @@ class AppStore extends _StoreBase
     if (_scope.isCurrent) PassingRule.resolveFrom(periodos.value);
   });
 
-  Future<void> loadHomeEssentials() => _singleFlight<void>(
+  /// Datos del inicio. Cada uno respeta su [FreshnessTtl]: lo descargado
+  /// hace poco no se vuelve a pedir. [force] (pull-to-refresh) recarga todo.
+  /// `/languages` no se pide aquí: `/schedule` ya trae las clases de Idiomas
+  /// y sus notas se piden en la sección de Idiomas.
+  Future<void> loadHomeEssentials({bool force = false}) => _singleFlight<void>(
     'home',
     () => _scope.run(() async {
       // Los periodos van primero: `periodoActivo` alimenta al horario y a la
       // boleta. Cargarlos en paralelo provocaba que esas fuentes consultaran
       // un periodo adivinado por fecha y a veces volvieran vacías.
-      await loadPeriodos();
+      await loadPeriodos(force: force);
       if (!_scope.isCurrent) return;
-      // La boleta no bloquea el refresco del inicio ni espera a pagos/idiomas.
-      unawaited(checkActiveBoleta());
+      // La boleta no bloquea el refresco del inicio ni espera a los pagos.
+      unawaited(checkActiveBoleta(force: force));
       await Future.wait([
-        loadProfile(),
-        loadResumen(),
-        loadHorarioActual(),
-        loadCuotasPendientes(),
-        loadPromedios(),
-        loadIdiomasMatricula(),
+        loadProfile(force: force),
+        loadResumen(force: force),
+        loadHorarioActual(force: force),
+        loadCuotasPendientes(force: force),
+        loadPromedios(force: force),
       ]);
     }),
   );
@@ -136,13 +140,10 @@ class AppStore extends _StoreBase
     final tasks = <Future<void>>[
       if (needs(profile, 'loadProfile')) loadProfile(),
       if (needs(resumen, 'loadResumen')) loadResumen(),
-      // El horario propio, no el combinado: las clases de Idiomas no deben
-      // ocultar que el de la universidad falló.
       if (needs(_baseSchedule, 'loadHorarioActual')) loadHorarioActual(),
       if (needs(pendingInstallments, 'loadCuotasPendientes'))
         loadCuotasPendientes(),
       if (needs(promedios, 'loadPromedios')) loadPromedios(),
-      if (needs(idiomasMatricula)) loadIdiomasMatricula(),
     ];
     // Limpiar marcas de caché por arranque: ya se está reintentando todo.
     _startupCacheOps.clear();

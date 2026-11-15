@@ -14,6 +14,11 @@ mixin _TeacherStore on _StoreBase {
   final Map<int, Future<List<GradeType>>> _gradeTypes = {};
   final Map<String, AsyncValue<List<TeacherStudent>>> _teacherStudents = {};
   final Map<String, AsyncValue<AttendanceSheet>> _attendance = {};
+
+  /// Cuándo llegó de la red el roster / la hoja de cada sección: el tablero
+  /// no los vuelve a pedir antes de [FreshnessTtl.teacherRoster].
+  final Map<String, DateTime> _rosterAt = {};
+  final Map<String, DateTime> _attendanceAt = {};
   bool _resumenLoading = false;
 
   NexoTeacherRepository get _nexoTeacher => _nexo.teacher;
@@ -30,6 +35,13 @@ mixin _TeacherStore on _StoreBase {
     _gradeTypes.clear();
     _attendance.clear();
     _teacherStudents.clear();
+    _rosterAt.clear();
+    _attendanceAt.clear();
+  }
+
+  bool _sectionFresh(Map<String, DateTime> loadedAt, String section) {
+    final at = loadedAt[section];
+    return at != null && clock().difference(at) < FreshnessTtl.teacherRoster;
   }
 
   AsyncValue<List<TeacherStudent>> alumnosDe(String cleAuto) =>
@@ -195,6 +207,7 @@ mixin _TeacherStore on _StoreBase {
       final r = (await _call(() => _nexoTeacher.attendance(course.id))).sheet;
       if (!_scope.isCurrent) return;
       _attendance[course.id] = AsyncValue.data(r);
+      _attendanceAt[course.id] = clock();
     } catch (e) {
       if (!_scope.isCurrent) return;
       _attendance[course.id] = AsyncValue.failure(
@@ -298,8 +311,13 @@ mixin _TeacherStore on _StoreBase {
     );
     _notify();
     try {
+      var fromNetwork = false;
       final v = await _errorHandler.withFallback<List<TeacherStudent>>(
-        remote: () => _call(() => _nexoTeacher.roster(cleAuto)),
+        remote: () async {
+          final roster = await _call(() => _nexoTeacher.roster(cleAuto));
+          fromNetwork = true;
+          return roster;
+        },
         // Un roster vacío no sirve de caché: así se intenta la red aunque el
         // arranque crea que no hay internet.
         cached: () async {
@@ -310,6 +328,7 @@ mixin _TeacherStore on _StoreBase {
       );
       if (!_scope.isCurrent) return;
       _teacherStudents[cleAuto] = AsyncValue.data(v);
+      if (fromNetwork) _rosterAt[cleAuto] = clock();
       if (v.isNotEmpty) await _cache.saveDocenteAlumnos(cleAuto, v);
     } catch (e) {
       if (!_scope.isCurrent) return;
@@ -326,7 +345,9 @@ mixin _TeacherStore on _StoreBase {
 
   /// Roster y hoja de asistencia de todas las secciones, para el tablero
   /// (agenda, clases sin asistencia y alumnos en riesgo). De a dos secciones a
-  /// la vez para no saturar la API; [force] recarga lo ya cargado.
+  /// la vez para no saturar la API. Al abrir el tablero solo se pide lo que
+  /// falta o lo descargado hace más de [FreshnessTtl.teacherRoster];
+  /// [force] (pull-to-refresh) recarga todo.
   Future<void> loadDocenteResumen({bool force = false}) async {
     if (_resumenLoading) return;
     final courses = teacherSubjects.value ?? await loadTeacherSubjects();
@@ -339,9 +360,14 @@ mixin _TeacherStore on _StoreBase {
         while (queue.isNotEmpty) {
           final c = queue.removeAt(0);
           await Future.wait([
-            if (force || !alumnosDe(c.id).hasValue)
+            if (force ||
+                !alumnosDe(c.id).hasValue ||
+                !_sectionFresh(_rosterAt, c.id))
               loadDocenteAlumnos(c.id, tipoCalif: c.tipoCalif),
-            if (force || !asistenciaDe(c.id).hasValue) loadDocenteAsistencia(c),
+            if (force ||
+                !asistenciaDe(c.id).hasValue ||
+                !_sectionFresh(_attendanceAt, c.id))
+              loadDocenteAsistencia(c),
           ]);
         }
       }

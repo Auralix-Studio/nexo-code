@@ -17,6 +17,7 @@ class SessionService extends ChangeNotifier {
   SessionService({required BackendClient client}) : _api = client {
     _api.onSessionInvalid = _onAuthFailed;
     _api.reauthenticate = _reauthenticate;
+    _api.onTokensChanged = _persistTokens;
   }
   final BackendClient _api;
   SessionScope get scope => _api.scope;
@@ -81,10 +82,25 @@ class SessionService extends ChangeNotifier {
     final tok = account == null || account.isEmpty ? null : storage.token;
     final hasToken = tok != null && tok.isNotEmpty;
     if (hasToken) {
-      _api.setToken(tok);
+      _api.setToken(tok, refresh: storage.refreshToken);
       _loadUserFromStorage(storage);
       // Token presente y todavía vigente → sesión válida sin tocar la red.
       if (!_isJwtExpired(tok)) {
+        _setStatus(SessionStatus.authenticated);
+        return;
+      }
+      // Vencido: primero `POST /auth/refresh` (sin tocar la universidad);
+      // el login completo con la clave queda para cuando el refresh token
+      // ya no sirve.
+      final renewed = await _api.refreshSession();
+      scope.check();
+      if (renewed == ReauthOutcome.refreshed) {
+        _setStatus(SessionStatus.authenticated);
+        return;
+      }
+      // Sin red o backend caído: se entra con el caché, como abajo. Un
+      // corte nunca cierra la sesión.
+      if (renewed == ReauthOutcome.unavailable) {
         _setStatus(SessionStatus.authenticated);
         return;
       }
@@ -169,7 +185,22 @@ class SessionService extends ChangeNotifier {
     if (token.isEmpty) {
       throw const AuthUnavailableException('La API no entregó una sesión.');
     }
-    return LoginResult(token: token, info: userProfileFromSession(body));
+    return LoginResult(
+      token: token,
+      refreshToken: body['refresh_token']?.toString(),
+      info: userProfileFromSession(body),
+    );
+  }
+
+  /// `POST /auth/refresh` rotó los tokens (o rechazó el refresh token): se
+  /// guardan para el próximo arranque. Una renovación de una sesión que ya
+  /// terminó no escribe nada.
+  Future<void> _persistTokens(String? access, String? refresh) async {
+    if (!scope.isCurrent) return;
+    await AppStorage.instance.setSessionTokens(
+      access: access,
+      refresh: refresh,
+    );
   }
 
   Future<void> _persistSession(
@@ -180,12 +211,13 @@ class SessionService extends ChangeNotifier {
     scope.check();
     await AppStorage.instance.setAuthenticatedSession(
       token: result.token,
+      refreshToken: result.refreshToken,
       account: user,
       password: pass,
       userJson: result.info == null ? null : jsonEncode(result.info!.toJson()),
     );
     scope.check();
-    _api.setToken(result.token);
+    _api.setToken(result.token, refresh: result.refreshToken);
     _user = result.info;
     await AppStorage.instance.rememberAccount(
       user: user,

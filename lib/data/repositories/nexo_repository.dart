@@ -10,9 +10,11 @@ import 'package:nexo/domain/unified_models.dart';
 ///
 /// Convierte ese formato limpio a los modelos que ya usan las pantallas.
 class NexoRepository {
-  NexoRepository(this._directory);
+  NexoRepository(this._directory, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
 
   final DirectoryService _directory;
+  final DateTime Function() _clock;
 
   /// Módulo docente (`/teaching/*`).
   late final NexoTeacherRepository teacher = NexoTeacherRepository(_directory);
@@ -117,7 +119,7 @@ class NexoRepository {
   ) {
     final hit = _shared[key];
     if (hit != null &&
-        DateTime.now().difference(hit.at) < const Duration(seconds: 30)) {
+        _clock().difference(hit.at) < const Duration(seconds: 30)) {
       return hit.future;
     }
     // Se registra antes del primer `await`: dos pantallas que piden a la vez
@@ -132,7 +134,7 @@ class NexoRepository {
         rethrow;
       }
     }();
-    _shared[key] = (future: future, at: DateTime.now());
+    _shared[key] = (future: future, at: _clock());
     return future;
   }
 

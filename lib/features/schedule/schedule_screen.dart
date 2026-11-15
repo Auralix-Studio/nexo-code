@@ -38,9 +38,9 @@ class _HorarioScreenState extends State<ScheduleScreen> {
   AsyncValue<List<ScheduleClass>> get _state =>
       widget.teacher ? widget.store.teacherSchedule : widget.store.schedule;
 
-  Future<void> _reload() => widget.teacher
+  Future<void> _reload({bool force = false}) => widget.teacher
       ? widget.store.loadDocenteHorario()
-      : widget.store.loadHorarioActual();
+      : widget.store.loadHorarioActual(force: force);
 
   String get _operation =>
       widget.teacher ? 'loadDocenteHorario' : 'loadHorarioActual';
@@ -59,7 +59,7 @@ class _HorarioScreenState extends State<ScheduleScreen> {
           finishedSubjects: finished,
         ).length;
         final list = RefreshIndicator(
-          onRefresh: _reload,
+          onRefresh: () => _reload(force: true),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),

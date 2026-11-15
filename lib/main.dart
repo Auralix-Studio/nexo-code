@@ -132,6 +132,10 @@ Future<void> main(List<String> args) async {
     connectivity: connectivity,
     session: session,
   );
+  // El ping a /status: cada 3 min en primer plano, al volver y tras un
+  // error de red; en segundo plano (o minimizada) se detiene.
+  errorHandler.onNetworkError = connectivity.reportNetworkError;
+  connectivity.bindLifecycle();
   final directory = DirectoryService(client: backend);
   // Versión vigente de los documentos legales, publicada por el backend.
   final legal = LegalUpdates.backend(backend);

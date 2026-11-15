@@ -25,6 +25,16 @@ abstract class _StoreBase extends ChangeNotifier {
   final _freshness = <String, DataFreshness>{};
   DataFreshness? freshnessOf(String operation) => _freshness[operation];
 
+  /// Reloj de las marcas de frescura (las pruebas lo adelantan).
+  @visibleForTesting
+  DateTime Function() clock = DateTime.now;
+
+  /// [operation] tiene datos en pantalla descargados hace menos de [ttl].
+  bool _isFresh(String operation, Duration? ttl, {bool hasValue = true}) =>
+      ttl != null &&
+      hasValue &&
+      FreshnessTtl.isFresh(_freshness[operation], ttl, clock());
+
   /// Operaciones que resolvieron vía caché mientras el primer chequeo de
   /// conectividad aún no había terminado. `retryFailedEssentials` las
   /// reintenta cuando vuelve la conexión.
@@ -151,7 +161,37 @@ abstract class _StoreBase extends ChangeNotifier {
 
   /// Carga remota con respaldo en caché, single-flight por [operationName],
   /// marca de frescura y persistencia de lo que llegó de la red.
+  ///
+  /// Con [ttl], si lo que hay se descargó hace menos de eso (también si vino
+  /// del caché local con su fecha real) no se va a la red; [force] (el
+  /// pull-to-refresh) lo ignora.
   Future<T?> _wrap<T>(
+    Future<T> Function() remote,
+    AsyncValue<T> Function() get,
+    void Function(AsyncValue<T>) set, {
+    Future<T?> Function()? cached,
+    Future<void> Function(T value)? persist,
+    required String operationName,
+    Duration? ttl,
+    bool force = false,
+  }) {
+    final current = get();
+    if (!force &&
+        !current.loading &&
+        _isFresh(operationName, ttl, hasValue: current.hasValue)) {
+      return Future.value(current.value);
+    }
+    return _load(
+      remote,
+      get,
+      set,
+      cached: cached,
+      persist: persist,
+      operationName: operationName,
+    );
+  }
+
+  Future<T?> _load<T>(
     Future<T> Function() remote,
     AsyncValue<T> Function() get,
     void Function(AsyncValue<T>) set, {
@@ -189,7 +229,7 @@ abstract class _StoreBase extends ChangeNotifier {
         }
         final updatedAt = fromCache
             ? await _savedUpdate(operationName)
-            : DateTime.now();
+            : clock();
         if (!_scope.isCurrent) return null;
         _freshness[operationName] = DataFreshness(
           updatedAt: updatedAt,

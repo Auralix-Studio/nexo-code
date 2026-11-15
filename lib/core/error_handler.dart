@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:nexo/core/session_scope.dart';
 import 'package:nexo/core/errors.dart';
@@ -8,6 +10,11 @@ class ErrorHandler {
   final ConnectivityService connectivity;
   final SessionService session;
   ErrorHandler({required this.connectivity, required this.session});
+
+  /// Una petición falló por la red (sin conexión o timeout): `main` lo
+  /// conecta a [ConnectivityService.reportNetworkError] para revisar el
+  /// estado del servidor en ese momento en lugar de sondearlo seguido.
+  void Function()? onNetworkError;
   Future<T> withFallback<T>({
     required Future<T> Function() remote,
     required Future<T?> Function() cached,
@@ -96,37 +103,68 @@ class ErrorHandler {
     }
   }
 
-  /// Ejecuta la operación remota con 1 reintento y backoff corto ante fallos
-  /// TRANSITORIOS (red, timeout, 5xx, auth no disponible). Los servidores de
-  /// UPLA suelen fallar el primer hit tras inactividad ("arranque en frío");
-  /// un único reintento recupera la mayoría de esos casos sin molestar al
-  /// usuario. Los errores no transitorios (4xx, credenciales inválidas, parseo)
-  /// se propagan de inmediato.
+  /// Ejecuta la operación remota con, como mucho, 1 reintento ante fallos
+  /// que no cargan al servidor: la petición no llegó (sin conexión) o el
+  /// backend respondió un 5xx propio. NO se reintenta:
+  /// - un timeout: el servidor sigue procesando la primera petición, y
+  ///   repetirla duplica el trabajo justo cuando la universidad está lenta;
+  /// - `503 upstream_unavailable` ni un 504: la universidad está caída o
+  ///   saturada;
+  /// - la sesión no verificable (`auth_unavailable`): ya se intentó renovar.
+  /// El reintento espera con backoff exponencial y jitter, o lo que pida el
+  /// servidor en `Retry-After` (si pide más de [maxRetryAfter], no se
+  /// reintenta).
   Future<T> _remoteWithRetry<T>(
     Future<T> Function() remote,
     String operationName,
   ) async {
-    const maxAttempts = 2;
     var attempt = 0;
     while (true) {
       attempt++;
       try {
         return await remote();
       } on NetworkException {
+        onNetworkError?.call();
         if (attempt >= maxAttempts) rethrow;
+        await _wait(retryDelay(attempt), operationName, attempt);
       } on TimeoutException {
-        if (attempt >= maxAttempts) rethrow;
-      } on AuthUnavailableException {
-        if (attempt >= maxAttempts) rethrow;
+        onNetworkError?.call();
+        rethrow;
       } on ServerException catch (e) {
-        // Solo 5xx es transitorio; el resto (p.ej. respuesta no-JSON 200) no.
-        if (attempt >= maxAttempts || e.status < 500) rethrow;
+        final wait = e.retryAfter ?? retryDelay(attempt);
+        if (attempt >= maxAttempts ||
+            !isRetryableServerError(e) ||
+            wait > maxRetryAfter) {
+          rethrow;
+        }
+        await _wait(wait, operationName, attempt);
       }
-      final backoff = Duration(milliseconds: 500 * attempt);
-      debugPrint(
-        'ErrorHandler: retry $attempt for $operationName in ${backoff.inMilliseconds}ms',
-      );
-      await Future<void>.delayed(backoff);
     }
+  }
+
+  static const maxAttempts = 2;
+  static const maxRetryAfter = Duration(seconds: 10);
+  static const _baseDelay = Duration(milliseconds: 500);
+  static final _random = Random();
+
+  /// Solo los 5xx del propio backend: ni la universidad caída
+  /// (`upstream_unavailable`) ni el gateway que se cansó de esperar (504).
+  static bool isRetryableServerError(ServerException e) =>
+      e.status >= 500 && e.status != 504 && !e.isUpstreamUnavailable;
+
+  /// Backoff exponencial (500 ms, 1 s, 2 s…) con jitter de ±50 % para que
+  /// los clientes que fallaron a la vez no vuelvan todos juntos.
+  static Duration retryDelay(int attempt, {Random? random}) {
+    final base = _baseDelay.inMilliseconds * (1 << (attempt - 1));
+    final factor = 0.5 + (random ?? _random).nextDouble();
+    return Duration(milliseconds: (base * factor).round());
+  }
+
+  Future<void> _wait(Duration backoff, String operationName, int attempt) {
+    debugPrint(
+      'ErrorHandler: retry $attempt for $operationName in '
+      '${backoff.inMilliseconds}ms',
+    );
+    return Future<void>.delayed(backoff);
   }
 }

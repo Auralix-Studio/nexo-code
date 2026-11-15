@@ -115,7 +115,6 @@ void main() {
     expect(course.modalidad, 'VIRTUAL');
     expect(course.anio, 2026);
     expect(course.mes, 11);
-    expect(course.toScheduleClasses().map((c) => c.weekday), [1, 3]);
 
     final grades = idiomasGradesFromNexo(json);
     expect(grades['detMatriculaId'], 555);

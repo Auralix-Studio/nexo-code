@@ -95,7 +95,7 @@ void main() {
       expect(cache.writes, 1);
       expect(store.freshnessOf('loadPromedios')!.fromCache, isFalse);
       repo.pending = null;
-      await store.loadPromedios();
+      await store.loadPromedios(force: true);
       expect(repo.calls, 2);
     },
   );
@@ -106,7 +106,7 @@ void main() {
       await store.loadPromedios();
       final original = store.freshnessOf('loadPromedios')!.updatedAt!;
       handler.local = true;
-      await store.loadPromedios();
+      await store.loadPromedios(force: true);
       final status = store.freshnessOf('loadPromedios')!;
       expect(status.fromCache, isTrue);
       expect(
@@ -128,7 +128,7 @@ void main() {
       await store.loadPromedios();
       final date = store.freshnessOf('loadPromedios')!.updatedAt;
       handler.fail = true;
-      await store.loadPromedios();
+      await store.loadPromedios(force: true);
       expect(store.freshnessOf('loadPromedios')!.failed, isTrue);
       expect(store.freshnessOf('loadPromedios')!.updatedAt, date);
       expect(store.promedios.hasValue, isTrue);

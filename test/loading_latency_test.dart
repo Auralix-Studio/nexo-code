@@ -47,15 +47,16 @@ class _Store extends AppStore {
   final summaryStarted = Completer<void>();
   final boletaStarted = Completer<void>();
   int periodCalls = 0;
+  int idiomasCalls = 0;
   bool profileStarted = false;
   @override
-  Future<List<Term>?> loadPeriodos() {
+  Future<List<Term>?> loadPeriodos({bool force = false}) {
     periodCalls++;
     return periodsReady.future;
   }
 
   @override
-  Future<Student?> loadProfile() async {
+  Future<Student?> loadProfile({bool force = false}) async {
     profileStarted = true;
     const student = Student(
       id: 'test',
@@ -73,21 +74,27 @@ class _Store extends AppStore {
   }
 
   @override
-  Future<List<ScheduleClass>?> loadHorarioActual() async => [];
+  Future<List<ScheduleClass>?> loadHorarioActual({bool force = false}) async =>
+      [];
   @override
-  Future<List<Payment>?> loadCuotasPendientes() => paymentsReady.future;
+  Future<List<Payment>?> loadCuotasPendientes({bool force = false}) =>
+      paymentsReady.future;
   @override
-  Future<List<TermAverage>?> loadPromedios() async => [];
+  Future<List<TermAverage>?> loadPromedios({bool force = false}) async => [];
   @override
-  Future<void> loadIdiomasMatricula() => idiomasReady.future;
+  Future<void> loadIdiomasMatricula({bool force = false}) {
+    idiomasCalls++;
+    return idiomasReady.future;
+  }
+
   @override
-  Future<GradesSummary?> loadResumen() async {
+  Future<GradesSummary?> loadResumen({bool force = false}) async {
     summaryStarted.complete();
     return null;
   }
 
   @override
-  Future<void> checkActiveBoleta() async {
+  Future<void> checkActiveBoleta({bool force = false}) async {
     boletaStarted.complete();
   }
 }
@@ -118,7 +125,7 @@ void main() {
     await connection.firstCheckDone.timeout(const Duration(seconds: 1));
   });
 
-  test('academic data waits for period, not payments or languages', () async {
+  test('academic data waits for period, not payments; no languages', () async {
     SharedPreferences.setMockInitialValues({});
     await AppStorage.init(secrets: MemorySecretStore());
     final connection = ConnectivityService();
@@ -134,9 +141,9 @@ void main() {
     await store.summaryStarted.future.timeout(const Duration(seconds: 1));
     await store.boletaStarted.future.timeout(const Duration(seconds: 1));
     expect(store.paymentsReady.isCompleted, isFalse);
-    expect(store.idiomasReady.isCompleted, isFalse);
     store.paymentsReady.complete([]);
-    store.idiomasReady.complete();
     await Future.wait([first, duplicate]);
+    // `/schedule` ya trae Idiomas: el inicio no pide `/languages`.
+    expect(store.idiomasCalls, 0);
   });
 }

@@ -70,7 +70,21 @@ class BadRequestException extends ApiException {
 
 class ServerException extends ApiException {
   final int status;
-  const ServerException(super.message, {required this.status});
+
+  /// Código de error de la API (`upstream_unavailable`…), si lo hubo.
+  final String? code;
+
+  /// Espera que pidió el servidor (`Retry-After`).
+  final Duration? retryAfter;
+  const ServerException(
+    super.message, {
+    required this.status,
+    this.code,
+    this.retryAfter,
+  });
+
+  /// La universidad no responde o está saturada: reintentar solo suma carga.
+  bool get isUpstreamUnavailable => code == 'upstream_unavailable';
 }
 
 class AuthException extends ApiException {

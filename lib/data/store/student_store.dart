@@ -1,7 +1,8 @@
 part of '../app_store.dart';
 
 /// Datos académicos del estudiante: perfil, periodos, horario (con Idiomas),
-/// resumen y promedios, boletas y documentos.
+/// resumen y promedios, boletas y documentos. Cada carga respeta su
+/// [FreshnessTtl] salvo con `force` (pull-to-refresh).
 mixin _StudentStore on _StoreBase {
   static const _ckResumen = 'resumen';
 
@@ -26,7 +27,7 @@ mixin _StudentStore on _StoreBase {
     // Otro estudiante puede tener otra regla de aprobación: no se hereda.
     PassingRule.current = PassingRule.standard;
     _baseSchedule = const AsyncValue.idle();
-    _scheduleMemo = null;
+    _idiomasLoadedAt = null;
     resumen = const AsyncValue.idle();
     promedios = const AsyncValue.idle();
     _boleta.clear();
@@ -38,7 +39,10 @@ mixin _StudentStore on _StoreBase {
     wifi = const AsyncValue.idle();
   }
 
-  void _checkGrades(Iterable<(String, String)> items) {
+  /// Avisa localmente de las notas que cambiaron desde la última boleta. Si
+  /// el push de ese curso acaba de llegar ([GradePushLog]), no se repite el
+  /// aviso. Cada item es (curso, nota, código del curso).
+  void _checkGrades(Iterable<(String, String, String)> items) {
     final entries = items.where((e) => e.$2.isNotEmpty && e.$2 != '—');
     if (entries.isEmpty) return;
     final s = AppStorage.instance;
@@ -51,10 +55,13 @@ mixin _StudentStore on _StoreBase {
       } catch (_) {}
     }
     final next = Map<String, dynamic>.from(prev);
-    for (final (course, grade) in entries) {
+    for (final (course, grade, code) in entries) {
       final before = prev[course] as String?;
       next[course] = grade;
-      if (!firstTime && before != grade && onGradeChange != null) {
+      if (!firstTime &&
+          before != grade &&
+          onGradeChange != null &&
+          !GradePushLog.instance.wasRecent(code: code, name: course)) {
         onGradeChange!(course, grade);
       }
     }
@@ -70,54 +77,9 @@ mixin _StudentStore on _StoreBase {
     return list.where((c) => c.anio == now.year && c.mes == now.month).toList();
   }
 
-  ({
-    AsyncValue<List<ScheduleClass>> base,
-    AsyncValue<List<IdiomasCourse>> idiomas,
-    int month,
-    AsyncValue<List<ScheduleClass>> merged,
-  })?
-  _scheduleMemo;
-
-  /// Horario de la universidad con las clases de Idiomas del mes. Se arma una
-  /// sola vez por cambio de sus fuentes: lo leen cada pantalla, el widget de
-  /// inicio y los recordatorios en cada notificación.
-  AsyncValue<List<ScheduleClass>> get schedule {
-    final now = DateTime.now();
-    final month = now.year * 12 + now.month;
-    final memo = _scheduleMemo;
-    if (memo != null &&
-        identical(memo.base, _baseSchedule) &&
-        identical(memo.idiomas, idiomasMatricula) &&
-        memo.month == month) {
-      return memo.merged;
-    }
-    final merged = _mergeSchedule();
-    _scheduleMemo = (
-      base: _baseSchedule,
-      idiomas: idiomasMatricula,
-      month: month,
-      merged: merged,
-    );
-    return merged;
-  }
-
-  AsyncValue<List<ScheduleClass>> _mergeSchedule() {
-    final base = _baseSchedule;
-    final idiomas = idiomasVigentes;
-    if (idiomas.isEmpty) return base;
-
-    final idiomasClasses = idiomas
-        .expand((c) => c.toScheduleClasses())
-        .toList();
-    if (!base.hasValue) {
-      if (base.loading) return const AsyncValue.loading();
-      return AsyncValue.data(idiomasClasses);
-    }
-
-    final current = base.value ?? [];
-    final filtered = current.where((s) => s.typeCode != 'I').toList();
-    return AsyncValue.data([...filtered, ...idiomasClasses]);
-  }
+  /// Horario de la universidad. `/schedule` ya trae las clases del Centro
+  /// de Idiomas, así que no se combina nada en la app.
+  AsyncValue<List<ScheduleClass>> get schedule => _baseSchedule;
 
   @visibleForTesting
   void setBaseScheduleForTesting(AsyncValue<List<ScheduleClass>> value) {
@@ -199,7 +161,7 @@ mixin _StudentStore on _StoreBase {
 
   // ── Cargas ──────────────────────────────────────────────────────────────
 
-  Future<Student?> loadProfile() => _wrap(
+  Future<Student?> loadProfile({bool force = false}) => _wrap(
     () => _fetch(
       (r) => r.profile(),
       isEmpty: (s) => s.id.isEmpty && s.fullName.isEmpty,
@@ -209,25 +171,31 @@ mixin _StudentStore on _StoreBase {
     cached: _cache.getStudent,
     persist: _cache.saveStudent,
     operationName: 'loadProfile',
+    ttl: FreshnessTtl.profile,
+    force: force,
   );
 
-  Future<List<Term>?> loadPeriodos() => _scope.run(() async {
-    final result = await _wrap(
-      () => _fetchOrEmpty((r) => r.terms()),
-      () => periodos,
-      (v) => periodos = v,
-      cached: () => _cache.getPeriodos(),
-      persist: (v) => _cache.savePeriodos(v),
-      operationName: 'loadPeriodos',
-    );
-    if (!_scope.isCurrent) return null;
-    // El periodo más antiguo es la cohorte de ingreso, y de ahí sale qué nota
-    // aprueba para este estudiante.
-    PassingRule.resolveFrom(periodos.value);
-    return result;
-  });
+  Future<List<Term>?> loadPeriodos({bool force = false}) => _scope.run(
+    () async {
+      final result = await _wrap(
+        () => _fetchOrEmpty((r) => r.terms()),
+        () => periodos,
+        (v) => periodos = v,
+        cached: () => _cache.getPeriodos(),
+        persist: (v) => _cache.savePeriodos(v),
+        operationName: 'loadPeriodos',
+        ttl: FreshnessTtl.terms,
+        force: force,
+      );
+      if (!_scope.isCurrent) return null;
+      // El periodo más antiguo es la cohorte de ingreso, y de ahí sale qué nota
+      // aprueba para este estudiante.
+      PassingRule.resolveFrom(periodos.value);
+      return result;
+    },
+  );
 
-  Future<List<ScheduleClass>?> loadHorarioActual() => _wrap(
+  Future<List<ScheduleClass>?> loadHorarioActual({bool force = false}) => _wrap(
     () => _fetchOrEmpty((r) {
       final p = periodoActivo;
       return r.schedule(year: p?.year, number: p?.number);
@@ -237,34 +205,49 @@ mixin _StudentStore on _StoreBase {
     cached: () => _cache.getHorario(),
     persist: (v) => _cache.saveHorario(v),
     operationName: 'loadHorarioActual',
+    ttl: FreshnessTtl.schedule,
+    force: force,
   );
 
-  /// Carga los cursos del Centro de Idiomas (con sus notas) y fusiona el
-  /// horario. Un estudiante sin cuenta de Idiomas recibe una lista vacía.
-  /// Mientras recarga o si falla, se conserva lo anterior.
-  Future<void> loadIdiomasMatricula() => _scope.run(() async {
-    final s = AppStorage.instance;
-    if (s.credUser == null || s.credPass == null) return;
-    try {
-      idiomasMatricula = AsyncValue.loading(idiomasMatricula.value);
-      _notify();
-      final result = await _call(_nexo.languages);
-      if (!_scope.isCurrent) return;
-      idiomasMatricula = AsyncValue.data(result.courses);
-      idiomasNotas = AsyncValue.data(result.grades);
-      // El getter `schedule` combina `_baseSchedule` e `idiomasVigentes`.
-      _notify();
-    } catch (e) {
-      if (!_scope.isCurrent) return;
-      idiomasMatricula = AsyncValue.failure(e, idiomasMatricula.value);
-      idiomasNotas = AsyncValue.failure(e, idiomasNotas.value);
-      _notify();
-    }
-  });
+  DateTime? _idiomasLoadedAt;
+
+  /// Cursos del Centro de Idiomas con sus notas (`/languages`). Solo los
+  /// pide la sección de Idiomas (en Notas): el horario ya los trae en
+  /// `/schedule`. Un estudiante sin cuenta de Idiomas recibe una lista
+  /// vacía. Mientras recarga o si falla, se conserva lo anterior.
+  Future<void> loadIdiomasMatricula({bool force = false}) =>
+      _scope.run(() async {
+        final s = AppStorage.instance;
+        if (s.credUser == null || s.credPass == null) return;
+        if (idiomasMatricula.loading) return;
+        final at = _idiomasLoadedAt;
+        if (!force &&
+            idiomasMatricula.hasValue &&
+            idiomasMatricula.error == null &&
+            at != null &&
+            clock().difference(at) < FreshnessTtl.languages) {
+          return;
+        }
+        try {
+          idiomasMatricula = AsyncValue.loading(idiomasMatricula.value);
+          _notify();
+          final result = await _call(_nexo.languages);
+          if (!_scope.isCurrent) return;
+          idiomasMatricula = AsyncValue.data(result.courses);
+          idiomasNotas = AsyncValue.data(result.grades);
+          _idiomasLoadedAt = clock();
+          _notify();
+        } catch (e) {
+          if (!_scope.isCurrent) return;
+          idiomasMatricula = AsyncValue.failure(e, idiomasMatricula.value);
+          idiomasNotas = AsyncValue.failure(e, idiomasNotas.value);
+          _notify();
+        }
+      });
 
   /// Promedio acumulado y créditos. Comparte la respuesta de
   /// `/grades/summary` con [loadPromedios].
-  Future<GradesSummary?> loadResumen() => _wrap(
+  Future<GradesSummary?> loadResumen({bool force = false}) => _wrap(
     () => _call(_nexo.gradesSummary),
     () => resumen,
     (v) => resumen = v,
@@ -277,25 +260,29 @@ mixin _StudentStore on _StoreBase {
     },
     persist: (v) => _setStorageCache(_ckResumen, v.toJson()),
     operationName: 'loadResumen',
+    ttl: FreshnessTtl.grades,
+    force: force,
   );
 
-  Future<List<TermAverage>?> loadPromedios() => _wrap(
+  Future<List<TermAverage>?> loadPromedios({bool force = false}) => _wrap(
     () => _call(_nexo.termAverages),
     () => promedios,
     (v) => promedios = v,
     cached: () => _cache.getPromedios(),
     persist: (v) => _cache.savePromedios(v),
     operationName: 'loadPromedios',
+    ttl: FreshnessTtl.grades,
+    force: force,
   );
 
   /// Carga la boleta del periodo activo con el modelo que le corresponde.
-  Future<void> checkActiveBoleta() => _scope.run(() async {
+  Future<void> checkActiveBoleta({bool force = false}) => _scope.run(() async {
     final activo = periodoActivo;
     if (activo == null) return;
     if (isNewModel(activo.year, activo.number)) {
-      await loadBoleta(activo.year, activo.number);
+      await loadBoleta(activo.year, activo.number, force: force);
     } else {
-      await loadBoletaLegacy(activo.year, activo.number);
+      await loadBoletaLegacy(activo.year, activo.number, force: force);
     }
   });
 
@@ -306,7 +293,11 @@ mixin _StudentStore on _StoreBase {
   AsyncValue<CourseGradeDetail> detalleOf(String id) =>
       _detalle[id] ?? const AsyncValue.idle();
 
-  Future<void> loadBoletaLegacy(int year, int periodo) async {
+  Future<void> loadBoletaLegacy(
+    int year,
+    int periodo, {
+    bool force = false,
+  }) async {
     final key = '$year-$periodo';
     await _wrap<List<CourseGrade>>(
       () => _fetch((r) => r.legacyGrades(year, periodo)),
@@ -314,7 +305,7 @@ mixin _StudentStore on _StoreBase {
       (value) => _boletaLegacy[key] = value,
       cached: () => _cache.getBoletaLegacy(year.toString(), periodo.toString()),
       persist: (data) async {
-        _checkGrades(data.map((n) => (n.subject, n.currentGradeText)));
+        _checkGrades(data.map((n) => (n.subject, n.currentGradeText, n.code)));
         await _cache.saveBoletaLegacy(
           year.toString(),
           periodo.toString(),
@@ -322,12 +313,14 @@ mixin _StudentStore on _StoreBase {
         );
       },
       operationName: 'loadBoletaLegacy:$key',
+      ttl: FreshnessTtl.grades,
+      force: force,
     );
   }
 
   /// Boleta del modelo por competencias. El detalle de los cursos en proceso
   /// llega en la misma respuesta; el resto se pide al abrir cada curso.
-  Future<void> loadBoleta(int year, int periodo) async {
+  Future<void> loadBoleta(int year, int periodo, {bool force = false}) async {
     final key = '$year-$periodo';
     await _wrap<List<ReportCardCourse>>(
       () => _fetch((r) async {
@@ -341,10 +334,12 @@ mixin _StudentStore on _StoreBase {
       (value) => _boleta[key] = value,
       cached: () => _cache.getBoleta(year.toString(), periodo.toString()),
       persist: (data) async {
-        _checkGrades(data.map((c) => (c.name, c.promedioText)));
+        _checkGrades(data.map((c) => (c.name, c.promedioText, c.code)));
         await _cache.saveBoleta(year.toString(), periodo.toString(), data);
       },
       operationName: 'loadBoleta:$key',
+      ttl: FreshnessTtl.grades,
+      force: force,
     );
   }
 

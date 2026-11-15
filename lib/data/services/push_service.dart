@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:nexo/data/remote/backend_client.dart';
+import 'package:nexo/data/services/grade_push_log.dart';
 
 /// Mensaje push ya separado de Firebase: lo que la app necesita de él.
 class PushMessage {
@@ -183,6 +184,7 @@ class PushService extends ChangeNotifier {
 
   void _onForeground(PushMessage message) {
     if (_student == null) return;
+    _remember(message);
     final title = message.title;
     final body = message.body;
     if (title == null && body == null) return;
@@ -194,7 +196,17 @@ class PushService extends ChangeNotifier {
   }
 
   void _onOpened(PushMessage message) {
+    _remember(message);
     if (message.isGrade) onOpenGrades?.call();
+  }
+
+  /// El aviso local de la boleta no repite lo que ya avisó este push.
+  void _remember(PushMessage message) {
+    if (!message.isGrade) return;
+    GradePushLog.instance.record(
+      code: message.data['course'],
+      title: message.title,
+    );
   }
 
   Future<void> _cancelSubscriptions() async {

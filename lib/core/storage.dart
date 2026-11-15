@@ -196,13 +196,20 @@ class AppStorage {
     required String token,
     required String account,
     required String password,
+    String? refreshToken,
     String? userJson,
   }) => _updateAuth({
     _kToken: token,
+    _kRefresh: refreshToken,
     _kCredUser: account,
     _kCredPass: password,
     _kUser: userJson,
   });
+
+  /// Guarda los tokens que entregó `POST /auth/refresh`. Un [refresh] nulo
+  /// lo borra (el servidor lo rechazó); un [access] nulo deja el anterior.
+  Future<void> setSessionTokens({String? access, String? refresh}) =>
+      _updateAuth({_kToken: ?access, _kRefresh: refresh});
 
   static AppStorage get instance {
     final i = _instance;
@@ -213,6 +220,10 @@ class AppStorage {
   }
 
   static const _kToken = 'nexo.token';
+
+  /// Refresh token del backend (de un solo uso, rota en cada renovación):
+  /// permite volver a entrar con `POST /auth/refresh` sin un login completo.
+  static const _kRefresh = 'nexo.refresh';
   static const _kUser = 'nexo.user';
   static const _kTheme = 'nexo.themeMode';
   static const _kFont = 'nexo.font';
@@ -344,6 +355,7 @@ class AppStorage {
   Future<void> setUse24h(bool value) => _prefs.setBool(_kUse24h, value);
   String? get token => _auth[_kToken];
   Future<void> setToken(String? value) => _updateAuth({_kToken: value});
+  String? get refreshToken => _auth[_kRefresh];
   String? get userJson => _auth[_kUser];
   Future<void> setUserJson(String? value) => _updateAuth({_kUser: value});
   String? get credUser => _auth[_kCredUser];
@@ -446,6 +458,7 @@ class AppStorage {
   Future<void> clear({bool keepCredentials = true}) async {
     final cleared = _updateAuth({
       _kToken: null,
+      _kRefresh: null,
       _kUser: null,
       _kIntranetCookies: null,
       _kIntranetUser: null,

@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
       listenable: store,
       builder: (context, _) {
         return RefreshIndicator(
-          onRefresh: () => store.loadHomeEssentials(),
+          onRefresh: () => store.loadHomeEssentials(force: true),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),

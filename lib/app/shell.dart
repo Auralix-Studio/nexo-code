@@ -188,6 +188,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       return;
     }
     _lastBoletaCheck = now;
+    // Respeta el TTL de la boleta (5 min): volver a la app no la pide de
+    // nuevo si es reciente.
     widget.store.checkActiveBoleta();
   }
 
