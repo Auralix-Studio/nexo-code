@@ -50,7 +50,7 @@ Some features are only enabled if the user or an administrator turns them on, an
 - **Student directory:** only for accounts an administrator grants access to. Each lookup is recorded and access can be revoked.
 - **Guardian access:** a parent or guardian can view the student's information with their ID number (DNI) and a PIN, only when the corresponding consent exists.
 - **Integrations:** students can share their profile and schedule through a calendar link (.ics) or through "Connect with Nexo", which gives a third-party app limited access to the permissions the student approves (profile, schedule). The student can revoke each access or stop sharing at any time. What the third-party app does with that data is governed by its own terms.
-- **Grade alerts:** when available, the server may periodically check for new grades and send a notification. It will be optional and can be turned off in the app's notification settings.
+- **Grade alerts:** when a teacher records a grade through Nexo, the student receives a notification with the course, the assessment and the grade, delivered by Firebase Cloud Messaging. It is optional and can be turned off in Settings → «Notificaciones de notas». Grades recorded outside Nexo are shown when the app opens; Nexo does not guarantee alerts for every grade or within a given time.
 
 ## 7. Disclaimer and limitation of liability
 

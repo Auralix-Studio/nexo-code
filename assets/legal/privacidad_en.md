@@ -65,7 +65,7 @@ You can withdraw your consent at any time by signing out and no longer using the
 - **Guardian access.** A parent or guardian can view the student's information with their DNI and a PIN, only with the corresponding consent, which can be revoked.
 - **Calendar (.ics).** If you turn it on, a private link with your schedule is created so you can subscribe from any calendar app. Only a fingerprint of the link is stored; you can renew or turn it off.
 - **"Connect with Nexo".** A third-party app can request access with a code; it only receives the permissions you approve (profile, schedule) and you can revoke it whenever you want. What that app does is governed by its own policy.
-- **Grade alerts (coming soon).** If you turn them on, the server will periodically check for changes in your grades using your university session and send you a notification. It is optional: you can turn it off in the app's notification settings or by signing out.
+- **Grade alerts.** When a teacher records one of your grades through Nexo, the server sends you a notification with the course, the assessment and the grade. The server **does not check your grades periodically** nor sign in on your behalf to look for them; grades recorded outside Nexo are detected by the app when it opens. To send the alert, the server stores your device's notification identifier, which is deleted when you sign out. It is optional: turn it off in Settings → «Notificaciones de notas».
 
 ## 8. Recipients, processors and transfers
 
@@ -74,7 +74,7 @@ Nexo does not sell, rent or give away your personal data, shows no advertising a
 - **UPLA services** (SIGMA, Intranet, Language Center and the photo server): they receive your credentials and requests through the Nexo API to return your own information. Their processing is governed by the university's policies.
 - **Microsoft Azure** (Microsoft Corporation), as processor: hosts the Nexo API on Azure Container Apps, in the **Chile Central** region.
 - **MongoDB Atlas** (MongoDB, Inc.), as processor: cloud database that stores the account, the encrypted sessions, the audit log and the optional feature data.
-- **Google Firebase** (Google LLC): Firebase App Check is planned to make sure only the official app calls the API and, if you turn on grade alerts, Firebase Cloud Messaging to deliver them. They only receive technical device and notification data.
+- **Google Firebase** (Google LLC), as processor: **Firebase Cloud Messaging** delivers grade alerts to your device; it receives the notification identifier and the content of the alert (course, assessment and grade). Firebase App Check is also planned, to make sure only the official app calls the API.
 - **GitHub** (Microsoft Corporation): receives a technical request to check whether a new version exists. No academic information or credentials are sent to it.
 - **WhatsApp or your email provider**, only if you decide to contact support, and only with the information you send.
 
@@ -82,7 +82,7 @@ Since these providers have servers outside Peru (for example, in Chile and the U
 
 ## 9. Storage and retention
 
-- **On the server:** university sessions are stored encrypted and deleted when you sign out or when they expire. Your academic and financial information is fetched from UPLA on each request and, at most, kept in memory for a few minutes to answer faster; it is not stored in the database, except what you choose to share through optional features. Your basic record (code and names), the teacher's sections used to check their access, the audit log and the record of acceptance of these documents are kept for as long as needed for security purposes and to prove legal compliance.
+- **On the server:** university sessions are stored encrypted and deleted when you sign out or when they expire. Your academic and financial information is fetched from UPLA and kept temporarily in the server's memory (from minutes to a few hours depending on the data, at most one day) to answer faster and avoid overloading the university; it is cleared when you sign out and is not stored in the database, except what you choose to share through optional features. For grade alerts, the device's notification identifier is stored until you sign out or turn alerts off. Your basic record (code and names), the teacher's sections used to check their access, the audit log and the record of acceptance of these documents are kept for as long as needed for security purposes and to prove legal compliance.
 - **On the device:** credentials and session data are kept in the operating system's secure storage (Keychain, Keystore or the Windows equivalent). In the web version, the session is kept only in memory. Academic information is kept in a local database, with no encryption beyond what the operating system provides. Attendance drafts are kept for at most two days or until recorded.
 - **Signing out deletes** the university sessions on the server and, on the device, the credentials, cached information and drafts. Uninstalling the app deletes all its local data.
 

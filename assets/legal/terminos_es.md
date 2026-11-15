@@ -50,7 +50,7 @@ Algunas funciones solo se activan si el usuario o un administrador las habilita,
 - **Directorio de estudiantes:** solo para cuentas a las que un administrador de Nexo concede acceso. Cada consulta queda registrada y el acceso puede revocarse.
 - **Acceso de apoderados:** un padre, madre o tutor puede ver información del estudiante con su DNI y un PIN, solo cuando existe el consentimiento correspondiente.
 - **Integraciones:** el estudiante puede compartir su perfil y su horario mediante un enlace de calendario (.ics) o mediante «Conectar con Nexo», que da a una aplicación de terceros acceso limitado a los permisos que el estudiante aprueba (perfil, horario). El estudiante puede revocar cada acceso o dejar de compartir cuando quiera. El uso que la aplicación de terceros haga de esos datos se rige por sus propias condiciones.
-- **Avisos de notas:** cuando esté disponible, el servidor podrá revisar periódicamente si hay notas nuevas y enviar una notificación. Será opcional y podrá desactivarse desde los ajustes de notificaciones de la aplicación.
+- **Avisos de notas:** cuando un docente registra una nota desde Nexo, el estudiante recibe una notificación con el curso, la evaluación y la nota, entregada por Firebase Cloud Messaging. Es opcional y puede desactivarse en Ajustes → «Notificaciones de notas». Las notas registradas fuera de Nexo se muestran al abrir la aplicación; Nexo no garantiza avisar de todas las notas ni en un plazo determinado.
 
 ## 7. Exclusión y limitación de responsabilidad
 

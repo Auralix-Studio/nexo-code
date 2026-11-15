@@ -36,14 +36,16 @@ class AppConfig {
 }
 
 class LegalTerms {
+  // v6: avisos de notas al registrar el docente (FCM) y caché temporal en el
+  // servidor.
   // v5: la app solo habla con la API de Nexo (Azure + MongoDB Atlas), que
   // inicia sesión en la UPLA en nombre del usuario sin guardar contraseñas.
   //
   // Es la versión que viaja con la app (textos en assets/legal/). La vigente
   // la publica el backend (`GET /legal`, `Nexo.Legal`): si es mayor, se pide
   // aceptarla sin esperar una actualización (ver LegalUpdates).
-  static const int version = 5;
-  static final DateTime updatedAt = DateTime(2026, 11, 14);
+  static const int version = 6;
+  static final DateTime updatedAt = DateTime(2026, 11, 15);
 }
 
 /// Nexo's own API (repository nexo-backend): the only server the app talks

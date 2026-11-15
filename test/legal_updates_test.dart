@@ -55,12 +55,12 @@ Future<AppStorage> _storage(Map<String, Object> values) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('la app trae la versión 5', () {
-    expect(LegalTerms.version, 5);
-    expect(LegalTerms.updatedAt, DateTime(2026, 11, 14));
+  test('la app trae la versión 6', () {
+    expect(LegalTerms.version, 6);
+    expect(LegalTerms.updatedAt, DateTime(2026, 11, 15));
   });
 
-  test('quien aceptó la v4 tiene que aceptar la v5 aun sin red', () async {
+  test('quien aceptó la v4 tiene que aceptar la vigente aun sin red', () async {
     final storage = await _storage({'nexo.acceptedTermsVersion': 4});
     final fake = _Fake(null);
     final legal = fake.build(storage);
@@ -73,8 +73,8 @@ void main() {
   });
 
   test('una versión nueva del servidor pide aceptar otra vez', () async {
-    final storage = await _storage({'nexo.acceptedTermsVersion': 5});
-    final fake = _Fake(_info(6));
+    final storage = await _storage({'nexo.acceptedTermsVersion': 6});
+    final fake = _Fake(_info(7));
     final legal = fake.build(storage);
     var notified = 0;
     legal.addListener(() => notified++);
@@ -83,14 +83,14 @@ void main() {
     expect(await legal.check(), isTrue);
     expect(notified, 1);
     expect(legal.needsAcceptance, isTrue);
-    expect(legal.requiredVersion, 6);
+    expect(legal.requiredVersion, 7);
     expect(legal.changes, ['Nuevo proveedor de notificaciones.']);
     expect(legal.onlineDocuments.single.url, endsWith('/privacidad'));
 
     // Sin sesión se acepta en el dispositivo y la constancia queda pendiente.
     await legal.accept();
     expect(legal.needsAcceptance, isFalse);
-    expect(storage.acceptedTermsVersion, 6);
+    expect(storage.acceptedTermsVersion, 7);
     await legal.syncAcceptance();
     expect(fake.uploads, isEmpty);
 
@@ -98,17 +98,17 @@ void main() {
     fake.signedIn = true;
     await legal.syncAcceptance();
     await legal.syncAcceptance();
-    expect(fake.uploads, [6]);
+    expect(fake.uploads, [7]);
 
     // Otra cuenta que entre después también queda registrada.
     await legal.signedOut();
     await legal.syncAcceptance();
-    expect(fake.uploads, [6, 6]);
+    expect(fake.uploads, [7, 7]);
   });
 
   test('consulta como mucho una vez por hora', () async {
-    final storage = await _storage({'nexo.acceptedTermsVersion': 5});
-    final fake = _Fake(_info(5));
+    final storage = await _storage({'nexo.acceptedTermsVersion': 6});
+    final fake = _Fake(_info(6));
     final legal = fake.build(storage);
 
     await legal.check();
@@ -128,7 +128,7 @@ void main() {
 
   test('si falla el envío se reintenta después', () async {
     final storage = await _storage({});
-    final fake = _Fake(_info(5))
+    final fake = _Fake(_info(6))
       ..signedIn = true
       ..failUpload = true;
     final legal = fake.build(storage);
@@ -139,7 +139,7 @@ void main() {
 
     fake.failUpload = false;
     await legal.syncAcceptance();
-    expect(fake.uploads, [5]);
+    expect(fake.uploads, [6]);
   });
 
   testWidgets('el aviso de actualización lista los cambios', (tester) async {
@@ -150,7 +150,7 @@ void main() {
         locale: const Locale('es'),
         home: TermsScreen(
           isUpdate: true,
-          version: 6,
+          version: 7,
           changes: const ['Nuevo proveedor de notificaciones.'],
           onAccept: () {},
         ),
