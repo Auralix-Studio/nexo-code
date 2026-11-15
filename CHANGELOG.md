@@ -2,7 +2,7 @@
 
 All notable changes to Nexo will be documented in this file.
 
-## [Sin publicar]
+## [2.0.0] - 2026-11-15
 
 ### Cambios importantes
 - **Nueva arquitectura con servidor propio**: la aplicación ahora se comunica exclusivamente a través de la API de Nexo, con caché temporal encriptada, renovación automática de sesión sin reenviar contraseñas y protección contra sobrecarga en redes compartidas del campus.
