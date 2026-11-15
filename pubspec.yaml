@@ -49,6 +49,10 @@ dependencies:
   # sin pantalla blanca antes de que Flutter arranque. Debe ir en dependencies
   # porque registra FlutterNativeSplashPlugin en GeneratedPluginRegistrant.
   flutter_native_splash: ^2.4.4
+  # Push de notas (FCM). Solo se inicializa en Android (ver
+  # lib/data/services/push_service.dart); el resto de plataformas lo omite.
+  firebase_core: ^5.1.0
+  firebase_messaging: ^17.0.1
 
 dev_dependencies:
   flutter_test:

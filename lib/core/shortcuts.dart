@@ -54,6 +54,14 @@ class ShortcutService extends ChangeNotifier {
     ]);
   }
 
+  /// Pide abrir una sección desde fuera de los accesos directos (p. ej. al
+  /// tocar una notificación). El shell la abre al montarse o en cuanto ya
+  /// esté visible.
+  void open(AppShortcutType type) {
+    _pendingAction = type;
+    notifyListeners();
+  }
+
   void consume() {
     _pendingAction = null;
   }

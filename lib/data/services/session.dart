@@ -22,6 +22,11 @@ class SessionService extends ChangeNotifier {
   SessionScope get scope => _api.scope;
   Future<void> Function()? onSessionEnded;
   Future<void> Function(String account)? onAccountReady;
+
+  /// Se llama al terminar la sesión, ANTES de soltar el token: lo que deba
+  /// avisar al servidor con la sesión que se va (p. ej. dar de baja el push)
+  /// lo empieza aquí, sin esperar.
+  void Function()? onSigningOut;
   Future<void> _cleanup = Future.value();
   SessionStatus _status = SessionStatus.unknown;
   UserProfile? _user;
@@ -226,6 +231,9 @@ class SessionService extends ChangeNotifier {
   }
 
   void _reset() {
+    try {
+      onSigningOut?.call();
+    } catch (_) {}
     // Revoca el refresh token en el servidor; sin red no importa.
     unawaited(_api.logout().catchError((Object _) {}));
     scope.invalidate();

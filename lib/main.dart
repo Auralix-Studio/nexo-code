@@ -28,6 +28,8 @@ import 'package:nexo/data/local/cache_manager.dart';
 import 'package:nexo/data/services/connectivity_service.dart';
 import 'package:nexo/data/services/home_widget_service.dart';
 import 'package:nexo/data/services/notification_service.dart';
+import 'package:nexo/data/services/push_firebase.dart';
+import 'package:nexo/data/services/push_service.dart';
 import 'package:nexo/data/services/session.dart';
 import 'package:nexo/core/shortcuts.dart';
 import 'package:nexo/data/repositories/nexo_repository.dart';
@@ -148,6 +150,25 @@ Future<void> main(List<String> args) async {
   final updater = UpdateService(httpClient: secureHttp);
   store.onGradeChange = (course, grade) =>
       NotificationService.instance.showGradeChanged(course, grade);
+  // Push de notas (solo Android y solo estudiantes). Firebase se inicializa
+  // en `_bootstrap`; aquí solo se conecta con la sesión.
+  final push = PushService(
+    client: backend,
+    transport: FirebasePushTransport(),
+    presenter: const LocalPushPresenter(),
+  );
+  PushService.instance = push;
+  void openGrades() => ShortcutService.instance.open(AppShortcutType.grades);
+  push.onOpenGrades = openGrades;
+  NotificationService.instance.onOpenGradesTap = openGrades;
+  session.onSigningOut = push.signingOut;
+  session.addListener(() {
+    final student =
+        session.isAuthenticated && !(session.user?.isTeacher ?? false);
+    push.sessionChanged(
+      studentAccount: student ? session.currentAccount : null,
+    );
+  });
   session.onSessionEnded = () async {
     final cleared = store.clear(invalidateSession: false);
     directory.reset();
@@ -197,6 +218,7 @@ Future<void> main(List<String> args) async {
     store: store,
     widgets: widgets,
     updater: updater,
+    push: push,
   );
   if (!isSetup) unawaited(_startPortable!());
 }
@@ -226,6 +248,7 @@ Future<void> _bootstrap({
   required AppStore store,
   required HomeWidgetService widgets,
   required UpdateService updater,
+  required PushService push,
 }) async {
   // El caché va primero porque la sesión depende de él: al resolverse avisa a
   // sus oyentes y, si resulta que no hay sesión, el store limpia el caché. Es
@@ -253,6 +276,10 @@ Future<void> _bootstrap({
       finishedSubjects: store.finishedSubjectsThisTerm,
     );
   }
+
+  // Después de las notificaciones locales: el canal de notas se crea con
+  // ellas. Si Firebase falla, la app sigue igual, sin push.
+  await _startupStep('push', push.init);
 
   _startupStepSync('shortcuts', ShortcutService.instance.init);
 

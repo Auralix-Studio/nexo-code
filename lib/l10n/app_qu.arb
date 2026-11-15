@@ -692,5 +692,9 @@
   "tchGradeSaveDraft": "Guardar borrador",
   "tchGradeDraftSaved": "Borrador guardado en tu dispositivo. Aún no se envía a SIGMA.",
   "tchGradeLockedDraftHint": "Unidad cerrada en SIGMA: puedes anotar en borrador y enviarlo cuando se habilite.",
-  "gradesPromedioCiclo": "Promedio del ciclo"
+  "gradesPromedioCiclo": "Promedio del ciclo",
+  "settingsPushGrades": "Nota willakuykuna",
+  "settingsPushGradesSubtitle": "Te avisamos al instante cuando un docente registra una nota.",
+  "settingsPushGradesError": "No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo.",
+  "settingsPushGradesLoadError": "No se pudo consultar. Toca para reintentar."
 }

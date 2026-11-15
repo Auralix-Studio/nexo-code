@@ -46,9 +46,17 @@ class NotificationService extends ChangeNotifier {
   static const _idClassBase = 10000;
   static const _idPaymentBase = 20000;
   static const _idGradeBase = 30000;
+  static const _idPushBase = 31000;
   static const _idUpdate = 40001;
   static const _payloadUpdateInstall = 'nexo:update:install';
+
+  /// Notificación que abre la pantalla de notas al tocarla.
+  static const payloadOpenGrades = 'nexo:open:grades';
+
+  /// Canal de las notas: el mismo que pide el backend (`channel_id`).
+  static const gradesChannelId = 'grades';
   Future<void> Function()? onInstallUpdateTap;
+  void Function()? onOpenGradesTap;
   AndroidScheduleMode _androidMode = AndroidScheduleMode.exactAllowWhileIdle;
   Future<void> init() async {
     if (_ready) return;
@@ -95,6 +103,15 @@ class NotificationService extends ChangeNotifier {
       _clearOnInit = false;
     }
     _ready = true;
+    // La app se abrió tocando una notificación local (p. ej. un push de
+    // notas mostrado en primer plano).
+    try {
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      final response = launch?.notificationResponse;
+      if ((launch?.didNotificationLaunchApp ?? false) && response != null) {
+        _onTap(response);
+      }
+    } catch (_) {}
     if (_classes != null || _installments != null || !_prefs.enabled) {
       await reschedule();
     }
@@ -104,6 +121,8 @@ class NotificationService extends ChangeNotifier {
     if (r.payload == _payloadUpdateInstall) {
       final cb = onInstallUpdateTap;
       if (cb != null) unawaited(cb());
+    } else if (r.payload == payloadOpenGrades) {
+      onOpenGradesTap?.call();
     }
   }
 
@@ -456,6 +475,41 @@ class NotificationService extends ChangeNotifier {
       title: 'Nueva nota publicada',
       body: '$course: $grade',
       notificationDetails: _details('grades', 'Notas'),
+    );
+  }
+
+  /// Crea el canal de notas en Android con importancia alta, para que el
+  /// push que llega con la app cerrada use este canal y no el genérico.
+  Future<void> createGradesChannel() async {
+    if (!_ready || defaultTargetPlatform != TargetPlatform.android) return;
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await android?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        gradesChannelId,
+        'Notas',
+        importance: Importance.high,
+      ),
+    );
+  }
+
+  /// Muestra un push recibido con la app en primer plano (Android no lo
+  /// muestra solo en ese caso).
+  Future<void> showPush({
+    required String title,
+    required String body,
+    String? tag,
+    String? payload,
+  }) async {
+    if (!_supported || !_ready) return;
+    await _plugin.show(
+      id: _idPushBase + ((tag ?? title).hashCode.abs() % 1000),
+      title: title,
+      body: body,
+      notificationDetails: _details(gradesChannelId, 'Notas'),
+      payload: payload,
     );
   }
 

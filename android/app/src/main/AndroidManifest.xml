@@ -19,6 +19,11 @@
         android:label="Nexo"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+        <!-- Push de notas (FCM): con la app en segundo plano o cerrada, Android
+             muestra la notificación en este canal. Lo crea PushService. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="grades" />
         <activity
             android:name="pro.aurx.nexo.MainActivity"
             android:exported="true"

@@ -2873,4 +2873,19 @@ class AppLocalizationsQu extends AppLocalizations {
 
   @override
   String get integError => 'No se pudo completar. Intenta de nuevo.';
+
+  @override
+  String get settingsPushGrades => 'Nota willakuykuna';
+
+  @override
+  String get settingsPushGradesSubtitle =>
+      'Te avisamos al instante cuando un docente registra una nota.';
+
+  @override
+  String get settingsPushGradesError =>
+      'No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get settingsPushGradesLoadError =>
+      'No se pudo consultar. Toca para reintentar.';
 }

@@ -1687,5 +1687,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsPushGrades": "Notificaciones de notas",
+  "settingsPushGradesSubtitle": "Te avisamos al instante cuando un docente registra una nota.",
+  "settingsPushGradesError": "No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo.",
+  "settingsPushGradesLoadError": "No se pudo consultar. Toca para reintentar."
 }

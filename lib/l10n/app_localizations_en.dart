@@ -2858,4 +2858,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get integError => 'Could not complete. Try again.';
+
+  @override
+  String get settingsPushGrades => 'Grade notifications';
+
+  @override
+  String get settingsPushGradesSubtitle =>
+      'Get notified as soon as a teacher posts a grade.';
+
+  @override
+  String get settingsPushGradesError =>
+      'Couldn\'t change it. Check your connection and try again.';
+
+  @override
+  String get settingsPushGradesLoadError => 'Couldn\'t load it. Tap to retry.';
 }

@@ -1366,5 +1366,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsPushGrades": "Grade notifications",
+  "settingsPushGradesSubtitle": "Get notified as soon as a teacher posts a grade.",
+  "settingsPushGradesError": "Couldn't change it. Check your connection and try again.",
+  "settingsPushGradesLoadError": "Couldn't load it. Tap to retry."
 }

@@ -4705,6 +4705,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo completar. Intenta de nuevo.'**
   String get integError;
+
+  /// No description provided for @settingsPushGrades.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones de notas'**
+  String get settingsPushGrades;
+
+  /// No description provided for @settingsPushGradesSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Te avisamos al instante cuando un docente registra una nota.'**
+  String get settingsPushGradesSubtitle;
+
+  /// No description provided for @settingsPushGradesError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo.'**
+  String get settingsPushGradesError;
+
+  /// No description provided for @settingsPushGradesLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo consultar. Toca para reintentar.'**
+  String get settingsPushGradesLoadError;
 }
 
 class _AppLocalizationsDelegate

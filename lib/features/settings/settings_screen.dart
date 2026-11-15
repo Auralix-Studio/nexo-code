@@ -5,6 +5,7 @@ import 'package:nexo/core/design/theme.dart';
 import 'package:nexo/core/design/theme_controller.dart';
 import 'package:nexo/core/storage.dart';
 import 'package:nexo/data/app_store.dart';
+import 'package:nexo/data/services/push_service.dart';
 import 'package:nexo/data/services/update_service.dart';
 import 'package:nexo/features/notifications/notifications_screen.dart';
 import 'package:nexo/features/settings/typography_card.dart';
@@ -35,6 +36,7 @@ class SettingsScreen extends StatelessWidget {
                 _PreferencesCard(theme: theme),
                 const SizedBox(height: AppSpacing.cozy),
                 _NotificationsCard(store: store),
+                const _GradePushCard(),
                 const SizedBox(height: AppSpacing.cozy),
                 const UpdateCard(),
                 const SizedBox(height: AppSpacing.xxl),
@@ -523,6 +525,122 @@ class _NotificationsCard extends StatelessWidget {
             builder: (_) => NotificationsScreen(store: store),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Push de notas: solo aparece si el push funciona en este dispositivo y hay
+/// un estudiante con sesión. El estado vive en el servidor
+/// (`/me/notifications`).
+class _GradePushCard extends StatelessWidget {
+  const _GradePushCard();
+  @override
+  Widget build(BuildContext context) {
+    final push = PushService.instance;
+    if (push == null) return const SizedBox.shrink();
+    return ListenableBuilder(
+      listenable: push,
+      builder: (context, _) => push.canManage
+          ? Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.cozy),
+              child: _GradePushSwitch(push: push),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+}
+
+class _GradePushSwitch extends StatefulWidget {
+  const _GradePushSwitch({required this.push});
+  final PushService push;
+  @override
+  State<_GradePushSwitch> createState() => _GradePushSwitchState();
+}
+
+class _GradePushSwitchState extends State<_GradePushSwitch> {
+  bool? _enabled;
+  bool _busy = false;
+  bool _loadFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _busy = true;
+      _loadFailed = false;
+    });
+    try {
+      final enabled = await widget.push.gradesEnabled();
+      if (mounted) setState(() => _enabled = enabled);
+    } catch (_) {
+      if (mounted) setState(() => _loadFailed = true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _set(bool value) async {
+    final previous = _enabled;
+    setState(() {
+      _enabled = value;
+      _busy = true;
+    });
+    try {
+      final saved = await widget.push.setGradesEnabled(value);
+      if (mounted) setState(() => _enabled = saved);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _enabled = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).settingsPushGradesError),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final enabled = _enabled;
+    return Card(
+      child: SwitchListTile(
+        secondary: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: NexoTheme.primary.withValues(alpha: AppOpacity.tint),
+            borderRadius: AppRadii.rSm,
+          ),
+          child: Icon(
+            Icons.school_outlined,
+            color: NexoTheme.primary,
+            size: AppIcon.lg,
+          ),
+        ),
+        title: Text(
+          l.settingsPushGrades,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          _loadFailed
+              ? l.settingsPushGradesLoadError
+              : l.settingsPushGradesSubtitle,
+          style: TextStyle(color: NexoTheme.textSecondary),
+        ),
+        value: enabled ?? false,
+        onChanged: _busy
+            ? null
+            : enabled == null
+            ? (_) => _load()
+            : _set,
       ),
     );
   }

@@ -462,6 +462,7 @@ class BackendClient {
     bool authorize = true,
     bool retried = false,
     bool module = false,
+    String? bearer,
   }) => scope.run(() async {
     final client = await _client();
     final base = module ? BackendConfig.baseUrl : BackendConfig.apiBaseUrl;
@@ -473,6 +474,7 @@ class BackendClient {
       accept: 'application/json',
       body: body,
       authorize: authorize,
+      bearer: bearer,
     );
 
     final decoded = _decode(res);
@@ -565,7 +567,11 @@ class BackendClient {
     Map<String, dynamic>? body,
     required bool authorize,
     Duration timeout = BackendConfig.timeout,
+    String? bearer,
   }) async {
+    // Leído antes de esperar nada: una petición que sale justo al cerrar
+    // sesión conserva el token con el que se pidió.
+    final access = bearer ?? _access;
     try {
       // Proof that the call comes from the genuine app; the backend refuses
       // requests without it when App Check is enforced.
@@ -573,7 +579,7 @@ class BackendClient {
       request.headers.addAll({
         'Accept': accept,
         if (body != null) 'Content-Type': 'application/json',
-        if (authorize && _access != null) 'Authorization': 'Bearer $_access',
+        if (authorize && access != null) 'Authorization': 'Bearer $access',
         AppAttestation.header: ?appToken,
       });
       if (body != null) request.body = jsonEncode(body);
@@ -689,6 +695,66 @@ class BackendClient {
       module: true,
     );
   }
+
+  // --- Push (solo estudiantes) ----------------------------------------------
+
+  /// Registra el token FCM de este dispositivo (`POST /me/devices`) y
+  /// devuelve las preferencias de push de la cuenta.
+  Future<PushSettings> registerDevice(
+    String token, {
+    String platform = 'android',
+  }) async {
+    final body = await _send(
+      'POST',
+      '/me/devices',
+      body: {'token': token, 'platform': platform},
+      module: true,
+    );
+    final prefs = body['notifications'];
+    return PushSettings.fromJson(
+      prefs is Map ? prefs.cast<String, dynamic>() : const {},
+    );
+  }
+
+  /// Da de baja el token (`DELETE /me/devices/{token}`). Se llama justo al
+  /// cerrar sesión: toma el token de acceso en el momento de la llamada y no
+  /// intenta renovarlo.
+  Future<void> unregisterDevice(String token) async {
+    await _send(
+      'DELETE',
+      '/me/devices/${Uri.encodeComponent(token)}',
+      module: true,
+      retried: true,
+      bearer: _access,
+    );
+  }
+
+  /// Preferencias de push de la cuenta (`GET /me/notifications`).
+  Future<PushSettings> notificationSettings() async => PushSettings.fromJson(
+    await _send('GET', '/me/notifications', module: true),
+  );
+
+  /// Activa o desactiva el push de notas (`PUT /me/notifications`).
+  Future<PushSettings> setNotificationSettings({required bool grades}) async =>
+      PushSettings.fromJson(
+        await _send(
+          'PUT',
+          '/me/notifications',
+          body: {'grades': grades},
+          module: true,
+        ),
+      );
+}
+
+/// Preferencias de push de la cuenta: si recibe avisos de notas y cuántos
+/// dispositivos tiene registrados (`null` cuando la respuesta no lo dice).
+class PushSettings {
+  const PushSettings({required this.grades, this.devices});
+  final bool grades;
+  final int? devices;
+
+  factory PushSettings.fromJson(Map<String, dynamic> j) =>
+      PushSettings(grades: j['grades'] == true, devices: _int(j['devices']));
 }
 
 /// Nombre sugerido en `content-disposition` (`filename*=UTF-8''…` primero).
