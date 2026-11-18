@@ -17,7 +17,7 @@ class DataFreshness {
 /// el pull-to-refresh lo ignora. Periodos, perfil y horario cambian pocas
 /// veces por semestre; notas y pagos, más seguido.
 abstract final class FreshnessTtl {
-  static const terms = Duration(hours: 12);
+  static const terms = Duration(hours: 3);
   static const profile = Duration(hours: 6);
   static const schedule = Duration(hours: 6);
   static const grades = Duration(minutes: 5);

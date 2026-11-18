@@ -35,7 +35,9 @@ class CacheManager {
       path,
       // 4: los datos ya vienen de la API de Nexo (ids y formatos nuevos); lo
       // guardado con el formato de SIGMA/Intranet se descarta al actualizar.
-      version: 4,
+      // 5: el periodo activo y el ciclo se corrigieron en el servidor; se
+      // descarta lo guardado para no mostrar el periodo anterior.
+      version: 5,
       onCreate: _createTables,
       onUpgrade: (db, oldVersion, newVersion) async {
         for (final t in _tables) {

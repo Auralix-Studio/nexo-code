@@ -271,7 +271,11 @@ mixin _StudentStore on _StoreBase {
     cached: () => _cache.getPromedios(),
     persist: (v) => _cache.savePromedios(v),
     operationName: 'loadPromedios',
-    ttl: FreshnessTtl.grades,
+    // Right after login the server is still computing past terms: an empty
+    // history is asked again after 45 s instead of waiting the full TTL.
+    ttl: (promedios.value?.isEmpty ?? false)
+        ? const Duration(seconds: 45)
+        : FreshnessTtl.grades,
     force: force,
   );
 

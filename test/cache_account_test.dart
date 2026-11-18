@@ -74,7 +74,7 @@ void main() {
         );
         await old.close();
         await cache.activateAccount('B');
-        expect(await cache.db.getVersion(), 4);
+        expect(await cache.db.getVersion(), 5);
         expect(await cache.getStudent(), isNull);
         await cache.saveHorario([]);
         expect(await cache.getHorario(), isEmpty);

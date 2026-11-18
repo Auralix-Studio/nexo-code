@@ -101,6 +101,12 @@ http.Response _home(http.Request req) => switch (req.url.path) {
     'name': {'first': 'ANA', 'last': 'PEREZ'},
   }),
   '/grades' => nexoOk({'courses': []}),
+  // With history: an empty one is asked again sooner (see loadPromedios).
+  '/grades/summary' => nexoOk({
+    'terms': [
+      {'term': '2026-1', 'average': 14.2},
+    ],
+  }),
   '/auth/login' => nexoOk(nexoSession('A')),
   _ => nexoOk({}),
 };

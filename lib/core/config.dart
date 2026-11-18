@@ -57,5 +57,7 @@ class BackendConfig {
     defaultValue: 'https://api.nexo.aurx.pro',
   );
   static String get apiBaseUrl => '$baseUrl/api/v1';
-  static const Duration timeout = Duration(seconds: 25);
+  // El servidor se apaga sin uso y tarda hasta ~30 s en despertar: la
+  // primera petición necesita margen.
+  static const Duration timeout = Duration(seconds: 45);
 }
