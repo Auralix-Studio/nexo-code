@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [2.0.1] - 2026-11-17
+
+### Correcciones
+- app: Drop stale local data, wait longer for a waking server
+
 ## [2.0.0] - 2026-11-15
 
 ### Cambios importantes
