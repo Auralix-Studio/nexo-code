@@ -2,6 +2,11 @@
 
 All notable changes to Nexo will be documented in this file.
 
+## [2.1.0] - 2026-11-20
+
+### Novedades
+- Add backend client for API communication and session management
+
 ## [2.0.1] - 2026-11-17
 
 ### Correcciones

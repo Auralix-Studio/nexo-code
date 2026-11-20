@@ -21,8 +21,8 @@ class StoreBuild {
 }
 
 class AppConfig {
-  static const String appVersion = '2.0.1';
-  static const int appBuild = 34;
+  static const String appVersion = '2.1.0';
+  static const int appBuild = 35;
 
   /// Foto institucional. Igual que el cliente oficial de SIGMA: los códigos
   /// de alumno (7 caracteres, p. ej. U01025B) están en `FotosAlum/037000…`;
