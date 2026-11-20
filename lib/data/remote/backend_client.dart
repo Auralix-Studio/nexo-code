@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:nexo/core/config.dart';
 import 'package:nexo/core/errors.dart';
@@ -103,7 +104,7 @@ class BackendClient {
     final body = await _send(
       'POST',
       '/auth/login',
-      body: {'user': usuario, 'password': clave},
+      body: {'user': usuario, 'password': clave, 'device': _deviceLabel()},
       authorize: false,
       module: true,
     );
@@ -112,6 +113,20 @@ class BackendClient {
     _user = usuario;
     _password = clave;
     return body;
+  }
+
+  static String _deviceLabel() {
+    final platform = kIsWeb
+        ? 'web'
+        : switch (defaultTargetPlatform) {
+            TargetPlatform.android => 'android',
+            TargetPlatform.iOS => 'ios',
+            TargetPlatform.windows => 'windows',
+            TargetPlatform.macOS => 'macos',
+            TargetPlatform.linux => 'linux',
+            TargetPlatform.fuchsia => 'fuchsia',
+          };
+    return '$platform (Nexo ${AppConfig.appVersion})';
   }
 
   /// Cierra la sesión en el servidor (revoca el refresh token). Sin red no
